@@ -1,0 +1,12 @@
+# Manual exclusions applied to every campaign.
+# Domains listed here are never requested, regardless of source configuration.
+
+[exclusions]
+urls = []
+domains = [
+  "linkedin.com",
+  "x.com",
+  "twitter.com",
+  "glassdoor.com",
+  "glassdoor.com.co",
+]

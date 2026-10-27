@@ -1,0 +1,42 @@
+[project]
+name = "proyecto-modelos-lenguaje"
+version = "0.1.0"
+description = "Capa bronce de recolección web para el RAG de Ingenio Manuelita"
+readme = "README.md"
+authors = [
+    { name = "Jason Alejandro Castaño", email = "jasonale3007@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "scrapling[fetchers]>=0.5",
+    "yt-dlp>=2026.10.26",
+]
+
+[project.scripts]
+pml = "proyecto_modelos_lenguaje.cli:main"
+proyecto-modelos-lenguaje = "proyecto_modelos_lenguaje.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "jsonschema>=4.26.0",
+    "pytest>=9.1.1",
+    "ruff>=0.17.3",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]

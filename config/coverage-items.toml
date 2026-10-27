@@ -1,0 +1,146 @@
+# 24 required information items for the Manuelita bronze layer.
+# Each keyword is matched accent-insensitively against artifact text, titles and URLs.
+
+[[items]]
+id = "I-01"
+category = "identity"
+name = "Misión y visión"
+keywords = ["mision", "vision", "proposito superior", "razon de ser"]
+
+[[items]]
+id = "I-02"
+category = "identity"
+name = "Valores y propósito"
+keywords = ["valores", "principios", "etica", "integridad", "respeto", "compromiso"]
+
+[[items]]
+id = "I-03"
+category = "identity"
+name = "Historia (año de fundación, hitos)"
+keywords = ["historia", "fundacion", "fundada", "fundado", "hitos", "trayectoria", "aniversario"]
+
+[[items]]
+id = "I-04"
+category = "identity"
+name = "Fundador / dueño y junta"
+keywords = ["fundador", "fundadora", "dueno", "junta directiva", "accionistas", "propietario"]
+
+[[items]]
+id = "I-05"
+category = "identity"
+name = "Gerente y equipo directivo"
+keywords = ["gerente", "presidente", "vicepresidente", "director", "directivo", "equipo directivo"]
+
+[[items]]
+id = "I-06"
+category = "identity"
+name = "Sedes y ubicaciones"
+keywords = ["sedes", "oficinas", "ubicacion", "planta", "plantas", "cultivos", "direccion"]
+
+[[items]]
+id = "O-01"
+category = "offer"
+name = "Productos y servicios"
+keywords = ["productos", "servicios", "azucar", "etanol", "bioenergia", "palma", "arroz", "energia"]
+
+[[items]]
+id = "O-02"
+category = "offer"
+name = "Fichas técnicas y especificaciones"
+keywords = ["ficha tecnica", "especificaciones", "composicion", "nutricional", "hoja de seguridad"]
+
+[[items]]
+id = "O-03"
+category = "offer"
+name = "Precios y planes"
+keywords = ["precios", "planes", "tarifas", "cotizacion", "lista de precios"]
+
+[[items]]
+id = "O-04"
+category = "offer"
+name = "Catálogos en PDF"
+keywords = ["catalogo", "portafolio", "brochure", "folleto", "pdf"]
+
+[[items]]
+id = "O-05"
+category = "offer"
+name = "Casos de éxito y clientes"
+keywords = ["clientes", "casos de exito", "aliados", "socios", "testimonios"]
+
+[[items]]
+id = "O-06"
+category = "offer"
+name = "Certificaciones (ISO, BASC, INVIMA, etc.)"
+keywords = ["certificacion", "certificado", "iso", "basc", "invima", "rspo", "bonsucro", "haccp"]
+
+[[items]]
+id = "D-01"
+category = "digital_presence"
+name = "Noticias y sala de prensa"
+keywords = ["noticias", "prensa", "comunicados", "sala de prensa", "boletin"]
+
+[[items]]
+id = "D-02"
+category = "digital_presence"
+name = "Blog y artículos"
+keywords = ["blog", "articulo", "articulos", "opinion", "columna"]
+
+[[items]]
+id = "D-03"
+category = "digital_presence"
+name = "Videos de YouTube y subtítulos"
+keywords = ["youtube", "video", "subtitulos", "transcripcion", "canal"]
+
+[[items]]
+id = "D-04"
+category = "digital_presence"
+name = "Entrevistas del gerente (audio o video)"
+keywords = ["entrevista", "gerente", "podcast", "conferencia", "declaraciones"]
+
+[[items]]
+id = "D-05"
+category = "digital_presence"
+name = "Redes sociales (publicaciones y descripciones)"
+keywords = ["facebook", "instagram", "linkedin", "twitter", "redes sociales", "publicacion"]
+
+[[items]]
+id = "D-06"
+category = "digital_presence"
+name = "Vacantes de empleo (Glassdoor, Computrabajo)"
+keywords = ["vacante", "vacantes", "empleo", "trabaja con nosotros", "convocatoria", "oferta laboral"]
+
+[[items]]
+id = "H-01"
+category = "hard_data"
+name = "Informes financieros y memoria anual"
+keywords = ["informe financiero", "memoria anual", "estados financieros", "balance general", "resultados"]
+
+[[items]]
+id = "H-02"
+category = "hard_data"
+name = "NIT y registro en Cámara de Comercio"
+keywords = ["nit", "camara de comercio", "registro mercantil", "matricula mercantil", "rut"]
+
+[[items]]
+id = "H-03"
+category = "hard_data"
+name = "Indicadores de sostenibilidad"
+keywords = ["sostenibilidad", "indicadores", "ambiental", "social", "asg", "esg", "huella de carbono"]
+
+[[items]]
+id = "H-04"
+category = "hard_data"
+name = "Precios públicos y tarifas"
+keywords = ["precio publico", "tarifas", "precios", "cotizacion publica"]
+
+[[items]]
+id = "H-05"
+category = "hard_data"
+name = "Datos abiertos (Superintendencia, SECOP)"
+keywords = ["datos abiertos", "secop", "superintendencia", "contratacion", "licitacion"]
+
+[[items]]
+id = "H-06"
+category = "hard_data"
+name = "Rankings sectoriales"
+keywords = ["ranking", "merco", "sectorial", "reconocimiento", "premio"]

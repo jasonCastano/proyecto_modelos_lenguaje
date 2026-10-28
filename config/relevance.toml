@@ -1,0 +1,97 @@
+protected_domains = ["manuelita.com"]
+
+[settings]
+keep_threshold = 60
+review_threshold = 25
+retention_days = 30
+max_scan_bytes = 8388608
+batch_size = 500
+title_weight = 10
+
+[terms]
+strong_aliases = [
+  "ingenio manuelita",
+  "manuelita agroindustria",
+  "manuelita agroindustrial",
+  "manuelita s.a.",
+  "manuelita s.a.s.",
+  "manuelita sas",
+  "grupo manuelita",
+  "grupo empresarial manuelita",
+]
+
+company_terms = ["manuelita"]
+
+context_terms = [
+  "valle del cauca",
+  "azucar",
+  "azúcar",
+  "caña",
+  "caña de azucar",
+  "caña de azúcar",
+  "etanol",
+  "bioenergia",
+  "bioenergía",
+  "biocombustible",
+  "ingenio",
+  "palmira",
+  "candelaria",
+  "miranda",
+  "sector agroindustrial",
+  "azucarera",
+  "panela",
+  "palma de aceite",
+  "palmicultor",
+  "sostenibilidad",
+  "certificacion",
+  "certificación",
+  "invima",
+  "basc",
+  "rspo",
+  "bonsucro",
+  "nit",
+  "camara de comercio",
+  "cámara de comercio",
+  "superintendencia de sociedades",
+  "secop",
+  "contratacion",
+  "contratación",
+  "accionistas",
+  "junta directiva",
+  "gerente",
+  "presidente",
+]
+
+negative_patterns = [
+  "manuelita la tortuga",
+  "la tortuga manuelita",
+  "manuelita sáenz",
+  "manuelita saenz",
+  "manuelita díaz",
+  "manuelita diaz",
+  "manuelita pérez",
+  "manuelita perez",
+  "manuelita rodríguez",
+  "manuelita rodriguez",
+  "finca la manuelita",
+  "vereda manuelita",
+  "manuelitacoop",
+  "manuelita.coop",
+  "manuelita es una canción",
+  "manuelita de la canción",
+]
+
+incidental_patterns = [
+  "@manuelita.com",
+  "manuelita.com",
+  "www.manuelita.com",
+]
+
+[source_weights]
+official_site = 5
+asocana = 5
+elpais = 5
+camara_comercio = 3
+supersociedades = 3
+datos_gov = 0
+secop = 0

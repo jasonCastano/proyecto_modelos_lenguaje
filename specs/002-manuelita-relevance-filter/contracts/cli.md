@@ -32,7 +32,7 @@ New commands under `pml curate`. Existing commands remain backward compatible; `
 Evaluates relevance for the corpus (or one campaign) and optionally persists decisions.
 
 ```text
-pml curate analyze --config config/relevance.toml [--campaign <id>] [--run <id>]
+pml curate analyze --relevance-config config/relevance.toml [--campaign <id>] [--run <id>]
                    [--apply] [--json]
 ```
 

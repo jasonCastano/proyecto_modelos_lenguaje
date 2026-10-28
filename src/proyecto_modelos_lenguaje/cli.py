@@ -13,8 +13,15 @@ from pathlib import Path
 from typing import Any
 
 from .catalog import Catalog, artifact_payload
-from .config import STORAGE_HARD_LIMIT, ConfigError, load_config, load_coverage_items
+from .config import (
+    STORAGE_HARD_LIMIT,
+    ConfigError,
+    load_config,
+    load_coverage_items,
+    load_relevance_config,
+)
 from .coverage import build_matrix
+from .curation import CurationError, CurationService
 from .fetchers.http import build_http_fetcher
 from .pipeline import CampaignRunner
 from .reporting import write_campaign_report, write_coverage_report
@@ -22,6 +29,7 @@ from .storage import BronzeStorage
 from .utils import utcnow
 
 DEFAULT_CONFIG = "config/sources.toml"
+DEFAULT_RELEVANCE_CONFIG = "config/relevance.toml"
 
 
 class _JsonFormatter(logging.Formatter):
@@ -247,7 +255,7 @@ def cmd_report(args: argparse.Namespace) -> int:
 def cmd_coverage(args: argparse.Namespace) -> int:
     _, catalog = _open_catalog(args.config)
     try:
-        rows = build_matrix(catalog, args.campaign)
+        rows = build_matrix(catalog, args.campaign, active_only=args.active_only)
     finally:
         catalog.close()
     if args.status:
@@ -282,6 +290,7 @@ def cmd_catalog_list(args: argparse.Namespace) -> int:
             language=args.language,
             coverage_item_id=args.coverage_item,
             include_retracted=args.include_retracted,
+            active_only=args.active_only,
             limit=args.limit,
             offset=args.offset,
         )
@@ -326,10 +335,13 @@ def cmd_catalog_export(args: argparse.Namespace) -> int:
     destination.parent.mkdir(parents=True, exist_ok=True)
     try:
         if args.format == "jsonl":
-            count = catalog.export_jsonl(args.campaign, destination)
+            count = catalog.export_jsonl(args.campaign, destination, active_only=args.active_only)
         else:
             artifacts, _ = catalog.list_artifacts(
-                campaign_id=args.campaign, include_retracted=True, limit=1_000_000
+                campaign_id=args.campaign,
+                include_retracted=True,
+                active_only=args.active_only,
+                limit=1_000_000,
             )
             with destination.open("w", encoding="utf-8", newline="") as handle:
                 writer = csv.writer(handle)
@@ -372,6 +384,155 @@ def cmd_catalog_export(args: argparse.Namespace) -> int:
     finally:
         catalog.close()
     _emit({"status": "exported", "count": count, "path": str(destination)}, args.json)
+    return 0
+
+
+def _open_curation(args: argparse.Namespace) -> tuple[CurationService, Catalog]:
+    app = load_config(args.config)
+    relevance = load_relevance_config(getattr(args, "relevance_config", DEFAULT_RELEVANCE_CONFIG))
+    catalog = Catalog(app.settings.bronze_dir / "_meta" / "bronze.sqlite3")
+    catalog.init_schema()
+    storage = BronzeStorage(app.settings.bronze_dir, limit_bytes=app.settings.storage_limit_bytes)
+    service = CurationService(app, relevance, catalog=catalog, storage=storage)
+    return service, catalog
+
+
+def cmd_curate_analyze(args: argparse.Namespace) -> int:
+    service, catalog = _open_curation(args)
+    try:
+        summary = service.analyze(run_id=args.run, campaign=args.campaign, apply=args.apply)
+    finally:
+        catalog.close()
+    _emit(summary.as_dict(), args.json)
+    return 0
+
+
+def cmd_curate_runs(args: argparse.Namespace) -> int:
+    _, catalog = _open_catalog(args.config)
+    try:
+        rows = catalog.connection.execute(
+            "SELECT * FROM curation_runs ORDER BY started_at DESC"
+        ).fetchall()
+        runs = [dict(row) for row in rows]
+    finally:
+        catalog.close()
+    _emit({"runs": runs, "total": len(runs)}, args.json)
+    return 0
+
+
+def cmd_curate_status(args: argparse.Namespace) -> int:
+    _, catalog = _open_catalog(args.config)
+    try:
+        run = catalog.get_curation_run(args.run)
+        if run is None:
+            return _error(f"curation run not found: {args.run}", 2)
+        entries = catalog.list_quarantine_entries(args.run)
+        pending = catalog.pending_review_count(args.run)
+    finally:
+        catalog.close()
+    payload = {
+        **run,
+        "pending_reviews": pending,
+        "quarantined": sum(1 for entry in entries if entry["status"] == "quarantined"),
+        "restored": sum(1 for entry in entries if entry["status"] == "restored"),
+        "purged": sum(1 for entry in entries if entry["status"] == "purged"),
+    }
+    _emit(payload, args.json)
+    return 0
+
+
+def cmd_curate_report(args: argparse.Namespace) -> int:
+    service, catalog = _open_curation(args)
+    try:
+        paths = service.report(args.run)
+    finally:
+        catalog.close()
+    if args.format == "md":
+        print(Path(paths[-1]).read_text(encoding="utf-8"))
+    else:
+        print(paths[0])
+    return 0
+
+
+def cmd_curate_review_list(args: argparse.Namespace) -> int:
+    service, catalog = _open_curation(args)
+    try:
+        items, total = service.list_reviews(args.run, limit=args.limit, offset=args.offset)
+    finally:
+        catalog.close()
+    _emit(
+        {"total": total, "count": len(items), "offset": args.offset, "items": items},
+        args.json,
+    )
+    return 0
+
+
+def cmd_curate_review_decide(args: argparse.Namespace) -> int:
+    service, catalog = _open_curation(args)
+    try:
+        service.decide_review(
+            artifact_id=args.artifact,
+            decision=args.decision,
+            reviewer=args.reviewer,
+            note=args.note,
+        )
+    finally:
+        catalog.close()
+    _emit(
+        {
+            "artifact_id": args.artifact,
+            "decision": args.decision,
+            "reviewer": args.reviewer,
+            "status": "decided",
+        },
+        args.json,
+    )
+    return 0
+
+
+def cmd_curate_approve(args: argparse.Namespace) -> int:
+    service, catalog = _open_curation(args)
+    try:
+        run = service.approve(args.run, args.reviewer)
+    finally:
+        catalog.close()
+    _emit(run, args.json)
+    return 0
+
+
+def cmd_curate_quarantine(args: argparse.Namespace) -> int:
+    if not args.confirm:
+        return _error("quarantine requires --confirm", 2)
+    service, catalog = _open_curation(args)
+    try:
+        run = service.quarantine(args.run)
+    finally:
+        catalog.close()
+    _emit(run, args.json)
+    return 0
+
+
+def cmd_curate_restore(args: argparse.Namespace) -> int:
+    service, catalog = _open_curation(args)
+    try:
+        service.restore(args.artifact, reviewer=args.reviewer)
+    finally:
+        catalog.close()
+    _emit({"artifact_id": args.artifact, "status": "restored"}, args.json)
+    return 0
+
+
+def cmd_curate_purge(args: argparse.Namespace) -> int:
+    if not args.confirm:
+        return _error("purge requires --confirm", 2)
+    if not (args.now or args.expired):
+        return _error("purge requires --now or --expired", 2)
+    service, catalog = _open_curation(args)
+    try:
+        run = service.purge(args.run, now=args.now)
+    finally:
+        catalog.close()
+    _emit(run, args.json)
     return 0
 
 
@@ -429,6 +590,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     coverage.add_argument("--campaign", required=True)
     coverage.add_argument("--status", choices=["covered", "partial", "missing"])
+    coverage.add_argument("--active-only", action="store_true")
     coverage.add_argument("--json", action="store_true")
     coverage.set_defaults(func=cmd_coverage)
 
@@ -446,6 +608,7 @@ def build_parser() -> argparse.ArgumentParser:
     list_node.add_argument("--limit", type=int, default=100)
     list_node.add_argument("--offset", type=int, default=0)
     list_node.add_argument("--include-retracted", action="store_true")
+    list_node.add_argument("--active-only", action="store_true")
     list_node.add_argument("--json", action="store_true")
     list_node.set_defaults(func=cmd_catalog_list)
 
@@ -459,8 +622,77 @@ def build_parser() -> argparse.ArgumentParser:
     export.add_argument("--format", choices=["jsonl", "csv"], default="jsonl")
     export.add_argument("--output", required=True)
     export.add_argument("--force", action="store_true")
+    export.add_argument("--active-only", action="store_true")
     export.add_argument("--json", action="store_true")
     export.set_defaults(func=cmd_catalog_export)
+
+    curate = sub.add_parser("curate", help="relevance curation and cleanup", parents=[common])
+    curate_sub = curate.add_subparsers(dest="curate_command", required=True)
+
+    analyze = curate_sub.add_parser("analyze", parents=[common])
+    analyze.add_argument("--relevance-config", default=DEFAULT_RELEVANCE_CONFIG)
+    analyze.add_argument("--campaign")
+    analyze.add_argument("--run")
+    analyze.add_argument("--apply", action="store_true")
+    analyze.add_argument("--json", action="store_true")
+    analyze.set_defaults(func=cmd_curate_analyze)
+
+    runs = curate_sub.add_parser("runs", parents=[common])
+    runs.add_argument("--json", action="store_true")
+    runs.set_defaults(func=cmd_curate_runs)
+
+    curate_status = curate_sub.add_parser("status", parents=[common])
+    curate_status.add_argument("--run", required=True)
+    curate_status.add_argument("--json", action="store_true")
+    curate_status.set_defaults(func=cmd_curate_status)
+
+    curate_report = curate_sub.add_parser("report", parents=[common])
+    curate_report.add_argument("--run", required=True)
+    curate_report.add_argument("--format", choices=["json", "md"], default="json")
+    curate_report.add_argument("--json", action="store_true")
+    curate_report.set_defaults(func=cmd_curate_report)
+
+    review = curate_sub.add_parser("review", parents=[common])
+    review_sub = review.add_subparsers(dest="review_command", required=True)
+    review_list = review_sub.add_parser("list", parents=[common])
+    review_list.add_argument("--run", required=True)
+    review_list.add_argument("--limit", type=int, default=50)
+    review_list.add_argument("--offset", type=int, default=0)
+    review_list.add_argument("--json", action="store_true")
+    review_list.set_defaults(func=cmd_curate_review_list)
+    review_decide = review_sub.add_parser("decide", parents=[common])
+    review_decide.add_argument("--artifact", type=int, required=True)
+    review_decide.add_argument("--decision", choices=["keep", "remove"], required=True)
+    review_decide.add_argument("--reviewer", required=True)
+    review_decide.add_argument("--note")
+    review_decide.add_argument("--json", action="store_true")
+    review_decide.set_defaults(func=cmd_curate_review_decide)
+
+    approve = curate_sub.add_parser("approve", parents=[common])
+    approve.add_argument("--run", required=True)
+    approve.add_argument("--reviewer", required=True)
+    approve.add_argument("--json", action="store_true")
+    approve.set_defaults(func=cmd_curate_approve)
+
+    quarantine = curate_sub.add_parser("quarantine", parents=[common])
+    quarantine.add_argument("--run", required=True)
+    quarantine.add_argument("--confirm", action="store_true")
+    quarantine.add_argument("--json", action="store_true")
+    quarantine.set_defaults(func=cmd_curate_quarantine)
+
+    restore = curate_sub.add_parser("restore", parents=[common])
+    restore.add_argument("--artifact", type=int, required=True)
+    restore.add_argument("--reviewer", default="restore")
+    restore.add_argument("--json", action="store_true")
+    restore.set_defaults(func=cmd_curate_restore)
+
+    purge = curate_sub.add_parser("purge", parents=[common])
+    purge.add_argument("--run", required=True)
+    purge.add_argument("--now", action="store_true")
+    purge.add_argument("--expired", action="store_true")
+    purge.add_argument("--confirm", action="store_true")
+    purge.add_argument("--json", action="store_true")
+    purge.set_defaults(func=cmd_curate_purge)
 
     return parser
 
@@ -476,6 +708,8 @@ def main(argv: list[str] | None = None) -> int:
         return int(args.func(args))
     except ConfigError as exc:
         return _error(str(exc), 3)
+    except CurationError as exc:
+        return _error(str(exc), exc.exit_code)
     except FileNotFoundError as exc:
         return _error(str(exc), 3)
     except KeyboardInterrupt:

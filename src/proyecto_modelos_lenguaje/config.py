@@ -436,3 +436,143 @@ def load_coverage_items(
 
 def default_coverage_path(config_path: str | Path) -> Path:
     return Path(config_path).resolve().parent / "coverage-items.toml"
+
+
+@dataclass(frozen=True, slots=True)
+class RelevanceSettings:
+    keep_threshold: int
+    review_threshold: int
+    retention_days: int
+    max_scan_bytes: int
+    batch_size: int
+    title_weight: int
+
+
+@dataclass(frozen=True, slots=True)
+class RelevanceConfig:
+    path: Path
+    settings: RelevanceSettings
+    strong_aliases: tuple[str, ...]
+    company_terms: tuple[str, ...]
+    context_terms: tuple[str, ...]
+    negative_patterns: tuple[str, ...]
+    incidental_patterns: tuple[str, ...]
+    source_weights: dict[str, int]
+    protected_domains: tuple[str, ...]
+    config_hash: str
+
+
+def load_relevance_config(
+    path: str | Path = "config/relevance.toml",
+    *,
+    project_root: Path | None = None,
+) -> RelevanceConfig:
+    """Load and validate the curation rules used by the relevance filter."""
+    config_path = Path(path)
+    if not config_path.is_absolute():
+        config_path = (project_root or PROJECT_ROOT) / config_path
+    config_path = config_path.resolve()
+    table = _load_toml(config_path)
+
+    settings_table = _require(table, "settings", context="relevance.settings")
+    if not isinstance(settings_table, dict):
+        raise ConfigError("relevance [settings] table is required")
+    keep = _as_int(
+        settings_table.get("keep_threshold", 60),
+        context="relevance.settings.keep_threshold",
+        minimum=1,
+        maximum=100,
+    )
+    review = _as_int(
+        settings_table.get("review_threshold", 25),
+        context="relevance.settings.review_threshold",
+        minimum=0,
+        maximum=99,
+    )
+    if review >= keep:
+        raise ConfigError("relevance.settings.review_threshold must be lower than keep_threshold")
+    settings = RelevanceSettings(
+        keep_threshold=keep,
+        review_threshold=review,
+        retention_days=_as_int(
+            settings_table.get("retention_days", 30),
+            context="relevance.settings.retention_days",
+            minimum=0,
+            maximum=365,
+        ),
+        max_scan_bytes=_as_int(
+            settings_table.get("max_scan_bytes", 8_388_608),
+            context="relevance.settings.max_scan_bytes",
+            minimum=1_048_576,
+            maximum=67_108_864,
+        ),
+        batch_size=_as_int(
+            settings_table.get("batch_size", 500),
+            context="relevance.settings.batch_size",
+            minimum=1,
+            maximum=5000,
+        ),
+        title_weight=_as_int(
+            settings_table.get("title_weight", 10),
+            context="relevance.settings.title_weight",
+            minimum=0,
+            maximum=50,
+        ),
+    )
+
+    terms_table = _require(table, "terms", context="relevance.terms")
+    if not isinstance(terms_table, dict):
+        raise ConfigError("relevance [terms] table is required")
+    strong_aliases = _as_str_list(
+        _require(terms_table, "strong_aliases", context="relevance.terms.strong_aliases"),
+        context="relevance.terms.strong_aliases",
+    )
+    company_terms = _as_str_list(
+        _require(terms_table, "company_terms", context="relevance.terms.company_terms"),
+        context="relevance.terms.company_terms",
+    )
+    if not strong_aliases or not company_terms:
+        raise ConfigError("relevance terms must include strong_aliases and company_terms")
+
+    raw_weights = table.get("source_weights", {})
+    if not isinstance(raw_weights, dict):
+        raise ConfigError("relevance [source_weights] must be a table")
+    source_weights: dict[str, int] = {}
+    for key, value in raw_weights.items():
+        source_weights[str(key)] = _as_int(
+            value,
+            context=f"relevance.source_weights.{key}",
+            minimum=-50,
+            maximum=50,
+        )
+
+    protected = tuple(
+        domain.lower().lstrip(".")
+        for domain in _as_str_list(
+            _require(table, "protected_domains", context="relevance.protected_domains"),
+            context="relevance.protected_domains",
+        )
+    )
+    if "manuelita.com" not in protected:
+        raise ConfigError("relevance.protected_domains must include 'manuelita.com'")
+
+    return RelevanceConfig(
+        path=config_path,
+        settings=settings,
+        strong_aliases=strong_aliases,
+        company_terms=company_terms,
+        context_terms=_as_str_list(
+            terms_table.get("context_terms", []), context="relevance.terms.context_terms"
+        ),
+        negative_patterns=_as_str_list(
+            terms_table.get("negative_patterns", []),
+            context="relevance.terms.negative_patterns",
+        ),
+        incidental_patterns=_as_str_list(
+            terms_table.get("incidental_patterns", []),
+            context="relevance.terms.incidental_patterns",
+        ),
+        source_weights=source_weights,
+        protected_domains=protected,
+        config_hash=hashlib.sha256(config_path.read_bytes()).hexdigest(),
+    )

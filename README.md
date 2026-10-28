@@ -52,7 +52,42 @@ uv run python scripts/query_catalog.py list --campaign 2026-10-baseline --catego
 ```
 
 Comandos disponibles: `pml init`, `pml campaign start|status`, `pml verify`, `pml report campaign|coverage`,
-`pml coverage`, `pml catalog list|show|export`.
+`pml coverage`, `pml catalog list|show|export`, `pml curate ...`.
+
+### Depuración de relevancia
+
+El corpus bronce puede contener páginas de portales genéricos que no tratan sobre Manuelita. El flujo de
+curaduría clasifica cada artefacto y retira lo irrelevante con auditoría:
+
+```bash
+# Análisis en seco: no escribe nada
+uv run pml curate analyze --relevance-config config/relevance.toml --json
+
+# Aplicar evaluaciones y generar la cola de revisión
+uv run pml curate analyze --relevance-config config/relevance.toml \
+  --run 2026-10-curation-01 --apply --json
+
+# Revisar ambiguos y aprobar
+uv run pml curate review list --run 2026-10-curation-01 --json
+uv run pml curate review decide --artifact 12345 --decision remove \
+  --reviewer "tu nombre" --note "Mención incidental"
+uv run pml curate approve --run 2026-10-curation-01 --reviewer "tu nombre"
+
+# Mover lo irrelevante a cuarentena reversible (30 días)
+uv run pml curate quarantine --run 2026-10-curation-01 --confirm
+
+# Después del periodo de retención (o con aprobación explícita):
+uv run pml curate purge --run 2026-10-curation-01 --expired --confirm
+# Purga inmediata: --now --confirm
+
+# Cobertura y catálogo solo con el corpus activo
+uv run pml coverage --campaign 2026-10-baseline --active-only --json
+uv run pml catalog export --campaign 2026-10-baseline --active-only \
+  --format jsonl --output exports/curated.jsonl
+```
+
+Los artefactos retirados se mueven a `data/quarantine/<run_id>/` (no versionado) y conservan una fila de
+auditoría con URL, hash, motivo y puntuación. El dominio oficial `manuelita.com` nunca se elimina.
 
 ## Estructura
 

@@ -10,10 +10,17 @@ from pathlib import Path
 import pytest
 
 from proyecto_modelos_lenguaje.catalog import Catalog
-from proyecto_modelos_lenguaje.config import AppConfig, load_config, load_coverage_items
+from proyecto_modelos_lenguaje.config import (
+    AppConfig,
+    load_config,
+    load_coverage_items,
+    load_relevance_config,
+)
+from proyecto_modelos_lenguaje.curation import CurationService
 from proyecto_modelos_lenguaje.fetchers.http import build_http_fetcher
 from proyecto_modelos_lenguaje.pipeline import CampaignRunner
 from proyecto_modelos_lenguaje.storage import BronzeStorage
+from proyecto_modelos_lenguaje.utils import utcnow
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 COVERAGE_PATH = PROJECT_ROOT / "config" / "coverage-items.toml"
@@ -226,3 +233,177 @@ def build_runner(
         max_targets=max_targets,
     )
     return runner, catalog, storage
+
+
+@pytest.fixture()
+def curation_env(tmp_path: Path):
+    """Synthetic bronze corpus with known relevant and irrelevant artifacts."""
+    config_dir = tmp_path / "config"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    config_path = config_dir / "sources.toml"
+    config_path.write_text(
+        """[settings]
+data_root = "data"
+storage_limit_bytes = 10000000
+user_agent = "ManuelitaRAG-curation-test/0.1"
+max_concurrency = 1
+max_per_host = 1
+default_delay_seconds = 0.5
+max_depth = 1
+request_timeout_seconds = 5
+max_retries = 0
+retry_backoff_seconds = 0.5
+
+[[sources]]
+id = "official_site"
+domain = "manuelita.com"
+platform = "website"
+authority = "first_party"
+seeds = ["https://www.manuelita.com/"]
+follow_links = false
+max_depth = 0
+policy = { robots = "respect", requires_auth = false }
+
+[[sources]]
+id = "elpais"
+domain = "elpais.com.co"
+platform = "news"
+authority = "third_party"
+seeds = ["https://www.elpais.com.co/"]
+follow_links = false
+max_depth = 0
+policy = { robots = "respect", requires_auth = false }
+
+[[sources]]
+id = "datos_gov"
+domain = "datos.gov.co"
+platform = "open_data"
+authority = "open_data"
+seeds = ["https://www.datos.gov.co/"]
+follow_links = false
+max_depth = 0
+policy = { robots = "respect", requires_auth = false }
+""",
+        encoding="utf-8",
+    )
+    (config_dir / "exclusions.toml").write_text(
+        "[exclusions]\nurls = []\ndomains = []\n", encoding="utf-8"
+    )
+    app = load_config(config_path, project_root=tmp_path)
+    catalog = Catalog(app.settings.bronze_dir / "_meta" / "bronze.sqlite3")
+    catalog.init_schema()
+    catalog.seed_sources(app.sources)
+    catalog.seed_coverage(load_coverage_items(COVERAGE_PATH))
+    catalog.create_campaign(campaign_id="c001", config_hash=app.config_hash, tool_version="test")
+    storage = BronzeStorage(app.settings.bronze_dir, limit_bytes=app.settings.storage_limit_bytes)
+    authorities = {
+        "official_site": "first_party",
+        "elpais": "third_party",
+        "datos_gov": "open_data",
+    }
+    ids: dict[str, int] = {}
+
+    def add(
+        key: str,
+        source_id: str,
+        url: str,
+        data: str | bytes,
+        *,
+        media_type: str = "text/html",
+        category: str = "identity",
+        title: str | None = None,
+    ) -> int:
+        payload = data.encode("utf-8") if isinstance(data, str) else data
+        stored = storage.store(
+            payload, media_type=media_type, source_id=source_id, campaign_id="c001"
+        )
+        artifact, _ = catalog.add_artifact(
+            content_hash=stored.content_hash,
+            text_hash=None,
+            media_type=media_type,
+            byte_size=stored.byte_size,
+            storage_path=stored.storage_path,
+            retrieved_at=utcnow(),
+            http_status=200,
+            source_id=source_id,
+            campaign_id="c001",
+            authority=authorities[source_id],
+            language="es",
+            language_method="heuristic",
+            title=title,
+            published_at=None,
+            version=1,
+            url_original=url,
+            url_canonical=url,
+            category=category,
+        )
+        catalog.link_artifact(
+            campaign_id="c001",
+            artifact_id=artifact.artifact_id,
+            target_id=0,
+            captured_as="stored",
+        )
+        ids[key] = artifact.artifact_id
+        return artifact.artifact_id
+
+    add(
+        "official",
+        "official_site",
+        "https://www.manuelita.com/",
+        "<html lang='es'><head><title>Manuelita</title></head>"
+        "<body><main>Manuelita Agroindustria, ingenio del Valle del Cauca.</main></body></html>",
+        title="Manuelita",
+    )
+    add(
+        "relevant",
+        "elpais",
+        "https://www.elpais.com.co/economia/manuelita-invierte-en-el-valle",
+        "<html><head><title>Grupo Manuelita</title></head><body><main>"
+        "El Grupo Manuelita inauguró su ingenio en el Valle del Cauca y aumentó "
+        "la producción de azúcar y etanol.</main></body></html>",
+        category="digital_presence",
+        title="Grupo Manuelita",
+    )
+    add(
+        "generic",
+        "datos_gov",
+        "https://www.datos.gov.co/dataset/covid",
+        "<html><body><main>Portal Nacional de Datos Abiertos. "
+        "Casos de COVID-19.</main></body></html>",
+    )
+    add(
+        "incidental",
+        "datos_gov",
+        "https://www.datos.gov.co/dataset/contactos",
+        "<html><body><main>Registro de contactos: "
+        "notificaciones@manuelita.com</main></body></html>",
+    )
+    add(
+        "namesake",
+        "elpais",
+        "https://www.elpais.com.co/cultura/manuelita-la-tortuga",
+        "<html><body><main>Manuelita la tortuga es una canción infantil "
+        "tradicional.</main></body></html>",
+        category="digital_presence",
+    )
+    add(
+        "pdf",
+        "datos_gov",
+        "https://www.datos.gov.co/archivo/contrato.pdf",
+        b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<<>>\n%%EOF\n",
+        media_type="application/pdf",
+        category="hard_data",
+    )
+    relevance = load_relevance_config(PROJECT_ROOT / "config" / "relevance.toml")
+    service = CurationService(app, relevance, catalog=catalog, storage=storage)
+    try:
+        yield {
+            "app": app,
+            "catalog": catalog,
+            "storage": storage,
+            "service": service,
+            "ids": ids,
+            "campaign": "c001",
+        }
+    finally:
+        catalog.close()

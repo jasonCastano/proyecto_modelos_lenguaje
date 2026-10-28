@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 from .catalog import Catalog
 from .coverage import build_matrix, gaps, summarize
@@ -178,4 +179,118 @@ def coverage_rows_to_dicts(rows: tuple[CoverageRow, ...]) -> list[dict]:
             "gap_reason": row.gap_reason,
         }
         for row in rows
+    ]
+
+
+def write_curation_report(
+    catalog: Catalog,
+    run_id: str,
+    reports_dir: Path,
+    *,
+    settings: Any,
+) -> list[str]:
+    """Write the JSON and Markdown curation reports for a run."""
+    run = catalog.get_curation_run(run_id)
+    if run is None:
+        raise KeyError(f"curation run not found: {run_id}")
+    counts = catalog.curation_counts(run_id)
+    by_source = catalog.curation_by_source(run_id)
+    connection = catalog.connection
+    reviewed = connection.execute(
+        """
+        SELECT decision, COUNT(*) AS n FROM review_items
+        WHERE run_id = ? AND status = 'decided' GROUP BY decision
+        """,
+        (run_id,),
+    ).fetchall()
+    reviewed_counts = {row["decision"]: int(row["n"]) for row in reviewed}
+    pending = catalog.pending_review_count(run_id)
+
+    def _samples(decision: str) -> list[dict]:
+        rows = connection.execute(
+            """
+            SELECT a.artifact_id, a.url_canonical, e.score, e.explanation
+            FROM relevance_evaluations e JOIN artifacts a ON a.artifact_id = e.artifact_id
+            WHERE e.run_id = ? AND e.decision = ? ORDER BY e.score DESC LIMIT 10
+            """,
+            (run_id, decision),
+        ).fetchall()
+        return [
+            {
+                "artifact_id": row["artifact_id"],
+                "url_canonical": row["url_canonical"],
+                "score": row["score"],
+                "reason": row["explanation"],
+            }
+            for row in rows
+        ]
+
+    warnings: list[str] = []
+    if pending:
+        warnings.append(f"{pending} artefactos siguen pendientes de revisión.")
+    if int(run["bytes_quarantined"]) == 0 and int(run["bytes_freed"]) == 0:
+        warnings.append(
+            "Aún no se ha ejecutado la cuarentena ni la purga; no se ha liberado espacio."
+        )
+    if int(run["bytes_freed"]) > int(run["bytes_before"]):
+        warnings.append("Los bytes liberados superan el tamaño inicial; revisar la contabilidad.")
+
+    payload = {
+        "schema_version": "1.0",
+        "run_id": run_id,
+        "status": run["status"],
+        "generated_at": utcnow(),
+        "config_hash": run["config_hash"],
+        "thresholds": {
+            "keep": settings.keep_threshold,
+            "review": settings.review_threshold,
+        },
+        "counts": {
+            "evaluated": int(run["artifacts_evaluated"]) or sum(counts.values()),
+            "kept": counts.get("keep", 0),
+            "removed": counts.get("remove", 0),
+            "review": counts.get("review", 0),
+            "reviewed_kept": reviewed_counts.get("keep", 0),
+            "reviewed_removed": reviewed_counts.get("remove", 0),
+        },
+        "by_source": by_source,
+        "bytes": {
+            "before": int(run["bytes_before"]),
+            "quarantined": int(run["bytes_quarantined"]),
+            "freed": int(run["bytes_freed"]),
+        },
+        "samples": {"kept": _samples("keep"), "removed": _samples("remove")},
+        "warnings": warnings,
+    }
+    _write_json(reports_dir / "curation.json", payload)
+
+    lines = [
+        f"# Curaduría {run_id}",
+        "",
+        f"- Estado: {payload['status']}",
+        f"- Artefactos evaluados: {payload['counts']['evaluated']}",
+        f"- Conservados: {payload['counts']['kept']}",
+        f"- Eliminados: {payload['counts']['removed']}",
+        f"- En revisión: {payload['counts']['review']} ({pending} pendientes)",
+        f"- Bytes antes: {payload['bytes']['before']}",
+        f"- Bytes en cuarentena: {payload['bytes']['quarantined']}",
+        f"- Bytes liberados: {payload['bytes']['freed']}",
+        "",
+        "## Por fuente",
+        "",
+        "| Fuente | Total | Conservados | Eliminados | Revisión |",
+        "|--------|------:|------------:|-----------:|---------:|",
+    ]
+    for row in by_source:
+        lines.append(
+            f"| {row['source_id']} | {row['total']} | {row['kept']} | "
+            f"{row['removed']} | {row['review']} |"
+        )
+    if warnings:
+        lines.extend(["", "## Advertencias", ""])
+        lines.extend(f"- {warning}" for warning in warnings)
+    (reports_dir / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return [
+        str(reports_dir / "curation.json"),
+        str(reports_dir / "summary.md"),
     ]

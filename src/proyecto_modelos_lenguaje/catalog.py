@@ -178,6 +178,121 @@ CREATE TABLE IF NOT EXISTS policy_checks (
     reason TEXT NOT NULL,
     checked_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS curation_runs (
+    run_id TEXT PRIMARY KEY,
+    status TEXT NOT NULL CHECK (status IN
+        ('planned','analyzing','analyzed','approved','quarantining','quarantined',
+         'purging','purged','aborted')),
+    started_at TEXT NOT NULL,
+    finished_at TEXT,
+    config_hash TEXT NOT NULL,
+    git_commit TEXT,
+    tool_version TEXT NOT NULL,
+    scope_campaign TEXT,
+    artifacts_evaluated INTEGER NOT NULL DEFAULT 0 CHECK (artifacts_evaluated >= 0),
+    kept INTEGER NOT NULL DEFAULT 0 CHECK (kept >= 0),
+    removed INTEGER NOT NULL DEFAULT 0 CHECK (removed >= 0),
+    review INTEGER NOT NULL DEFAULT 0 CHECK (review >= 0),
+    bytes_before INTEGER NOT NULL DEFAULT 0 CHECK (bytes_before >= 0),
+    bytes_quarantined INTEGER NOT NULL DEFAULT 0 CHECK (bytes_quarantined >= 0),
+    bytes_freed INTEGER NOT NULL DEFAULT 0 CHECK (bytes_freed >= 0),
+    approved_by TEXT,
+    approved_at TEXT,
+    report_path TEXT,
+    notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS relevance_evaluations (
+    artifact_id INTEGER PRIMARY KEY REFERENCES artifacts(artifact_id),
+    run_id TEXT NOT NULL REFERENCES curation_runs(run_id),
+    decision TEXT NOT NULL CHECK (decision IN ('keep','remove','review')),
+    level TEXT NOT NULL CHECK (level IN ('direct','contextual','none')),
+    score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+    method TEXT NOT NULL CHECK (method IN ('rule_based','manual')),
+    explanation TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    config_hash TEXT NOT NULL,
+    manual_override INTEGER NOT NULL DEFAULT 0 CHECK (manual_override IN (0,1)),
+    reviewer TEXT,
+    reviewed_at TEXT,
+    evaluated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_evaluations_run ON relevance_evaluations(run_id, decision);
+
+CREATE TABLE IF NOT EXISTS relevance_evidence (
+    evidence_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artifact_id INTEGER NOT NULL REFERENCES artifacts(artifact_id),
+    term TEXT NOT NULL,
+    location TEXT NOT NULL CHECK (location IN ('title','body','url','metadata')),
+    snippet TEXT NOT NULL,
+    weight INTEGER NOT NULL CHECK (weight BETWEEN -100 AND 100),
+    created_at TEXT NOT NULL,
+    UNIQUE (artifact_id, term, location)
+);
+
+CREATE TABLE IF NOT EXISTS review_items (
+    artifact_id INTEGER PRIMARY KEY REFERENCES artifacts(artifact_id),
+    run_id TEXT NOT NULL REFERENCES curation_runs(run_id),
+    reason TEXT NOT NULL,
+    snippet TEXT NOT NULL,
+    score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+    status TEXT NOT NULL CHECK (status IN ('pending','decided')),
+    decision TEXT CHECK (decision IN ('keep','remove')),
+    reviewer TEXT,
+    decided_at TEXT,
+    note TEXT
+);
+
+CREATE TABLE IF NOT EXISTS curation_audit (
+    audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id TEXT NOT NULL REFERENCES curation_runs(run_id),
+    artifact_id INTEGER UNIQUE NOT NULL REFERENCES artifacts(artifact_id),
+    url_canonical TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    byte_size INTEGER NOT NULL CHECK (byte_size > 0),
+    media_type TEXT NOT NULL,
+    source_id TEXT NOT NULL REFERENCES sources(source_id),
+    decision TEXT NOT NULL CHECK (decision = 'remove'),
+    reason TEXT NOT NULL,
+    score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+    evidence_json TEXT NOT NULL,
+    decided_at TEXT NOT NULL,
+    quarantined_at TEXT,
+    purged_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS quarantine_entries (
+    quarantine_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artifact_id INTEGER UNIQUE NOT NULL REFERENCES artifacts(artifact_id),
+    run_id TEXT NOT NULL REFERENCES curation_runs(run_id),
+    original_path TEXT NOT NULL,
+    quarantine_path TEXT NOT NULL,
+    byte_size INTEGER NOT NULL CHECK (byte_size > 0),
+    moved_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('quarantined','restored','purged')),
+    restored_at TEXT,
+    purged_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS ix_quarantine_run ON quarantine_entries(run_id, status);
+
+CREATE VIEW IF NOT EXISTS v_active_artifacts AS
+SELECT a.*
+FROM artifacts a
+LEFT JOIN relevance_evaluations e ON e.artifact_id = a.artifact_id
+LEFT JOIN curation_runs r ON r.run_id = e.run_id
+LEFT JOIN quarantine_entries q
+       ON q.artifact_id = a.artifact_id AND q.status = 'quarantined'
+WHERE a.retracted_at IS NULL
+  AND q.quarantine_id IS NULL
+  AND (
+        e.artifact_id IS NULL
+        OR e.decision = 'keep'
+        OR r.status NOT IN ('approved','quarantining','quarantined','purging','purged')
+      );
 """
 
 
@@ -589,18 +704,21 @@ class Catalog:
         language: str | None = None,
         coverage_item_id: str | None = None,
         include_retracted: bool = False,
+        active_only: bool = False,
         limit: int = 100,
         offset: int = 0,
     ) -> tuple[tuple[Artifact, ...], int]:
         clauses: list[str] = []
         params: list[Any] = []
-        join = ""
+        joins: list[str] = []
         if campaign_id:
-            join = (
+            joins.append(
                 "JOIN campaign_artifacts ca ON ca.artifact_id = a.artifact_id "
                 "AND ca.campaign_id = ?"
             )
             params.append(campaign_id)
+        if active_only:
+            joins.append("JOIN v_active_artifacts va ON va.artifact_id = a.artifact_id")
         if category:
             clauses.append("a.category = ?")
             params.append(category)
@@ -618,6 +736,7 @@ class Catalog:
             params.append(coverage_item_id)
         if not include_retracted:
             clauses.append("a.retracted_at IS NULL")
+        join = " ".join(joins)
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
         total = self._conn.execute(
             f"SELECT COUNT(DISTINCT a.artifact_id) AS n FROM artifacts a {join} {where}",
@@ -717,17 +836,23 @@ class Catalog:
         )
         self._conn.commit()
 
-    def coverage_matrix(self, campaign_id: str) -> tuple[CoverageRow, ...]:
+    def coverage_matrix(
+        self, campaign_id: str, *, active_only: bool = False
+    ) -> tuple[CoverageRow, ...]:
         items = self.coverage_items()
         rows: list[CoverageRow] = []
+        active_join = (
+            "JOIN v_active_artifacts va ON va.artifact_id = e.artifact_id" if active_only else ""
+        )
         for item in items:
             evidence = self._conn.execute(
-                """
+                f"""
                 SELECT e.artifact_id, e.confidence
                 FROM coverage_evidence e
                 JOIN artifacts a ON a.artifact_id = e.artifact_id
                 JOIN campaign_artifacts ca
                     ON ca.artifact_id = e.artifact_id AND ca.campaign_id = ?
+                {active_join}
                 WHERE e.item_id = ? AND a.retracted_at IS NULL
                 ORDER BY e.artifact_id
                 """,
@@ -852,15 +977,473 @@ class Catalog:
         ).fetchall()
         return tuple(dict(row) for row in rows)
 
-    def export_jsonl(self, campaign_id: str, destination: Path) -> int:
+    def export_jsonl(
+        self, campaign_id: str, destination: Path, *, active_only: bool = False
+    ) -> int:
         artifacts, _ = self.list_artifacts(
-            campaign_id=campaign_id, include_retracted=True, limit=1_000_000
+            campaign_id=campaign_id,
+            include_retracted=True,
+            active_only=active_only,
+            limit=1_000_000,
         )
         destination.parent.mkdir(parents=True, exist_ok=True)
         with destination.open("w", encoding="utf-8", newline="\n") as handle:
             for artifact in artifacts:
                 handle.write(json.dumps(_artifact_payload(artifact), ensure_ascii=False) + "\n")
         return len(artifacts)
+
+    # ------------------------------------------------------------------ curation
+
+    def create_curation_run(
+        self,
+        *,
+        run_id: str,
+        config_hash: str,
+        tool_version: str,
+        scope_campaign: str | None = None,
+        bytes_before: int = 0,
+        git_commit: str | None = None,
+    ) -> None:
+        self._conn.execute(
+            """
+            INSERT INTO curation_runs
+                (run_id, status, started_at, config_hash, git_commit, tool_version,
+                 scope_campaign, bytes_before)
+            VALUES (?, 'planned', ?, ?, ?, ?, ?, ?)
+            """,
+            (run_id, utcnow(), config_hash, git_commit, tool_version, scope_campaign, bytes_before),
+        )
+        self._conn.commit()
+
+    def get_curation_run(self, run_id: str) -> dict[str, Any] | None:
+        row = self._conn.execute(
+            "SELECT * FROM curation_runs WHERE run_id = ?", (run_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def update_curation_run(self, run_id: str, **fields: Any) -> None:
+        allowed = {
+            "status",
+            "finished_at",
+            "artifacts_evaluated",
+            "kept",
+            "removed",
+            "review",
+            "bytes_before",
+            "bytes_quarantined",
+            "bytes_freed",
+            "approved_by",
+            "approved_at",
+            "report_path",
+            "notes",
+        }
+        updates = {key: value for key, value in fields.items() if key in allowed}
+        if not updates:
+            return
+        assignments = ", ".join(f"{key} = ?" for key in updates)
+        self._conn.execute(
+            f"UPDATE curation_runs SET {assignments} WHERE run_id = ?",
+            [*updates.values(), run_id],
+        )
+        self._conn.commit()
+
+    def approve_curation_run(self, run_id: str, reviewer: str) -> None:
+        self._conn.execute(
+            "UPDATE curation_runs SET status = 'approved', approved_by = ?, approved_at = ? "
+            "WHERE run_id = ?",
+            (reviewer, utcnow(), run_id),
+        )
+        self._conn.commit()
+
+    def pending_review_count(self, run_id: str) -> int:
+        row = self._conn.execute(
+            "SELECT COUNT(*) AS n FROM review_items WHERE run_id = ? AND status = 'pending'",
+            (run_id,),
+        ).fetchone()
+        return int(row["n"])
+
+    def upsert_evaluation(
+        self,
+        *,
+        artifact_id: int,
+        run_id: str,
+        decision: str,
+        level: str,
+        score: int,
+        explanation: str,
+        content_hash: str,
+        config_hash: str,
+        method: str = "rule_based",
+    ) -> bool:
+        existing = self._conn.execute(
+            "SELECT manual_override FROM relevance_evaluations WHERE artifact_id = ?",
+            (artifact_id,),
+        ).fetchone()
+        if existing and existing["manual_override"]:
+            return False
+        self._conn.execute(
+            """
+            INSERT INTO relevance_evaluations
+                (artifact_id, run_id, decision, level, score, method, explanation,
+                 content_hash, config_hash, manual_override, evaluated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+            ON CONFLICT(artifact_id) DO UPDATE SET
+                run_id = excluded.run_id,
+                decision = excluded.decision,
+                level = excluded.level,
+                score = excluded.score,
+                method = excluded.method,
+                explanation = excluded.explanation,
+                content_hash = excluded.content_hash,
+                config_hash = excluded.config_hash,
+                evaluated_at = excluded.evaluated_at
+            """,
+            (
+                artifact_id,
+                run_id,
+                decision,
+                level,
+                score,
+                method,
+                explanation,
+                content_hash,
+                config_hash,
+                utcnow(),
+            ),
+        )
+        self._conn.commit()
+        return True
+
+    def replace_evidence(self, artifact_id: int, evidence: list[dict[str, Any]]) -> None:
+        self._conn.execute("DELETE FROM relevance_evidence WHERE artifact_id = ?", (artifact_id,))
+        if evidence:
+            self._conn.executemany(
+                """
+                INSERT OR IGNORE INTO relevance_evidence
+                    (artifact_id, term, location, snippet, weight, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                [
+                    (
+                        artifact_id,
+                        str(item["term"])[:200],
+                        str(item["location"]),
+                        str(item["snippet"])[:500],
+                        int(item["weight"]),
+                        utcnow(),
+                    )
+                    for item in evidence
+                ],
+            )
+        self._conn.commit()
+
+    def sync_review_item(
+        self,
+        *,
+        artifact_id: int,
+        run_id: str,
+        decision: str,
+        reason: str,
+        snippet: str,
+        score: int,
+    ) -> None:
+        if decision == "review":
+            self._conn.execute(
+                """
+                INSERT INTO review_items
+                    (artifact_id, run_id, reason, snippet, score, status)
+                VALUES (?, ?, ?, ?, ?, 'pending')
+                ON CONFLICT(artifact_id) DO UPDATE SET
+                    run_id = excluded.run_id,
+                    reason = excluded.reason,
+                    snippet = excluded.snippet,
+                    score = excluded.score
+                WHERE review_items.status = 'pending'
+                """,
+                (artifact_id, run_id, reason[:500], snippet[:500], score),
+            )
+        else:
+            self._conn.execute(
+                "DELETE FROM review_items WHERE artifact_id = ? AND status = 'pending'",
+                (artifact_id,),
+            )
+        self._conn.commit()
+
+    def list_review_items(
+        self,
+        run_id: str,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        status: str = "pending",
+    ) -> tuple[list[dict[str, Any]], int]:
+        total = self._conn.execute(
+            "SELECT COUNT(*) AS n FROM review_items WHERE run_id = ? AND status = ?",
+            (run_id, status),
+        ).fetchone()["n"]
+        rows = self._conn.execute(
+            """
+            SELECT r.*, a.url_canonical, a.title, a.source_id
+            FROM review_items r JOIN artifacts a ON a.artifact_id = r.artifact_id
+            WHERE r.run_id = ? AND r.status = ?
+            ORDER BY r.artifact_id LIMIT ? OFFSET ?
+            """,
+            (run_id, status, limit, offset),
+        ).fetchall()
+        return [dict(row) for row in rows], int(total)
+
+    def decide_review(
+        self,
+        *,
+        artifact_id: int,
+        decision: str,
+        reviewer: str,
+        note: str | None,
+    ) -> bool:
+        row = self._conn.execute(
+            "SELECT run_id FROM review_items WHERE artifact_id = ?", (artifact_id,)
+        ).fetchone()
+        if row is None:
+            return False
+        self._conn.execute(
+            """
+            UPDATE review_items SET status = 'decided', decision = ?, reviewer = ?,
+                   decided_at = ?, note = ?
+            WHERE artifact_id = ?
+            """,
+            (decision, reviewer, utcnow(), note, artifact_id),
+        )
+        self._conn.execute(
+            """
+            UPDATE relevance_evaluations
+            SET decision = ?, method = 'manual', manual_override = 1, reviewer = ?,
+                reviewed_at = ?, explanation = ?
+            WHERE artifact_id = ?
+            """,
+            (
+                decision,
+                reviewer,
+                utcnow(),
+                note or f"Revisión manual: {decision}",
+                artifact_id,
+            ),
+        )
+        self._conn.commit()
+        return True
+
+    def curation_counts(self, run_id: str) -> dict[str, int]:
+        rows = self._conn.execute(
+            "SELECT decision, COUNT(*) AS n FROM relevance_evaluations "
+            "WHERE run_id = ? GROUP BY decision",
+            (run_id,),
+        ).fetchall()
+        return {row["decision"]: int(row["n"]) for row in rows}
+
+    def get_evaluation(self, artifact_id: int) -> dict[str, Any] | None:
+        row = self._conn.execute(
+            "SELECT * FROM relevance_evaluations WHERE artifact_id = ?", (artifact_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def evidence_for(self, artifact_id: int) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT term, location, snippet, weight FROM relevance_evidence "
+            "WHERE artifact_id = ? ORDER BY evidence_id",
+            (artifact_id,),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def set_manual_decision(
+        self,
+        *,
+        artifact_id: int,
+        decision: str,
+        reviewer: str,
+        note: str | None = None,
+    ) -> None:
+        self._conn.execute(
+            """
+            UPDATE relevance_evaluations
+            SET decision = ?, method = 'manual', manual_override = 1, reviewer = ?,
+                reviewed_at = ?, explanation = ?
+            WHERE artifact_id = ?
+            """,
+            (
+                decision,
+                reviewer,
+                utcnow(),
+                note or f"Decisión manual: {decision}",
+                artifact_id,
+            ),
+        )
+        self._conn.commit()
+
+    def curation_by_source(self, run_id: str) -> list[dict[str, Any]]:
+        rows = self._conn.execute(
+            """
+            SELECT a.source_id, e.decision, COUNT(*) AS n
+            FROM relevance_evaluations e JOIN artifacts a ON a.artifact_id = e.artifact_id
+            WHERE e.run_id = ? GROUP BY a.source_id, e.decision
+            """,
+            (run_id,),
+        ).fetchall()
+        aggregate: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            entry = aggregate.setdefault(
+                row["source_id"],
+                {"source_id": row["source_id"], "total": 0, "kept": 0, "removed": 0, "review": 0},
+            )
+            count = int(row["n"])
+            entry["total"] += count
+            key = {"keep": "kept", "remove": "removed", "review": "review"}[row["decision"]]
+            entry[key] += count
+        return sorted(aggregate.values(), key=lambda item: item["source_id"])
+
+    def evaluations(
+        self, run_id: str, *, decision: str | None = None, limit: int = 1_000_000
+    ) -> tuple[list[dict[str, Any]], int]:
+        query = "SELECT * FROM relevance_evaluations WHERE run_id = ?"
+        params: list[Any] = [run_id]
+        if decision:
+            query += " AND decision = ?"
+            params.append(decision)
+        total = self._conn.execute(f"SELECT COUNT(*) AS n FROM ({query})", params).fetchone()["n"]
+        query += " ORDER BY artifact_id LIMIT ?"
+        params.append(limit)
+        rows = self._conn.execute(query, params).fetchall()
+        return [dict(row) for row in rows], int(total)
+
+    def add_audit_record(
+        self,
+        *,
+        run_id: str,
+        artifact_id: int,
+        url_canonical: str,
+        content_hash: str,
+        byte_size: int,
+        media_type: str,
+        source_id: str,
+        reason: str,
+        score: int,
+        evidence_json: str,
+    ) -> None:
+        self._conn.execute(
+            """
+            INSERT OR IGNORE INTO curation_audit
+                (run_id, artifact_id, url_canonical, content_hash, byte_size, media_type,
+                 source_id, decision, reason, score, evidence_json, decided_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'remove', ?, ?, ?, ?)
+            """,
+            (
+                run_id,
+                artifact_id,
+                url_canonical,
+                content_hash,
+                byte_size,
+                media_type,
+                source_id,
+                reason,
+                score,
+                evidence_json,
+                utcnow(),
+            ),
+        )
+        self._conn.commit()
+
+    def get_audit_record(self, artifact_id: int) -> dict[str, Any] | None:
+        row = self._conn.execute(
+            "SELECT * FROM curation_audit WHERE artifact_id = ?", (artifact_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def mark_audit_quarantined(self, artifact_id: int) -> None:
+        self._conn.execute(
+            "UPDATE curation_audit SET quarantined_at = ? WHERE artifact_id = ?",
+            (utcnow(), artifact_id),
+        )
+        self._conn.commit()
+
+    def mark_audit_purged(self, artifact_id: int) -> None:
+        self._conn.execute(
+            "UPDATE curation_audit SET purged_at = ? WHERE artifact_id = ?",
+            (utcnow(), artifact_id),
+        )
+        self._conn.commit()
+
+    def add_quarantine_entry(
+        self,
+        *,
+        artifact_id: int,
+        run_id: str,
+        original_path: str,
+        quarantine_path: str,
+        byte_size: int,
+        expires_at: str,
+    ) -> None:
+        self._conn.execute(
+            """
+            INSERT OR IGNORE INTO quarantine_entries
+                (artifact_id, run_id, original_path, quarantine_path, byte_size,
+                 moved_at, expires_at, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'quarantined')
+            """,
+            (
+                artifact_id,
+                run_id,
+                original_path,
+                quarantine_path,
+                byte_size,
+                utcnow(),
+                expires_at,
+            ),
+        )
+        self._conn.commit()
+
+    def get_quarantine_entry(self, artifact_id: int) -> dict[str, Any] | None:
+        row = self._conn.execute(
+            "SELECT * FROM quarantine_entries WHERE artifact_id = ?", (artifact_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    def update_quarantine_entry(self, artifact_id: int, **fields: Any) -> None:
+        allowed = {"status", "restored_at", "purged_at"}
+        updates = {key: value for key, value in fields.items() if key in allowed}
+        if not updates:
+            return
+        assignments = ", ".join(f"{key} = ?" for key in updates)
+        self._conn.execute(
+            f"UPDATE quarantine_entries SET {assignments} WHERE artifact_id = ?",
+            [*updates.values(), artifact_id],
+        )
+        self._conn.commit()
+
+    def list_quarantine_entries(
+        self, run_id: str, *, status: str | None = None
+    ) -> list[dict[str, Any]]:
+        query = "SELECT * FROM quarantine_entries WHERE run_id = ?"
+        params: list[Any] = [run_id]
+        if status:
+            query += " AND status = ?"
+            params.append(status)
+        query += " ORDER BY artifact_id"
+        return [dict(row) for row in self._conn.execute(query, params).fetchall()]
+
+    def refresh_manifests(
+        self,
+        *,
+        active_only: bool = True,
+    ) -> list[Path]:
+        """Regenerate manifests for every campaign using the current corpus state."""
+        rows = self._conn.execute(
+            "SELECT campaign_id FROM campaigns ORDER BY campaign_id"
+        ).fetchall()
+        written: list[Path] = []
+        for row in rows:
+            campaign_id = row["campaign_id"]
+            destination = self.path.parent.parent / "manifests" / f"{campaign_id}.jsonl"
+            self.export_jsonl(campaign_id, destination, active_only=active_only)
+            written.append(destination)
+        return written
 
 
 def _artifact_payload(artifact: Artifact) -> dict[str, Any]:

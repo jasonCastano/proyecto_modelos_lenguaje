@@ -26,7 +26,7 @@ Resultado esperado: entorno reproducible, lint limpio y pruebas offline en verde
 ## Scenario 1 — Análisis en seco (sin escrituras)
 
 ```bash
-uv run pml curate analyze --config config/relevance.toml --json
+uv run pml curate analyze --relevance-config config/relevance.toml --json
 ```
 
 Esperado:
@@ -41,7 +41,7 @@ Señal de fallo: cualquier escritura o un `kept` muy superior a 500.
 ## Scenario 2 — Aplicar el análisis
 
 ```bash
-uv run pml curate analyze --config config/relevance.toml \
+uv run pml curate analyze --relevance-config config/relevance.toml \
   --run 2026-10-curation-01 --apply --json
 ```
 

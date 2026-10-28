@@ -23,6 +23,18 @@ class StorageLimitExceeded(StorageError):
     """Raised when storing a new artifact would exceed the configured ceiling."""
 
 
+class IntegrityError(StorageError):
+    """Raised when a file hash does not match the catalog."""
+
+
+@dataclass(frozen=True, slots=True)
+class QuarantineMove:
+    artifact_id: int
+    original_path: str
+    quarantine_path: str
+    byte_size: int
+
+
 @dataclass(frozen=True, slots=True)
 class StoredArtifact:
     content_hash: str
@@ -135,3 +147,80 @@ class BronzeStorage:
     def refresh_usage(self) -> int:
         self._used = self._scan()
         return self._used
+
+    # -------------------------------------------------------------- quarantine
+
+    @property
+    def quarantine_root(self) -> Path:
+        return self.root.parent / "quarantine"
+
+    def quarantine(
+        self,
+        *,
+        artifact_id: int,
+        storage_path: str,
+        expected_hash: str,
+        run_id: str,
+    ) -> QuarantineMove:
+        source = self.resolve(storage_path)
+        actual = sha256_bytes(source.read_bytes())
+        if actual != expected_hash:
+            raise IntegrityError(
+                f"hash mismatch for {storage_path}: expected {expected_hash}, got {actual}"
+            )
+        size = source.stat().st_size
+        destination = self.quarantine_root / run_id / str(artifact_id) / source.name
+        relative = destination.relative_to(self.quarantine_root).as_posix()
+        if destination.exists():
+            if sha256_bytes(destination.read_bytes()) != expected_hash:
+                raise IntegrityError(f"quarantine conflict for artifact {artifact_id}")
+            return QuarantineMove(artifact_id, storage_path, relative, size)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(source, destination)
+        self._used = max(0, self._used - size)
+        return QuarantineMove(
+            artifact_id=artifact_id,
+            original_path=storage_path,
+            quarantine_path=relative,
+            byte_size=size,
+        )
+
+    def restore(self, *, original_path: str, quarantine_path: str, expected_hash: str) -> None:
+        source = (self.quarantine_root / quarantine_path).resolve()
+        try:
+            source.relative_to(self.quarantine_root.resolve())
+        except ValueError as exc:
+            raise StorageError(
+                f"quarantine path escapes the quarantine root: {quarantine_path}"
+            ) from exc
+        if not source.is_file():
+            raise StorageError(f"quarantined file not found: {quarantine_path}")
+        if sha256_bytes(source.read_bytes()) != expected_hash:
+            raise IntegrityError(f"hash mismatch while restoring {quarantine_path}")
+        destination = (self.root / original_path).resolve()
+        try:
+            destination.relative_to(self.root)
+        except ValueError as exc:
+            raise StorageError(
+                f"restore path escapes the bronze directory: {original_path}"
+            ) from exc
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        os.replace(source, destination)
+
+    def purge(self, *, quarantine_path: str) -> int:
+        source = (self.quarantine_root / quarantine_path).resolve()
+        try:
+            source.relative_to(self.quarantine_root.resolve())
+        except ValueError as exc:
+            raise StorageError(
+                f"quarantine path escapes the quarantine root: {quarantine_path}"
+            ) from exc
+        if not source.is_file():
+            return 0
+        size = source.stat().st_size
+        source.unlink()
+        parent = source.parent
+        while parent != self.quarantine_root and parent.is_dir() and not any(parent.iterdir()):
+            parent.rmdir()
+            parent = parent.parent
+        return size

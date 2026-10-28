@@ -59,8 +59,10 @@ def infer_evidence(
     return tuple(evidence)
 
 
-def build_matrix(catalog: Catalog, campaign_id: str) -> tuple[CoverageRow, ...]:
-    return catalog.coverage_matrix(campaign_id)
+def build_matrix(
+    catalog: Catalog, campaign_id: str, *, active_only: bool = False
+) -> tuple[CoverageRow, ...]:
+    return catalog.coverage_matrix(campaign_id, active_only=active_only)
 
 
 def summarize(rows: Iterable[CoverageRow]) -> dict[str, int]:

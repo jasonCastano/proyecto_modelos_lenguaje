@@ -106,7 +106,13 @@ def git_state(*, no_fetch: bool) -> dict[str, Any]:
     state["committed_at"] = git("log", "-1", "--format=%cI")[1]
     state["remote_url"] = git("remote", "get-url", "origin")[1] or "(sin remoto)"
     status_code, status_out, _ = git("status", "--porcelain")
-    state["dirty_lines"] = status_out.splitlines() if status_code == 0 and status_out else []
+    raw_status = status_out.splitlines() if status_code == 0 and status_out else []
+
+    def _is_log_path(line: str) -> bool:
+        path = line[3:].strip() if len(line) > 3 else ""
+        return path == "bitacora/" or path.startswith("bitacora/")
+
+    state["dirty_lines"] = [line for line in raw_status if not _is_log_path(line)]
     state["dirty"] = bool(state["dirty_lines"])
     state["recent_commits"] = (git("log", "--oneline", "-12")[1] or "").splitlines()
     state["tags"] = [
@@ -754,6 +760,9 @@ def build_report(
         "",
         f"**Fecha**: {now.strftime('%Y-%m-%d %H:%M %Z')}",
         f"**Archivo**: `{output.relative_to(ROOT).as_posix()}`",
+        f"**Commit local**: `{git_info['head']}`",
+        f"**Commit remoto**: `{git_info['origin_main'] or 'sin referencia'}` · "
+        f"**Rama**: `{git_info['branch']}`",
         "**Generada por**: skill `bitacora`",
         "",
         "## 1. Resumen ejecutivo",

@@ -109,7 +109,8 @@ def git_state(*, no_fetch: bool) -> dict[str, Any]:
     raw_status = status_out.splitlines() if status_code == 0 and status_out else []
 
     def _is_log_path(line: str) -> bool:
-        path = line[3:].strip() if len(line) > 3 else ""
+        parts = line.strip().split(maxsplit=1)
+        path = parts[1] if len(parts) > 1 else ""
         return path == "bitacora/" or path.startswith("bitacora/")
 
     state["dirty_lines"] = [line for line in raw_status if not _is_log_path(line)]

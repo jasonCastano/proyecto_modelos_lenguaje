@@ -1,16 +1,23 @@
 [project]
 name = "proyecto-modelos-lenguaje"
 version = "0.1.0"
-description = "Capa bronce de recolección web para el RAG de Ingenio Manuelita"
+description = "Sistema Q&A y RAG sobre información pública de Ingenio Manuelita"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-    { name = "Jason Alejandro Castaño", email = "jasonale3007@gmail.com" }
+    { name = "Jason Alejandro Castaño", email = "jasonale3007@gmail.com" },
+    { name = "Roberto José Guerrero" },
 ]
 requires-python = ">=3.14"
 dependencies = [
     "scrapling[fetchers]>=0.5",
     "yt-dlp>=2026.10.26",
 ]
+
+[project.urls]
+Repository = "https://github.com/jasonCastano/proyecto_modelos_lenguaje"
+Issues = "https://github.com/jasonCastano/proyecto_modelos_lenguaje/issues"
 
 [project.scripts]
 pml = "proyecto_modelos_lenguaje.cli:main"

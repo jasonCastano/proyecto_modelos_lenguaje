@@ -189,7 +189,10 @@ def cmd_verify(args: argparse.Namespace) -> int:
     failures: list[dict[str, str]] = []
     try:
         artifacts, total = catalog.list_artifacts(
-            campaign_id=args.campaign, include_retracted=True, limit=1_000_000
+            campaign_id=args.campaign,
+            include_retracted=True,
+            active_only=True,
+            limit=1_000_000,
         )
         sample_size = min(args.sample, total)
         sampled = random.Random(args.seed).sample(list(artifacts), sample_size)

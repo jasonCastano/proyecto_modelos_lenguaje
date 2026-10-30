@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jasonCastano/proyecto_modelos_lenguaje/specs/005-scrape-empresa-entrypoint/contracts/error.schema.json",
+  "title": "Canonical scrape error",
+  "description": "Error output of scripts/scrape_empresa.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "error", "exit_code"],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "status": {
+      "const": "error"
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "missing_config",
+            "invalid_config",
+            "invalid_campaign",
+            "invalid_limit",
+            "missing_campaign_for_resume",
+            "campaign_running",
+            "campaign_aborted",
+            "pipeline_failure"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "exit_code": {
+      "type": "integer",
+      "enum": [1, 2]
+    }
+  }
+}

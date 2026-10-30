@@ -119,3 +119,19 @@ def test_status_queries_are_persisted(app_config) -> None:
         assert reopened.target_counts("c001")["excluded"] >= 1
     finally:
         reopened.close()
+
+
+def test_campaign_service_uses_shared_orchestration(app_config) -> None:
+    from proyecto_modelos_lenguaje.campaign_service import start_campaign
+
+    run = start_campaign(
+        app_config,
+        campaign_id="service1",
+        max_targets=3,
+        coverage_path=app_config.path.parent / "coverage-items.toml",
+        allow_private=True,
+    )
+    assert run.summary.status in {"completed", "paused"}
+    assert run.summary.artifacts_stored >= 1
+    assert run.duration_seconds >= 0
+    assert run.policy

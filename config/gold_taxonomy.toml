@@ -1,0 +1,359 @@
+[[topics]]
+id = "identidad"
+title = "Identidad y gobierno"
+description = "Misión, visión, valores, historia, fundadores y equipo directivo."
+coverage_item_ids = ["I-01", "I-02", "I-03", "I-04", "I-05"]
+keywords = [
+  "mision",
+  "vision",
+  "valores",
+  "proposito",
+  "fundacion",
+  "fundador",
+  "fundada",
+  "historia",
+  "junta",
+  "gerente",
+  "presidente",
+  "directivo",
+  "gobierno corporativo",
+  "agroindustrial",
+]
+
+[[topics]]
+id = "sedes"
+title = "Sedes y ubicaciones"
+description = "Plantas, oficinas, países y zonas donde opera Manuelita."
+coverage_item_ids = ["I-06"]
+keywords = [
+  "sede",
+  "planta",
+  "ubicacion",
+  "ubicada",
+  "oficina",
+  "valle del cauca",
+  "meta",
+  "casanare",
+  "peru",
+  "chile",
+  "colombia",
+  "trujillo",
+  "cartagena",
+  "puerto montt",
+]
+
+[[topics]]
+id = "productos"
+title = "Productos y servicios"
+description = "Azúcar, etanol, biocombustibles, miel, productos orgánicos y fichas técnicas."
+coverage_item_ids = ["O-01", "O-02"]
+keywords = [
+  "azucar",
+  "etanol",
+  "bioetanol",
+  "biocombustible",
+  "melaza",
+  "miel",
+  "organico",
+  "organica",
+  "producto",
+  "ficha tecnica",
+  "especificacion",
+  "palma",
+  "biodiesel",
+  "energia",
+]
+
+[[topics]]
+id = "precios"
+title = "Precios y tarifas"
+description = "Precios públicos, tarifas y condiciones comerciales."
+coverage_item_ids = ["O-03", "H-04"]
+keywords = [
+  "precio",
+  "tarifa",
+  "costo",
+  "cotizacion",
+  "venta",
+  "valor por",
+  "pesos",
+  "dolares",
+]
+
+[[topics]]
+id = "catalogos"
+title = "Catálogos y portafolio"
+description = "Catálogos, brochures y documentos de portafolio."
+coverage_item_ids = ["O-04"]
+keywords = [
+  "catalogo",
+  "brochure",
+  "portafolio",
+  "folleto",
+  "descargar",
+]
+
+[[topics]]
+id = "clientes"
+title = "Clientes y casos de éxito"
+description = "Clientes, aliados, exportaciones y casos de éxito."
+coverage_item_ids = ["O-05"]
+keywords = [
+  "cliente",
+  "caso de exito",
+  "aliado",
+  "exportacion",
+  "exporta",
+  "comprador",
+  "distribuidor",
+]
+
+[[topics]]
+id = "certificaciones"
+title = "Certificaciones"
+description = "Certificaciones, normas y sellos de calidad."
+coverage_item_ids = ["O-06"]
+keywords = [
+  "certificacion",
+  "certificado",
+  "iso",
+  "basc",
+  "invima",
+  "rspo",
+  "calidad",
+  "sello",
+]
+
+[[topics]]
+id = "noticias"
+title = "Noticias y comunicados"
+description = "Noticias, sala de prensa, comunicados y blog."
+coverage_item_ids = ["D-01", "D-02"]
+keywords = [
+  "noticia",
+  "comunicado",
+  "prensa",
+  "blog",
+  "articulo",
+  "boletin",
+  "sala de prensa",
+]
+
+[[topics]]
+id = "youtube"
+title = "Videos y entrevistas"
+description = "Videos, manifiestos, entrevistas y transcripciones."
+coverage_item_ids = ["D-03", "D-04"]
+keywords = [
+  "video",
+  "youtube",
+  "entrevista",
+  "manifiesto",
+  "transcripcion",
+  "testimonio",
+]
+
+[[topics]]
+id = "redes"
+title = "Redes sociales"
+description = "Publicaciones y presencia en redes sociales."
+coverage_item_ids = ["D-05"]
+keywords = [
+  "instagram",
+  "facebook",
+  "linkedin",
+  "red social",
+  "publicacion",
+  "seguidores",
+]
+
+[[topics]]
+id = "empleo"
+title = "Empleo y talento"
+description = "Vacantes, convocatorias y propuesta de valor al colaborador."
+coverage_item_ids = ["D-06"]
+keywords = [
+  "vacante",
+  "empleo",
+  "talento",
+  "convocatoria",
+  "trabaja con nosotros",
+  "seleccion",
+  "cargo",
+]
+
+[[topics]]
+id = "finanzas"
+title = "Información financiera y registros"
+description = "Informes, estados financieros, NIT, SECOP y datos abiertos."
+coverage_item_ids = ["H-01", "H-02", "H-05"]
+keywords = [
+  "informe",
+  "financiero",
+  "estados financieros",
+  "nit",
+  "secop",
+  "supersociedades",
+  "datos abiertos",
+  "contrato",
+  "ingresos",
+  "utilidad",
+]
+
+[[topics]]
+id = "sostenibilidad"
+title = "Sostenibilidad"
+description = "Indicadores ambientales, sociales y de gobierno."
+coverage_item_ids = ["H-03"]
+keywords = [
+  "sostenibilidad",
+  "sostenible",
+  "indicador",
+  "huella",
+  "agua",
+  "energia",
+  "emisiones",
+  "residuos",
+  "comunidad",
+  "ambiente",
+]
+
+[[topics]]
+id = "rankings"
+title = "Rankings y reconocimientos"
+description = "Rankings, premios y reconocimientos sectoriales."
+coverage_item_ids = ["H-06"]
+keywords = [
+  "ranking",
+  "reconocimiento",
+  "premio",
+  "reputacion",
+  "merco",
+  "galardon",
+]
+
+[[topics]]
+id = "fundacion"
+title = "Fundación Manuelita"
+description = "Programas sociales y educativos de la Fundación Manuelita."
+coverage_item_ids = ["D-01", "H-03"]
+keywords = [
+  "fundacion manuelita",
+  "educar uno a uno",
+  "fundacion",
+  "programa social",
+  "beca",
+  "escuela",
+]
+
+[[topics]]
+id = "general"
+title = "Información general"
+description = "Contenido de Manuelita que no se pudo clasificar en otro tema."
+coverage_item_ids = []
+keywords = []
+
+[[entities]]
+id = "manuelita"
+canonical_name = "Manuelita"
+entity_type = "company"
+aliases = ["Ingenio Manuelita", "Manuelita S.A.", "Manuelita Agroindustria", "Grupo Manuelita"]
+coverage_item_ids = ["I-01", "I-02", "I-03", "I-06"]
+
+[[entities]]
+id = "manuelita_azucar_energia"
+canonical_name = "Manuelita Azúcar y Energía"
+entity_type = "subsidiary"
+aliases = ["Manuelita Azucar y Energia", "Aceites Manuelita"]
+coverage_item_ids = ["O-01", "I-06"]
+
+[[entities]]
+id = "laredo"
+canonical_name = "Agroindustrial Laredo"
+entity_type = "subsidiary"
+aliases = ["Laredo"]
+coverage_item_ids = ["I-06", "O-01"]
+
+[[entities]]
+id = "aceites_energia"
+canonical_name = "Manuelita Aceites y Energía"
+entity_type = "subsidiary"
+aliases = ["Manuelita Aceites y Energia"]
+coverage_item_ids = ["O-01", "I-06"]
+
+[[entities]]
+id = "palmar_altamira"
+canonical_name = "Palmar de Altamira"
+entity_type = "subsidiary"
+aliases = ["Palmar de Altamira S.A.S."]
+coverage_item_ids = ["I-06", "O-01"]
+
+[[entities]]
+id = "mejillones_america"
+canonical_name = "Mejillones América"
+entity_type = "subsidiary"
+aliases = ["Mejillones America"]
+coverage_item_ids = ["I-06"]
+
+[[entities]]
+id = "oceanos"
+canonical_name = "Océanos"
+entity_type = "subsidiary"
+aliases = ["Oceanos"]
+coverage_item_ids = ["I-06"]
+
+[[entities]]
+id = "fundacion_manuelita"
+canonical_name = "Fundación Manuelita"
+entity_type = "other"
+aliases = ["Fundacion Manuelita"]
+coverage_item_ids = ["D-01", "H-03"]
+
+[[entities]]
+id = "lorena_coffee"
+canonical_name = "La Lorena Coffee"
+entity_type = "brand"
+aliases = ["La Lorena", "Lorena Coffee"]
+coverage_item_ids = ["O-01"]
+
+[[entities]]
+id = "manuelita_dorada"
+canonical_name = "Manuelita Dorada"
+entity_type = "brand"
+aliases = ["Dorada"]
+coverage_item_ids = ["O-01"]
+
+[[entities]]
+id = "biorganik"
+canonical_name = "Biorganik"
+entity_type = "brand"
+aliases = ["Bioorganik"]
+coverage_item_ids = ["O-01"]
+
+[[entities]]
+id = "rspo"
+canonical_name = "RSPO"
+entity_type = "certification"
+aliases = ["Roundtable on Sustainable Palm Oil"]
+coverage_item_ids = ["O-06"]
+
+[[entities]]
+id = "iso"
+canonical_name = "ISO"
+entity_type = "certification"
+aliases = ["ISO 9001", "ISO 14001"]
+coverage_item_ids = ["O-06"]
+
+[[entities]]
+id = "basc"
+canonical_name = "BASC"
+entity_type = "certification"
+aliases = ["Business Alliance for Secure Commerce"]
+coverage_item_ids = ["O-06"]
+
+[[entities]]
+id = "invima"
+canonical_name = "INVIMA"
+entity_type = "certification"
+aliases = ["Instituto Nacional de Vigilancia de Medicamentos y Alimentos"]
+coverage_item_ids = ["O-06"]

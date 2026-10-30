@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-103%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-132%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/status-M%C3%B3dulo%201%20en%20progreso-yellow)](CONSTITUTION.md)
 
@@ -21,9 +21,8 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual**: las capas bronce y plata están implementadas y validadas. La app Streamlit, las tareas
-> LangChain, la capa oro, la evaluación de 20 preguntas y el informe del Módulo 1 están en desarrollo. La matriz
-> de cobertura de los 24 ítems está en revisión y **no se declara completa**.
+> **Estado actual**: las capas bronce, plata y oro están implementadas y validadas. La app Streamlit, las tareas
+> LangChain, la evaluación de 20 preguntas y el informe del Módulo 1 están en desarrollo.
 
 ---
 
@@ -118,17 +117,17 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Cobertura del sitio oficial | ✅ | 249/250 páginas del sitemap (99,6%) |
 | Canales oficiales | ✅ | YouTube y Fundación capturados; Instagram y Linktree bloqueados por `robots.txt` (`docs/fuentes_oficiales.md`) |
 | Capa plata | ✅ | 404 documentos canónicos, 3.810 fragmentos, 92 alias; `data/silver/` |
-| Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata |
-| Reanudación e idempotencia | ✅ | Pruebas de integración de bronce y plata |
+| Capa oro | ✅ | 15.211 unidades, 381 hechos, 38 conflictos, 24/24 ítems; `data/gold/` |
+| Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
+| Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 103 pruebas offline |
+| Pruebas | ✅ | 132 pruebas offline |
 | Calidad de código | ✅ | Ruff limpio |
-| Capa oro | 🟡 | Pendiente |
 | App Streamlit + LangChain | 🟡 | Pendientes (Módulo 1) |
 | Evaluación de 20 preguntas | 🟡 | Pendiente |
 | Informe del Módulo 1 | 🟡 | Pendiente |
-| CI y Pull Requests | 🟡 | 2 PRs fusionados; workflow de CI agregado, pendiente ejecución en GitHub |
-| Cobertura de los 24 ítems | 🟡 | Matriz generada, evidencia en revisión |
+| CI y Pull Requests | 🟡 | 2 PRs fusionados; workflow de CI agregado |
+| Cobertura de los 24 ítems | ✅ | 24/24 evaluados por la capa oro con evidencia |
 
 ### Cifras actuales
 
@@ -140,11 +139,16 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Videos de YouTube con transcripción | 33 |
 | Documentos plata canónicos | 404 |
 | Fragmentos plata | 3.810 |
+| Unidades oro | 15.211 |
+| Hechos oro | 381 |
+| Conflictos oro | 38 |
+| Cobertura oro | 24/24 ítems |
 | Bronze activo | 0,36 GB |
 | Plata | 0,03 GB |
+| Oro | 0,20 GB |
 | Cuarentena | 8,93 GB |
-| Datos totales | 9,29 GB (límite: 10 GB) |
-| Pruebas offline | 103 |
+| Datos totales | 9,52 GB (límite: 10 GB) |
+| Pruebas offline | 132 |
 
 ## Fuentes de datos
 
@@ -289,6 +293,44 @@ La plata es determinista y offline: no usa LLM, embeddings ni OCR. Los PDF escan
 se omiten con una razón; no se inventa contenido. La configuración está en `config/silver.toml` y su hash queda
 registrado en cada ejecución.
 
+### Capa oro (gold)
+
+```bash
+# Construir o actualizar la base consolidada
+uv run pml gold build --run 2026-10-gold-01 --json
+
+# Humo con diez documentos
+uv run pml gold build --run 2026-10-gold-00 --limit 10 --json
+
+# Auditoría, reporte y estado
+uv run pml gold verify --run 2026-10-gold-01 --sample 100 --json
+uv run pml gold report --run 2026-10-gold-01 --format md
+uv run pml gold status --json
+
+# Envoltorio canónico
+uv run python scripts/build_gold.py --run 2026-10-gold-01 --json
+```
+
+Salidas en `data/gold/`:
+
+```text
+data/gold/
+├── knowledge_units.jsonl          # unidades extractivas con evidencia
+├── facts.jsonl                    # hechos numéricos/fechados
+├── entities.jsonl                 # entidades canónicas y alias
+├── conflicts.jsonl                # contradicciones y resolución
+├── coverage.json / coverage.md    # matriz de los 24 ítems
+├── faq_seeds.jsonl                # preguntas semilla para FAQ
+├── context_8000.* / context_32000.*  # contexto con citas
+├── topics/<topic_id>.md           # páginas de tema
+├── glossary.md
+├── manifest.json
+└── reports/<run_id>/quality.{json,md}
+```
+
+La capa oro es extractiva y determinista: no resume, no responde, no traduce y no usa embeddings. Cada unidad
+conserva su cita; los conflictos se preservan y los vacíos de cobertura se declaran.
+
 ### Curaduría de relevancia
 
 ```bash
@@ -324,7 +366,7 @@ uv run streamlit run app.py
 |------|------|---------------------------|--------|
 | Bronce | `data/bronze/` | `data/raw/` | ✅ Implementada |
 | Plata | `data/silver/` | `data/processed/` | ✅ Implementada |
-| Oro | `data/gold/` | `data/gold/` | 🟡 Pendiente |
+| Oro | `data/gold/` | `data/gold/` | ✅ Implementada |
 | Cuarentena | `data/quarantine/` | — | ✅ Auditoría de retiros |
 
 ```text
@@ -374,7 +416,7 @@ manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 60 pruebas unitarias, de integración y de contrato.
+- **Pruebas offline**: 132 pruebas unitarias, de integración y de contrato.
 - **Lint**: `uv run ruff check .` sin hallazgos.
 - **Integridad**: SHA-256 por artefacto; verificación de muestras del corpus activo.
 - **Procedencia**: URL canónica, fecha UTC, tipo, tamaño, categoría, idioma y campaña.
@@ -408,7 +450,9 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - Instagram y Linktree no se capturan por `robots.txt`; 30 videos de YouTube no están disponibles y 3 exigen sesión.
 - La matriz de 24 ítems requiere recalibración: SECOP, NIT, precios, fichas técnicas y catálogos aún no tienen
   evidencia verificable.
-- La app Streamlit, LangChain, la capa oro, las 20 preguntas y el informe del Módulo 1 están pendientes.
+- La capa oro produjo 15.211 unidades extractivas, 381 hechos, 15 entidades y 38 conflictos; 24/24 ítems
+  evaluados. Los conflictos y la cobertura requieren revisión muestral antes de la evaluación final.
+- La app Streamlit, LangChain, las 20 preguntas y el informe del Módulo 1 están pendientes.
 - El repositorio tiene 2 PRs fusionados y un workflow de CI; falta verificar la ejecución en GitHub Actions.
 
 ## Documentación
@@ -422,6 +466,10 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Plan de la capa plata](specs/003-silver-medallion-layer/plan.md)
 - [Guía de validación de la capa plata](specs/003-silver-medallion-layer/quickstart.md)
 - [Decisión de arquitectura de la capa plata](docs/decisions/0003-silver-layer.md)
+- [Especificación de la capa oro](specs/004-gold-medallion-layer/spec.md)
+- [Plan de la capa oro](specs/004-gold-medallion-layer/plan.md)
+- [Guía de validación de la capa oro](specs/004-gold-medallion-layer/quickstart.md)
+- [Decisión de arquitectura de la capa oro](docs/decisions/0004-gold-layer.md)
 - [Verificación de canales oficiales](docs/fuentes_oficiales.md)
 - [Bitácora del 2026-10-29](bitacora/2026-10-29.md)
 - [Guía de validación del bronce](specs/001-bronze-web-scraping/quickstart.md)

@@ -407,3 +407,14 @@ policy = { robots = "respect", requires_auth = false }
         }
     finally:
         catalog.close()
+
+
+@pytest.fixture()
+def silver_env(tmp_path: Path):
+    from tests.silver_helpers import build_silver_env
+
+    environment = build_silver_env(tmp_path)
+    try:
+        yield environment
+    finally:
+        environment.catalog.close()

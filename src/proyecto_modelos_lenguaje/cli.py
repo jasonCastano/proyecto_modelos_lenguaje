@@ -25,6 +25,8 @@ from .curation import CurationError, CurationService
 from .fetchers.http import build_http_fetcher
 from .pipeline import CampaignRunner
 from .reporting import write_campaign_report, write_coverage_report
+from .silver.pipeline import SilverPipeline
+from .silver.state import SilverStateError
 from .storage import BronzeStorage
 from .utils import utcnow
 
@@ -539,6 +541,55 @@ def cmd_curate_purge(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_silver_build(args: argparse.Namespace) -> int:
+    pipeline = SilverPipeline.from_paths(
+        sources_config=args.sources_config,
+        silver_config=args.config,
+    )
+    payload = pipeline.build(
+        args.run,
+        limit=args.limit,
+        source=args.source,
+        force=args.force,
+    )
+    _emit(payload, args.json)
+    return 0 if payload.get("status") == "completed" else 1
+
+
+def cmd_silver_verify(args: argparse.Namespace) -> int:
+    pipeline = SilverPipeline.from_paths(
+        sources_config=args.sources_config,
+        silver_config=args.config,
+    )
+    payload = pipeline.verify_run(args.run, sample=args.sample, seed=args.seed)
+    _emit(payload, args.json)
+    return 0 if payload.get("passed") else 1
+
+
+def cmd_silver_report(args: argparse.Namespace) -> int:
+    pipeline = SilverPipeline.from_paths(
+        sources_config=args.sources_config,
+        silver_config=args.config,
+    )
+    payload = pipeline.report(args.run)
+    if args.format == "md":
+        path = pipeline.config.output.root / "reports" / args.run / "quality.md"
+        print(path.read_text(encoding="utf-8"))
+        return 0
+    _emit(payload, True)
+    return 0
+
+
+def cmd_silver_status(args: argparse.Namespace) -> int:
+    pipeline = SilverPipeline.from_paths(
+        sources_config=args.sources_config,
+        silver_config=args.config,
+    )
+    payload = pipeline.status(args.run)
+    _emit(payload, args.json)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--config", default=argparse.SUPPRESS, help="path to sources.toml")
@@ -697,6 +748,42 @@ def build_parser() -> argparse.ArgumentParser:
     purge.add_argument("--json", action="store_true")
     purge.set_defaults(func=cmd_curate_purge)
 
+    silver = sub.add_parser("silver", help="silver layer operations")
+    silver_sub = silver.add_subparsers(dest="silver_command", required=True)
+
+    silver_build = silver_sub.add_parser("build", help="build or update the silver layer")
+    silver_build.add_argument("--config", default="config/silver.toml")
+    silver_build.add_argument("--sources-config", default=DEFAULT_CONFIG)
+    silver_build.add_argument("--run", required=True)
+    silver_build.add_argument("--limit", type=int, default=None)
+    silver_build.add_argument("--source")
+    silver_build.add_argument("--force", action="store_true")
+    silver_build.add_argument("--json", action="store_true")
+    silver_build.set_defaults(func=cmd_silver_build)
+
+    silver_verify = silver_sub.add_parser("verify", help="audit a silver run")
+    silver_verify.add_argument("--config", default="config/silver.toml")
+    silver_verify.add_argument("--sources-config", default=DEFAULT_CONFIG)
+    silver_verify.add_argument("--run", required=True)
+    silver_verify.add_argument("--sample", type=int, default=50)
+    silver_verify.add_argument("--seed", type=int, default=1)
+    silver_verify.add_argument("--json", action="store_true")
+    silver_verify.set_defaults(func=cmd_silver_verify)
+
+    silver_report = silver_sub.add_parser("report", help="show a silver quality report")
+    silver_report.add_argument("--config", default="config/silver.toml")
+    silver_report.add_argument("--sources-config", default=DEFAULT_CONFIG)
+    silver_report.add_argument("--run", required=True)
+    silver_report.add_argument("--format", choices=["json", "md"], default="json")
+    silver_report.set_defaults(func=cmd_silver_report)
+
+    silver_status = silver_sub.add_parser("status", help="show the latest silver run")
+    silver_status.add_argument("--config", default="config/silver.toml")
+    silver_status.add_argument("--sources-config", default=DEFAULT_CONFIG)
+    silver_status.add_argument("--run")
+    silver_status.add_argument("--json", action="store_true")
+    silver_status.set_defaults(func=cmd_silver_status)
+
     return parser
 
 
@@ -709,6 +796,8 @@ def main(argv: list[str] | None = None) -> int:
         args.config = DEFAULT_CONFIG
     try:
         return int(args.func(args))
+    except SilverStateError as exc:
+        return _error(str(exc), 2)
     except ConfigError as exc:
         return _error(str(exc), 3)
     except CurationError as exc:

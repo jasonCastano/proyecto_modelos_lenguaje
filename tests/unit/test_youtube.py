@@ -9,6 +9,7 @@ from proyecto_modelos_lenguaje.config import load_config
 from proyecto_modelos_lenguaje.fetchers.youtube import (
     _flatten_entries,
     metadata_payload,
+    subtitle_kinds,
     subtitle_language,
 )
 from proyecto_modelos_lenguaje.sources.youtube import YoutubeSource
@@ -59,6 +60,19 @@ def test_flatten_channel_entries_handles_videos_and_shorts() -> None:
     }
     entries = _flatten_entries(info)
     assert [entry["id"] for entry in entries] == ["vid1", "vid2", "short1"]
+
+
+def test_subtitle_kinds_prefers_manual() -> None:
+    info = {
+        "subtitles": {"es": [{"ext": "vtt"}], "en-US": [{"ext": "vtt"}]},
+        "automatic_captions": {"es": [{"ext": "vtt"}], "fr": [{"ext": "vtt"}]},
+    }
+    assert subtitle_kinds(info) == {"es": "manual", "en": "manual"}
+
+
+def test_subtitle_kinds_marks_automatic() -> None:
+    info = {"automatic_captions": {"es": [{"ext": "vtt"}]}}
+    assert subtitle_kinds(info) == {"es": "automatic"}
 
 
 def test_direct_video_seeds_are_not_expanded() -> None:

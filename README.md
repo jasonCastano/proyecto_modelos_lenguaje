@@ -472,6 +472,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 ## Documentación
 
 - [Constitución del proyecto](CONSTITUTION.md)
+- [Ficha de datos del corpus](docs/data_card.md)
 - [Alcance del Q&A y banco de 40 preguntas](docs/alcance.md)
 - [Especificación del bronce](specs/001-bronze-web-scraping/spec.md)
 - [Plan del bronce](specs/001-bronze-web-scraping/plan.md)

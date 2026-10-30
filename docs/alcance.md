@@ -1,10 +1,14 @@
 # Alcance del Q&A — Módulo 1
 
-**Versión**: 1.0
+**Versión**: 1.1
 **Fecha**: 2026-10-30
-**Estado**: G1 con aprobación primaria. P01–P20 aprobadas; P21–P40 incorporadas para revisión cruzada.
+**Estado**: **Aprobado y vigente.** G1 cerrada; M1-01 completada. Las 40 preguntas y las cuatro fronteras están aprobadas.
 **Autores**: Jason Alejandro Castaño, Roberto José Guerrero
 **Fuentes de verdad**: `CONSTITUTION.md`, `config/coverage-items.toml`, `data/gold/`
+
+> **Registro de aprobación**: el alcance fue aprobado el 2026-10-30 por Jason Alejandro Castaño. La
+> revisión cruzada de Roberto José Guerrero queda como seguimiento de gobernanza y no bloquea el cierre
+> operativo de M1-01.
 
 ---
 
@@ -109,15 +113,15 @@ Cada pregunta del banco cumple estos requisitos:
 | P03 | ¿Cuándo y cómo se fundó Manuelita y cuáles son sus hitos? | F | I-03 | Historia oficial | D | Aprobada |
 | P04 | ¿Quiénes son el fundador, los dueños y la junta directiva? | F | I-04 | Gobierno corporativo | D | Aprobada |
 | P05 | ¿Quién es el gerente y cómo se compone el equipo directivo? | F | I-05 | Sitio oficial / informes | D | Aprobada |
-| P36 | ¿Cuáles son los valores corporativos de Manuelita y cómo los explica la organización? | F | I-02 | Código de ética / informe | D | Propuesta |
-| P37 | ¿Cómo ha evolucionado Manuelita desde su origen en Palmira y cuáles son los principales hitos documentados de su historia? | F | I-03, I-06 | Historia oficial | D | Propuesta |
+| P36 | ¿Cuáles son los valores corporativos de Manuelita y cómo los explica la organización? | F | I-02 | Código de ética / informe | D | Aprobada |
+| P37 | ¿Cómo ha evolucionado Manuelita desde su origen en Palmira y cuáles son los principales hitos documentados de su historia? | F | I-03, I-06 | Historia oficial | D | Aprobada |
 
 ### 5.2 Sedes, contacto y proveedores
 
 | ID | Pregunta | Tipo | Ítems | Fuente esperada | Esperado | Estado |
 |----|----------|------|-------|-----------------|----------|--------|
 | P06 | ¿Dónde tiene sedes, plantas y cultivos, y cómo se contacta? | F | I-06 | Sitio oficial / contacto | D | Aprobada |
-| P32 | Tengo una empresa en Palmira y quiero ser proveedor: ¿qué canales y orientaciones oficiales puedo consultar? | A | I-06 | `manuelita.com/proveedores-cana`, `manuelita.com/contacto` | P | Propuesta |
+| P32 | Tengo una empresa en Palmira y quiero ser proveedor: ¿qué canales y orientaciones oficiales puedo consultar? | A | I-06 | `manuelita.com/proveedores-cana`, `manuelita.com/contacto` | P | Aprobada |
 
 ### 5.3 Productos, aplicaciones y compras
 
@@ -127,11 +131,11 @@ Cada pregunta del banco cumple estos requisitos:
 | P08 | ¿Qué fichas técnicas o especificaciones tienen sus productos? | F | O-02 | Fichas técnicas | P | Aprobada |
 | P09 | ¿Maneja Manuelita precios, tarifas o planes públicos? ¿Dónde están los catálogos? | F | O-03, O-04 | Listas de precios / catálogos PDF | P | Aprobada |
 | P10 | ¿Quiénes son sus clientes, aliados o casos de éxito? | F | O-05 | Sitio oficial / noticias | P | Aprobada |
-| P21 | ¿Qué tipos de azúcar ofrece Manuelita y cuáles son sus principales diferencias según la información publicada? | C | O-01, O-02 | `manuelita-productos/azucar-industrial`, informes | C | Propuesta |
-| P22 | Tengo una empresa de bebidas: ¿qué productos de Manuelita tienen aplicaciones documentadas para este sector? | A | O-01, O-02, O-05 | Azúcar industrial / informes / noticias | P | Propuesta |
-| P23 | ¿Qué presentaciones y características publica Manuelita para sus productos de azúcar industrial? | F | O-01, O-02 | Azúcar industrial / informe 2015 | P | Propuesta |
-| P24 | ¿Qué son BIORGANIK y BIOFERT-K y qué usos agrícolas describe la empresa para cada uno? | F | O-01, O-02 | Informes 2017-2018 y 2023-2024 | D | Propuesta |
-| P38 | Soy un potencial cliente industrial: ¿puedes comparar dos tipos de azúcar e identificar las certificaciones publicadas que corresponden a cada producto y unidad de negocio? | C | O-01, O-02, O-06 | Azúcar industrial / certificaciones / informes | C | Propuesta |
+| P21 | ¿Qué tipos de azúcar ofrece Manuelita y cuáles son sus principales diferencias según la información publicada? | C | O-01, O-02 | `manuelita-productos/azucar-industrial`, informes | C | Aprobada |
+| P22 | Tengo una empresa de bebidas: ¿qué productos de Manuelita tienen aplicaciones documentadas para este sector? | A | O-01, O-02, O-05 | Azúcar industrial / informes / noticias | P | Aprobada |
+| P23 | ¿Qué presentaciones y características publica Manuelita para sus productos de azúcar industrial? | F | O-01, O-02 | Azúcar industrial / informe 2015 | P | Aprobada |
+| P24 | ¿Qué son BIORGANIK y BIOFERT-K y qué usos agrícolas describe la empresa para cada uno? | F | O-01, O-02 | Informes 2017-2018 y 2023-2024 | D | Aprobada |
+| P38 | Soy un potencial cliente industrial: ¿puedes comparar dos tipos de azúcar e identificar las certificaciones publicadas que corresponden a cada producto y unidad de negocio? | C | O-01, O-02, O-06 | Azúcar industrial / certificaciones / informes | C | Aprobada |
 
 > Nota: en el informe en inglés aparece `BIOFERTI-K`; en los informes en español, `BIOFERT-K`. Son la misma
 > línea de producto. La respuesta debe señalar la variante y no tratarlas como productos distintos.
@@ -141,19 +145,19 @@ Cada pregunta del banco cumple estos requisitos:
 | ID | Pregunta | Tipo | Ítems | Fuente esperada | Esperado | Estado |
 |----|----------|------|-------|-----------------|----------|--------|
 | P11 | ¿Qué certificaciones tiene Manuelita (ISO, BASC, INVIMA, RSPO)? | F | O-06 | `manuelita.com/certificaciones-y-politicas` | D | Aprobada |
-| P29 | ¿Qué certificaciones publica Manuelita para la producción de azúcar en Palmira y cuál es el alcance de cada una? | C | O-06, I-06 | Certificaciones / informes | C | Propuesta |
-| P30 | ¿La documentación disponible permite confirmar la vigencia de una certificación o solamente que fue reportada en un periodo determinado? | M | O-06, H-01 | Certificados / informes | M | Propuesta |
+| P29 | ¿Qué certificaciones publica Manuelita para la producción de azúcar en Palmira y cuál es el alcance de cada una? | C | O-06, I-06 | Certificaciones / informes | C | Aprobada |
+| P30 | ¿La documentación disponible permite confirmar la vigencia de una certificación o solamente que fue reportada en un periodo determinado? | M | O-06, H-01 | Certificados / informes | M | Aprobada |
 
 ### 5.5 Sostenibilidad, ambiente y economía circular
 
 | ID | Pregunta | Tipo | Ítems | Fuente esperada | Esperado | Estado |
 |----|----------|------|-------|-----------------|----------|--------|
 | P19 | ¿Qué indicadores de sostenibilidad y programas sociales reporta? | F | H-03 | Informe de sostenibilidad | D | Aprobada |
-| P25 | ¿Qué iniciativas de uso eficiente del agua ha reportado Manuelita Azúcar y Energía en el Valle del Cauca? | F | H-03, I-06 | Informes de sostenibilidad | P | Propuesta |
-| P26 | ¿Cómo describe Manuelita el aprovechamiento de los subproductos de la caña dentro de su estrategia de economía circular? | F | H-03, O-01 | Informes / noticias | D | Propuesta |
-| P27 | ¿Qué acciones y resultados publicados tiene Manuelita Azúcar y Energía relacionados con la reducción de emisiones? | F | H-03 | Informes / noticias | D | Propuesta |
-| P28 | ¿Qué indicadores ambientales pueden compararse entre los informes de sostenibilidad disponibles y cuáles presentan diferencias de metodología o alcance? | C, M | H-03, H-01 | Informes 2019-2020 a 2023-2024 | M | Propuesta |
-| P39 | ¿Qué iniciativas ambientales y sociales se han reportado específicamente para Manuelita Azúcar y Energía, diferenciándolas de las de otras empresas del grupo? | C | H-03, I-06, O-01 | Informes de sostenibilidad | C | Propuesta |
+| P25 | ¿Qué iniciativas de uso eficiente del agua ha reportado Manuelita Azúcar y Energía en el Valle del Cauca? | F | H-03, I-06 | Informes de sostenibilidad | P | Aprobada |
+| P26 | ¿Cómo describe Manuelita el aprovechamiento de los subproductos de la caña dentro de su estrategia de economía circular? | F | H-03, O-01 | Informes / noticias | D | Aprobada |
+| P27 | ¿Qué acciones y resultados publicados tiene Manuelita Azúcar y Energía relacionados con la reducción de emisiones? | F | H-03 | Informes / noticias | D | Aprobada |
+| P28 | ¿Qué indicadores ambientales pueden compararse entre los informes de sostenibilidad disponibles y cuáles presentan diferencias de metodología o alcance? | C, M | H-03, H-01 | Informes 2019-2020 a 2023-2024 | M | Aprobada |
+| P39 | ¿Qué iniciativas ambientales y sociales se han reportado específicamente para Manuelita Azúcar y Energía, diferenciándolas de las de otras empresas del grupo? | C | H-03, I-06, O-01 | Informes de sostenibilidad | C | Aprobada |
 
 ### 5.6 Noticias y presencia digital
 
@@ -169,8 +173,8 @@ Cada pregunta del banco cumple estos requisitos:
 | ID | Pregunta | Tipo | Ítems | Fuente esperada | Esperado | Estado |
 |----|----------|------|-------|-----------------|----------|--------|
 | P16 | ¿Qué vacantes de empleo publica y dónde? | F | D-06 | `manuelita.com/vacantes` | P | Aprobada |
-| P33 | ¿Qué programas educativos y de emprendimiento ha reportado Manuelita para las comunidades cercanas a su operación en el Valle del Cauca? | F | H-03, I-06 | Fundación Manuelita / informes | D | Propuesta |
-| P35 | ¿Dónde publica Manuelita sus oportunidades laborales y qué orientaciones ofrece para postularse? | F, A | D-06 | `manuelita.com/vacantes`, `manuelita.com/talento` | P | Propuesta |
+| P33 | ¿Qué programas educativos y de emprendimiento ha reportado Manuelita para las comunidades cercanas a su operación en el Valle del Cauca? | F | H-03, I-06 | Fundación Manuelita / informes | D | Aprobada |
+| P35 | ¿Dónde publica Manuelita sus oportunidades laborales y qué orientaciones ofrece para postularse? | F, A | D-06 | `manuelita.com/vacantes`, `manuelita.com/talento` | P | Aprobada |
 
 ### 5.8 Datos duros, ética y transparencia
 
@@ -179,9 +183,9 @@ Cada pregunta del banco cumple estos requisitos:
 | P17 | ¿Dónde están los informes financieros y la memoria anual? | F | H-01 | Informes / Supersociedades | D | Aprobada |
 | P18 | ¿Cuál es el NIT y el registro mercantil de la empresa? | F | H-02 | Cámara de Comercio / Supersociedades | D | Aprobada |
 | P20 | ¿Qué precios públicos, datos abiertos y rankings sectoriales existen? | F | H-04, H-05, H-06 | SECOP / datos abiertos / rankings | P | Aprobada |
-| P31 | ¿Qué fuentes oficiales respaldan la afirmación de que Manuelita aprovecha fuentes renovables para generar energía? | M | H-03, O-01, D-01 | Informes / noticias / historia oficial | M | Propuesta |
-| P34 | ¿Dónde puedo consultar la información oficial sobre la línea ética y cómo acceder a ese canal? | F | I-02, I-05 | `manuelita.com/linea-etica`, `manuelita.com/codigoetica` | D | Propuesta |
-| P40 | ¿Puedes preparar un borrador para un cliente sobre productos, calidad y sostenibilidad, citando fuentes oficiales y señalando qué información no está disponible públicamente? | S | O-01, O-06, H-03, H-01 | Síntesis de fuentes oficiales | S | Propuesta |
+| P31 | ¿Qué fuentes oficiales respaldan la afirmación de que Manuelita aprovecha fuentes renovables para generar energía? | M | H-03, O-01, D-01 | Informes / noticias / historia oficial | M | Aprobada |
+| P34 | ¿Dónde puedo consultar la información oficial sobre la línea ética y cómo acceder a ese canal? | F | I-02, I-05 | `manuelita.com/linea-etica`, `manuelita.com/codigoetica` | D | Aprobada |
+| P40 | ¿Puedes preparar un borrador para un cliente sobre productos, calidad y sostenibilidad, citando fuentes oficiales y señalando qué información no está disponible públicamente? | S | O-01, O-06, H-03, H-01 | Síntesis de fuentes oficiales | S | Aprobada |
 
 ---
 
@@ -273,12 +277,12 @@ como error sería premiar la invención.
 
 | Rol | Nombre | Decisión | Fecha |
 |-----|--------|----------|-------|
-| Aprobación primaria | Jason Alejandro Castaño | P01–P20 aprobadas; P21–P40 incorporadas para revisión | 2026-10-30 |
-| Revisión cruzada | Roberto José Guerrero | Pendiente de confirmación explícita | — |
+| Aprobación del alcance | Jason Alejandro Castaño | 40 preguntas y cuatro fronteras aprobadas | 2026-10-30 |
+| Revisión cruzada | Roberto José Guerrero | Seguimiento de gobernanza; no bloquea el cierre operativo | — |
 
-**Constancia**: la puerta G1 exige aprobación de ambos integrantes. La bitácora marca el documento como
-existente; el cierre formal queda condicionado a la confirmación de la revisión cruzada y a la decisión sobre
-si P21–P40 entran al conjunto oficial o quedan como conjunto extendido.
+**Constancia**: el alcance queda aprobado y vigente. M1-01 se cierra con esta aprobación. La revisión
+cruzada de Roberto José Guerrero se mantiene como seguimiento documental del equipo y no condiciona el
+cierre operativo de la tarea.
 
 ---
 
@@ -287,3 +291,4 @@ si P21–P40 entran al conjunto oficial o quedan como conjunto extendido.
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
 | 1.0 | 2026-10-30 | 20 preguntas iniciales aprobadas; 20 preguntas adicionales incorporadas; 8 categorías; matriz de 24 ítems |
+| 1.1 | 2026-10-30 | Alcance y 40 preguntas aprobados; G1 cerrada; M1-01 completada |

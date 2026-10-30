@@ -22,7 +22,7 @@ Universidad Autónoma de Occidente, 2026-2S.
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
 > **Estado actual**: las capas bronce, plata y oro están implementadas y validadas. La app Streamlit, las tareas
-> LangChain, la evaluación de 20 preguntas y el informe del Módulo 1 están en desarrollo.
+> LangChain, la evaluación de 40 preguntas (20 núcleo + 20 extendidas) y el informe del Módulo 1 están en desarrollo.
 
 ---
 
@@ -70,7 +70,7 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
 - **Procedencia completa**: URL, título, fecha UTC, hash SHA-256, fuente, tipo, idioma y categoría.
 - **Q&A anclado al contexto**: el modelo responde solo con el contexto recuperado, cita fuentes y declara cuando
   no tiene evidencia.
-- **Evaluación empírica**: 20 preguntas mínimo, comparación de prompts y análisis de errores.
+- **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores.
 - **Interfaz de prueba** en Streamlit con Resumen, FAQ y Q&A.
 
 ## Arquitectura
@@ -124,7 +124,7 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Pruebas | ✅ | 132 pruebas offline |
 | Calidad de código | ✅ | Ruff limpio |
 | App Streamlit + LangChain | 🟡 | Pendientes (Módulo 1) |
-| Evaluación de 20 preguntas | 🟡 | Pendiente |
+| Evaluación de 40 preguntas | 🟡 | Pendiente |
 | Informe del Módulo 1 | 🟡 | Pendiente |
 | CI y Pull Requests | 🟡 | 7 PRs fusionados; workflow de CI verde |
 | Cobertura de los 24 ítems | ✅ | 24/24 evaluados por la capa oro con evidencia |
@@ -452,7 +452,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   evidencia verificable.
 - La capa oro produjo 15.211 unidades extractivas, 381 hechos, 15 entidades y 38 conflictos; 24/24 ítems
   evaluados. Los conflictos y la cobertura requieren revisión muestral antes de la evaluación final.
-- La app Streamlit, LangChain, las 20 preguntas y el informe del Módulo 1 están pendientes.
+- La app Streamlit, LangChain, las 40 preguntas y el informe del Módulo 1 están pendientes.
 - El repositorio tiene 7 PRs fusionados y CI verde en GitHub Actions.
 
 ## Documentación
@@ -484,7 +484,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [ ] Capas silver/gold y chunks.
 - [ ] Tareas LangChain: Resumen, FAQ y Q&A.
 - [ ] App Streamlit con métricas y citas.
-- [ ] 20 preguntas evaluadas y comparación de prompts.
+- [ ] 40 preguntas evaluadas (20 núcleo + 20 extendidas) y comparación de prompts.
 - [ ] Informe y demo 12+3 minutos.
 - [ ] CI, Pull Requests y tag `v0.1.0-modulo1`.
 

@@ -3,7 +3,13 @@ name: CI
 on:
   push:
     branches:
-      ["main", "001-bronze-web-scraping", "003-silver-medallion-layer", "004-gold-medallion-layer"]
+      [
+        "main",
+        "001-bronze-web-scraping",
+        "003-silver-medallion-layer",
+        "004-gold-medallion-layer",
+        "005-scrape-empresa-entrypoint",
+      ]
   pull_request:
 
 jobs:
@@ -26,6 +32,9 @@ jobs:
 
       - name: Tests
         run: uv run pytest -q
+
+      - name: Scrape entrypoint help
+        run: uv run python scripts/scrape_empresa.py --help
 
       - name: Gold contracts
         run: uv run pytest tests/contract/gold -q

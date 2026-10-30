@@ -126,7 +126,7 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | App Streamlit + LangChain | 🟡 | Pendientes (Módulo 1) |
 | Evaluación de 20 preguntas | 🟡 | Pendiente |
 | Informe del Módulo 1 | 🟡 | Pendiente |
-| CI y Pull Requests | 🟡 | 2 PRs fusionados; workflow de CI agregado |
+| CI y Pull Requests | 🟡 | 5 PRs fusionados; workflow de CI verde |
 | Cobertura de los 24 ítems | ✅ | 24/24 evaluados por la capa oro con evidencia |
 
 ### Cifras actuales
@@ -453,7 +453,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - La capa oro produjo 15.211 unidades extractivas, 381 hechos, 15 entidades y 38 conflictos; 24/24 ítems
   evaluados. Los conflictos y la cobertura requieren revisión muestral antes de la evaluación final.
 - La app Streamlit, LangChain, las 20 preguntas y el informe del Módulo 1 están pendientes.
-- El repositorio tiene 2 PRs fusionados y un workflow de CI; falta verificar la ejecución en GitHub Actions.
+- El repositorio tiene 5 PRs fusionados y CI verde en GitHub Actions.
 
 ## Documentación
 

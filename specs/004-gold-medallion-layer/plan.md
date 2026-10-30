@@ -39,8 +39,9 @@ la reconstrucción incremental sin cambios debe tardar ≤2 minutos.
 plata y el bronce son de solo lectura; presupuestos de contexto de 8.000 y 32.000 tokens con el proxy de plata;
 salidas deterministas y auditables.
 
-**Scale/Scope**: 404 documentos canónicos, 3.810 fragmentos, 24 ítems de cobertura, ~300–1.500 unidades de
-conocimiento, ~12–20 temas, dos paquetes de contexto y un conjunto de preguntas semilla.
+**Scale/Scope**: 404 documentos canónicos, 3.810 fragmentos, 24 ítems de cobertura, ~15.000 unidades de
+conocimiento (15.211 en la ejecución de referencia), 16 temas, dos paquetes de contexto y un conjunto de
+preguntas semilla.
 
 ## Constitution Check
 

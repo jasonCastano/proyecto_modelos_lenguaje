@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://manuelita-rag.local/contracts/campaign-report.schema.json",
+  "title": "CampaignReport",
+  "description": "Summary and audit report produced at the end of a bronze campaign.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "campaign_id",
+    "status",
+    "started_at",
+    "generated_at",
+    "config_hash",
+    "tool_version",
+    "counts",
+    "bytes_stored",
+    "storage_limit_bytes",
+    "coverage_summary"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "campaign_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,63}$" },
+    "status": { "enum": ["planned", "running", "paused", "completed", "aborted", "failed"] },
+    "started_at": { "type": "string", "format": "date-time" },
+    "finished_at": { "type": ["string", "null"], "format": "date-time" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "config_hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "git_commit": { "type": ["string", "null"], "pattern": "^[a-f0-9]{7,40}$" },
+    "tool_version": { "type": "string", "minLength": 1 },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targets_discovered", "attempted", "stored", "deduped", "excluded", "failed", "deferred"],
+      "properties": {
+        "targets_discovered": { "type": "integer", "minimum": 0 },
+        "attempted": { "type": "integer", "minimum": 0 },
+        "stored": { "type": "integer", "minimum": 0 },
+        "deduped": { "type": "integer", "minimum": 0 },
+        "excluded": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "deferred": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "bytes_stored": { "type": "integer", "minimum": 0, "maximum": 10000000000 },
+    "storage_limit_bytes": { "type": "integer", "minimum": 1, "maximum": 10000000000 },
+    "coverage_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["covered", "partial", "missing", "total"],
+      "properties": {
+        "covered": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "partial": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "missing": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "total": { "const": 24 }
+      }
+    },
+    "outcomes_by_reason": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "report_paths": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

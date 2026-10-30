@@ -57,10 +57,11 @@ CASCADE_STEPS: tuple[TaskStep, ...] = (
     TaskStep(
         "M1-01",
         1,
-        "Definir alcance y las 20+ preguntas",
+        "Definir y aprobar el alcance y las 40 preguntas",
         (),
         "docs/alcance.md",
-        "6–8 categorías; 20+ preguntas con ID, categoría, fuente esperada y mapeo a los 24 ítems.",
+        "8 categorías; 40 preguntas (20 núcleo + 20 extendidas) con ID, categoría, "
+        "fuente esperada y mapeo a los 24 ítems.",
         ("alcance",),
         "Ambos",
         "1,5 h",
@@ -134,13 +135,14 @@ CASCADE_STEPS: tuple[TaskStep, ...] = (
     TaskStep(
         "M1-08",
         5,
-        "Evaluar las 20 preguntas",
+        "Evaluar las 40 preguntas",
         ("M1-07",),
         "docs/evaluacion_modulo1.md",
-        "20 filas con baseline y final, fuente, corrección, coherencia, alucinación y métricas.",
+        "40 filas (20 núcleo + 20 extendidas) con baseline y final, fuente, corrección, "
+        "coherencia, alucinación y métricas.",
         ("evaluation",),
         "Ambos",
-        "2,5 h",
+        "5 h",
     ),
     TaskStep(
         "M1-09",

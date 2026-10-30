@@ -6,6 +6,7 @@ import json
 import tomllib
 
 import jsonschema
+
 from tests.conftest import PROJECT_ROOT
 
 CONTRACTS = PROJECT_ROOT / "specs" / "002-manuelita-relevance-filter" / "contracts"

@@ -4,11 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tests.conftest import COVERAGE_PATH
-
 from proyecto_modelos_lenguaje.catalog import Catalog
 from proyecto_modelos_lenguaje.config import load_coverage_items
 from proyecto_modelos_lenguaje.coverage import infer_evidence, summarize
+from tests.conftest import COVERAGE_PATH
 
 
 def test_infer_evidence_finds_identity_and_offer() -> None:

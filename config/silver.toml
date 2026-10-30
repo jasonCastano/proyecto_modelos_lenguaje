@@ -1,0 +1,30 @@
+[chunking]
+target_tokens = 800
+max_tokens = 1000
+min_tokens = 200
+overlap_tokens = 120
+chars_per_token = 3.5
+boundary = "sentence"
+
+[dedup]
+near_threshold = 0.90
+shingle_size = 5
+num_perm = 128
+bands = 16
+
+[quality]
+min_text_chars = 100
+min_alpha_ratio = 0.50
+table_line_ratio = 0.30
+repeated_line_ratio = 0.30
+
+[output]
+root = "data/silver"
+markdown = true
+
+[language]
+min_tokens = 10
+
+[run]
+max_workers = 4
+fail_fast = false

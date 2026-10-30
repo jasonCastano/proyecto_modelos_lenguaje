@@ -1,0 +1,17 @@
+[llm]
+provider = "ollama"
+model = "llama3.1:8b"
+base_url = "http://localhost:11434"
+
+temperature = 0.1
+top_p = 0.9
+max_output_tokens = 1024
+context_window = 16384
+default_context_pack = "8000"
+
+timeout_seconds = 120
+max_retries = 1
+retry_backoff_seconds = 2.0
+keep_alive = "5m"
+seed = 42
+language = "es"

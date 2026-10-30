@@ -80,6 +80,20 @@ def _flatten_entries(info: dict[str, Any]) -> list[dict[str, Any]]:
     return flattened
 
 
+def subtitle_kinds(info: dict[str, Any]) -> dict[str, str]:
+    """Return manual/automatic kind per Spanish/English subtitle language."""
+    kinds: dict[str, str] = {}
+    for language in info.get("subtitles") or {}:
+        base = str(language).split("-", 1)[0]
+        if base in {"es", "en"}:
+            kinds[base] = "manual"
+    for language in info.get("automatic_captions") or {}:
+        base = str(language).split("-", 1)[0]
+        if base in {"es", "en"}:
+            kinds.setdefault(base, "automatic")
+    return kinds
+
+
 class YoutubeAdapter:
     """Downloads subtitles and metadata only; video/audio files are never written."""
 
@@ -247,6 +261,7 @@ class YoutubeAdapter:
                 "webpage_url": video_url,
                 "transcript_available": bool(subtitle_files),
                 "subtitle_languages": sorted(subtitle_files),
+                "subtitle_kinds": subtitle_kinds(info),
                 "metadata": metadata,
             }
             language = "es" if str(info.get("language") or "").startswith("es") else "und"

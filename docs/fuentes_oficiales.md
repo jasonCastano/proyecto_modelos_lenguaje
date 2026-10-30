@@ -16,7 +16,7 @@ ni técnicas para evadir controles de acceso. Cada decisión queda registrada en
 
 | Canal | `robots.txt` | Decisión | Artefactos |
 |-------|--------------|----------|-----------:|
-| YouTube | Permite las rutas públicas; limita frecuencia | Capturar metadatos y subtítulos, sin descargar audio/video | 78 |
+| YouTube | Permite las rutas públicas; limita frecuencia | Capturar metadatos y subtítulos, sin descargar audio/video | 111 |
 | Instagram | `User-agent: *` → `Disallow: /`; aviso de Meta que prohíbe la recolección automatizada sin permiso | **No capturar** | 0 |
 | Linktree | `User-agent: *` → `Disallow: /` | **No capturar** | 0 |
 | Fundación Manuelita | `User-agent: *` → `Disallow:` (sin restricciones) | Capturar | 41 |
@@ -102,15 +102,15 @@ un `sitemap_index.xml`.
 | Fuente | Artefactos activos | Bytes |
 |--------|-------------------:|------:|
 | `official_site` | 397 | 262,9 MB |
-| `youtube` | 78 | 1,4 MB |
+| `youtube` | 111 | 1,4 MB |
 | `fundacion_manuelita` | 41 | 21,3 MB |
 | `elpais` | 4 | 3,4 MB |
 | `datos_gov` | 2 | 1,3 MB |
 | `asocana` | 1 | 31 KB |
 | `camara_comercio` | 1 | 101 KB |
-| **Total** | **524** | **290,5 MB** |
+| **Total** | **557** | **290,5 MB** |
 
-El catálogo completo conserva 26.871 artefactos no retirados; 26.347 están en cuarentena por
+El catálogo completo conserva 26.905 artefactos no retirados; 26.347 están en cuarentena por
 irrelevancia y no cuentan como corpus activo.
 
 ## 7. Verificación reproducible

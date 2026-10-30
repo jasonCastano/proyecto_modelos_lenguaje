@@ -112,41 +112,45 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 |------------|--------|-----------|
 | Repositorio público | ✅ | GitHub `jasonCastano/proyecto_modelos_lenguaje` |
 | Licencia MIT | ✅ | `LICENSE` 2026 |
-| Pipeline bronce | ✅ | 26.872 artefactos, 26.872 hashes únicos |
-| Corpus activo | ✅ | 524 artefactos: 397 oficiales + 78 YouTube + 41 Fundación + 8 de terceros |
+| Pipeline bronce | ✅ | 26.905 artefactos, 26.905 hashes únicos |
+| Corpus activo | ✅ | 557 artefactos: 397 oficiales + 111 YouTube + 41 Fundación + 8 de terceros |
 | Cobertura del sitio oficial | ✅ | 249/250 páginas del sitemap (99,6%) |
 | Canales oficiales | ✅ | YouTube y Fundación capturados; Instagram y Linktree bloqueados por `robots.txt` (`docs/fuentes_oficiales.md`) |
-| Deduplicación y versionado | ✅ | `content_hash`, `url_versions` |
-| Reanudación e idempotencia | ✅ | Pruebas de integración |
+| Capa plata | ✅ | 404 documentos canónicos, 3.810 fragmentos, 92 alias; `data/silver/` |
+| Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata |
+| Reanudación e idempotencia | ✅ | Pruebas de integración de bronce y plata |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 68 pruebas offline |
+| Pruebas | ✅ | 103 pruebas offline |
 | Calidad de código | ✅ | Ruff limpio |
-| Capas silver/gold | 🟡 | Pendientes |
+| Capa oro | 🟡 | Pendiente |
 | App Streamlit + LangChain | 🟡 | Pendientes (Módulo 1) |
 | Evaluación de 20 preguntas | 🟡 | Pendiente |
 | Informe del Módulo 1 | 🟡 | Pendiente |
-| CI y Pull Requests | 🟡 | Pendientes |
+| CI y Pull Requests | 🟡 | 2 PRs fusionados; workflow de CI agregado, pendiente ejecución en GitHub |
 | Cobertura de los 24 ítems | 🟡 | Matriz generada, evidencia en revisión |
 
 ### Cifras actuales
 
 | Métrica | Valor |
 |---------|------:|
-| Artefactos adquiridos | 26.872 |
-| Artefactos activos | 524 |
+| Artefactos adquiridos | 26.905 |
+| Artefactos activos | 557 |
 | Artefactos en cuarentena | 26.347 |
 | Videos de YouTube con transcripción | 33 |
+| Documentos plata canónicos | 404 |
+| Fragmentos plata | 3.810 |
 | Bronze activo | 0,36 GB |
+| Plata | 0,03 GB |
 | Cuarentena | 8,93 GB |
 | Datos totales | 9,29 GB (límite: 10 GB) |
-| Pruebas offline | 68 |
+| Pruebas offline | 103 |
 
 ## Fuentes de datos
 
 | Fuente | Artefactos activos | Uso |
 |--------|-------------------:|-----|
 | Sitio oficial `manuelita.com` | 397 | Identidad, historia, productos, sostenibilidad, noticias, informes, vacantes |
-| YouTube `@ManuelitaAgroindustria` | 78 | Metadatos del canal, 33 videos con transcripción (28 por subtítulos, 5 por ASR) |
+| YouTube `@ManuelitaAgroindustria` | 111 | Metadatos del canal, 33 videos con transcripción (28 por subtítulos, 5 por ASR) y versiones de metadatos con `subtitle_kinds` |
 | Fundación Manuelita | 41 | Fundación enlazada desde el Linktree oficial; informe de gestión 2025 |
 | El País | 4 | Rankings y menciones empresariales |
 | Cámara de Comercio de Cali | 1 | Contexto empresarial y clústeres |
@@ -169,6 +173,7 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Lenguaje | Python 3.14+ |
 | Entorno y dependencias | `uv`, `pyproject.toml`, `uv.lock` |
 | Scraping | `scrapling[fetchers]` + `yt-dlp` |
+| Extracción plata | `trafilatura` + `lxml` (HTML), `pypdf` (PDF), `openpyxl` (XLSX) |
 | Transcripción local | `faster-whisper` (extra `asr`, opcional) |
 | Catálogo | SQLite (WAL) + manifiestos JSONL |
 | Pruebas | `pytest` |
@@ -250,6 +255,39 @@ uv run python scripts/verify_official_channels.py
 El detalle de qué se pudo capturar en cada canal, qué quedó bloqueado y por qué está en
 [`docs/fuentes_oficiales.md`](docs/fuentes_oficiales.md).
 
+### Capa plata (silver)
+
+```bash
+# Construir o actualizar la capa plata
+uv run pml silver build --run 2026-10-silver-01 --json
+
+# Humo con diez artefactos
+uv run pml silver build --run 2026-10-silver-00 --limit 10 --json
+
+# Auditoría, reporte y estado
+uv run pml silver verify --run 2026-10-silver-01 --sample 50 --seed 1 --json
+uv run pml silver report --run 2026-10-silver-01 --format md
+uv run pml silver status --json
+
+# Envoltorio canónico
+uv run python scripts/build_silver.py --run 2026-10-silver-01 --json
+```
+
+Salidas en `data/silver/`:
+
+```text
+data/silver/
+├── documents.jsonl                  # documentos canónicos y alias
+├── chunks.jsonl                     # fragmentos de documentos canónicos
+├── markdown/<doc_id>.md             # revisión humana con frontmatter
+├── _meta/state.jsonl                # estado incremental por artefacto
+└── reports/<run_id>/quality.{json,md}
+```
+
+La plata es determinista y offline: no usa LLM, embeddings ni OCR. Los PDF escaneados, cifrados o sin texto
+se omiten con una razón; no se inventa contenido. La configuración está en `config/silver.toml` y su hash queda
+registrado en cada ejecución.
+
 ### Curaduría de relevancia
 
 ```bash
@@ -284,7 +322,7 @@ uv run streamlit run app.py
 | Capa | Ruta | Equivalente en la rúbrica | Estado |
 |------|------|---------------------------|--------|
 | Bronce | `data/bronze/` | `data/raw/` | ✅ Implementada |
-| Plata | `data/silver/` | `data/processed/` | 🟡 Pendiente |
+| Plata | `data/silver/` | `data/processed/` | ✅ Implementada |
 | Oro | `data/gold/` | `data/gold/` | 🟡 Pendiente |
 | Cuarentena | `data/quarantine/` | — | ✅ Auditoría de retiros |
 
@@ -294,6 +332,13 @@ data/bronze/
 ├── manifests/<campaña>.jsonl               # metadata de cada artefacto
 ├── reports/<campaña>/                      # reportes de campaña y cobertura
 └── _meta/bronze.sqlite3                    # catálogo SQLite
+
+data/silver/
+├── documents.jsonl                         # documentos canónicos y alias
+├── chunks.jsonl                            # fragmentos recuperables
+├── markdown/<doc_id>.md                    # revisión con frontmatter YAML
+├── _meta/state.jsonl                       # estado incremental
+└── reports/<run_id>/quality.{json,md}      # calidad por ejecución
 ```
 
 El límite de 10 GB se controla sobre `data/bronze/`. `data/` no se versiona; los datos se referencian por
@@ -308,7 +353,7 @@ manifiesto y hash.
 ├── config/                        # Fuentes, cobertura, exclusiones y reglas
 ├── data/                          # Capas medallion (no versionado)
 │   ├── bronze/                    # Crudo, inmutable
-│   ├── silver/                    # Limpieza y chunks (pendiente)
+│   ├── silver/                    # Texto limpio, secciones y chunks
 │   ├── gold/                      # Base de conocimiento (pendiente)
 │   └── quarantine/                # Retiros con auditoría
 ├── scripts/                       # Entradas operativas reproducibles
@@ -355,13 +400,15 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 
 ## Limitaciones conocidas
 
-- El corpus activo es de 524 artefactos; 26.347 fueron retirados a cuarentena por no ser relevantes.
+- El corpus activo es de 557 artefactos; 26.347 fueron retirados a cuarentena por no ser relevantes.
 - La cuarentena ocupa 8,93 GB y el total de datos está en 9,29 GB; la purga definitiva está pendiente.
+- La capa plata produjo 404 documentos canónicos y 3.810 fragmentos; 92 artefactos quedaron como alias por
+  duplicados o versiones. 61 se omitieron: 35 sin texto, 10 PDF escaneados, 6 PDF cifrados y 10 sitemaps.
 - Instagram y Linktree no se capturan por `robots.txt`; 30 videos de YouTube no están disponibles y 3 exigen sesión.
 - La matriz de 24 ítems requiere recalibración: SECOP, NIT, precios, fichas técnicas y catálogos aún no tienen
   evidencia verificable.
-- La app Streamlit, LangChain, las capas silver/gold, las 20 preguntas y el informe del Módulo 1 están pendientes.
-- El repositorio aún no tiene CI ni Pull Requests fusionados.
+- La app Streamlit, LangChain, la capa oro, las 20 preguntas y el informe del Módulo 1 están pendientes.
+- El repositorio tiene 2 PRs fusionados y un workflow de CI; falta verificar la ejecución en GitHub Actions.
 
 ## Documentación
 
@@ -370,6 +417,10 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Plan del bronce](specs/001-bronze-web-scraping/plan.md)
 - [Especificación de curaduría](specs/002-manuelita-relevance-filter/spec.md)
 - [Plan de curaduría](specs/002-manuelita-relevance-filter/plan.md)
+- [Especificación de la capa plata](specs/003-silver-medallion-layer/spec.md)
+- [Plan de la capa plata](specs/003-silver-medallion-layer/plan.md)
+- [Guía de validación de la capa plata](specs/003-silver-medallion-layer/quickstart.md)
+- [Decisión de arquitectura de la capa plata](docs/decisions/0003-silver-layer.md)
 - [Verificación de canales oficiales](docs/fuentes_oficiales.md)
 - [Bitácora del 2026-10-29](bitacora/2026-10-29.md)
 - [Guía de validación del bronce](specs/001-bronze-web-scraping/quickstart.md)

@@ -5,9 +5,8 @@ from __future__ import annotations
 import asyncio
 import json
 
-from tests.conftest import build_runner
-
 from proyecto_modelos_lenguaje.catalog import Catalog
+from tests.conftest import build_runner
 
 
 def test_campaign_stores_artifacts_and_reports(app_config) -> None:

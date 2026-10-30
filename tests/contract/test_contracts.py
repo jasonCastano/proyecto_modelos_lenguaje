@@ -7,10 +7,10 @@ import json
 import tomllib
 
 import jsonschema
-from tests.conftest import PROJECT_ROOT, build_runner
 
 from proyecto_modelos_lenguaje.catalog import artifact_payload
 from proyecto_modelos_lenguaje.reporting import coverage_payload
+from tests.conftest import PROJECT_ROOT, build_runner
 
 CONTRACTS = PROJECT_ROOT / "specs" / "001-bronze-web-scraping" / "contracts"
 

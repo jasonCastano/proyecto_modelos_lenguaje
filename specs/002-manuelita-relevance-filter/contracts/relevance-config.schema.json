@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://manuelita-rag.local/contracts/relevance-config.schema.json",
+  "title": "RelevanceConfig",
+  "description": "Validation contract for config/relevance.toml. TOML tables mirror these JSON objects.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["settings", "terms", "protected_domains"],
+  "properties": {
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keep_threshold", "review_threshold", "retention_days", "max_scan_bytes"],
+      "properties": {
+        "keep_threshold": { "type": "integer", "minimum": 1, "maximum": 100, "default": 60 },
+        "review_threshold": { "type": "integer", "minimum": 0, "maximum": 99, "default": 25 },
+        "retention_days": { "type": "integer", "minimum": 0, "maximum": 365, "default": 30 },
+        "max_scan_bytes": {
+          "type": "integer",
+          "minimum": 1048576,
+          "maximum": 67108864,
+          "default": 8388608
+        },
+        "batch_size": { "type": "integer", "minimum": 1, "maximum": 5000, "default": 500 },
+        "title_weight": { "type": "integer", "minimum": 0, "maximum": 50, "default": 10 }
+      }
+    },
+    "terms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strong_aliases", "company_terms", "context_terms", "negative_patterns"],
+      "properties": {
+        "strong_aliases": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 2, "maxLength": 120 }
+        },
+        "company_terms": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 2, "maxLength": 120 }
+        },
+        "context_terms": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 2, "maxLength": 120 }
+        },
+        "negative_patterns": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 2, "maxLength": 200 }
+        },
+        "incidental_patterns": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 2, "maxLength": 200 }
+        }
+      }
+    },
+    "source_weights": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": -50, "maximum": 50 }
+    },
+    "protected_domains": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 4, "maxLength": 253 }
+    }
+  }
+}

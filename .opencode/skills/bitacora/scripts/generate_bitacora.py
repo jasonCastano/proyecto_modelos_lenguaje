@@ -33,6 +33,218 @@ class Check:
     critical: bool = False
 
 
+@dataclass(frozen=True)
+class TaskStep:
+    id: str
+    stage: int
+    title: str
+    depends_on: tuple[str, ...]
+    deliverable: str
+    acceptance: str
+    checks: tuple[str, ...]
+    owner: str
+    estimate: str
+
+
+@dataclass(frozen=True)
+class QualityGate:
+    id: str
+    after: str
+    criterion: str
+
+
+CASCADE_STEPS: tuple[TaskStep, ...] = (
+    TaskStep(
+        "M1-01",
+        1,
+        "Definir alcance y las 20+ preguntas",
+        (),
+        "docs/alcance.md",
+        "6–8 categorías; 20+ preguntas con ID, categoría, fuente esperada y mapeo a los 24 ítems.",
+        ("alcance",),
+        "Ambos",
+        "1,5 h",
+    ),
+    TaskStep(
+        "M1-02",
+        2,
+        "Crear la entrada canónica de scraping",
+        (),
+        "scripts/scrape_empresa.py",
+        "`uv run python scripts/scrape_empresa.py --help` funciona y delega en run_campaign.py.",
+        ("pipeline_entry",),
+        "Jason",
+        "0,5 h",
+    ),
+    TaskStep(
+        "M1-03",
+        2,
+        "Documentar la ficha de datos",
+        ("M1-02",),
+        "docs/data_card.md",
+        "Cifras trazables a reportes/catálogo; fuentes, licencias, fechas y limitaciones.",
+        ("data_card",),
+        "Jason",
+        "1 h",
+    ),
+    TaskStep(
+        "M1-04",
+        3,
+        "Configurar modelo y entorno",
+        ("M1-01",),
+        "config/llm.toml + .env.example + src/proyecto_modelos_lenguaje/llm.py",
+        "Modelo, temperatura y límites declarados; clave solo por entorno; adaptador offline.",
+        ("llm",),
+        "Roberto",
+        "1 h",
+    ),
+    TaskStep(
+        "M1-05",
+        3,
+        "Implementar Resumen, FAQ y Q&A con LangChain",
+        ("M1-04",),
+        "prompts/*.md + src/proyecto_modelos_lenguaje/tasks.py",
+        "Tres tareas con citas y fallback; Q&A sin embeddings y con 'no hay evidencia'.",
+        ("llm",),
+        "Roberto",
+        "3 h",
+    ),
+    TaskStep(
+        "M1-06",
+        3,
+        "Registrar prompts, parámetros y resultados",
+        ("M1-05",),
+        "docs/prompt_log.md",
+        "Versiones, baseline zero-shot y variante final; salidas observadas, no inventadas.",
+        ("prompt_log",),
+        "Roberto",
+        "1 h",
+    ),
+    TaskStep(
+        "M1-07",
+        4,
+        "Implementar la app Streamlit",
+        ("M1-05", "M1-06"),
+        "app.py",
+        "Resumen, FAQ y Q&A; citas; panel de URLs/tokens/descartes; errores y timeout controlados.",
+        ("app", "ui_metrics"),
+        "Roberto",
+        "4 h",
+    ),
+    TaskStep(
+        "M1-08",
+        5,
+        "Evaluar las 20 preguntas",
+        ("M1-07",),
+        "docs/evaluacion_modulo1.md",
+        "20 filas con baseline y final, fuente, corrección, coherencia, alucinación y métricas.",
+        ("evaluation",),
+        "Ambos",
+        "2,5 h",
+    ),
+    TaskStep(
+        "M1-09",
+        5,
+        "Ajustar prompts con evidencia",
+        ("M1-08",),
+        "docs/prompt_log.md actualizado",
+        "Fallos clasificados; cambios justificados con una nueva muestra ejecutada.",
+        ("prompt_log", "evaluation"),
+        "Ambos",
+        "1 h",
+    ),
+    TaskStep(
+        "M1-10",
+        6,
+        "Redactar el informe del Módulo 1",
+        ("M1-09", "M1-03"),
+        "docs/informe_modulo1.md",
+        "Cinco secciones: problema, solución, datos, modelado y resultados.",
+        ("report",),
+        "Ambos",
+        "2 h",
+    ),
+    TaskStep(
+        "M1-11",
+        6,
+        "Escribir el guion de demo 12+3",
+        ("M1-10", "M1-07"),
+        "docs/demo.md",
+        "Pasos cronometrados, qué mostrar en app/repo/IDE y plan B si falla el modelo.",
+        ("demo",),
+        "Ambos",
+        "1 h",
+    ),
+    TaskStep(
+        "M1-12",
+        6,
+        "Actualizar README y capturas",
+        ("M1-11",),
+        "README.md y capturas",
+        "Comandos reales, estado del Módulo 1, capturas y limitaciones.",
+        ("readme",),
+        "Ambos",
+        "0,5 h",
+    ),
+    TaskStep(
+        "M1-13",
+        7,
+        "Añadir pruebas y CI",
+        ("M1-12",),
+        "tests/ y .github/workflows/ci.yml",
+        "Pruebas de tareas con LLM falso, citas/fallback, importación de app; Ruff y CI verdes.",
+        ("tests", "ruff", "ci"),
+        "Ambos",
+        "1,5 h",
+    ),
+    TaskStep(
+        "M1-14",
+        7,
+        "Publicar por PR",
+        ("M1-13",),
+        "Rama feat/modulo1-app y PR",
+        "PR con cambios, pruebas, capturas, riesgos y CI verde; revisión cruzada.",
+        ("prs",),
+        "Ambos",
+        "1 h",
+    ),
+    TaskStep(
+        "M1-15",
+        7,
+        "Etiquetar y ensayar",
+        ("M1-14",),
+        "Tag v0.1.0-modulo1",
+        "Tag sobre main con CI verde y ensayo cronometrado 12+3 sin diapositivas.",
+        ("tag",),
+        "Ambos",
+        "1 h",
+    ),
+)
+
+QUALITY_GATES: tuple[QualityGate, ...] = (
+    QualityGate("G1", "M1-01", "Preguntas revisadas y aprobadas por ambos."),
+    QualityGate("G2", "M1-03", "Wrapper canónico y ficha de datos reproducibles."),
+    QualityGate("G3", "M1-06", "Tres tareas LangChain con citas y fallback."),
+    QualityGate("G4", "M1-07", "App ejecutable con tres funcionalidades y panel."),
+    QualityGate("G5", "M1-09", "Evaluación completa y prompts ajustados con evidencia."),
+    QualityGate("G6", "M1-12", "Informe, demo y README coherentes."),
+    QualityGate("G7", "M1-15", "Tag publicado y demo ensayada."),
+)
+
+CASCADE_ICONS = {
+    "done": "✅",
+    "partial": "🟡",
+    "pending": "❌",
+    "blocked": "⛔",
+}
+CASCADE_LABELS = {
+    "done": "completada",
+    "partial": "parcial",
+    "pending": "pendiente",
+    "blocked": "bloqueada",
+}
+
+
 def find_project_root(start: Path) -> Path:
     for candidate in [start, *start.parents]:
         if (candidate / "CONSTITUTION.md").is_file() and (candidate / "pyproject.toml").is_file():
@@ -668,6 +880,60 @@ def check_tag(git_info: dict[str, Any]) -> Check:
     )
 
 
+def cascade_state(checks: list[Check]) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Return task rows and gate rows with dependency-aware states."""
+    by_key = {check.key: check for check in checks}
+    status_by_id: dict[str, str] = {}
+    rows: list[dict[str, str]] = []
+    for step in CASCADE_STEPS:
+        own = [by_key[key].status if key in by_key else "unknown" for key in step.checks]
+        dependencies_done = all(status_by_id.get(dep) == "done" for dep in step.depends_on)
+        if not dependencies_done:
+            status = "blocked"
+        elif not own or any(value == "pending" for value in own):
+            status = "pending"
+        elif any(value in {"partial", "unknown"} for value in own):
+            status = "partial"
+        else:
+            status = "done"
+        status_by_id[step.id] = status
+        rows.append(
+            {
+                "id": step.id,
+                "stage": str(step.stage),
+                "title": step.title,
+                "depends_on": ", ".join(step.depends_on) or "—",
+                "deliverable": step.deliverable,
+                "acceptance": step.acceptance,
+                "owner": step.owner,
+                "estimate": step.estimate,
+                "status": status,
+            }
+        )
+
+    gates: list[dict[str, str]] = []
+    for gate in QUALITY_GATES:
+        index = next(
+            (position for position, step in enumerate(CASCADE_STEPS) if step.id == gate.after), 0
+        )
+        statuses = [status_by_id.get(step.id, "pending") for step in CASCADE_STEPS[: index + 1]]
+        if all(value == "done" for value in statuses):
+            status = "done"
+        elif any(value == "blocked" for value in statuses):
+            status = "blocked"
+        else:
+            status = "pending"
+        gates.append(
+            {
+                "id": gate.id,
+                "after": gate.after,
+                "criterion": gate.criterion,
+                "status": status,
+            }
+        )
+    return rows, gates
+
+
 def phase_status(checks: list[Check]) -> tuple[str, str]:
     by_key = {check.key: check for check in checks}
     phase1_keys = [
@@ -738,7 +1004,13 @@ def build_report(
 ) -> str:
     done = [check for check in checks if check.status == "done"]
     pending = [check for check in checks if check.status in {"pending", "partial", "unknown"}]
-    critical = [check for check in pending if check.critical]
+    cascade_rows, gates = cascade_state(checks)
+    next_step = next((row for row in cascade_rows if row["status"] != "done"), None)
+    next_priority = (
+        f"{next_step['id']} — {next_step['title']} ({next_step['deliverable']})"
+        if next_step
+        else "avanzar a la Fase 2 (embeddings y RAG)."
+    )
     progress = round(
         100 * (len(done) + 0.5 * len([c for c in pending if c.status == "partial"])) / len(checks)
     )
@@ -796,8 +1068,7 @@ def build_report(
         f"- **Repositorio**: rama `{git_info['branch']}`, commit `{git_info['head']}`; {sync}.",
         f"- **Corpus**: {metrics['active'] or 0} artefactos activos "
         f"de {metrics['artifacts'] or 0}; {metrics['quarantined'] or 0} en cuarentena.",
-        f"- **Siguiente prioridad**: "
-        f"{critical[0].action if critical else 'avanzar a la Fase 2 (embeddings y RAG).'}",
+        f"- **Siguiente prioridad**: {next_priority}",
         "",
         "## 2. Contexto de la constitución",
         "",
@@ -892,14 +1163,53 @@ def build_report(
     if not pending:
         lines.append("| — | Sin pendientes en la lista | ✅ | Avanzar a la Fase 2 |")
 
-    lines.extend(["", "## 8. Próximos pasos sugeridos", ""])
+    lines.extend(
+        [
+            "",
+            "## 8. Cascada secuencial de tareas pendientes",
+            "",
+            "La secuencia respeta dependencias y puertas de calidad: no se debe avanzar sin "
+            "cerrar la puerta anterior.",
+            "",
+            f"**Ruta crítica:** {' → '.join(step.id for step in CASCADE_STEPS)}",
+            "",
+            "| Etapa | ID | Tarea | Depende de | Entregable | Criterio de aceptación | "
+            "Responsable | Tiempo | Estado |",
+            "|-------|----|-------|------------|------------|------------------------|-------------|--------|--------|",
+        ]
+    )
+    visible_steps = [row for row in cascade_rows if row["status"] != "done"]
+    if visible_steps:
+        for row in visible_steps:
+            icon = CASCADE_ICONS.get(row["status"], "⚠️")
+            label = CASCADE_LABELS.get(row["status"], row["status"])
+            lines.append(
+                f"| {row['stage']} | **{row['id']}** | {row['title']} | {row['depends_on']} | "
+                f"{row['deliverable']} | {row['acceptance']} | {row['owner']} | "
+                f"{row['estimate']} | {icon} {label} |"
+            )
+    else:
+        lines.append("| — | — | Sin tareas pendientes | — | — | — | — | — | ✅ completada |")
+
+    lines.extend(
+        [
+            "",
+            "### Puertas de calidad",
+            "",
+            "| Puerta | Después de | Criterio | Estado |",
+            "|--------|------------|----------|--------|",
+        ]
+    )
+    for gate in gates:
+        icon = CASCADE_ICONS.get(gate["status"], "⚠️")
+        label = CASCADE_LABELS.get(gate["status"], gate["status"])
+        lines.append(f"| {gate['id']} | {gate['after']} | {gate['criterion']} | {icon} {label} |")
+
+    lines.extend(["", "## 9. Próximos pasos sugeridos", ""])
     steps: list[str] = []
-    for check in critical:
-        if check.action and check.action not in steps:
-            steps.append(check.action)
-    for check in pending:
-        if not check.critical and check.action and check.action not in steps:
-            steps.append(check.action)
+    for row in cascade_rows:
+        if row["status"] != "done":
+            steps.append(f"{row['id']} — {row['title']}: {row['deliverable']}")
     if not steps:
         steps = [
             "Documentar la decisión de embeddings y base vectorial para la Fase 2.",
@@ -912,7 +1222,7 @@ def build_report(
     lines.extend(
         [
             "",
-            "## 9. Riesgos y observaciones",
+            "## 10. Riesgos y observaciones",
             "",
         ]
     )
@@ -945,7 +1255,7 @@ def build_report(
     lines.extend(
         [
             "",
-            "## 10. Evidencia de verificación",
+            "## 11. Evidencia de verificación",
             "",
             "```text",
             f"git rev-parse --abbrev-ref HEAD  -> {git_info['branch']}",

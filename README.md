@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-132%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-185%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/status-M%C3%B3dulo%201%20en%20progreso-yellow)](CONSTITUTION.md)
 
@@ -121,12 +121,13 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 132 pruebas offline |
+| Pruebas | ✅ | 185 pruebas offline |
 | Calidad de código | ✅ | Ruff limpio |
-| App Streamlit + LangChain | 🟡 | Pendientes (Módulo 1) |
+| Modelo y entorno | ✅ | Ollama local, `config/llm.toml`, adaptador offline |
+| App Streamlit + LangChain | 🟡 | Dependencias LangChain instaladas; tareas pendientes (Módulo 1) |
 | Evaluación de 40 preguntas | 🟡 | Pendiente |
 | Informe del Módulo 1 | 🟡 | Pendiente |
-| CI y Pull Requests | 🟡 | 7 PRs fusionados; workflow de CI verde |
+| CI y Pull Requests | 🟡 | 14 PRs fusionados; workflow de CI verde |
 | Cobertura de los 24 ítems | ✅ | 24/24 evaluados por la capa oro con evidencia |
 
 ### Cifras actuales
@@ -148,7 +149,7 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Oro | 0,20 GB |
 | Cuarentena | 8,93 GB |
 | Datos totales | 9,52 GB (límite: 10 GB) |
-| Pruebas offline | 132 |
+| Pruebas offline | 185 |
 
 ## Fuentes de datos
 
@@ -273,6 +274,30 @@ uv run python scripts/verify_official_channels.py
 
 El detalle de qué se pudo capturar en cada canal, qué quedó bloqueado y por qué está en
 [`docs/fuentes_oficiales.md`](docs/fuentes_oficiales.md).
+
+### Modelo local (Ollama)
+
+El Módulo 1 usa un modelo local de bajo costo. La configuración vive en `config/llm.toml`; no se
+versionan claves ni `.env`.
+
+```bash
+# Instalar Ollama y descargar el modelo (runtime del sistema, fuera de uv)
+ollama serve
+ollama pull llama3.1:8b
+ollama list
+
+# Ver la configuración efectiva y comprobar el modelo
+uv run python -m proyecto_modelos_lenguaje.llm --print-config
+uv run python -m proyecto_modelos_lenguaje.llm --check
+```
+
+- Modelo por defecto: `llama3.1:8b`.
+- Respaldo para equipos con poca RAM/VRAM: `llama3.2:3b`.
+- Contexto configurado: 16.384 tokens; paquete por defecto: 8.000 tokens.
+- `OLLAMA_BASE_URL` se puede cambiar en `.env` (copia `.env.example`).
+- `--check` devuelve `0` si Ollama responde y el modelo está descargado; `2` con un mensaje accionable si
+  falta el servidor o el modelo.
+- Las pruebas usan `build_fake_model()` y no requieren Ollama ni red.
 
 ### Capa plata (silver)
 
@@ -430,7 +455,7 @@ manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 132 pruebas unitarias, de integración y de contrato.
+- **Pruebas offline**: 185 pruebas unitarias, de integración y de contrato.
 - **Lint**: `uv run ruff check .` sin hallazgos.
 - **Integridad**: SHA-256 por artefacto; verificación de muestras del corpus activo.
 - **Procedencia**: URL canónica, fecha UTC, tipo, tamaño, categoría, idioma y campaña.
@@ -490,6 +515,8 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Plan de la entrada canónica de scraping](specs/005-scrape-empresa-entrypoint/plan.md)
 - [Guía de validación de la entrada canónica](specs/005-scrape-empresa-entrypoint/quickstart.md)
 - [Decisión de arquitectura de la entrada canónica](docs/decisions/0005-scrape-entrypoint.md)
+- [Especificación técnica del modelo Ollama](specs/006-llm-ollama-config/spec.md)
+- [Decisión de arquitectura del modelo Ollama](docs/decisions/0006-ollama-llm.md)
 - [Verificación de canales oficiales](docs/fuentes_oficiales.md)
 - [Bitácora del 2026-10-29](bitacora/2026-10-29.md)
 - [Guía de validación del bronce](specs/001-bronze-web-scraping/quickstart.md)

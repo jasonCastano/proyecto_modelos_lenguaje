@@ -49,6 +49,28 @@ delay_seconds = 1.5
 max_concurrency = 2
 
 [[sources]]
+id = "fundacion_manuelita"
+domain = "fundacionmanuelita.org"
+platform = "website"
+authority = "first_party"
+enabled = true
+priority = 2
+seeds = ["https://fundacionmanuelita.org/"]
+sitemaps = ["https://fundacionmanuelita.org/sitemap_index.xml"]
+follow_links = true
+max_depth = 2
+category_hints = ["identity", "digital_presence"]
+
+[sources.policy]
+robots = "respect"
+requires_auth = false
+excluded_paths = ["/wp-admin", "/wp-includes", "/feed", "/comments"]
+
+[sources.rate_limit]
+delay_seconds = 1.5
+max_concurrency = 1
+
+[[sources]]
 id = "youtube"
 domain = "youtube.com"
 platform = "youtube"
@@ -106,6 +128,26 @@ requires_auth = false
 
 [sources.rate_limit]
 delay_seconds = 3.0
+max_concurrency = 1
+
+[[sources]]
+id = "linktree"
+domain = "linktr.ee"
+platform = "website"
+authority = "first_party"
+enabled = true
+priority = 3
+seeds = ["https://linktr.ee/manuelitaagroindustria"]
+follow_links = false
+max_depth = 0
+category_hints = ["digital_presence"]
+
+[sources.policy]
+robots = "respect"
+requires_auth = false
+
+[sources.rate_limit]
+delay_seconds = 1.5
 max_concurrency = 1
 
 [[sources]]

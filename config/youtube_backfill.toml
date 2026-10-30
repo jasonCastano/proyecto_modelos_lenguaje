@@ -1,0 +1,46 @@
+# Targeted YouTube subtitle backfill: only videos whose captions were rate-limited.
+# Uses a long crawl delay to stay under YouTube's subtitle rate limits.
+
+[settings]
+data_root = "data"
+storage_limit_bytes = 10000000000
+user_agent = "ManuelitaRAG/0.1 (academic research; +https://github.com/jasonCastano/proyecto_modelos_lenguaje)"
+contact = "jasonale3007@gmail.com"
+max_concurrency = 1
+max_per_host = 1
+default_delay_seconds = 45.0
+max_depth = 0
+request_timeout_seconds = 60
+max_retries = 3
+retry_backoff_seconds = 30.0
+allowed_media_types = [
+  "application/json",
+  "text/vtt",
+]
+
+[[sources]]
+id = "youtube"
+domain = "youtube.com"
+platform = "youtube"
+authority = "first_party"
+enabled = true
+priority = 2
+seeds = [
+  "https://www.youtube.com/watch?v=XpPz6nM0Hb8",
+  "https://www.youtube.com/watch?v=o5HHOA6IWps",
+  "https://www.youtube.com/watch?v=j7YQakSnK2g",
+  "https://www.youtube.com/watch?v=asEruPVCaM4",
+  "https://www.youtube.com/watch?v=PwjzJFavJ8U",
+  "https://www.youtube.com/shorts/9TrHNkHD7qU",
+]
+follow_links = false
+max_depth = 0
+category_hints = ["digital_presence"]
+
+[sources.policy]
+robots = "respect"
+requires_auth = false
+
+[sources.rate_limit]
+delay_seconds = 45.0
+max_concurrency = 1

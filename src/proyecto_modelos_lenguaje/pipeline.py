@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import random
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from .catalog import Catalog, artifact_payload
 from .config import PROJECT_ROOT, AppConfig, SourceConfig
@@ -23,6 +25,7 @@ from .extractors.links import (
     same_site,
     visible_text,
 )
+from .extractors.linktree import parse_linktree
 from .extractors.metadata import (
     detect_media_type,
     is_allowed_media_type,
@@ -441,13 +444,42 @@ class CampaignRunner:
         )
         if outcome == "deferred":
             return
+        if html is not None and source.platform == "linktree":
+            linktree = parse_linktree(html)
+            if linktree:
+                serialized = json.dumps(linktree, ensure_ascii=False, indent=2)
+                linktree_outcome = self._store(
+                    target=target,
+                    source=source,
+                    data=serialized.encode("utf-8"),
+                    media_type="application/json",
+                    text_hash=sha256_text(normalize_text(serialized)),
+                    text=serialized,
+                    title="Linktree oficial",
+                    published_at=None,
+                    language="es",
+                    language_method="heuristic",
+                    url_original=target.url_original,
+                    url_canonical=f"{target.url_canonical}?view=linktree",
+                    http_status=200,
+                )
+                if linktree_outcome == "deferred":
+                    return
         if html is not None and source.follow_links:
             await self._follow_links(
                 target, source, html, response.final_url or target.url_canonical
             )
 
     async def _process_youtube(self, target: Target, source: SourceConfig) -> None:
-        result = await asyncio.to_thread(self._youtube.fetch_video, target.url_canonical)
+        await asyncio.sleep(max(source.delay_seconds, 1.0))
+        path = urlsplit(target.url_canonical).path
+        is_channel = path.startswith(("/@", "/channel/", "/c/", "/user/")) and not path.startswith(
+            ("/watch", "/shorts", "/embed")
+        )
+        if is_channel:
+            result = await asyncio.to_thread(self._youtube.fetch_channel, target.url_canonical)
+        else:
+            result = await asyncio.to_thread(self._youtube.fetch_video, target.url_canonical)
         if result.error:
             self._fail(target, ReasonCode.PARSE_ERROR, result.error[:500])
             return

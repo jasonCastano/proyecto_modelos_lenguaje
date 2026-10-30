@@ -23,6 +23,8 @@ from .config import (
 from .coverage import build_matrix
 from .curation import CurationError, CurationService
 from .fetchers.http import build_http_fetcher
+from .gold.pipeline import GoldPipeline
+from .gold.store import GoldStateError
 from .pipeline import CampaignRunner
 from .reporting import write_campaign_report, write_coverage_report
 from .silver.pipeline import SilverPipeline
@@ -590,6 +592,59 @@ def cmd_silver_status(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_gold_build(args: argparse.Namespace) -> int:
+    pipeline = GoldPipeline.from_paths(
+        silver_dir=args.silver_dir,
+        config_path=args.config,
+        taxonomy_path=args.taxonomy,
+    )
+    payload = pipeline.build(
+        args.run,
+        limit=args.limit,
+        topic=args.topic,
+        force=args.force,
+    )
+    _emit(payload, args.json)
+    return 0 if payload.get("status") == "completed" else 1
+
+
+def cmd_gold_verify(args: argparse.Namespace) -> int:
+    pipeline = GoldPipeline.from_paths(
+        silver_dir=args.silver_dir,
+        config_path=args.config,
+        taxonomy_path=args.taxonomy,
+    )
+    payload = pipeline.verify_run(args.run, sample=args.sample, seed=args.seed)
+    _emit(payload, args.json)
+    return 0 if payload.get("passed") else 1
+
+
+def cmd_gold_report(args: argparse.Namespace) -> int:
+    pipeline = GoldPipeline.from_paths(
+        silver_dir=args.silver_dir,
+        config_path=args.config,
+        taxonomy_path=args.taxonomy,
+    )
+    payload = pipeline.report(args.run)
+    if args.format == "md":
+        path = pipeline.config.output.root / "reports" / args.run / "quality.md"
+        print(path.read_text(encoding="utf-8"))
+        return 0
+    _emit(payload, True)
+    return 0
+
+
+def cmd_gold_status(args: argparse.Namespace) -> int:
+    pipeline = GoldPipeline.from_paths(
+        silver_dir=args.silver_dir,
+        config_path=args.config,
+        taxonomy_path=args.taxonomy,
+    )
+    payload = pipeline.status(args.run)
+    _emit(payload, args.json)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--config", default=argparse.SUPPRESS, help="path to sources.toml")
@@ -784,6 +839,46 @@ def build_parser() -> argparse.ArgumentParser:
     silver_status.add_argument("--json", action="store_true")
     silver_status.set_defaults(func=cmd_silver_status)
 
+    gold = sub.add_parser("gold", help="gold layer operations")
+    gold_sub = gold.add_subparsers(dest="gold_command", required=True)
+
+    gold_build = gold_sub.add_parser("build", help="build or update the gold layer")
+    gold_build.add_argument("--config", default="config/gold.toml")
+    gold_build.add_argument("--taxonomy", default="config/gold_taxonomy.toml")
+    gold_build.add_argument("--silver-dir", default="data/silver")
+    gold_build.add_argument("--run", required=True)
+    gold_build.add_argument("--limit", type=int, default=None)
+    gold_build.add_argument("--topic")
+    gold_build.add_argument("--force", action="store_true")
+    gold_build.add_argument("--json", action="store_true")
+    gold_build.set_defaults(func=cmd_gold_build)
+
+    gold_verify = gold_sub.add_parser("verify", help="audit a gold run")
+    gold_verify.add_argument("--config", default="config/gold.toml")
+    gold_verify.add_argument("--taxonomy", default="config/gold_taxonomy.toml")
+    gold_verify.add_argument("--silver-dir", default="data/silver")
+    gold_verify.add_argument("--run", required=True)
+    gold_verify.add_argument("--sample", type=int, default=50)
+    gold_verify.add_argument("--seed", type=int, default=1)
+    gold_verify.add_argument("--json", action="store_true")
+    gold_verify.set_defaults(func=cmd_gold_verify)
+
+    gold_report = gold_sub.add_parser("report", help="show a gold quality report")
+    gold_report.add_argument("--config", default="config/gold.toml")
+    gold_report.add_argument("--taxonomy", default="config/gold_taxonomy.toml")
+    gold_report.add_argument("--silver-dir", default="data/silver")
+    gold_report.add_argument("--run", required=True)
+    gold_report.add_argument("--format", choices=["json", "md"], default="json")
+    gold_report.set_defaults(func=cmd_gold_report)
+
+    gold_status = gold_sub.add_parser("status", help="show the latest gold run")
+    gold_status.add_argument("--config", default="config/gold.toml")
+    gold_status.add_argument("--taxonomy", default="config/gold_taxonomy.toml")
+    gold_status.add_argument("--silver-dir", default="data/silver")
+    gold_status.add_argument("--run")
+    gold_status.add_argument("--json", action="store_true")
+    gold_status.set_defaults(func=cmd_gold_status)
+
     return parser
 
 
@@ -797,6 +892,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         return int(args.func(args))
     except SilverStateError as exc:
+        return _error(str(exc), 2)
+    except GoldStateError as exc:
         return _error(str(exc), 2)
     except ConfigError as exc:
         return _error(str(exc), 3)

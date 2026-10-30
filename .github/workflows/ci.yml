@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    branches: ["main", "001-bronze-web-scraping", "003-silver-medallion-layer"]
+    branches:
+      ["main", "001-bronze-web-scraping", "003-silver-medallion-layer", "004-gold-medallion-layer"]
   pull_request:
 
 jobs:
@@ -25,6 +26,9 @@ jobs:
 
       - name: Tests
         run: uv run pytest -q
+
+      - name: Gold contracts
+        run: uv run pytest tests/contract/gold -q
 
       - name: Build
         run: uv build

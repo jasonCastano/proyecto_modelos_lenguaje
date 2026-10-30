@@ -15,6 +15,12 @@ dependencies = [
     "yt-dlp>=2026.10.26",
 ]
 
+[project.optional-dependencies]
+asr = [
+    "faster-whisper>=1.2.1",
+    "av>=14,<19",
+]
+
 [project.urls]
 Repository = "https://github.com/jasonCastano/proyecto_modelos_lenguaje"
 Issues = "https://github.com/jasonCastano/proyecto_modelos_lenguaje/issues"

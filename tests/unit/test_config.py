@@ -45,7 +45,7 @@ def _write_config(root: Path, body: str) -> Path:
 
 def test_real_configuration_is_valid() -> None:
     config = load_config(PROJECT_ROOT / "config" / "sources.toml")
-    assert len(config.sources) == 13
+    assert len(config.sources) == 15
     assert config.settings.storage_limit_bytes == 10_000_000_000
     assert len(config.config_hash) == 64
     items = load_coverage_items(COVERAGE_PATH)

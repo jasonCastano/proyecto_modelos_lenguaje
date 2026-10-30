@@ -15,22 +15,39 @@ class YoutubeSource(SourceAdapter):
     adapter: YoutubeAdapter | None = None
 
     async def discover(self, context: DiscoveryContext) -> list[DiscoveryCandidate]:
-        adapter = self.adapter or YoutubeAdapter(timeout=context.timeout)
         candidates: list[DiscoveryCandidate] = []
         for seed in self.source.seeds:
-            try:
-                videos = await asyncio.to_thread(adapter.list_videos, seed)
-            except Exception:
-                videos = []
-            if not videos:
-                candidates.append(
-                    DiscoveryCandidate(url=canonicalize_url(seed), category=self.default_category)
-                )
-                continue
-            for url, title in videos:
+            canonical = canonicalize_url(seed)
+            if "/watch" in canonical or "/shorts/" in canonical:
                 candidates.append(
                     DiscoveryCandidate(
-                        url=canonicalize_url(url),
+                        url=canonical,
+                        title=None,
+                        category=self.default_category,
+                    )
+                )
+                continue
+            candidates.append(
+                DiscoveryCandidate(
+                    url=canonical,
+                    title="Canal oficial de YouTube",
+                    category=self.default_category,
+                )
+            )
+            adapter = self.adapter or YoutubeAdapter(timeout=context.timeout)
+            try:
+                videos = await asyncio.to_thread(adapter.list_videos, canonical)
+            except Exception:
+                videos = []
+            seen = {canonical}
+            for url, title in videos:
+                video_url = canonicalize_url(url)
+                if video_url in seen:
+                    continue
+                seen.add(video_url)
+                candidates.append(
+                    DiscoveryCandidate(
+                        url=video_url,
                         title=title or None,
                         category=self.default_category,
                     )

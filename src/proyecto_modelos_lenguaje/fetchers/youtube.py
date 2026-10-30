@@ -67,6 +67,19 @@ def subtitle_language(path: Path) -> str:
     return "und"
 
 
+def _flatten_entries(info: dict[str, Any]) -> list[dict[str, Any]]:
+    """Flatten yt-dlp channel tabs (Videos/Shorts) into video entries."""
+    flattened: list[dict[str, Any]] = []
+    for entry in info.get("entries") or []:
+        if not entry:
+            continue
+        if entry.get("entries"):
+            flattened.extend(_flatten_entries(entry))
+        elif entry.get("id"):
+            flattened.append(entry)
+    return flattened
+
+
 class YoutubeAdapter:
     """Downloads subtitles and metadata only; video/audio files are never written."""
 
@@ -74,20 +87,23 @@ class YoutubeAdapter:
         self._timeout = timeout
         self._max_videos = max_videos
 
-    def _base_options(self, output_dir: Path | None = None) -> dict[str, Any]:
+    def _base_options(
+        self, output_dir: Path | None = None, *, languages: tuple[str, ...] = ("es.*",)
+    ) -> dict[str, Any]:
         options: dict[str, Any] = {
             "quiet": True,
             "no_warnings": True,
             "skip_download": True,
             "noplaylist": True,
             "socket_timeout": int(self._timeout),
+            "sleep_interval_subtitles": 1,
         }
         if output_dir is not None:
             options.update(
                 {
                     "writesubtitles": True,
                     "writeautomaticsub": True,
-                    "subtitleslangs": ["es.*", "en.*"],
+                    "subtitleslangs": list(languages),
                     "subtitlesformat": "vtt",
                     "outtmpl": str(output_dir / "%(id)s.%(ext)s"),
                 }
@@ -109,16 +125,68 @@ class YoutubeAdapter:
         }
         with yt_dlp.YoutubeDL(options) as ydl:
             info = ydl.extract_info(channel_url, download=False)
-        entries = info.get("entries") or []
         videos: list[tuple[str, str]] = []
-        for entry in entries:
-            url = entry.get("url") or entry.get("webpage_url")
-            if not url:
+        seen: set[str] = set()
+        for entry in _flatten_entries(info):
+            video_id = str(entry.get("id") or "")
+            if not video_id or video_id in seen:
                 continue
-            if not url.startswith("http"):
-                url = f"https://www.youtube.com/watch?v={entry.get('id', url)}"
-            videos.append((url, entry.get("title") or ""))
+            seen.add(video_id)
+            url = entry.get("url") or entry.get("webpage_url")
+            if not url or not str(url).startswith("http"):
+                url = f"https://www.youtube.com/watch?v={video_id}"
+            videos.append((str(url), entry.get("title") or ""))
+            if limit and len(videos) >= limit:
+                break
         return videos
+
+    def fetch_channel(self, channel_url: str) -> YoutubeResult:
+        try:
+            import yt_dlp
+        except Exception as exc:
+            return YoutubeResult(error=f"yt-dlp unavailable: {exc}")
+        options = {
+            "quiet": True,
+            "no_warnings": True,
+            "extract_flat": True,
+            "skip_download": True,
+            "playlistend": 1,
+            "socket_timeout": int(self._timeout),
+        }
+        try:
+            with yt_dlp.YoutubeDL(options) as ydl:
+                info = ydl.extract_info(channel_url, download=False)
+        except Exception as exc:
+            return YoutubeResult(error=f"{type(exc).__name__}: {exc}")
+        if not info:
+            return YoutubeResult(error="empty channel response")
+        payload = {
+            "schema_version": "1.0",
+            "source": "youtube",
+            "type": "channel",
+            "channel_id": info.get("channel_id") or info.get("id"),
+            "title": info.get("channel") or info.get("title"),
+            "handle": info.get("uploader_id"),
+            "url": info.get("uploader_url") or channel_url,
+            "description": info.get("description"),
+            "followers": info.get("channel_follower_count"),
+            "tags": info.get("tags") or [],
+            "thumbnail": (info.get("thumbnails") or [{}])[-1].get("url"),
+            "playlists": info.get("playlist_count"),
+        }
+        return YoutubeResult(
+            parts=[
+                YoutubePart(
+                    url=channel_url,
+                    media_type="application/json",
+                    data=json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"),
+                    role="channel_metadata",
+                    title=payload["title"],
+                    published_at=None,
+                    language="es",
+                )
+            ]
+        )
 
     def fetch_video(self, url: str) -> YoutubeResult:
         try:
@@ -127,11 +195,17 @@ class YoutubeAdapter:
             return YoutubeResult(error=f"yt-dlp unavailable: {exc}")
         with tempfile.TemporaryDirectory(prefix="bronze-yt-") as tmp:
             output_dir = Path(tmp)
+            info: dict[str, Any] | None = None
             try:
                 with yt_dlp.YoutubeDL(self._base_options(output_dir)) as ydl:
                     info = ydl.extract_info(url, download=True)
             except Exception as exc:
-                return YoutubeResult(error=f"{type(exc).__name__}: {exc}")
+                # Subtitles can fail (e.g. 429) while metadata is still available.
+                try:
+                    with yt_dlp.YoutubeDL(self._base_options(None)) as ydl:
+                        info = ydl.extract_info(url, download=False)
+                except Exception:
+                    return YoutubeResult(error=f"{type(exc).__name__}: {exc}")
             if info is None:
                 return YoutubeResult(error="empty yt-dlp response")
             if info.get("entries"):
@@ -139,8 +213,28 @@ class YoutubeAdapter:
                 if not entries:
                     return YoutubeResult(error="video unavailable")
                 info = entries[0]
+            if not list(output_dir.glob("*.vtt")):
+                available = {
+                    key.split("-", 1)[0]
+                    for key in list(info.get("subtitles") or {})
+                    + list(info.get("automatic_captions") or {})
+                }
+                if "es" not in available and "en" in available:
+                    try:
+                        with yt_dlp.YoutubeDL(
+                            self._base_options(output_dir, languages=("en.*",))
+                        ) as ydl:
+                            ydl.extract_info(url, download=True)
+                    except Exception:
+                        pass
             video_url = info.get("webpage_url") or url
             published = _published(info.get("upload_date"))
+            subtitle_files: dict[str, Path] = {}
+            for subtitle in sorted(output_dir.glob("*.vtt")):
+                language = subtitle_language(subtitle)
+                current = subtitle_files.get(language)
+                if current is None or "-orig" in current.stem:
+                    subtitle_files[language] = subtitle
             metadata = metadata_payload(info)
             payload = {
                 "schema_version": "1.0",
@@ -151,8 +245,13 @@ class YoutubeAdapter:
                 "published_at": published,
                 "duration_seconds": info.get("duration"),
                 "webpage_url": video_url,
+                "transcript_available": bool(subtitle_files),
+                "subtitle_languages": sorted(subtitle_files),
                 "metadata": metadata,
             }
+            language = "es" if str(info.get("language") or "").startswith("es") else "und"
+            if language == "und" and "es" in subtitle_files:
+                language = "es"
             parts = [
                 YoutubePart(
                     url=video_url,
@@ -161,11 +260,10 @@ class YoutubeAdapter:
                     role="metadata",
                     title=info.get("title"),
                     published_at=published,
-                    language="es" if info.get("language", "").startswith("es") else "und",
+                    language=language,
                 )
             ]
-            for subtitle in sorted(output_dir.glob("*.vtt")):
-                language = subtitle_language(subtitle)
+            for language, subtitle in subtitle_files.items():
                 data = subtitle.read_bytes()
                 parts.append(
                     YoutubePart(

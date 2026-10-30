@@ -12,6 +12,7 @@ from .links import (
     sitemap_locations,
     visible_text,
 )
+from .linktree import parse_linktree
 from .metadata import detect_media_type, extension_for, is_allowed_media_type, parse_published_at
 
 __all__ = [
@@ -24,6 +25,7 @@ __all__ = [
     "extract_meta",
     "host_of",
     "is_allowed_media_type",
+    "parse_linktree",
     "parse_published_at",
     "robots_sitemaps",
     "same_site",

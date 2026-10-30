@@ -112,13 +112,14 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 |------------|--------|-----------|
 | Repositorio público | ✅ | GitHub `jasonCastano/proyecto_modelos_lenguaje` |
 | Licencia MIT | ✅ | `LICENSE` 2026 |
-| Pipeline bronce | ✅ | 26.752 artefactos, 26.752 hashes únicos |
-| Corpus activo | ✅ | 405 artefactos: 397 oficiales + 8 de terceros |
+| Pipeline bronce | ✅ | 26.872 artefactos, 26.872 hashes únicos |
+| Corpus activo | ✅ | 524 artefactos: 397 oficiales + 78 YouTube + 41 Fundación + 8 de terceros |
 | Cobertura del sitio oficial | ✅ | 249/250 páginas del sitemap (99,6%) |
+| Canales oficiales | ✅ | YouTube y Fundación capturados; Instagram y Linktree bloqueados por `robots.txt` (`docs/fuentes_oficiales.md`) |
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` |
 | Reanudación e idempotencia | ✅ | Pruebas de integración |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 60 pruebas offline |
+| Pruebas | ✅ | 68 pruebas offline |
 | Calidad de código | ✅ | Ruff limpio |
 | Capas silver/gold | 🟡 | Pendientes |
 | App Streamlit + LangChain | 🟡 | Pendientes (Módulo 1) |
@@ -131,30 +132,35 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 
 | Métrica | Valor |
 |---------|------:|
-| Artefactos adquiridos | 26.752 |
-| Artefactos activos | 405 |
+| Artefactos adquiridos | 26.872 |
+| Artefactos activos | 524 |
 | Artefactos en cuarentena | 26.347 |
+| Videos de YouTube con transcripción | 33 |
 | Bronze activo | 0,36 GB |
-| Cuarentena | 9,59 GB |
-| Datos totales | 9,95 GB (límite: 10 GB) |
-| Pruebas offline | 60 |
+| Cuarentena | 8,93 GB |
+| Datos totales | 9,29 GB (límite: 10 GB) |
+| Pruebas offline | 68 |
 
 ## Fuentes de datos
 
 | Fuente | Artefactos activos | Uso |
 |--------|-------------------:|-----|
 | Sitio oficial `manuelita.com` | 397 | Identidad, historia, productos, sostenibilidad, noticias, informes, vacantes |
+| YouTube `@ManuelitaAgroindustria` | 78 | Metadatos del canal, 33 videos con transcripción (28 por subtítulos, 5 por ASR) |
+| Fundación Manuelita | 41 | Fundación enlazada desde el Linktree oficial; informe de gestión 2025 |
 | El País | 4 | Rankings y menciones empresariales |
 | Cámara de Comercio de Cali | 1 | Contexto empresarial y clústeres |
 | Asocañá | 1 | Contexto del sector agroindustrial |
 | datos.gov.co | 2 | Patrimonio y registros territoriales con mención a Manuelita |
-| YouTube | 0 | Pendiente: metadatos y subtítulos |
-| Facebook / Instagram | 0 | Bloqueadas por `robots.txt`; se documenta el vacío |
-| SECOP / Supersociedades | 0 | Pendiente: datos abiertos y registros |
+| Instagram | 0 | Bloqueado por `robots.txt` y por los términos de Meta |
+| Linktree | 0 | Bloqueado por `robots.txt`; solo agrega enlaces ya cubiertos |
+| SECOP / Supersociedades | 0 | Fuera del corpus activo por curaduría de relevancia |
 | Computrabajo | 0 | Restringido por términos de servicio |
 
-> La cobertura de los 24 ítems está en revisión. Varios ítems (YouTube, redes sociales, SECOP, NIT, precios,
-> fichas técnicas y catálogos) requieren datos adicionales o una justificación documentada de su ausencia.
+> El detalle de accesibilidad, política y vacíos de los canales oficiales está en
+> [`docs/fuentes_oficiales.md`](docs/fuentes_oficiales.md). La cobertura de los 24 ítems sigue en
+> revisión: la matriz por palabras clave no distingue evidencia real de falsos positivos.
+
 
 ## Stack técnico
 
@@ -163,6 +169,7 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Lenguaje | Python 3.14+ |
 | Entorno y dependencias | `uv`, `pyproject.toml`, `uv.lock` |
 | Scraping | `scrapling[fetchers]` + `yt-dlp` |
+| Transcripción local | `faster-whisper` (extra `asr`, opcional) |
 | Catálogo | SQLite (WAL) + manifiestos JSONL |
 | Pruebas | `pytest` |
 | Lint y formato | `ruff` |
@@ -210,6 +217,38 @@ uv run python scripts/query_catalog.py export \
   --campaign 2026-10-baseline --active-only \
   --format jsonl --output exports/curated.jsonl
 ```
+
+### Canales oficiales y transcripciones
+
+```bash
+# YouTube + Linktree + Instagram (estas dos últimas se registran como bloqueadas por robots.txt)
+uv run pml init --config config/official_channels.toml --json
+uv run python scripts/run_campaign.py \
+  --config config/official_channels.toml \
+  --campaign 2026-10-official-channels-3
+
+# Fundación Manuelita (enlazada desde el Linktree oficial)
+uv run pml init --config config/fundacion_manuelita.toml --json
+uv run python scripts/run_campaign.py \
+  --config config/fundacion_manuelita.toml \
+  --campaign 2026-10-fundacion-manuelita
+
+# Reintento de subtítulos limitados por YouTube
+uv run python scripts/run_campaign.py \
+  --config config/youtube_backfill.toml \
+  --campaign 2026-10-youtube-backfill-1
+
+# Transcripción local de videos sin subtítulos (descarga el modelo la primera vez)
+uv run --extra asr python scripts/transcribe_youtube.py \
+  --url "https://www.youtube.com/watch?v=VwAvljONZd0" \
+  --model small
+
+# Auditoría de fuentes, política y transcripciones
+uv run python scripts/verify_official_channels.py
+```
+
+El detalle de qué se pudo capturar en cada canal, qué quedó bloqueado y por qué está en
+[`docs/fuentes_oficiales.md`](docs/fuentes_oficiales.md).
 
 ### Curaduría de relevancia
 
@@ -316,10 +355,11 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 
 ## Limitaciones conocidas
 
-- El corpus activo es de 405 artefactos; 26.347 fueron retirados a cuarentena por no ser relevantes.
-- La cuarentena ocupa 9,59 GB y el total de datos está en 9,95 GB; la purga definitiva está pendiente.
-- La matriz de 24 ítems requiere recalibración: YouTube, redes sociales, SECOP, NIT, precios, fichas técnicas y
-  catálogos aún no tienen evidencia suficiente.
+- El corpus activo es de 524 artefactos; 26.347 fueron retirados a cuarentena por no ser relevantes.
+- La cuarentena ocupa 8,93 GB y el total de datos está en 9,29 GB; la purga definitiva está pendiente.
+- Instagram y Linktree no se capturan por `robots.txt`; 30 videos de YouTube no están disponibles y 3 exigen sesión.
+- La matriz de 24 ítems requiere recalibración: SECOP, NIT, precios, fichas técnicas y catálogos aún no tienen
+  evidencia verificable.
 - La app Streamlit, LangChain, las capas silver/gold, las 20 preguntas y el informe del Módulo 1 están pendientes.
 - El repositorio aún no tiene CI ni Pull Requests fusionados.
 
@@ -330,6 +370,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Plan del bronce](specs/001-bronze-web-scraping/plan.md)
 - [Especificación de curaduría](specs/002-manuelita-relevance-filter/spec.md)
 - [Plan de curaduría](specs/002-manuelita-relevance-filter/plan.md)
+- [Verificación de canales oficiales](docs/fuentes_oficiales.md)
 - [Bitácora del 2026-10-29](bitacora/2026-10-29.md)
 - [Guía de validación del bronce](specs/001-bronze-web-scraping/quickstart.md)
 

@@ -1,6 +1,6 @@
 ---
 name: Bitácora del Proyecto
-description: Genera una bitácora fechada del proyecto RAG Ingenio Manuelita con el contexto de CONSTITUTION.md, el estado local y remoto de Git, el avance por fase, los objetivos cumplidos, los pendientes y los próximos pasos. Úsala cuando el usuario pida "bitácora", "estado del proyecto", "avance", "qué falta" o "qué sigue".
+description: Genera una bitácora fechada del proyecto RAG Ingenio Manuelita con el contexto de CONSTITUTION.md, el estado local y remoto de Git, el avance por fase, los objetivos cumplidos, los pendientes, la cascada secuencial de tareas con dependencias y puertas de calidad, y los próximos pasos. Úsala cuando el usuario pida "bitácora", "estado del proyecto", "avance", "qué falta", "qué sigue" o "tareas pendientes en orden".
 ---
 
 # Bitácora del Proyecto
@@ -58,9 +58,37 @@ Usa esta skill cuando el usuario pida:
 5. Avance por criterio (datos, LLM, app, documentación, repositorio, calidad).
 6. Objetivos y metas cumplidos.
 7. Pendientes y bloqueos priorizados.
-8. Próximos pasos sugeridos.
-9. Riesgos y observaciones.
-10. Evidencia de verificación.
+8. **Cascada secuencial de tareas pendientes** (etapa, ID, dependencia, entregable, criterio de
+   aceptación, responsable, tiempo y estado) más las **puertas de calidad** G1–G7.
+9. Próximos pasos sugeridos (derivados de la cascada, en orden).
+10. Riesgos y observaciones.
+11. Evidencia de verificación.
+
+## Cascada secuencial
+
+La sección 8 no es una lista plana: es una cascada con dependencias y puertas. El generador la calcula
+desde `CASCADE_STEPS` y `QUALITY_GATES` en `scripts/generate_bitacora.py`:
+
+- Cada paso declara `id`, `stage`, `depends_on`, `deliverable`, `acceptance`, `checks`, `owner` y
+  `estimate`.
+- `checks` son las claves de la lista de verificación (por ejemplo `app`, `evaluation`, `tag`). El estado
+  del paso se deriva de ellas:
+  - **⛔ bloqueada**: alguna dependencia no está `done`.
+  - **❌ pendiente**: dependencias cerradas pero un check está `pending`.
+  - **🟡 parcial**: dependencias cerradas y al menos un check está `partial` o `unknown`.
+  - **✅ completada**: todos los checks están `done`.
+- El **camino crítico** se imprime como la secuencia de IDs; las tareas `done` se omiten de la tabla para
+  que la bitácora muestre solo lo que falta.
+- Las puertas `G1`–`G7` se evalúan sobre todos los pasos hasta su paso ancla: `✅` si todos están `done`,
+  `⛔` si alguno está bloqueado y `❌` en otro caso.
+
+### Cómo mantenerla
+
+1. Si cambia el alcance del Módulo 1, edita `CASCADE_STEPS` y `QUALITY_GATES`; no escribas la tabla a mano.
+2. Cada `TaskStep.checks` debe existir en la recolección de `Check`; si añades una clave nueva, agrega
+   también su `Check` para que el estado no quede en `unknown`.
+3. Respeta el orden lógico: un paso no puede depender de uno posterior ni de sí mismo.
+4. No inventes estados: si un entregable no existe, el check debe ser `pending` o `partial` con evidencia.
 
 ## Diagnóstico
 

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jasonCastano/proyecto_modelos_lenguaje/contracts/gold/conflict.schema.json",
+  "title": "GoldConflict",
+  "description": "Contradicción entre dos o más hechos comparables.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "conflict_id",
+    "subject_id",
+    "attribute",
+    "values",
+    "preferred_unit_id",
+    "status",
+    "reason"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "conflict_id": { "type": "string", "pattern": "^conf_[a-f0-9]{16}$" },
+    "subject_id": { "type": "string", "pattern": "^ent_[a-f0-9]{16}$" },
+    "attribute": { "type": "string", "minLength": 1 },
+    "values": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/conflictValue" }
+    },
+    "preferred_unit_id": {
+      "type": ["string", "null"],
+      "pattern": "^unit_[a-f0-9]{16}$"
+    },
+    "status": { "enum": ["resolved", "disputed"] },
+    "reason": { "enum": ["official_source", "newer_date", "more_evidence", "unresolved"] }
+  },
+  "$defs": {
+    "conflictValue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "value_normalized",
+        "unit",
+        "year",
+        "authority",
+        "unit_id",
+        "url"
+      ],
+      "properties": {
+        "value": { "type": "string", "minLength": 1 },
+        "value_normalized": { "type": "string", "minLength": 1 },
+        "unit": { "type": ["string", "null"] },
+        "year": { "type": ["integer", "null"], "minimum": 1800, "maximum": 2100 },
+        "authority": { "enum": ["first_party", "third_party", "open_data"] },
+        "unit_id": { "type": "string", "pattern": "^unit_[a-f0-9]{16}$" },
+        "url": { "type": "string", "format": "uri" }
+      }
+    }
+  }
+}

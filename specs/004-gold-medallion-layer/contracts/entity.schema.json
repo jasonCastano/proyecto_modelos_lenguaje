@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jasonCastano/proyecto_modelos_lenguaje/contracts/gold/entity.schema.json",
+  "title": "GoldEntity",
+  "description": "Entidad canónica del vocabulario de Manuelita.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "entity_id",
+    "canonical_name",
+    "aliases",
+    "entity_type",
+    "description",
+    "unit_ids",
+    "coverage_item_ids"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "entity_id": { "type": "string", "pattern": "^ent_[a-f0-9]{16}$" },
+    "canonical_name": { "type": "string", "minLength": 1 },
+    "aliases": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    },
+    "entity_type": {
+      "enum": [
+        "company",
+        "subsidiary",
+        "brand",
+        "product",
+        "site",
+        "person",
+        "certification",
+        "other"
+      ]
+    },
+    "description": { "type": ["string", "null"] },
+    "unit_ids": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^unit_[a-f0-9]{16}$" },
+      "uniqueItems": true
+    },
+    "coverage_item_ids": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[IODH]-\\d{2}$" },
+      "uniqueItems": true
+    }
+  }
+}

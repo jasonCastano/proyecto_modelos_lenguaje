@@ -1,0 +1,22 @@
+[units]
+min_sentence_chars = 40
+max_unit_chars = 700
+dedup_threshold = 0.90
+dedup_shingle_size = 5
+
+[topics]
+min_score = 1
+
+[coverage]
+covered_min_units = 3
+covered_min_official = 1
+
+[context]
+budgets = [8000, 32000]
+chars_per_token = 3.5
+
+[output]
+root = "data/gold"
+
+[run]
+fail_fast = false

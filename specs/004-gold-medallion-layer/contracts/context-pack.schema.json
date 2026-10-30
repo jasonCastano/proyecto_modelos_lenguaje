@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jasonCastano/proyecto_modelos_lenguaje/contracts/gold/context-pack.schema.json",
+  "title": "GoldContextPack",
+  "description": "Paquete de contexto acotado por tokens.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "pack_id",
+    "task",
+    "budget_tokens",
+    "tokens",
+    "unit_ids",
+    "blocks",
+    "coverage_item_ids",
+    "omitted_units"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "pack_id": { "type": "string", "pattern": "^pack_[a-z]+_\\d+$" },
+    "task": { "enum": ["summary", "faq", "qa"] },
+    "budget_tokens": { "type": "integer", "minimum": 1000 },
+    "tokens": { "type": "integer", "minimum": 0 },
+    "unit_ids": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^unit_[a-f0-9]{16}$" },
+      "uniqueItems": true
+    },
+    "blocks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/block" }
+    },
+    "coverage_item_ids": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[IODH]-\\d{2}$" },
+      "uniqueItems": true
+    },
+    "omitted_units": { "type": "integer", "minimum": 0 }
+  },
+  "$defs": {
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["unit_id", "text", "citation", "tokens", "topic_id", "authority"],
+      "properties": {
+        "unit_id": { "type": "string", "pattern": "^unit_[a-f0-9]{16}$" },
+        "text": { "type": "string", "minLength": 1 },
+        "citation": { "type": "string", "minLength": 1 },
+        "tokens": { "type": "integer", "minimum": 1 },
+        "topic_id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+        "authority": { "enum": ["first_party", "third_party", "open_data"] }
+      }
+    }
+  }
+}

@@ -95,7 +95,7 @@ CASCADE_STEPS: tuple[TaskStep, ...] = (
         ("M1-01",),
         "config/llm.toml + .env.example + src/proyecto_modelos_lenguaje/llm.py",
         "Modelo, temperatura y límites declarados; clave solo por entorno; adaptador offline.",
-        ("llm",),
+        ("llm_config",),
         "Roberto",
         "1 h",
     ),
@@ -576,27 +576,63 @@ def check_app() -> tuple[Check, Check]:
     return app_check, ui_check
 
 
+def check_llm_config() -> Check:
+    config_path = ROOT / "config" / "llm.toml"
+    env_example = ROOT / ".env.example"
+    module = ROOT / "src" / "proyecto_modelos_lenguaje" / "llm.py"
+    pyproject = read("pyproject.toml")
+    has_langchain = "langchain" in pyproject.lower()
+    found = [path.name for path in (config_path, env_example, module) if path.is_file()]
+    status = (
+        "done"
+        if len(found) == 3 and has_langchain
+        else "partial"
+        if found or has_langchain
+        else "pending"
+    )
+    return Check(
+        "llm_config",
+        "Modelo y entorno",
+        "Procesamiento LLM",
+        status,
+        f"archivos={found or 'ninguno'}; LangChain={'sí' if has_langchain else 'no'}",
+        ""
+        if status == "done"
+        else "Crear config/llm.toml, .env.example y src/proyecto_modelos_lenguaje/llm.py",
+        critical=status != "done",
+    )
+
+
 def check_llm() -> Check:
     pyproject = read("pyproject.toml")
     has_langchain = "langchain" in pyproject.lower()
-    source_text = "\n".join(
-        path.read_text(encoding="utf-8", errors="replace")
-        for path in (ROOT / "src").rglob("*.py")
-        if path.is_file()
-    ).lower()
+    tasks_file = ROOT / "src" / "proyecto_modelos_lenguaje" / "tasks.py"
+    prompts_dir = ROOT / "prompts"
+    has_tasks = tasks_file.is_file()
+    has_prompts = prompts_dir.is_dir() and any(prompts_dir.glob("*.md"))
+    source_text = (
+        tasks_file.read_text(encoding="utf-8", errors="replace").lower() if has_tasks else ""
+    )
     tasks = [
         name for name in ("resumen", "summary", "faq", "pregunta", "qa") if name in source_text
     ]
     status = (
-        "done" if has_langchain and len(tasks) >= 2 else "partial" if has_langchain else "pending"
+        "done"
+        if has_langchain and has_tasks and has_prompts and len(tasks) >= 2
+        else "partial"
+        if has_langchain or has_tasks or has_prompts
+        else "pending"
     )
     return Check(
         "llm",
         "LangChain: Resumen, FAQ y Q&A",
         "Procesamiento LLM",
         status,
-        f"LangChain={'sí' if has_langchain else 'no'}; señales de tareas={tasks or 'ninguna'}",
-        "" if status == "done" else "Añadir LangChain y las tres tareas con prompts versionados",
+        f"LangChain={'sí' if has_langchain else 'no'}; tasks.py={'sí' if has_tasks else 'no'}; "
+        f"prompts={'sí' if has_prompts else 'no'}; señales={tasks or 'ninguna'}",
+        ""
+        if status == "done"
+        else "Añadir LangChain y las tres tareas con prompts versionados",
         critical=status != "done",
     )
 
@@ -1308,7 +1344,16 @@ def main() -> int:
 
     checks: list[Check] = [check_license(), check_readme()]
     app_check, ui_check = check_app()
-    checks.extend([app_check, ui_check, check_llm(), check_data_layers(), check_corpus(metrics)])
+    checks.extend(
+        [
+            app_check,
+            ui_check,
+            check_llm_config(),
+            check_llm(),
+            check_data_layers(),
+            check_corpus(metrics),
+        ]
+    )
     checks.extend([check_pipeline_entry(), check_ci(), check_prs(remote), check_commits(git_info)])
     checks.extend(check_docs())
     tests_check, ruff_check = check_tests(args.skip_checks)

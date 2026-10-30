@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jasonCastano/proyecto_modelos_lenguaje/specs/005-scrape-empresa-entrypoint/contracts/scrape-summary.schema.json",
+  "title": "Canonical scrape summary",
+  "description": "Successful output of scripts/scrape_empresa.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "campaign_id",
+    "status",
+    "mode",
+    "effective",
+    "summary",
+    "policy",
+    "duration_seconds",
+    "exit_code"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "campaign_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "paused"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["new", "resume", "dry_run", "already_completed"]
+    },
+    "effective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["config", "campaign", "resume", "limit", "dry_run"],
+      "properties": {
+        "config": {
+          "type": "string",
+          "minLength": 1
+        },
+        "campaign": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+        },
+        "resume": {
+          "type": "boolean"
+        },
+        "limit": {
+          "type": ["integer", "null"],
+          "minimum": 1
+        },
+        "dry_run": {
+          "type": "boolean"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targets_discovered",
+        "artifacts_stored",
+        "deduplicated",
+        "excluded",
+        "failed",
+        "deferred",
+        "bytes_stored",
+        "storage_limit_bytes",
+        "coverage",
+        "report_paths"
+      ],
+      "properties": {
+        "targets_discovered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "artifacts_stored": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deduplicated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deferred": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bytes_stored": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "storage_limit_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "report_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "disallowed", "unreachable", "by_reason"],
+      "properties": {
+        "allowed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "disallowed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unreachable": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "by_reason": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "duration_seconds": {
+      "type": "number",
+      "minimum": 0
+    },
+    "exit_code": {
+      "type": "integer",
+      "enum": [0, 4]
+    }
+  }
+}

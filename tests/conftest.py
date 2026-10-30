@@ -194,6 +194,9 @@ max_concurrency = 1
         (config_dir / "exclusions.toml").write_text(
             '[exclusions]\nurls = []\ndomains = ["linkedin.com"]\n', encoding="utf-8"
         )
+        (config_dir / "coverage-items.toml").write_text(
+            COVERAGE_PATH.read_text(encoding="utf-8"), encoding="utf-8"
+        )
         return config
 
     return _write

@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .campaign_service import start_campaign
 from .catalog import Catalog, artifact_payload
 from .config import (
     STORAGE_HARD_LIMIT,
@@ -22,10 +23,8 @@ from .config import (
 )
 from .coverage import build_matrix
 from .curation import CurationError, CurationService
-from .fetchers.http import build_http_fetcher
 from .gold.pipeline import GoldPipeline
 from .gold.store import GoldStateError
-from .pipeline import CampaignRunner
 from .reporting import write_campaign_report, write_coverage_report
 from .silver.pipeline import SilverPipeline
 from .silver.state import SilverStateError
@@ -128,35 +127,21 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 def cmd_campaign_start(args: argparse.Namespace) -> int:
     config = load_config(args.config)
-    limit = config.settings.storage_limit_bytes
-    if args.max_bytes is not None:
-        if args.max_bytes < 1 or args.max_bytes > STORAGE_HARD_LIMIT:
-            return _error("--max-bytes must be between 1 and 10000000000", 3)
-        limit = min(limit, args.max_bytes)
-    coverage_path = _coverage_path(args, config)
-    _init_project(config, coverage_path)
-    items = load_coverage_items(coverage_path)
-    catalog = Catalog(config.settings.bronze_dir / "_meta" / "bronze.sqlite3")
-    storage = BronzeStorage(config.settings.bronze_dir, limit_bytes=limit)
-    fetcher = build_http_fetcher(
-        user_agent=config.settings.user_agent,
-        timeout=config.settings.request_timeout_seconds,
-    )
-    runner = CampaignRunner(
+    if args.max_bytes is not None and (
+        args.max_bytes < 1 or args.max_bytes > STORAGE_HARD_LIMIT
+    ):
+        return _error("--max-bytes must be between 1 and 10000000000", 3)
+    run = start_campaign(
         config,
-        items,
-        catalog=catalog,
-        storage=storage,
-        fetcher=fetcher,
+        campaign_id=args.campaign,
+        resume=args.resume,
         dry_run=args.dry_run,
         max_targets=args.max_targets,
+        max_bytes=args.max_bytes,
+        coverage_path=_coverage_path(args, config),
     )
-    try:
-        summary = asyncio.run(runner.run(args.campaign, resume=args.resume))
-    finally:
-        catalog.close()
-    _emit(summary.as_dict(), args.json)
-    return summary.exit_code
+    _emit(run.summary.as_dict(), args.json)
+    return run.summary.exit_code
 
 
 def cmd_campaign_status(args: argparse.Namespace) -> int:

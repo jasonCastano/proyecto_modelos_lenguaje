@@ -206,10 +206,24 @@ uv run pytest
 ### Pipeline bronce
 
 ```bash
+# Entrada canónica: ayuda y campaña real o reanudación
+uv run python scripts/scrape_empresa.py --help
+uv run python scripts/scrape_empresa.py \
+  --config config/sources.toml \
+  --campaign 2026-10-baseline \
+  --resume
+
+# Prueba segura sin escribir en el bronce
+uv run python scripts/scrape_empresa.py \
+  --campaign 2026-10-m1-02-smoke \
+  --limit 3 \
+  --dry-run \
+  --json
+
 # Inicializar catálogo, fuentes y los 24 ítems
 uv run pml init --config config/sources.toml --json
 
-# Campaña real o reanudación
+# Alternativa de bajo nivel: campaña real o reanudación
 uv run python scripts/run_campaign.py \
   --config config/sources.toml \
   --campaign 2026-10-baseline
@@ -471,6 +485,10 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Plan de la capa oro](specs/004-gold-medallion-layer/plan.md)
 - [Guía de validación de la capa oro](specs/004-gold-medallion-layer/quickstart.md)
 - [Decisión de arquitectura de la capa oro](docs/decisions/0004-gold-layer.md)
+- [Especificación de la entrada canónica de scraping](specs/005-scrape-empresa-entrypoint/spec.md)
+- [Plan de la entrada canónica de scraping](specs/005-scrape-empresa-entrypoint/plan.md)
+- [Guía de validación de la entrada canónica](specs/005-scrape-empresa-entrypoint/quickstart.md)
+- [Decisión de arquitectura de la entrada canónica](docs/decisions/0005-scrape-entrypoint.md)
 - [Verificación de canales oficiales](docs/fuentes_oficiales.md)
 - [Bitácora del 2026-10-29](bitacora/2026-10-29.md)
 - [Guía de validación del bronce](specs/001-bronze-web-scraping/quickstart.md)

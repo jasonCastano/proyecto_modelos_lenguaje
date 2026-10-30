@@ -146,14 +146,25 @@ def git_state(*, no_fetch: bool) -> dict[str, Any]:
     state["origin_main"] = git("rev-parse", "--short", "origin/main")[1]
     state["origin_main_subject"] = git("log", "-1", "--format=%s", "origin/main")[1]
     state["origin_main_date"] = git("log", "-1", "--format=%cI", "origin/main")[1]
+    upstream_code, upstream, _ = git(
+        "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"
+    )
+    state["upstream"] = upstream if upstream_code == 0 and upstream else ""
+    reference = state["upstream"] or "origin/main"
+    state["remote_ref"] = reference
+    state["remote_commit"] = git("rev-parse", "--short", reference)[1]
+    state["remote_subject"] = git("log", "-1", "--format=%s", reference)[1]
+    state["remote_date"] = git("log", "-1", "--format=%cI", reference)[1]
     ahead = behind = None
-    code, divergence, _ = git("rev-list", "--left-right", "--count", "origin/main...HEAD")
+    code, divergence, _ = git("rev-list", "--left-right", "--count", f"{reference}...HEAD")
     if code == 0 and divergence:
         parts = divergence.split()
         if len(parts) == 2:
             behind, ahead = int(parts[0]), int(parts[1])
     state["behind"] = behind
     state["ahead"] = ahead
+    main_code, _, _ = git("merge-base", "--is-ancestor", "HEAD", "origin/main")
+    state["merged_into_main"] = main_code == 0
     return state
 
 
@@ -740,21 +751,32 @@ def build_report(
         f"`{git_info['origin_main'] or 'sin referencia'}` — "
         f"{git_info['origin_main_subject'] or 'sin referencia'}"
     )
+    remote_label = (
+        f"`{git_info['remote_commit'] or 'sin referencia'}` — "
+        f"{git_info['remote_subject'] or 'sin referencia'}"
+    )
     date_label = (
-        f"{git_info['committed_at'] or 'sin fecha'} | {git_info['origin_main_date'] or 'sin fecha'}"
+        f"{git_info['committed_at'] or 'sin fecha'} | {git_info['remote_date'] or 'sin fecha'}"
     )
     ahead = git_info["ahead"]
     behind = git_info["behind"]
+    remote_ref = git_info["remote_ref"]
     if ahead is None or behind is None:
-        sync = "Sin referencia remota `origin/main`"
+        sync = f"Sin referencia remota `{remote_ref}`"
+    elif not git_info["upstream"]:
+        sync = (
+            f"Rama local sin upstream; {ahead} commit(s) por delante de `origin/main`"
+            if ahead
+            else "Rama local sin upstream"
+        )
     elif ahead == 0 and behind == 0:
-        sync = "Sincronizado con origin/main"
+        sync = f"Sincronizado con `{remote_ref}`"
     elif ahead and behind:
-        sync = f"Divergente: {ahead} local(es) por delante y {behind} por detrás"
+        sync = f"Divergente: {ahead} local(es) por delante y {behind} por detrás de `{remote_ref}`"
     elif ahead:
-        sync = f"{ahead} commit(s) locales sin publicar"
+        sync = f"{ahead} commit(s) locales por delante de `{remote_ref}`"
     else:
-        sync = f"{behind} commit(s) por detrás de origin/main"
+        sync = f"{behind} commit(s) por detrás de `{remote_ref}`"
 
     lines: list[str] = [
         "# Bitácora del Proyecto — RAG Ingenio Manuelita",
@@ -762,8 +784,8 @@ def build_report(
         f"**Fecha**: {now.strftime('%Y-%m-%d %H:%M %Z')}",
         f"**Archivo**: `{output.relative_to(ROOT).as_posix()}`",
         f"**Commit local**: `{git_info['head']}`",
-        f"**Commit remoto**: `{git_info['origin_main'] or 'sin referencia'}` · "
-        f"**Rama**: `{git_info['branch']}`",
+        f"**Commit remoto**: `{git_info['remote_commit'] or 'sin referencia'}` · "
+        f"**Rama remota**: `{remote_ref}`",
         "**Generada por**: skill `bitacora`",
         "",
         "## 1. Resumen ejecutivo",
@@ -794,10 +816,11 @@ def build_report(
         "",
         "| Aspecto | Local | Remoto |",
         "|---------|-------|--------|",
-        f"| Rama | `{git_info['branch']}` | `main` |",
-        f"| Commit | `{git_info['head']}` — {git_info['subject']} | {origin_label} |",
+        f"| Rama | `{git_info['branch']}` | `{remote_ref}` |",
+        f"| Commit | `{git_info['head']}` — {git_info['subject']} | {remote_label} |",
         f"| Fecha | {date_label} |",
         f"| Estado | {'sucio' if git_info['dirty'] else 'limpio'} | {visibility} ({permissions}) |",
+        f"| Main remoto | — | {origin_label} |",
         f"| PRs | — | {remote['merged']} fusionados de {len(remote['prs'])} |",
         f"| Tags | {', '.join(git_info['tags'][:3]) or 'ninguno'} | "
         f"{', '.join(git_info['remote_tags'][:3]) or 'ninguno'} |",
@@ -900,6 +923,13 @@ def build_report(
         )
     if not remote["available"]:
         lines.append(f"- El estado remoto no se pudo verificar: {remote['error']}")
+    if not git_info["upstream"]:
+        lines.append("- La rama local no tiene upstream; aún no está publicada.")
+    elif not git_info["merged_into_main"]:
+        lines.append(
+            f"- La rama está publicada en `{remote_ref}` pero no fusionada en `main`; "
+            "falta el Pull Request."
+        )
     if git_info["fetch_error"] and not git_info["fetch_ok"]:
         lines.append(
             f"- `git fetch` no se completó: {git_info['fetch_error']}; "
@@ -908,9 +938,7 @@ def build_report(
     if metrics["error"]:
         lines.append(f"- Error al leer el catálogo: {metrics['error']}")
     if ahead:
-        lines.append(
-            f"- {ahead} commit(s) locales no están en `origin/main`; sincronizar antes de la demo."
-        )
+        lines.append(f"- {ahead} commit(s) locales por delante de `{remote_ref}`; push pendiente.")
     if not lines[-1].startswith("-"):
         lines.append("- Sin riesgos adicionales detectados.")
 
@@ -922,10 +950,14 @@ def build_report(
             "```text",
             f"git rev-parse --abbrev-ref HEAD  -> {git_info['branch']}",
             f"git rev-parse --short HEAD       -> {git_info['head']}",
+            f"git rev-parse --short {remote_ref} -> "
+            f"{git_info['remote_commit'] or 'sin referencia'}",
             f"git rev-parse --short origin/main -> {git_info['origin_main'] or 'sin referencia'}",
             f"git status --porcelain           -> {len(git_info['dirty_lines'])} archivo(s)",
-            f"git rev-list --left-right --count origin/main...HEAD -> "
+            f"git rev-list --left-right --count {remote_ref}...HEAD -> "
             f"{behind if behind is not None else '?'} {ahead if ahead is not None else '?'}",
+            f"git merge-base --is-ancestor HEAD origin/main -> "
+            f"{'sí' if git_info['merged_into_main'] else 'no'}",
             f"gh repo view                     -> {visibility}, {permissions}",
             "```",
             "",

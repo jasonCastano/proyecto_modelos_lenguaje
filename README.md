@@ -3,7 +3,8 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-60%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-103%20passing-brightgreen)](tests/)
+[![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/status-M%C3%B3dulo%201%20en%20progreso-yellow)](CONSTITUTION.md)
 
 Sistema de preguntas y respuestas (Q&A) construido sobre información pública de **Ingenio Manuelita S.A.**,
@@ -20,9 +21,9 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual**: la capa bronce está implementada y validada. La app Streamlit, las tareas LangChain, las
-> capas silver/gold, la evaluación de 20 preguntas y el informe del Módulo 1 están en desarrollo. La matriz de
-> cobertura de los 24 ítems está en revisión y **no se declara completa**.
+> **Estado actual**: las capas bronce y plata están implementadas y validadas. La app Streamlit, las tareas
+> LangChain, la capa oro, la evaluación de 20 preguntas y el informe del Módulo 1 están en desarrollo. La matriz
+> de cobertura de los 24 ítems está en revisión y **no se declara completa**.
 
 ---
 

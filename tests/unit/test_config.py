@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from tests.conftest import COVERAGE_PATH, PROJECT_ROOT
 
 from proyecto_modelos_lenguaje.config import ConfigError, load_config, load_coverage_items
+from tests.conftest import COVERAGE_PATH, PROJECT_ROOT
 
 MINIMAL = """
 [settings]

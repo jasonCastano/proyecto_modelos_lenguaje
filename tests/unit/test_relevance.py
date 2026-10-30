@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from tests.conftest import PROJECT_ROOT
-
 from proyecto_modelos_lenguaje.config import load_relevance_config
 from proyecto_modelos_lenguaje.relevance import RelevanceEvaluator
+from tests.conftest import PROJECT_ROOT
 
 CONFIG = load_relevance_config(PROJECT_ROOT / "config" / "relevance.toml")
 EVALUATOR = RelevanceEvaluator(CONFIG)

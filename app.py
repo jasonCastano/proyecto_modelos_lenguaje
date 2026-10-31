@@ -1,8 +1,14 @@
-"""Streamlit app for the Module 1: Summary, FAQ and Q&A with citations."""
+"""Streamlit app for the Module 1: Summary, FAQ and Q&A with citations.
+
+Read-only by design: the app never writes inside the repository or the medallion layers. The only
+writes are the browser download of the session and Streamlit's own in-memory state.
+"""
 
 from __future__ import annotations
 
+import json
 import os
+from datetime import UTC, datetime
 from typing import Any
 
 import streamlit as st
@@ -56,24 +62,31 @@ DEMO_ENV = os.getenv("PML_DEMO", "").strip().lower() in {"1", "true", "yes", "on
 PAGE_TITLE = "RAG Ingenio Manuelita — Módulo 1"
 SUMMARY_PACKS = ("8000", "32000")
 QA_MAX_CHARS = 500
+SESSION_FILE = "sesion_rag_manuelita.json"
+SUGGESTED_QUESTIONS = (
+    "¿Qué productos ofrece Manuelita?",
+    "¿Dónde está la casa matriz de Manuelita?",
+    "¿En qué países tiene presencia?",
+    "¿Qué certificaciones ambientales tiene?",
+)
 
 
-@st.cache_data(ttl=60, show_spinner=False)
+@st.cache_data(show_spinner=False)
 def metrics_cached() -> AppMetrics:
-    return load_app_metrics(project_root=PROJECT_ROOT)
+    return load_app_metrics()
 
 
-@st.cache_resource(show_spinner=False)
+@st.cache_data(show_spinner=False)
 def units_cached():
     return load_gold_units(GOLD_DIR)
 
 
-@st.cache_resource(show_spinner=False)
+@st.cache_data(show_spinner=False)
 def seeds_cached():
     return load_faq_seeds(GOLD_DIR)
 
 
-@st.cache_resource(show_spinner=False)
+@st.cache_data(show_spinner=False)
 def entity_index_cached():
     return load_entity_index(GOLD_DIR)
 
@@ -83,11 +96,16 @@ def real_model_cached():
     return build_chat_model(load_llm_config())
 
 
-@st.cache_data(ttl=30, show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=30)
 def model_health_cached() -> dict[str, Any]:
     try:
-        return {"ok": True, **health_check(load_llm_config())}
-    except (LLMConfigError, LLMUnavailableError, LLMModelMissingError, LLMResponseError) as exc:
+        return health_check(load_llm_config())
+    except (
+        LLMConfigError,
+        LLMUnavailableError,
+        LLMModelMissingError,
+        LLMResponseError,
+    ) as exc:
         return {"ok": False, "error": type(exc).__name__, "detail": str(exc)}
 
 
@@ -103,9 +121,10 @@ def current_model_status(demo_mode: bool) -> str:
     health = model_health_cached()
     if health.get("ok"):
         return "ollama_ready"
-    if health.get("error") == "LLMModelMissingError":
-        return "model_missing"
-    return "ollama_unavailable"
+    return {
+        "LLMModelMissingError": "model_missing",
+        "LLMUnavailableError": "ollama_unavailable",
+    }.get(str(health.get("error")), "ollama_unavailable")
 
 
 def validate_question(question: str) -> str | None:
@@ -184,6 +203,80 @@ def error_message(exc: Exception) -> str:
     return "Ocurrió un error controlado. Revisa el panel y reintenta."
 
 
+# --- sesión ------------------------------------------------------------------------------------
+
+
+def _reset_session() -> None:
+    """Clear every app key, keeping nothing on disk."""
+    for key in list(st.session_state):
+        if key.startswith("_pml_"):
+            continue
+        del st.session_state[key]
+
+
+def _session_payload(metrics: AppMetrics) -> str:
+    """Serializable snapshot of the session; contains no secrets or absolute paths."""
+    chat: list[dict[str, Any]] = []
+    for turn in st.session_state.get("chat_history", []):
+        if turn["role"] == "user":
+            chat.append({"role": "user", "question": turn["content"]})
+            continue
+        result = turn.get("result")
+        if result is not None:
+            chat.append(
+                {
+                    "role": "assistant",
+                    "answer": result.answer,
+                    "status": result.status,
+                    "model": result.model,
+                    "prompt_version": result.prompt_version,
+                    "citations": [citation.to_dict() for citation in result.citations],
+                }
+            )
+        else:
+            turn_error = turn.get("error")
+            chat.append(
+                {
+                    "role": "assistant",
+                    "error": type(turn_error).__name__ if turn_error else "unknown",
+                }
+            )
+    summary = st.session_state.get("summary_result")
+    faq_items = st.session_state.get("faq_items", ())
+    payload = {
+        "schema_version": "1.0",
+        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        "demo_mode": bool(st.session_state.get("demo_mode")),
+        "corpus": metrics.to_dict(),
+        "chat": chat,
+        "summary": summary.to_dict() if summary is not None else None,
+        "faq": [item.to_dict() for item in faq_items],
+    }
+    return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+# --- panel lateral -----------------------------------------------------------------------------
+
+
+def status_items(metrics: AppMetrics, model_state: str) -> list[tuple[str, str, str]]:
+    """Status chips for the header: data, model and demo mode."""
+    data = (
+        ("ok", "✓", "Datos completos")
+        if metrics.data_status == "complete"
+        else ("error", "×", "Datos incompletos")
+    )
+    model = {
+        "ollama_ready": ("ok", "✓", "Modelo listo"),
+        "ollama_unavailable": ("error", "×", "Ollama no responde"),
+        "model_missing": ("error", "×", "Modelo no descargado"),
+        "demo": ("demo", "●", "Modo demo"),
+    }.get(model_state, ("review", "!", format_status(model_state)))
+    items = [data, model]
+    if model_state == "demo" and data[0] != "demo":
+        items.append(("demo", "●", "Modo demo"))
+    return items
+
+
 def _render_panel(metrics: AppMetrics, demo_mode: bool) -> str:
     with st.sidebar:
         st.header("Panel")
@@ -206,7 +299,7 @@ def _render_panel(metrics: AppMetrics, demo_mode: bool) -> str:
         if not demo_mode and model_state in {"ollama_unavailable", "model_missing"}:
             st.warning(format_status(model_state))
         st.subheader("Última respuesta")
-        result = st.session_state.get("qa_result") or st.session_state.get("summary_result")
+        result = st.session_state.get("last_result")
         if result is None:
             st.caption("Sin respuestas todavía.")
         else:
@@ -220,11 +313,131 @@ def _render_panel(metrics: AppMetrics, demo_mode: bool) -> str:
                 output_tokens=result.output_tokens,
             ):
                 st.metric(row.label, row.value, help=row.help)
+        st.subheader("Sesión")
+        st.download_button(
+            "Descargar sesión (JSON)",
+            data=_session_payload(metrics),
+            file_name=SESSION_FILE,
+            mime="application/json",
+            help=(
+                "Descarga la conversación, el resumen y la FAQ de esta sesión. "
+                "No escribe en el repositorio."
+            ),
+            use_container_width=True,
+        )
+        if st.button("Limpiar sesión", use_container_width=True):
+            _reset_session()
+            st.rerun()
         st.caption(
-            "Panel de solo lectura: URLs, tokens, descartes y citas "
-            "se muestran sin escribir en data/."
+            "Solo lectura: no se escribe en `data/` ni en el repositorio. "
+            "La descarga vive únicamente en tu navegador."
         )
     return "demo" if demo_mode else model_state
+
+
+# --- consulta (chat) ---------------------------------------------------------------------------
+
+
+def _run_qa(question: str, demo_mode: bool) -> tuple[TaskResult | None, Exception | None]:
+    try:
+        result = answer_question(
+            question,
+            model=model_for("qa", demo_mode),
+            units=units_cached(),
+            entity_index=entity_index_cached(),
+            gold_dir=GOLD_DIR,
+            project_root=PROJECT_ROOT,
+        )
+        st.session_state.qa_result = result
+        st.session_state.qa_error = None
+        st.session_state.last_error = None
+        st.session_state.last_result = result
+        return result, None
+    except Exception as exc:
+        st.session_state.qa_result = None
+        st.session_state.qa_error = exc
+        st.session_state.last_error = exc
+        return None, exc
+
+
+def _append_turn(question: str, demo_mode: bool) -> None:
+    history = st.session_state.setdefault("chat_history", [])
+    history.append({"role": "user", "content": question})
+    with st.spinner("Buscando evidencia y redactando la respuesta…"):
+        result, error = _run_qa(question, demo_mode)
+    history.append({"role": "assistant", "result": result, "error": error})
+    st.session_state.last_question = question
+
+
+def _retry_last(demo_mode: bool) -> None:
+    """Re-run the last question, replacing the failed answer instead of duplicating it."""
+    history = st.session_state.setdefault("chat_history", [])
+    if history and history[-1]["role"] == "assistant":
+        history.pop()
+    question = history[-1]["content"] if history else ""
+    if not question:
+        return
+    with st.spinner("Reintentando…"):
+        result, error = _run_qa(question, demo_mode)
+    history.append({"role": "assistant", "result": result, "error": error})
+
+
+def _render_history(demo_mode: bool) -> None:
+    for turn in st.session_state.get("chat_history", []):
+        if turn["role"] == "user":
+            with st.chat_message("user"):
+                st.markdown(turn["content"])
+            continue
+        with st.chat_message("assistant", avatar="🌱"):
+            if turn.get("result") is not None:
+                render_result(turn["result"])
+            elif turn.get("error") is not None:
+                render_error(turn["error"])
+                if st.button("Reintentar", key=f"retry_{id(turn)}"):
+                    _retry_last(demo_mode)
+                    st.rerun()
+
+
+def render_chat(demo_mode: bool, data_ready: bool) -> None:
+    """Main screen: suggested questions, chat input, history with source cards."""
+    st.subheader("Consulta")
+    st.caption(
+        "Pregunta sobre Manuelita y recibe una respuesta con fuentes verificables. "
+        f"Máximo {QA_MAX_CHARS} caracteres por pregunta."
+    )
+    history = st.session_state.setdefault("chat_history", [])
+    if not history:
+        st.markdown("**Sugerencias**")
+        columns = st.columns(2)
+        for index, suggestion in enumerate(SUGGESTED_QUESTIONS):
+            if columns[index % 2].button(
+                suggestion,
+                key=f"suggestion_{index}",
+                disabled=not data_ready,
+                use_container_width=True,
+            ):
+                st.session_state.pending_question = suggestion
+                st.rerun()
+    _render_history(demo_mode)
+
+    if st.session_state.get("pending_question"):
+        question = st.session_state.pop("pending_question")
+    else:
+        question = st.chat_input(
+            "Escribe tu pregunta…",
+            max_chars=QA_MAX_CHARS,
+            disabled=not data_ready,
+        )
+    if question:
+        problem = validate_question(question)
+        if problem is not None:
+            st.warning(problem)
+        else:
+            _append_turn(question.strip(), demo_mode)
+            st.rerun()
+
+
+# --- resumen -----------------------------------------------------------------------------------
 
 
 def render_summary(demo_mode: bool, data_ready: bool) -> None:
@@ -253,6 +466,7 @@ def render_summary(demo_mode: bool, data_ready: bool) -> None:
                 st.session_state.summary_result = result
                 st.session_state.summary_error = None
                 st.session_state.last_error = None
+                st.session_state.last_result = result
             except Exception as exc:
                 st.session_state.summary_result = None
                 st.session_state.summary_error = exc
@@ -262,6 +476,9 @@ def render_summary(demo_mode: bool, data_ready: bool) -> None:
         render_result(result)
     elif st.session_state.get("summary_error") is not None:
         render_error(st.session_state.summary_error)
+
+
+# --- faq ---------------------------------------------------------------------------------------
 
 
 def render_faq(demo_mode: bool, data_ready: bool) -> None:
@@ -311,258 +528,117 @@ def render_faq(demo_mode: bool, data_ready: bool) -> None:
         render_error(st.session_state.faq_error)
 
 
-def _run_qa(question: str, demo_mode: bool) -> None:
-    try:
-        result = answer_question(
-            question,
-            model=model_for("qa", demo_mode),
-            units=units_cached(),
-            entity_index=entity_index_cached(),
-            gold_dir=GOLD_DIR,
-            project_root=PROJECT_ROOT,
-        )
-        st.session_state.qa_result = result
-        st.session_state.qa_error = None
-        st.session_state.last_error = None
-    except Exception as exc:
-        st.session_state.qa_result = None
-        st.session_state.qa_error = exc
-        st.session_state.last_error = exc
-
-
-def render_qa(demo_mode: bool, data_ready: bool) -> None:
-    st.subheader("Preguntas y respuestas")
-    st.caption("Responde solo con evidencia de la base de conocimiento y cita la fuente.")
-    with st.form("qa_form", clear_on_submit=False):
-        question = st.text_area(
-            "Pregunta",
-            value=st.session_state.get("qa_question", ""),
-            height=110,
-            max_chars=QA_MAX_CHARS,
-            placeholder="¿Qué productos ofrece Manuelita?",
-            disabled=not data_ready,
-        )
-        submitted = st.form_submit_button("Preguntar", disabled=not data_ready)
-    if submitted:
-        problem = validate_question(question)
-        if problem is not None:
-            st.warning(problem)
-        else:
-            text = question.strip()
-            st.session_state.qa_question = text
-            with st.spinner("Generando respuesta…"):
-                _run_qa(text, demo_mode)
-    result = st.session_state.get("qa_result")
-    if result is not None:
-        render_result(result)
-    elif st.session_state.get("qa_error") is not None:
-        render_error(st.session_state.qa_error)
-    if st.session_state.get("qa_question") and st.button("Reintentar", disabled=not data_ready):
-        with st.spinner("Reintentando…"):
-            _run_qa(st.session_state.qa_question, demo_mode)
-
-
-def status_items(metrics: AppMetrics, model_state: str) -> list[tuple[str, str, str]]:
-    """Status chips for the header: data, model and demo mode."""
-    data = (
-        ("ok", "✓", "Datos completos")
-        if metrics.data_status == "complete"
-        else ("error", "×", "Datos incompletos")
-    )
-    model = {
-        "ollama_ready": ("ok", "✓", "Modelo listo"),
-        "ollama_unavailable": ("error", "×", "Ollama no responde"),
-        "model_missing": ("error", "×", "Modelo no descargado"),
-        "demo": ("demo", "●", "Modo demo"),
-    }.get(model_state, ("review", "!", format_status(model_state)))
-    items = [data, model]
-    if model_state == "demo" and data[0] != "demo":
-        items.append(("demo", "●", "Modo demo"))
-    return items
+# --- métricas ----------------------------------------------------------------------------------
 
 
 def _bullets(items: list[str]) -> str:
-    """Join short bullet texts as a Markdown list."""
     return "\n".join(f"- {item}" for item in items)
 
 
-def _data_warning(metrics: AppMetrics) -> None:
-    if metrics.data_status != "complete":
-        st.warning(
-            "Los datos no están completos. Ejecuta `git lfs pull` o el pipeline de la capa "
-            "y recarga la app."
-        )
-        if metrics.detail:
-            st.caption(metrics.detail)
-
-
 def _money(value: int) -> str:
-    """Format an integer with dots as thousands separator."""
     return f"{value:,}".replace(",", ".")
 
 
-def render_home(demo_mode: bool, data_ready: bool) -> None:
-    """Consola de consulta: Resumen, FAQ y Q&A."""
-    tabs = st.tabs(["Resumen", "FAQ", "Q&A"])
-    with tabs[0]:
-        render_summary(demo_mode, data_ready)
-    with tabs[1]:
-        render_faq(demo_mode, data_ready)
-    with tabs[2]:
-        render_qa(demo_mode, data_ready)
-
-
-def render_bronze_page(metrics: AppMetrics) -> None:
-    """Explica la capa bronce: adquisición inmutable de los originales."""
-    st.subheader("Capa bronce — adquisición inmutable")
-    st.markdown(
-        "El bronce guarda **los bytes originales** de cada fuente pública, tal como se "
-        "descargaron, con su hash SHA-256, su procedencia y la fecha de captura. Nada se "
-        "reescribe: si una página cambia, se guarda una versión nueva. Es la evidencia "
-        "primaria del proyecto."
-    )
-    _data_warning(metrics)
-    columns = st.columns(4)
-    columns[0].metric("Artefactos activos", _money(metrics.active_artifacts))
-    columns[1].metric("Descartados", _money(metrics.skipped))
-    columns[2].metric("Omisiones", _money(metrics.omissions))
-    columns[3].metric("Estado de datos", format_status(metrics.data_status))
-
-    st.markdown("#### Cómo se construyó")
-    st.markdown(
-        _bullets(
-            [
-                "**Fuentes declaradas**: sitio oficial, prensa, gremios, datos abiertos, YouTube "
-                "y Linktree, cada una con su política en `config/sources.toml`.",
-                "**Rastreo respetuoso**: `scrapling` con `robots.txt`, sitemaps, límite de tasa "
-                "y exclusión de los dominios que lo prohíben.",
-                "**Identidad por contenido**: cada archivo se nombra con su SHA-256, de modo que "
-                "un duplicado no se vuelve a almacenar.",
-                "**Catálogo SQLite** (`data/bronze/_meta/bronze.sqlite3`): procedencia, "
-                "deduplicación, versiones, cobertura y auditoría.",
-                "**Cuarentena**: lo retirado se mueve a `data/quarantine/` con auditoría y "
-                "ventana de reversibilidad; no se borra sin rastro.",
-            ]
+def _medallion_layers(metrics: AppMetrics) -> None:
+    """Explain each medallion layer with the numbers of this corpus."""
+    with st.expander("Bronce — adquisición inmutable"):
+        st.markdown(
+            _bullets(
+                [
+                    f"**Artefactos activos**: {_money(metrics.active_artifacts)} "
+                    f"({_money(metrics.skipped)} descartados, {_money(metrics.omissions)} "
+                    "omisiones).",
+                    "**Bytes originales** con hash SHA-256, procedencia y fecha de captura; "
+                    "nunca se reescriben.",
+                    "**Manifiestos y catálogo SQLite** (`data/bronze/_meta/bronze.sqlite3`) "
+                    "para procedencia, deduplicación y auditoría.",
+                    "**Cuarentena** en `data/quarantine/` con ventana de reversibilidad.",
+                ]
+            )
         )
-    )
-    st.markdown("#### Dónde vive")
-    st.code(
-        "data/bronze/raw/<fuente>/<campaña>/<sha256>.<ext>\n"
-        "data/bronze/manifests/<campaña>.jsonl\n"
-        "data/bronze/reports/<campaña>/\n"
-        "data/bronze/_meta/bronze.sqlite3",
-        language="text",
-    )
-    st.markdown("#### Límites")
-    st.caption(
-        "No se hace OCR ni se interpreta contenido: un PDF escaneado sin texto se registra como "
-        "omitido. Los originales se versionan en Git LFS, no en el historial de Git."
-    )
-
-
-def render_silver_page(metrics: AppMetrics) -> None:
-    """Explica la capa plata: texto limpio, secciones y fragmentos."""
-    st.subheader("Capa plata — texto limpio y fragmentos")
-    st.markdown(
-        "La plata convierte cada original en **texto legible y citable**: quita navegación y "
-        "ruido, repara la codificación, detecta el idioma, reconstruye secciones y corta el "
-        "contenido en fragmentos recuperables. Es determinista: no usa LLM, embeddings ni OCR."
-    )
-    _data_warning(metrics)
-    columns = st.columns(4)
-    columns[0].metric("Documentos canónicos", _money(metrics.canonical_documents))
-    columns[1].metric("Fragmentos", _money(metrics.chunks))
-    columns[2].metric("Alias", _money(metrics.aliases))
-    columns[3].metric("Tokens", _money(metrics.silver_tokens))
-    st.caption(f"Última ejecución de plata: `{metrics.silver_run}`")
-
-    st.markdown("#### Cómo se construyó")
-    st.markdown(
-        _bullets(
-            [
-                "**Extracción por formato**: HTML, PDF y subtítulos VTT; cada formato tiene su "
-                "extractor y sus reglas de limpieza.",
-                "**Normalización**: espacios, saltos, mojibake y caracteres de control; el texto "
-                "conserva las palabras y las cifras originales.",
-                "**Deduplicación**: los documentos duplicados se enlazan como alias de un "
-                "canónico, sin perder la trazabilidad del artefacto.",
-                "**Secciones y chunks**: se reconstruye la jerarquía de títulos y se corta en "
-                "fragmentos con su ruta de sección y su rango de caracteres.",
-                "**Idioma**: detección heurística por documento para no mezclar contenido en "
-                "inglés.",
-            ]
+    with st.expander("Plata — texto limpio y fragmentos"):
+        st.markdown(
+            _bullets(
+                [
+                    f"**{_money(metrics.canonical_documents)} documentos canónicos** y "
+                    f"{_money(metrics.aliases)} alias.",
+                    f"**{_money(metrics.chunks)} fragmentos** con su ruta de sección.",
+                    f"**{_money(metrics.silver_tokens)} tokens** procesados en la última "
+                    f"ejecución (`{metrics.silver_run}`).",
+                    "Limpieza determinista: sin LLM, embeddings ni OCR.",
+                ]
+            )
         )
-    )
-    st.markdown("#### Dónde vive")
-    st.code(
-        "data/silver/documents.jsonl   # documentos canónicos y alias\n"
-        "data/silver/chunks.jsonl      # fragmentos recuperables\n"
-        "data/silver/markdown/         # revisión humana con frontmatter\n"
-        "data/silver/reports/          # calidad por ejecución",
-        language="text",
-    )
-    st.markdown("#### Límites")
-    st.caption(
-        "La plata no resume ni responde: eso ocurre en las tareas del Módulo 1 sobre la capa "
-        "de oro. Un documento sin texto útil se omite con una razón registrada."
-    )
-
-
-def render_gold_page(metrics: AppMetrics) -> None:
-    """Explica la capa oro: base de conocimiento extractiva y trazable."""
-    st.subheader("Capa oro — base de conocimiento trazable")
-    st.markdown(
-        "El oro es la **base de conocimiento del proyecto**: unidades extractivas que conservan "
-        "su cita, hechos numéricos, entidades, conflictos, la matriz de cobertura de los 24 "
-        "ítems, las preguntas semilla de la FAQ y los paquetes de contexto de 8k y 32k. Cada "
-        "afirmación puede rastrearse hasta su URL y su sección."
-    )
-    _data_warning(metrics)
-    columns = st.columns(4)
-    columns[0].metric("Unidades", _money(metrics.units))
-    columns[1].metric("Hechos", _money(metrics.facts))
-    columns[2].metric("Entidades", _money(metrics.entities))
-    columns[3].metric("Conflictos", _money(metrics.conflicts))
-    columns = st.columns(3)
-    columns[0].metric("Cobertura", f"{metrics.coverage_covered}/{metrics.coverage_total}")
-    columns[1].metric("Tokens", _money(metrics.gold_tokens))
-    columns[2].metric("Ejecución", metrics.gold_run)
-    st.caption(f"Última ejecución de oro: `{metrics.gold_run}`")
-
-    st.markdown("#### Cómo se construyó")
-    st.markdown(
-        _bullets(
-            [
-                "**Unidades extractivas**: texto con tema, autoridad, estado, entidades y "
-                "banderas de calidad; nunca texto generado por un modelo.",
-                "**Hechos y entidades**: cifras, fechas y actores normalizados para responder "
-                "preguntas concretas sin inventar.",
-                "**Conflictos preservados**: si dos fuentes discrepan, se guardan ambas versiones "
-                "con su cita en lugar de promediar.",
-                "**Cobertura de los 24 ítems**: cada ítem declara si está cubierto, parcial o "
-                "ausente, y por qué.",
-                "**Paquetes de contexto**: selección por cobertura, autoridad, vigencia y "
-                "diversidad, con presupuesto de 8.000 y 32.000 tokens.",
-            ]
+    with st.expander("Oro — base de conocimiento trazable"):
+        st.markdown(
+            _bullets(
+                [
+                    f"**{_money(metrics.units)} unidades** extractivas con cita obligatoria.",
+                    f"**{_money(metrics.facts)} hechos**, {_money(metrics.entities)} entidades "
+                    f"y {_money(metrics.conflicts)} conflictos preservados.",
+                    f"**Cobertura {metrics.coverage_covered}/{metrics.coverage_total}** de los "
+                    "ítems obligatorios.",
+                    f"**Paquetes de contexto** de 8k y 32k con {_money(metrics.gold_tokens)} "
+                    "tokens en la última ejecución.",
+                ]
+            )
         )
+
+
+def render_metrics(metrics: AppMetrics) -> None:
+    """Cards, charts and the medallion explanation."""
+    st.subheader("Métricas del corpus")
+    st.caption("Lectura directa de los reportes y del catálogo; la app no escribe nada.")
+    first = st.columns(4)
+    first[0].metric("Documentos", _money(metrics.canonical_documents))
+    first[1].metric("Fragmentos", _money(metrics.chunks))
+    first[2].metric("Unidades", _money(metrics.units))
+    first[3].metric("Hechos", _money(metrics.facts))
+    second = st.columns(4)
+    second[0].metric("Cobertura", f"{metrics.coverage_covered}/{metrics.coverage_total}")
+    second[1].metric("Conflictos", _money(metrics.conflicts))
+    second[2].metric("Tokens plata", _money(metrics.silver_tokens))
+    second[3].metric("Tokens oro", _money(metrics.gold_tokens))
+
+    st.markdown("#### Volumen del corpus")
+    st.bar_chart(
+        {
+            "Documentos": metrics.canonical_documents,
+            "Fragmentos": metrics.chunks,
+            "Unidades": metrics.units,
+            "Hechos": metrics.facts,
+            "Entidades": metrics.entities,
+            "Conflictos": metrics.conflicts,
+        }
     )
-    st.markdown("#### Dónde vive")
-    st.code(
-        "data/gold/knowledge_units.jsonl   # unidades con evidencia\n"
-        "data/gold/facts.jsonl             # hechos numéricos y fechados\n"
-        "data/gold/entities.jsonl          # entidades canónicas y alias\n"
-        "data/gold/conflicts.jsonl         # contradicciones con su cita\n"
-        "data/gold/faq_seeds.jsonl         # preguntas semilla de la FAQ\n"
-        "data/gold/context_8000.json       # paquete de contexto por defecto\n"
-        "data/gold/coverage.json           # matriz de los 24 ítems",
-        language="text",
-    )
-    st.markdown("#### Límites")
     st.caption(
-        "El oro no resume ni responde: eso lo hacen las tareas del Módulo 1 con LangChain, "
-        "citando estas unidades. Si la evidencia no alcanza, la app responde con un fallback "
-        "explícito."
+        "El gráfico usa las mismas cifras de las tarjetas. Los tokens se muestran aparte porque "
+        "su escala es mucho mayor."
     )
+    st.markdown("#### Tokens por capa")
+    st.bar_chart({"Plata": metrics.silver_tokens, "Oro": metrics.gold_tokens})
+    st.caption(f"Ejecuciones: plata `{metrics.silver_run}` · oro `{metrics.gold_run}`")
+
+    st.markdown("#### Arquitectura medallion")
+    st.caption(
+        "Cada capa tiene una responsabilidad distinta; el detalle se explica a continuación con "
+        "las cifras de este corpus."
+    )
+    _medallion_layers(metrics)
+
+
+def _data_warning(metrics: AppMetrics) -> None:
+    if metrics.data_status == "complete":
+        return
+    st.warning(
+        "Los datos de oro no están completos. Ejecuta `git lfs pull` o el pipeline de la capa "
+        "y recarga la app."
+    )
+    if metrics.detail:
+        st.caption(metrics.detail)
+
+
+# --- entrada -----------------------------------------------------------------------------------
 
 
 def main() -> None:
@@ -573,6 +649,10 @@ def main() -> None:
         "qa_result": None,
         "qa_question": "",
         "qa_error": None,
+        "chat_history": [],
+        "pending_question": "",
+        "last_question": "",
+        "last_result": None,
         "summary_result": None,
         "summary_error": None,
         "summary_pack": "8000",
@@ -590,36 +670,17 @@ def main() -> None:
     demo_mode = bool(st.session_state.demo_mode)
     st.html(status_bar_html(status_items(metrics, current_model_status(demo_mode))))
     _render_panel(metrics, demo_mode)
-    if not data_ready:
-        st.warning("Los datos de oro no están completos. Ejecuta `git lfs pull` y recarga la app.")
+    _data_warning(metrics)
 
-    pages = [
-        st.Page(
-            lambda: render_home(demo_mode, data_ready),
-            title="Consulta",
-            icon=":material/chat:",
-            default=True,
-        ),
-        st.Page(
-            lambda: render_bronze_page(metrics),
-            title="Bronce",
-            icon=":material/archive:",
-            url_path="bronce",
-        ),
-        st.Page(
-            lambda: render_silver_page(metrics),
-            title="Plata",
-            icon=":material/layers:",
-            url_path="plata",
-        ),
-        st.Page(
-            lambda: render_gold_page(metrics),
-            title="Oro",
-            icon=":material/diamond:",
-            url_path="oro",
-        ),
-    ]
-    st.navigation(pages).run()
+    tabs = st.tabs(["Consulta", "Resumen", "FAQ", "Métricas"])
+    with tabs[0]:
+        render_chat(demo_mode, data_ready)
+    with tabs[1]:
+        render_summary(demo_mode, data_ready)
+    with tabs[2]:
+        render_faq(demo_mode, data_ready)
+    with tabs[3]:
+        render_metrics(metrics)
     st.html(footer_html())
 
 

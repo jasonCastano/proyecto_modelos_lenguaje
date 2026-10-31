@@ -17,6 +17,16 @@ from proyecto_modelos_lenguaje.tasks import answer_question, generate_faq, summa
 
 RUN_INTEGRATION = os.getenv("OLLAMA_RUN_INTEGRATION") == "1"
 GOLD_DIR = Path(__file__).resolve().parents[2] / "data" / "gold"
+LFS_POINTER = "version https://git-lfs"
+
+
+def _gold_available() -> bool:
+    path = GOLD_DIR / "knowledge_units.jsonl"
+    if not path.is_file():
+        return False
+    with path.open("r", encoding="utf-8", errors="replace") as handle:
+        return not handle.read(64).startswith(LFS_POINTER)
+
 
 pytestmark = [
     pytest.mark.skipif(
@@ -24,8 +34,8 @@ pytestmark = [
         reason="define OLLAMA_RUN_INTEGRATION=1 para ejecutarla",
     ),
     pytest.mark.skipif(
-        not (GOLD_DIR / "knowledge_units.jsonl").is_file(),
-        reason="data/gold no existe: ejecuta el pipeline de oro antes de la prueba real",
+        not _gold_available(),
+        reason="data/gold no está materializado: ejecuta `git lfs pull` o el pipeline de oro",
     ),
 ]
 

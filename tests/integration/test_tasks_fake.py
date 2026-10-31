@@ -35,6 +35,16 @@ QUESTIONS = (
 )
 
 REAL_GOLD = PROJECT_ROOT / "data" / "gold"
+LFS_POINTER = "version https://git-lfs"
+
+
+def _real_gold_available() -> bool:
+    """True only when the gold layer is materialized (not a Git LFS pointer)."""
+    path = REAL_GOLD / "knowledge_units.jsonl"
+    if not path.is_file():
+        return False
+    with path.open("r", encoding="utf-8", errors="replace") as handle:
+        return not handle.read(64).startswith(LFS_POINTER)
 
 
 def _units(tmp_path: Path) -> tuple[GoldUnit, ...]:
@@ -111,8 +121,8 @@ def test_faq_citations_belong_to_the_seed_evidence(tmp_path: Path) -> None:
 
 
 @pytest.mark.skipif(
-    not (REAL_GOLD / "knowledge_units.jsonl").is_file(),
-    reason="data/gold no existe: ejecuta el pipeline de oro para probar con datos reales",
+    not _real_gold_available(),
+    reason="data/gold no está materializado (ejecuta `git lfs pull` o el pipeline de oro)",
 )
 def test_real_gold_layer_when_available() -> None:
     result = answer_question(

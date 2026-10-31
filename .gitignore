@@ -23,6 +23,13 @@ dist/
 *.egg-info/
 *.egg
 
+# Web frontend
+web/node_modules/
+web/dist/
+web/coverage/
+web/test-results/
+web/playwright-report/
+
 # Medallion data: bronze, silver and gold are versioned in Git LFS.
 # Quarantine, caches, smoke runs and transient SQLite files stay out of Git.
 data/quarantine/
@@ -55,3 +62,4 @@ Thumbs.db
 
 # Logs
 *.log
+web/*.tsbuildinfo

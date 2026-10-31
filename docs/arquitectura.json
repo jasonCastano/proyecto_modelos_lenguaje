@@ -9,7 +9,7 @@
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "cef79c8b2fe43b7ca001c37fa5a64b886b6f76d3"
+      "revision": "9a6f5054d2956f8047c1662adb21c55edc96a140"
     }
   },
   "stages": [
@@ -165,21 +165,21 @@
     {
       "id": "app",
       "type": "frontend",
-      "label": "App Streamlit",
-      "sublabel": "chat ? resumen ? FAQ",
-      "tag": "solo lectura",
+      "label": "Experiencia web",
+      "sublabel": "React + FastAPI",
+      "tag": "citas",
       "stage": 4,
       "row": 2,
       "sources": [
         {
-          "path": "app.py",
-          "line": 407,
-          "end_line": 440
+          "path": "web/src/App.tsx",
+          "line": 1,
+          "end_line": 80
         },
         {
-          "path": "app.py",
-          "line": 594,
-          "end_line": 687
+          "path": "src/proyecto_modelos_lenguaje/api.py",
+          "line": 1,
+          "end_line": 60
         }
       ]
     }

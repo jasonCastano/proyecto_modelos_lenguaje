@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-379%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-335%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/status-M%C3%B3dulo%201%20en%20progreso-yellow)](CONSTITUTION.md)
 
@@ -21,9 +21,9 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual**: las capas bronce, plata y oro están implementadas y validadas. La app Streamlit
-> (cuatro pestañas), las tareas LangChain y la auditoría visual de Métricas están operativas; la evaluación
-> de 40 preguntas (20 núcleo + 20 extendidas) y el informe del Módulo 1 están en desarrollo.
+> **Estado actual**: las capas bronce, plata y oro están implementadas y validadas. La experiencia web
+> (React + FastAPI) y las tareas LangChain están operativas; la evaluación de 40 preguntas (20 núcleo +
+> 20 extendidas) y el informe del Módulo 1 están en desarrollo.
 
 ---
 
@@ -75,8 +75,9 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
 - **Q&A anclado al contexto**: el modelo responde solo con el contexto recuperado, cita fuentes y declara cuando
   no tiene evidencia.
 - **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores.
-- **Interfaz de prueba** en Streamlit con Consulta, Resumen, FAQ y Métricas, citas y modo demostración.
-- **Verificación visual reproducible** del panel de Métricas con Playwright y reporte JSON.
+- **Interfaz web propia** con hero editorial, consola RAG, fuentes citadas y modo demostración.
+- **Página del Módulo 1** que explica datos, arquitectura, prompts, app, métricas y límites.
+- **Verificación E2E** con Playwright y matriz responsive.
 
 ## Arquitectura
 
@@ -89,7 +90,7 @@ flowchart LR
     V[Plata<br/>data/silver<br/>limpieza + chunks]
     G[Oro<br/>data/gold<br/>base de conocimiento]
     L[LangChain<br/>Resumen · FAQ · Q&A]
-    UI[Streamlit<br/>pregunta + respuesta + citas]
+    UI[Web React<br/>consola + citas]
     E[Embeddings + base vectorial]
     R[RAG con memoria]
 
@@ -126,15 +127,15 @@ Si la copia global de la skill está incompleta, clona
 [`tt-a1i/archify`](https://github.com/tt-a1i/archify) y usa `archify/bin/archify.mjs`.
 
 El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → recuperación léxica →
-tareas LangChain → app Streamlit**. Los embeddings y la base vectorial pertenecen al Módulo 2 y no se
+tareas LangChain → experiencia web**. Los embeddings y la base vectorial pertenecen al Módulo 2 y no se
 muestran como implementados.
 
 ## Capturas
 
-![Panel de Métricas de la app](docs/capturas/metricas-escritorio.png)
+![Experiencia web de Manuelita](docs/capturas/web/escritorio.png)
 
-La captura corresponde a la app real en 1440×900. La verificación visual de Métricas se ejecuta con
-`make audit` y no se versionan capturas temporales de la auditoría.
+La captura corresponde a la página real en 1440×900. La validación E2E se ejecuta con `make e2e` y no se
+versionan capturas temporales de la auditoría.
 
 ## Estado del proyecto
 
@@ -151,11 +152,11 @@ La captura corresponde a la app real en 1440×900. La verificación visual de M�
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 379 pruebas offline |
+| Pruebas | ✅ | 335 pruebas offline |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
-| App Streamlit + LangChain | ✅ | `app.py` con Consulta, Resumen, FAQ y Métricas; citas y panel |
-| Auditoría visual de Métricas | ✅ | 7 perfiles, 3 estados, 0 solapamientos; `scripts/audit_metrics_layout.py` |
+| App web + LangChain | ✅ | Frontend React + API FastAPI; hero, consola RAG y showcase del Módulo 1 |
+| Auditoría E2E | ✅ | Playwright: 360–1920 px, demo, fallback y foco; `make e2e` |
 | Evaluación de 40 preguntas | 🟡 | Pendiente |
 | Informe del Módulo 1 | 🟡 | Pendiente |
 | CI y Pull Requests | ✅ | 25+ PRs fusionados; CI verde |
@@ -181,7 +182,7 @@ La captura corresponde a la app real en 1440×900. La verificación visual de M�
 | Oro | 0,20 GB |
 | Cuarentena | 8,93 GB |
 | Datos totales | 9,52 GB (límite: 10 GB) |
-| Pruebas offline | 379 |
+| Pruebas offline | 335 |
 
 ## Fuentes de datos
 
@@ -217,13 +218,15 @@ La captura corresponde a la app real en 1440×900. La verificación visual de M�
 | Pruebas | `pytest` |
 | Lint y formato | `ruff` |
 | LLM (Módulo 1) | LangChain + DeepSeek API (`deepseek-flash`) |
-| Interfaz (Módulo 1) | Streamlit con identidad visual y auditoría Playwright |
+| Interfaz (Módulo 1) | React 19 + Vite + TypeScript; FastAPI + Uvicorn |
+| Arquitectura viva | Archify (`docs/arquitectura.html`) |
 | RAG (Módulo 2) | Embeddings + base vectorial (planificado) |
 
 ## Requisitos e instalación
 
 - Python 3.14 o superior.
 - [`uv`](https://docs.astral.sh/uv/) instalado.
+- Node.js 24 y npm para el frontend.
 - Conexión a internet solo para campañas reales; las pruebas no la requieren.
 
 ```bash
@@ -232,8 +235,8 @@ git clone https://github.com/jasonCastano/proyecto_modelos_lenguaje.git
 cd proyecto_modelos_lenguaje
 git lfs pull
 uv sync --frozen
-uv run ruff check .
-uv run pytest
+cd web && npm ci && cd ..
+make check
 ```
 
 Los datos de bronce, plata y oro se descargan con Git LFS (~489 MB). La cuarentena no se versiona ni se
@@ -245,15 +248,21 @@ descarga.
 
 ```bash
 make help      # lista los objetivos
-make dev       # uv sync + hooks de pre-commit
-make check     # lint + formato + pruebas
-make app       # abre la app Streamlit
-make audit     # auditoría visual de Métricas (app en :8501)
-make build     # sdist + wheel
+make dev       # uv sync + npm ci + hooks
+make check     # Python + tests/build web
+make app       # build web + API local
+make e2e       # Playwright: flujo, responsive y demo
+make build     # web + sdist + wheel
 ```
 
-La app corre con `uv run streamlit run app.py`; el modo demostración usa `PML_DEMO=1` y no requiere
-DeepSeek ni red.
+La experiencia corre con FastAPI en `http://127.0.0.1:8000`. Para desarrollo con recarga:
+
+```bash
+uv run uvicorn proyecto_modelos_lenguaje.api:app --reload --port 8000
+cd web && npm run dev
+```
+
+El modo demostración se activa desde la propia consola y no requiere DeepSeek ni red.
 
 ### Pipeline bronce
 
@@ -467,42 +476,41 @@ uv run python .opencode/skills/bitacora/scripts/generate_bitacora.py
 Genera un archivo fechado en `bitacora/` con el estado de Git local/remoto, el avance, los pendientes y los
 próximos pasos.
 
-### Aplicación Q&A
+### Experiencia web y API
+
+La entrada actual es una página React servida por FastAPI:
 
 ```bash
-# Modelo real (DEEPSEEK_API_KEY configurada)
-uv run streamlit run app.py
-
-# Modo demostración (sin red ni costo)
-PML_DEMO=1 uv run streamlit run app.py
+make app
 ```
 
-La app abre cuatro pestañas: **Consulta** (chat con sugerencias, historial, validación de 500 caracteres y
-tarjetas de fuentes), **Resumen** (paquete de contexto 8k o 32k), **FAQ** (10 a 20 preguntas expandibles con
-estado Lista/Revisar/Sin evidencia) y **Métricas** (tarjetas, gráficos y la explicación de las capas bronce,
-plata y oro). La barra lateral concentra el modo demostración, las métricas del corpus y la descarga o
-limpieza de la sesión. Todo es de solo lectura: la app no escribe en `data/` ni en el repositorio.
-
-El modo demostración usa el modelo falso y no requiere red. La guía completa está en
-[`specs/008-streamlit-qa-app/quickstart.md`](specs/008-streamlit-qa-app/quickstart.md).
-
-#### Verificación visual de Métricas
-
-La pestaña **Métricas** se audita con Playwright en seis tamaños de ventana, zoom 200 % y estados de datos
-completo, incompleto y desconocido:
+Abre `http://127.0.0.1:8000`. Para desarrollo con recarga:
 
 ```bash
-uv run playwright install chromium
-uv run streamlit run app.py --server.headless true --server.port 8501
-uv run python scripts/audit_metrics_layout.py \
-  --url http://localhost:8501 \
-  --output artifacts/metrics-layout/final
+uv run uvicorn proyecto_modelos_lenguaje.api:app --reload --port 8000
+cd web && npm run dev
 ```
 
-El reporte `artifacts/metrics-layout/final/report.json` cumple el contrato
-[`specs/010-metrics-panel-layout/contracts/layout-audit.schema.json`](specs/010-metrics-panel-layout/contracts/layout-audit.schema.json)
-y las capturas quedan fuera de Git. La guía completa está en
-[`specs/010-metrics-panel-layout/quickstart.md`](specs/010-metrics-panel-layout/quickstart.md).
+La página incluye:
+
+- **Hero editorial** con la identidad “Cañaveral editorial”.
+- **Consola RAG** con Consulta, Resumen y FAQ, citas `[U#]`, metadatos y fallback.
+- **Showcase del Módulo 1** con problema, datos, medallion, prompts, tareas, app, métricas y límites.
+- **Modo demostración** explícito, sin clave ni red.
+- **API** en `/api/health`, `/api/ask`, `/api/summary`, `/api/faq` y `/api/showcase`.
+
+La clave DeepSeek permanece en el servidor. La guía completa está en
+[`specs/012-manuelita-rag-showcase/quickstart.md`](specs/012-manuelita-rag-showcase/quickstart.md) y la
+decisión en [`docs/decisions/0013-web-frontend.md`](docs/decisions/0013-web-frontend.md).
+
+#### Verificación E2E
+
+```bash
+make e2e
+```
+
+Playwright recorre el flujo demo, el showcase, la matriz 360–1920 px y `prefers-reduced-motion`. Los tests
+de API y componentes se ejecutan con `make check`.
 
 #### Identidad visual
 
@@ -519,8 +527,8 @@ oficial y no requiere conexión:
 | Amarillo | `#FFD200` | Apoyo |
 | Naranja claro | `#F6A01A` | Apoyo |
 
-Los tokens viven en `src/proyecto_modelos_lenguaje/brand.py`, el tema base en `.streamlit/config.toml` y el
-contraste (4.5:1 / 3:1) se verifica en `tests/unit/test_brand.py`. Es un proyecto académico: la app lo
+Los tokens viven en `src/proyecto_modelos_lenguaje/brand.py` y `web/src/styles/tokens.css`; el contraste
+(4.5:1 / 3:1) se verifica en `tests/unit/test_brand.py` y `tests/api/test_web_tokens.py`. Es un proyecto académico: la app lo
 declara y no sugiere afiliación oficial.
 
 ## Capas de datos
@@ -555,7 +563,10 @@ referencian por manifiesto y hash.
 
 ```text
 .
-├── app.py                         # App Streamlit: Consulta, Resumen, FAQ, Métricas
+├── web/                           # Frontend React + Vite + TypeScript
+│   ├── src/components/            # Hero, consola RAG, showcase y motivos
+│   └── src/styles/                # Tokens y composición editorial
+├── src/proyecto_modelos_lenguaje/ # API FastAPI, RAG, pipeline y branding
 ├── bitacora/                      # Bitácoras fechadas del proyecto
 ├── config/                        # Fuentes, cobertura, LLM, prompts y reglas
 ├── data/                          # Capas medallion versionadas por Git LFS
@@ -567,10 +578,9 @@ referencian por manifiesto y hash.
 │   ├── arquitectura.json          # Fuente Archify
 │   ├── arquitectura.html          # Diagrama interactivo
 │   └── decisions/                 # ADRs
-├── scripts/                       # Entradas operativas y auditoría visual
-├── specs/                         # Especificaciones, planes y tareas (001–010)
-├── src/proyecto_modelos_lenguaje/ # Pipeline, retrieval, tareas LangChain y branding
-├── tests/                         # Unitarias, integración, contrato y visuales
+├── scripts/                       # Entradas operativas
+├── specs/                         # Especificaciones, planes y tareas (001–012)
+├── tests/                         # Unitarias, integración, contrato y E2E
 ├── .github/                       # PR/issue templates, CI, labels y Dependabot
 ├── .opencode/                     # Comandos y skill de bitácora
 ├── AGENTS.md                      # Contexto para asistentes LLM
@@ -586,8 +596,8 @@ referencian por manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 379 pruebas unitarias, de integración y de contrato.
-- **Verificación completa**: `make check` ejecuta lint, formato y pruebas; CI corre lo mismo.
+- **Pruebas offline**: 335 pruebas unitarias, de integración y de contrato.
+- **Verificación completa**: `make check` ejecuta Ruff, pytest, Vitest y build web; CI separa Python y web.
 - **Auditoría visual**: `make audit` recorre 7 perfiles y 3 estados de datos con Playwright.
 - **Lint**: `uv run ruff check .` sin hallazgos.
 - **Integridad**: SHA-256 por artefacto; verificación de muestras del corpus activo.
@@ -683,6 +693,11 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Tareas del panel de Métricas](specs/010-metrics-panel-layout/tasks.md)
 - [Guía de validación del panel de Métricas](specs/010-metrics-panel-layout/quickstart.md)
 - [Especificación del proveedor DeepSeek](specs/011-deepseek-api-model/spec.md)
+- [Especificación del frontend Manuelita](specs/012-manuelita-rag-showcase/spec.md)
+- [Plan del frontend Manuelita](specs/012-manuelita-rag-showcase/plan.md)
+- [Tareas del frontend Manuelita](specs/012-manuelita-rag-showcase/tasks.md)
+- [Guía de validación del frontend Manuelita](specs/012-manuelita-rag-showcase/quickstart.md)
+- [Decisión de arquitectura del frontend web](docs/decisions/0013-web-frontend.md)
 - [Decisión de arquitectura del proveedor DeepSeek](docs/decisions/0012-deepseek-api.md)
 - [Arquitectura interactiva (Archify)](docs/arquitectura.html)
 - [Decisión de estandarización y arquitectura viva](docs/decisions/0011-project-standard.md)
@@ -700,7 +715,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [x] Curación de relevancia y cuarentena auditada.
 - [x] Capas silver/gold y chunks.
 - [x] Tareas LangChain: Resumen, FAQ y Q&A.
-- [x] App Streamlit con métricas y citas.
+- [x] Experiencia web React + FastAPI con consola RAG y showcase del Módulo 1.
 - [x] Auditoría visual de Métricas y gobernanza del repositorio.
 - [ ] 40 preguntas evaluadas (20 núcleo + 20 extendidas) y comparación de prompts.
 - [ ] Informe y demo 12+3 minutos.

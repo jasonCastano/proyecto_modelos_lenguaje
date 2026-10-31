@@ -437,6 +437,25 @@ La app abre tres pestañas —**Resumen**, **FAQ** y **Q&A**— con citas, fuent
 El modo demostración usa el modelo falso y no requiere red. La guía completa está en
 [`specs/008-streamlit-qa-app/quickstart.md`](specs/008-streamlit-qa-app/quickstart.md).
 
+#### Identidad visual
+
+La interfaz adopta la identidad pública de Grupo Manuelita (spec
+[`009-manuelita-visual-identity`](specs/009-manuelita-visual-identity/spec.md)): cabecera con firma
+institucional, tarjetas de fuente, badges de estado y pie con atribución. La paleta se extrae del logotipo
+oficial y no requiere conexión:
+
+| Color | Valor | Uso |
+|-------|-------|-----|
+| Verde bosque | `#387C2B` | Primario |
+| Naranja | `#E86D1F` | Acento |
+| Verde lima | `#B0BC22` | Apoyo |
+| Amarillo | `#FFD200` | Apoyo |
+| Naranja claro | `#F6A01A` | Apoyo |
+
+Los tokens viven en `src/proyecto_modelos_lenguaje/brand.py`, el tema base en `.streamlit/config.toml` y el
+contraste (4.5:1 / 3:1) se verifica en `tests/unit/test_brand.py`. Es un proyecto académico: la app lo
+declara y no sugiere afiliación oficial.
+
 ## Capas de datos
 
 | Capa | Ruta | Equivalente en la rúbrica | Estado |

@@ -74,13 +74,17 @@ entorno; `.env` no se versiona.
 
 ## Validación observada
 
+- Ollama instalado: `0.40.5`, servidor activo en `127.0.0.1:11434`.
+- Modelo `llama3.1:8b` descargado (4,9 GB).
 - `uv run python -m proyecto_modelos_lenguaje.llm --print-config`: configuración efectiva, sin secretos.
-- `uv run python -m proyecto_modelos_lenguaje.llm --check`: devuelve `2` con un mensaje accionable cuando
-  Ollama no está en ejecución; es el comportamiento esperado en el entorno de implementación.
-- Pruebas: 185 recolectadas; 184 pasan y 1 se omite (integración con Ollama).
+- `uv run python -m proyecto_modelos_lenguaje.llm --check`: devuelve `0` con `"ok": true` y latencia de
+  ~2,1 s en frío.
+- Invocación real con LangChain: respuesta `OK` en 7,75 s con el prompt “Responde solo con la palabra OK”.
+- Prueba de integración real: `OLLAMA_RUN_INTEGRATION=1 uv run pytest tests/integration/test_llm_ollama.py`
+  pasa.
+- Pruebas: 185 recolectadas; 184 pasan y 1 se omite por defecto (la integración real, que pasa cuando se
+  habilita).
 - Ruff limpio y CI verde.
-- La prueba de integración real requiere `OLLAMA_RUN_INTEGRATION=1` y un servidor local con el modelo
-  descargado.
 
 ## Riesgos y mitigaciones
 

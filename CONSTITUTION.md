@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.1.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-10-31
+**Versión**: 1.2.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-10-31
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -163,16 +163,17 @@ entrega y la calidad de la demostración.
 ### 3.1 Entorno y dependencias
 
 - Python 3.14 o superior, gestionado exclusivamente con `uv`.
-- Estructura `src/` para el paquete `proyecto_modelos_lenguaje`.
-- Ruff para lint y formato; `pytest` para pruebas.
-- Dependencias de runtime y desarrollo separadas; versiones fijadas en `uv.lock`.
+- Node.js 24 para el frontend web; `package-lock.json` versionado y `npm ci` reproducible.
+- Estructura `src/` para el paquete `proyecto_modelos_lenguaje` y `web/` para React/Vite.
+- API con FastAPI + Uvicorn; Ruff para lint/formato y `pytest`/Vitest para pruebas.
+- Dependencias de runtime y desarrollo separadas; versiones fijadas en `uv.lock` y `package-lock.json`.
 - Variables de entorno para claves y configuración sensible; `.env` fuera del repositorio.
 
 ### 3.2 Estructura del repositorio
 
 ```text
-app.py                         # interfaz Streamlit (Consulta, Resumen, FAQ, Métricas)
-src/proyecto_modelos_lenguaje/ # paquete: datos, prompts, LLM, RAG
+web/                           # frontend React + Vite + TypeScript
+src/proyecto_modelos_lenguaje/ # paquete: API FastAPI, datos, prompts, LLM, RAG
 scripts/                       # entradas operativas reproducibles y auditoría visual
 config/                        # fuentes, reglas y parámetros versionados
 data/                          # capas medallion versionadas por Git LFS
@@ -226,11 +227,11 @@ uv.lock
 
 - LangChain es el framework obligatorio para las tres tareas del Módulo 1: **Resumen**, **FAQ** y **Q&A**.
   Cualquier alternativa requiere justificación escrita y aprobación del docente.
-- El modelo puede ser open source vía Ollama o privado vía API. La elección DEBE justificarse por costo,
-  latencia, calidad, idioma y disponibilidad.
+- El proveedor del Módulo 1 es **DeepSeek por API**, con modo demostración offline. La elección se justifica
+  por costo, latencia, calidad, idioma y disponibilidad.
 - La configuración del modelo (nombre, versión, temperatura, límite de contexto, tokens) DEBE estar en
   `config/` o variables de entorno documentadas.
-- Las claves de API NO se versionan; se leen de `.env` o del gestor de secretos.
+- Las claves de API NO se versionan; se leen de `.env` o del gestor de secretos y nunca llegan al navegador.
 - El texto limpio consolidado DEBE residir en `data/gold/` y caber en la estrategia de contexto definida; si
   excede la ventana, se aplica chunking/recuperación documentada.
 
@@ -245,21 +246,21 @@ uv.lock
   instrucciones anti-alucinación.
 - Los prompts DEBEN versionarse en el repositorio; no se aceptan prompts solo en la memoria del equipo.
 
-### 3.7 Aplicación de prueba
+### 3.7 Aplicación web
 
-- Streamlit es la opción por defecto; Gradio se admite con justificación.
-- La app DEBE ejecutarse con `uv run streamlit run app.py` (o el comando equivalente documentado).
-- DEBE mostrar tres funcionalidades: Resumen, FAQ y Q&A.
-- DEBE incluir campo de pregunta, área de respuesta, citas de fuente y un panel con las métricas del scraping
-  (URLs, páginas, tokens, descartes).
-- DEBE manejar errores de modelo, contexto vacío y timeout sin romper la interfaz.
-- NO DEBE exponer claves, rutas absolutas ni datos sensibles.
+- La entrada del producto es una página React/Vite servida por FastAPI; Streamlit ya no es la interfaz.
+- La app DEBE ejecutarse con `make app` o `uv run uvicorn proyecto_modelos_lenguaje.api:app`.
+- DEBE mostrar tres funcionalidades: Consulta, Resumen y FAQ, con citas y fallback.
+- DEBE incluir una página del Módulo 1 con datos, arquitectura, prompts, app, métricas y límites.
+- DEBE incluir modo demostración explícito, estados de carga y errores accionables.
+- DEBE usar la paleta corporativa y motivos de producto definidos en el contrato UI.
+- NO DEBE exponer claves, rutas absolutas ni datos sensibles; la API no devuelve la clave.
 
 ### 3.8 Pruebas y calidad
 
 - `uv run pytest` DEBE pasar sin red para las pruebas unitarias y de contrato.
-- `make check` DEBE ejecutar Ruff (lint + formato) y `pytest`; el CI corre lo mismo.
-- La app DEBE auditarse visualmente con `make audit` en los perfiles definidos por la feature 010.
+- `make check` DEBE ejecutar Ruff (lint + formato), `pytest` y la verificación web (Vitest + build); el CI corre ambos jobs.
+- La app DEBE auditarse con `make e2e` (Playwright) en los perfiles responsive definidos por la feature 012.
 - Cada módulo crítico (scraping, chunking, prompts, recuperación, app) DEBE tener al menos una prueba.
 - `uv run ruff check .` DEBE pasar sin errores.
 - Un PR no se fusiona con pruebas fallidas, lint pendiente o conflictos sin resolver.
@@ -357,7 +358,7 @@ Puerta: `uv sync`, lint y pruebas pasan; el repositorio se entiende desde el REA
 ### Fase 1 — Módulo 1: Base de conocimiento y Q&A
 
 **Objetivo**: construir la base de conocimiento semántico de Manuelita y un sistema Q&A con Prompt Engineering,
-LangChain y una interfaz Streamlit/Gradio.
+LangChain y una experiencia web React/FastAPI.
 
 **Alcance obligatorio**:
 
@@ -377,10 +378,11 @@ LangChain y una interfaz Streamlit/Gradio.
    - Generación de FAQ.
    - Q&A con contexto y citas.
    - Prompts versionados en `docs/prompt_log.md`.
-4. **Aplicación de prueba**:
-   - `app.py` con las tres funcionalidades.
-   - Panel de scraping y Q&A con cita de fuente.
-   - Ejecutable con `uv run streamlit run app.py`.
+4. **Aplicación web**:
+   - Frontend React/Vite con Consulta, Resumen, FAQ y showcase del Módulo 1.
+   - API FastAPI con citas, fallback y modo demostración.
+   - Ejecutable con `make app` o `uv run uvicorn proyecto_modelos_lenguaje.api:app`.
+   - Verificación E2E con `make e2e`.
 5. **Evaluación**:
    - 20 preguntas como mínimo, con respuesta, fuente, corrección, coherencia y alucinación.
    - Comparación zero-shot vs. prompt final.
@@ -479,7 +481,7 @@ Un entregable está terminado solo si cumple todo lo siguiente:
 | Código | PR fusionado, CI verde, Ruff limpio, pruebas pasando |
 | Datos | Pipeline reproducible, metadata, hash, deduplicación y ficha de datos |
 | LLM | Tres tareas funcionando, prompts versionados, citas y fallback |
-| App | `uv run streamlit run app.py` funciona desde un clon limpio |
+| App | `make app` (React + FastAPI) funciona desde un clon limpio |
 | Evaluación | 20+ preguntas tabuladas y analizadas |
 | Documentación | README, informe, prompt log y decisiones actualizados |
 | Repositorio | ≥2 PRs revisados, Conventional Commits, sin secretos ni datos |
@@ -517,7 +519,7 @@ Reglas:
 | Análisis de la empresa y estrategia de datos | 15% | `docs/alcance.md`, ficha de datos, fuentes y cobertura |
 | Procesamiento y tareas LLM | 25% | Texto limpio, chunks, Resumen/FAQ/Q&A con LangChain |
 | Calidad del Prompt Engineering | 25% | `docs/prompt_log.md`, línea base, anti-alucinación, citas |
-| Implementación y calidad de la app | 15% | `app.py` con tres funcionalidades, métricas y citas |
+| Implementación y calidad de la app | 15% | Frontend React/FastAPI con tres funcionalidades, métricas y citas |
 | Documentación escrita | 10% | Informe con las cinco secciones |
 | Presentación oral y demostración | 10% | Demo 12+3, sin diapositivas, app/repo/IDE |
 
@@ -595,10 +597,11 @@ se puntúa de 1.0 a 5.0 y la nota es `1.0 + 4 × (puntos / 100)`.
 
 ```bash
 uv sync
+cd web && npm ci && cd ..
 uv run python scripts/scrape_empresa.py
-uv run streamlit run app.py
-uv run pytest
-uv run ruff check .
+make app
+make check
+make e2e
 git log --oneline --graph -20
 ```
 
@@ -621,8 +624,8 @@ Equivalencias actuales que deben documentarse o envolverse:
 - [ ] Pipeline ejecutable con `uv run python scripts/scrape_empresa.py`.
 - [ ] Capas `data/raw`, `data/processed`, `data/gold` o equivalencia documentada.
 - [ ] Corpus con URL, título, sección, fecha y hash.
-- [ ] App Streamlit/Gradio con Resumen, FAQ y Q&A.
-- [ ] `uv run streamlit run app.py` funciona.
+- [ ] Experiencia web React + FastAPI con Consulta, Resumen, FAQ y showcase.
+- [ ] `make app` funciona y `make check` incluye la verificación web.
 - [ ] Q&A cita la fuente y declara cuando no hay evidencia.
 - [ ] Panel de scraping con URLs, páginas, tokens y descartes.
 - [ ] Al menos 2 PR fusionados con revisión y checks verdes.
@@ -647,7 +650,7 @@ scraper, deploy en Hugging Face Spaces y diagrama de arquitectura.
 | Licencia MIT | Pendiente | Crear `LICENSE` 2026 y declararla en README/pyproject | Ambos |
 | README profesional | Parcial | Badges, arquitectura, capturas, créditos y licencia | Ambos |
 | 2 PR fusionados | Pendiente (0) | Crear PRs desde ramas feat/docs y revisar | Ambos |
-| App Streamlit/Gradio | Pendiente | Implementar `app.py` con tres funcionalidades | Roberto |
+| App web React/FastAPI | Cumple | Frontend y API con Consulta, Resumen, FAQ y showcase | Roberto |
 | LangChain y tres tareas | Pendiente | Añadir dependencias y tareas Resumen/FAQ/Q&A | Roberto |
 | `data/silver` y `data/gold` | Pendiente | Chunks y base de conocimiento consolidada | Jason |
 | Metadata de sección | Parcial | Enriquecer corpus y documentar campos | Jason |
@@ -679,8 +682,8 @@ Auditoría con `jan-project-standard` sobre el repositorio:
 - **Arquitectura**: `docs/arquitectura.json` + `docs/arquitectura.html` generados y validados con
   Archify (`finalize --quality showcase`); captura enlazada desde el README. Decisión registrada en
   `docs/decisions/0011-project-standard.md`.
-- **Estado técnico**: app Streamlit de cuatro pestañas, tareas LangChain, capas medallion y auditoría
-  visual de Métricas operativas; 346 pruebas pasan y CI está verde.
+- **Estado técnico**: experiencia web React + FastAPI, tareas LangChain, capas medallion y auditoría E2E
+  operativas; 333 pruebas Python + 12 pruebas web y CI verde.
 - **Pendiente**: evaluación de 40 preguntas, informe, guion de demo, capturas restantes y tag
   `v0.1.0-modulo1`.
 
@@ -698,4 +701,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.1.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-10-31
+**Versión**: 1.2.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-10-31

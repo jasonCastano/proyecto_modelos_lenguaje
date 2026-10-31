@@ -6,7 +6,7 @@
 ## Proyecto
 
 Sistema Q&A y RAG sobre información pública de Ingenio Manuelita. Combina un pipeline medallion
-(bronce → plata → oro), tareas LangChain con Ollama local y una app Streamlit de solo lectura.
+(bronce → plata → oro), tareas LangChain con DeepSeek y una experiencia web React + FastAPI de solo lectura.
 
 - **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 - **Mantenedor**: Jason Alejandro Castaño (`@jasonCastano`)
@@ -31,23 +31,24 @@ Usa [Conventional Commits](https://www.conventionalcommits.org/): `feat:`, `fix:
 
 ```bash
 make help      # objetivos disponibles
-make dev       # uv sync + hooks de pre-commit
-make check     # lint + formato + pruebas
+make dev       # uv sync + npm ci + hooks
+make check     # Python + pruebas/build web
 make lint      # Ruff
 make format    # Ruff format
 make test      # pytest
-make app       # Streamlit local
-make audit     # auditoría visual de Métricas (requiere app en :8501)
-make build     # sdist + wheel
+make app       # build web + API local
+make e2e       # Playwright
+make build     # web + sdist + wheel
 ```
 
 Comandos directos:
 
 ```bash
-uv run streamlit run app.py
-PML_DEMO=1 uv run streamlit run app.py
+uv run uvicorn proyecto_modelos_lenguaje.api:app --reload --port 8000
+cd web && npm run dev
 uv run python -m proyecto_modelos_lenguaje.llm --check
-uv run python scripts/audit_metrics_layout.py --url http://localhost:8501 --output artifacts/metrics-layout/final
+make app
+make e2e
 ```
 
 ## Reglas duras
@@ -62,9 +63,9 @@ uv run python scripts/audit_metrics_layout.py --url http://localhost:8501 --outp
 
 ## Estructura
 
-- `src/proyecto_modelos_lenguaje/` — pipeline, retrieval, tareas LangChain y branding.
-- `app.py` — app Streamlit (Consulta, Resumen, FAQ, Métricas).
-- `scripts/` — entradas operativas y auditoría visual.
+- `src/proyecto_modelos_lenguaje/` — API FastAPI, pipeline, retrieval, tareas LangChain y branding.
+- `web/` — frontend React + Vite + TypeScript.
+- `scripts/` — entradas operativas.
 - `config/` — fuentes, capas, LLM, prompts y parámetros.
 - `specs/` — especificaciones, planes y tareas por feature.
 - `docs/` — alcance, ficha de datos, ADRs, arquitectura y bitácoras.

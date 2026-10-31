@@ -2,3 +2,8 @@
 data/bronze/** filter=lfs diff=lfs merge=lfs -text
 data/silver/** filter=lfs diff=lfs merge=lfs -text
 data/gold/** filter=lfs diff=lfs merge=lfs -text
+
+# Archify artifacts keep byte-for-byte hashes from the delivery receipt.
+docs/arquitectura*.html -text
+docs/arquitectura*.json -text
+docs/arquitectura*.png -text

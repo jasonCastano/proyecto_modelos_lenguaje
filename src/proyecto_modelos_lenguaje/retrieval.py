@@ -244,9 +244,7 @@ class FAQSeed:
             question=str(payload.get("question", "")),
             topic_id=str(payload.get("topic_id", "")),
             coverage_item_id=str(coverage_item_id) if coverage_item_id else None,
-            evidence_unit_ids=tuple(
-                str(item) for item in payload.get("evidence_unit_ids") or ()
-            ),
+            evidence_unit_ids=tuple(str(item) for item in payload.get("evidence_unit_ids") or ()),
             status=str(payload.get("status", "review")),
         )
 
@@ -386,9 +384,10 @@ def _bm25(
             frequency = document.get(token, 0)
             if not frequency:
                 continue
-            idf = math.log(1 + (total - document_frequencies[token] + 0.5) / (
-                document_frequencies[token] + 0.5
-            ))
+            idf = math.log(
+                1
+                + (total - document_frequencies[token] + 0.5) / (document_frequencies[token] + 0.5)
+            )
             denominator = frequency + BM25_K1 * (1 - BM25_B + BM25_B * length / average_length)
             score += idf * (frequency * (BM25_K1 + 1)) / denominator
         scores.append(score)

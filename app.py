@@ -15,6 +15,17 @@ from proyecto_modelos_lenguaje.app_metrics import (
     response_rows,
     status_rows,
 )
+from proyecto_modelos_lenguaje.brand import (
+    citation_location as brand_citation_location,
+)
+from proyecto_modelos_lenguaje.brand import (
+    footer_html,
+    header_html,
+    inject_brand_styles,
+    source_cards_html,
+    status_bar_html,
+    status_variant,
+)
 from proyecto_modelos_lenguaje.config import PROJECT_ROOT
 from proyecto_modelos_lenguaje.llm import (
     LLMConfigError,
@@ -119,13 +130,7 @@ def citation_markdown(citation) -> str:
 
 
 def citation_location(citation) -> str:
-    section = " > ".join(citation.section_path)
-    location = f"sección: {section}" if section else "sin sección"
-    if citation.page_start is not None:
-        location += f", p. {citation.page_start}"
-    if citation.time_start is not None:
-        location += f", {int(citation.time_start)} s"
-    return location
+    return brand_citation_location(citation)
 
 
 def render_citations(citations) -> None:
@@ -133,9 +138,7 @@ def render_citations(citations) -> None:
         st.caption("Sin fuentes citadas.")
         return
     st.markdown("**Fuentes**")
-    for citation in citations:
-        st.markdown(citation_markdown(citation))
-        st.caption(citation_location(citation))
+    st.html(source_cards_html(citations))
 
 
 def render_result(result: TaskResult) -> None:
@@ -149,9 +152,9 @@ def render_result(result: TaskResult) -> None:
         st.markdown(result.answer)
     render_citations(result.citations)
     st.caption(
-        f"Modelo: {result.model} · prompt: {result.prompt_version} · "
-        f"latencia: {result.latency_seconds:.2f} s · citas: {len(result.citations)} · "
-        f"estado: {format_status(result.status)}"
+        f"{status_variant(result.status).text} · Modelo: {result.model} · "
+        f"prompt: {result.prompt_version} · latencia: {result.latency_seconds:.2f} s · "
+        f"citas: {len(result.citations)} · estado: {format_status(result.status)}"
     )
 
 
@@ -296,12 +299,13 @@ def render_faq(demo_mode: bool, data_ready: bool) -> None:
             with st.expander(f"{index}. {item.question}"):
                 st.markdown(item.answer)
                 kind, label = faq_status_badge(item.status)
+                badge = f"{status_variant(item.status).icon} {label}"
                 if kind == "success":
-                    st.success(label)
+                    st.success(badge)
                 elif kind == "warning":
-                    st.warning(label)
+                    st.warning(badge)
                 else:
-                    st.info(label)
+                    st.info(badge)
                 render_citations(item.citations)
     elif st.session_state.get("faq_error") is not None:
         render_error(st.session_state.faq_error)
@@ -358,10 +362,29 @@ def render_qa(demo_mode: bool, data_ready: bool) -> None:
             _run_qa(st.session_state.qa_question, demo_mode)
 
 
+def status_items(metrics: AppMetrics, model_state: str) -> list[tuple[str, str, str]]:
+    """Status chips for the header: data, model and demo mode."""
+    data = (
+        ("ok", "✓", "Datos completos")
+        if metrics.data_status == "complete"
+        else ("error", "×", "Datos incompletos")
+    )
+    model = {
+        "ollama_ready": ("ok", "✓", "Modelo listo"),
+        "ollama_unavailable": ("error", "×", "Ollama no responde"),
+        "model_missing": ("error", "×", "Modelo no descargado"),
+        "demo": ("demo", "●", "Modo demo"),
+    }.get(model_state, ("review", "!", format_status(model_state)))
+    items = [data, model]
+    if model_state == "demo" and data[0] != "demo":
+        items.append(("demo", "●", "Modo demo"))
+    return items
+
+
 def main() -> None:
-    st.set_page_config(page_title=PAGE_TITLE, page_icon="🏭", layout="wide")
-    st.title(PAGE_TITLE)
-    st.caption("Resumen, FAQ y Q&A sobre información pública de Manuelita, con citas verificables.")
+    st.set_page_config(page_title=PAGE_TITLE, page_icon="🌱", layout="wide")
+    inject_brand_styles()
+    st.html(header_html())
     for key, value in {
         "qa_result": None,
         "qa_question": "",
@@ -380,17 +403,19 @@ def main() -> None:
 
     metrics = metrics_cached()
     data_ready = metrics.data_status == "complete"
-    _render_panel(metrics, bool(st.session_state.demo_mode))
+    demo_mode = bool(st.session_state.demo_mode)
+    st.html(status_bar_html(status_items(metrics, current_model_status(demo_mode))))
+    _render_panel(metrics, demo_mode)
     if not data_ready:
         st.warning("Los datos de oro no están completos. Ejecuta `git lfs pull` y recarga la app.")
     tabs = st.tabs(["Resumen", "FAQ", "Q&A"])
-    demo_mode = bool(st.session_state.demo_mode)
     with tabs[0]:
         render_summary(demo_mode, data_ready)
     with tabs[1]:
         render_faq(demo_mode, data_ready)
     with tabs[2]:
         render_qa(demo_mode, data_ready)
+    st.html(footer_html())
 
 
 if __name__ == "__main__":

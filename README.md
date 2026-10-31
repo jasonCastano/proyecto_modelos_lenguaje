@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-345%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-335%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/status-M%C3%B3dulo%201%20en%20progreso-yellow)](CONSTITUTION.md)
 
@@ -152,7 +152,7 @@ versionan capturas temporales de la auditoría.
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 345 pruebas offline |
+| Pruebas | ✅ | 335 pruebas offline |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
 | App web + LangChain | ✅ | Frontend React + API FastAPI; hero, consola RAG y showcase del Módulo 1 |
@@ -182,7 +182,7 @@ versionan capturas temporales de la auditoría.
 | Oro | 0,20 GB |
 | Cuarentena | 8,93 GB |
 | Datos totales | 9,52 GB (límite: 10 GB) |
-| Pruebas offline | 345 |
+| Pruebas offline | 335 |
 
 ## Fuentes de datos
 
@@ -596,7 +596,7 @@ referencian por manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 345 pruebas unitarias, de integración y de contrato.
+- **Pruebas offline**: 335 pruebas unitarias, de integración y de contrato.
 - **Verificación completa**: `make check` ejecuta Ruff, pytest, Vitest y build web; CI separa Python y web.
 - **Auditoría visual**: `make audit` recorre 7 perfiles y 3 estados de datos con Playwright.
 - **Lint**: `uv run ruff check .` sin hallazgos.

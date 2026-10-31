@@ -106,9 +106,9 @@ def test_status_items_cover_data_and_model(monkeypatch: pytest.MonkeyPatch) -> N
     assert complete[0][0] == "ok"
     assert "demo" in [item[0] for item in complete]
 
-    incomplete = streamlit_app.status_items(_Incomplete(), "ollama_ready")
+    incomplete = streamlit_app.status_items(_Incomplete(), "provider_ready")
     assert incomplete[0][0] == "error"
-    assert incomplete[1] == ("ok", "✓", "Modelo listo")
+    assert incomplete[1] == ("ok", "✓", "Proveedor listo")
     assert all(len(item) == 3 and item[1] and item[2] for item in complete + incomplete)
 
 

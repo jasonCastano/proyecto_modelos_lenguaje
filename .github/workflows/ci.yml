@@ -11,6 +11,7 @@ on:
         "005-scrape-empresa-entrypoint",
         "008-streamlit-qa-app",
         "010-metrics-panel-layout",
+        "012-manuelita-rag-showcase",
       ]
   pull_request:
 
@@ -44,11 +45,33 @@ jobs:
       - name: Scrape entrypoint help
         run: uv run python scripts/scrape_empresa.py --help
 
-      - name: App smoke
-        run: PML_DEMO=1 uv run pytest tests/integration/test_app_streamlit.py -q
-
       - name: Gold contracts
         run: uv run pytest tests/contract/gold -q
 
       - name: Build
         run: uv build
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Web tests
+        working-directory: web
+        run: npm run test
+
+      - name: Web build
+        working-directory: web
+        run: npm run build

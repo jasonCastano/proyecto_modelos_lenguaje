@@ -1,4 +1,4 @@
-"""Read-only metrics for the Streamlit app."""
+"""Read-only corpus metrics for the web experience."""
 
 from __future__ import annotations
 

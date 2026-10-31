@@ -1,6 +1,6 @@
 # Ficha de datos — RAG Ingenio Manuelita
 
-**Versión**: 1.0
+**Versión**: 1.1
 **Fecha de corte**: 2026-10-30
 **Commit de referencia del corpus**: `d40e8ef`
 **Autores**: Jason Alejandro Castaño, Roberto José Guerrero
@@ -19,7 +19,7 @@
 | Cobertura | Información pública de Ingenio Manuelita, sus filiales, marcas y Fundación |
 | Runs de referencia | Bronce: campañas 2026-10; plata: `2026-10-silver-01`; oro: `2026-10-gold-01` |
 | Formatos de salida | JSONL, Markdown con frontmatter, JSON, SQLite (catálogo de bronce) |
-| Versionado | Código y documentos en Git; `data/` no se versiona y se regenera |
+| Versionado | Código y documentos en Git; bronce, plata y oro en Git LFS; cuarentena y cachés fuera de Git |
 | Contacto | Repositorio `jasonCastano/proyecto_modelos_lenguaje` |
 
 **Propósito**: servir de base verificable para Resumen, FAQ y Q&A del Módulo 1, con citas y linaje hasta
@@ -339,10 +339,23 @@ El código del proyecto se distribuye bajo **MIT** (`LICENSE`, 2026).
 
 ### 9.2 Reglas
 
-- No se versionan `data/`, `.env` ni artefactos pesados.
+- Bronce, plata y oro se versionan en **Git LFS**; la cuarentena, los cachés, los smoke runs y `data/module1/`
+  no se versionan.
 - Los datos se regeneran desde las capas y se referencian por manifiesto y hash.
 - No se borran campañas ni registros del catálogo sin justificación.
 - Las fuentes bloqueadas se mantienen declaradas; no se intenta evadir `robots.txt`.
+
+### 9.3 Clonación con LFS
+
+```bash
+git lfs install
+git clone https://github.com/jasonCastano/proyecto_modelos_lenguaje.git
+cd proyecto_modelos_lenguaje
+git lfs pull
+uv sync
+```
+
+`git lfs pull` descarga bronce, plata y oro (~489 MB). La cuarentena no se descarga.
 
 ---
 
@@ -351,6 +364,7 @@ El código del proyecto se distribuye bajo **MIT** (`LICENSE`, 2026).
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
 | 1.0 | 2026-10-30 | Ficha inicial con el corpus de referencia: 557 activos, 404 canónicos, 3.810 fragmentos, 15.211 unidades y 24/24 ítems |
+| 1.1 | 2026-10-30 | Bronce, plata y oro versionados en Git LFS; cuarentena y cachés excluidos |
 
 ---
 

@@ -25,7 +25,14 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langchain_core.outputs import ChatGeneration, ChatResult
 
 from .config import PROJECT_ROOT
-from .llm import LLMConfigError, load_llm_config
+from .llm import (
+    LLMConfigError,
+    LLMTimeoutError,
+    actionable_message,
+    classify_error,
+    load_llm_config,
+    usage_tokens,
+)
 from .retrieval import (
     CONTROL_PATTERN,
     ContextPack,
@@ -492,9 +499,7 @@ def load_prompt(
         )
     heading = HEADING_PATTERN.search(text)
     if heading is None:
-        raise TaskError(
-            "invalid_config", f"El prompt {task} no tiene título.", task=task
-        )
+        raise TaskError("invalid_config", f"El prompt {task} no tiene título.", task=task)
     return PromptTemplate(
         task=task,
         version=version_match.group(1),
@@ -578,14 +583,20 @@ def build_scripted_model(task: str) -> ChatModel:
     return ScriptedTaskModel(task=task, citation_limit=limits.get(task, 2))
 
 
-def _invoke(model: ChatModel, system_text: str, user_text: str, *, task: str) -> str:
+def _invoke(
+    model: ChatModel, system_text: str, user_text: str, *, task: str
+) -> tuple[str, tuple[int, int] | None]:
     messages = [SystemMessage(content=system_text), HumanMessage(content=user_text)]
     try:
         response = model.invoke(messages)
     except Exception as exc:
-        name = type(exc).__name__.lower()
-        code = "model_timeout" if "timeout" in name else "model_error"
-        raise TaskError(code, f"El modelo no respondió: {exc}", task=task) from exc
+        error = classify_error(exc)
+        code = "model_error"
+        if isinstance(error, LLMTimeoutError):
+            code = "model_timeout"
+        elif isinstance(error, LLMConfigError):
+            code = "invalid_config"
+        raise TaskError(code, actionable_message(error), task=task) from exc
     content = getattr(response, "content", "")
     if isinstance(content, list):
         content = "".join(
@@ -597,17 +608,15 @@ def _invoke(model: ChatModel, system_text: str, user_text: str, *, task: str) ->
         if metadata.get("done_reason") == "length":
             raise TaskError(
                 "model_error",
-                "El modelo agotó max_output_tokens antes de responder; usa un modelo sin "
-                "razonamiento o aumenta llm.max_output_tokens en config/llm.toml.",
+                "El modelo agotó max_output_tokens antes de responder; "
+                "aumenta llm.max_output_tokens en config/llm.toml.",
                 task=task,
             )
         raise TaskError("model_error", "El modelo devolvió una respuesta vacía.", task=task)
-    return answer
+    return answer, usage_tokens(response)
 
 
-def _parse_citations(
-    answer: str, selection: EvidenceSelection
-) -> tuple[list[Citation], list[str]]:
+def _parse_citations(answer: str, selection: EvidenceSelection) -> tuple[list[Citation], list[str]]:
     label_map = selection.label_map()
     citations: list[Citation] = []
     invalid: list[str] = []
@@ -632,17 +641,18 @@ def _generate_with_citations(
     *,
     task: str,
     min_citations: int,
-) -> tuple[str, list[Citation], list[str]]:
+) -> tuple[str, list[Citation], list[str], tuple[int, int] | None]:
     answer = ""
     citations: list[Citation] = []
     invalid: list[str] = []
+    usage: tuple[int, int] | None = None
     for attempt in range(2):
         instruction = system_text if attempt == 0 else f"{system_text}\n\n{STRICT_REMINDER}"
-        answer = _invoke(model, instruction, user_text, task=task)
+        answer, usage = _invoke(model, instruction, user_text, task=task)
         citations, invalid = _parse_citations(answer, selection)
         if len(citations) >= max(1, min_citations):
             break
-    return answer, citations, invalid
+    return answer, citations, invalid, usage
 
 
 def _validate_question(question: str, config: TaskConfig) -> str:
@@ -738,12 +748,12 @@ def answer_question(
         language="español",
         min_citations=1,
     )
-    answer, citations, invalid = _generate_with_citations(
+    answer, citations, invalid, usage = _generate_with_citations(
         model, system_text, text, selection, task="qa", min_citations=1
     )
     latency = round(time.perf_counter() - started, 3)
-    input_tokens = estimate_tokens(system_text) + estimate_tokens(text)
-    output_tokens = estimate_tokens(answer)
+    input_tokens = usage[0] if usage else estimate_tokens(system_text) + estimate_tokens(text)
+    output_tokens = usage[1] if usage else estimate_tokens(answer)
 
     if not citations:
         return TaskResult(
@@ -783,9 +793,7 @@ def answer_question(
     )
 
 
-def _pack_blocks(
-    pack: ContextPack, units_by_id: dict[str, GoldUnit]
-) -> list[SelectedUnit]:
+def _pack_blocks(pack: ContextPack, units_by_id: dict[str, GoldUnit]) -> list[SelectedUnit]:
     selected: list[SelectedUnit] = []
     for block in pack.blocks:
         unit = units_by_id.get(block.unit_id)
@@ -860,7 +868,7 @@ def summarize_corpus(
         min_citations=min_citations,
         max_citations=max_citations,
     )
-    answer, citations, invalid = _generate_with_citations(
+    answer, citations, invalid, usage = _generate_with_citations(
         model,
         system_text,
         f"Genera el resumen del paquete {loaded_pack.pack_id}.",
@@ -869,11 +877,9 @@ def summarize_corpus(
         min_citations=min_citations,
     )
     latency = round(time.perf_counter() - started, 3)
-    input_tokens = estimate_tokens(system_text)
-    output_tokens = estimate_tokens(answer)
-    header = "\n".join(
-        [f"**Paquete de contexto:** {resolved_pack} tokens", *declarations]
-    )
+    input_tokens = usage[0] if usage else estimate_tokens(system_text)
+    output_tokens = usage[1] if usage else estimate_tokens(answer)
+    header = "\n".join([f"**Paquete de contexto:** {resolved_pack} tokens", *declarations])
     answer = f"{header}\n\n{answer}"
 
     if len(citations) < min_citations:
@@ -1027,7 +1033,7 @@ def generate_faq(
             context=build_context(selected),
             min_citations=settings.faq_min_citations,
         )
-        answer, citations, invalid = _generate_with_citations(
+        answer, citations, invalid, _usage = _generate_with_citations(
             model,
             system_text,
             question,

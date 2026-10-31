@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-271%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-346%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/status-M%C3%B3dulo%201%20en%20progreso-yellow)](CONSTITUTION.md)
 
@@ -122,7 +122,7 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 271 pruebas offline |
+| Pruebas | ✅ | 346 pruebas offline |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | Ollama local, `config/llm.toml`, adaptador offline |
 | App Streamlit + LangChain | ✅ | `app.py` con Resumen, FAQ y Q&A, citas y panel |
@@ -150,7 +150,7 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Oro | 0,20 GB |
 | Cuarentena | 8,93 GB |
 | Datos totales | 9,52 GB (límite: 10 GB) |
-| Pruebas offline | 271 |
+| Pruebas offline | 346 |
 
 ## Fuentes de datos
 
@@ -442,6 +442,24 @@ limpieza de la sesión. Todo es de solo lectura: la app no escribe en `data/` ni
 El modo demostración usa el modelo falso y no requiere red. La guía completa está en
 [`specs/008-streamlit-qa-app/quickstart.md`](specs/008-streamlit-qa-app/quickstart.md).
 
+#### Verificación visual de Métricas
+
+La pestaña **Métricas** se audita con Playwright en seis tamaños de ventana, zoom 200 % y estados de datos
+completo, incompleto y desconocido:
+
+```bash
+uv run playwright install chromium
+uv run streamlit run app.py --server.headless true --server.port 8501
+uv run python scripts/audit_metrics_layout.py \
+  --url http://localhost:8501 \
+  --output artifacts/metrics-layout/final
+```
+
+El reporte `artifacts/metrics-layout/final/report.json` cumple el contrato
+[`specs/010-metrics-panel-layout/contracts/layout-audit.schema.json`](specs/010-metrics-panel-layout/contracts/layout-audit.schema.json)
+y las capturas quedan fuera de Git. La guía completa está en
+[`specs/010-metrics-panel-layout/quickstart.md`](specs/010-metrics-panel-layout/quickstart.md).
+
 #### Identidad visual
 
 La interfaz adopta la identidad pública de Grupo Manuelita (spec
@@ -518,7 +536,7 @@ referencian por manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 271 pruebas unitarias, de integración y de contrato.
+- **Pruebas offline**: 346 pruebas unitarias, de integración y de contrato.
 - **Lint**: `uv run ruff check .` sin hallazgos.
 - **Integridad**: SHA-256 por artefacto; verificación de muestras del corpus activo.
 - **Procedencia**: URL canónica, fecha UTC, tipo, tamaño, categoría, idioma y campaña.

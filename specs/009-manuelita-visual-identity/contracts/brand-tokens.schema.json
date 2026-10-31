@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jasonCastano/proyecto_modelos_lenguaje/specs/009-manuelita-visual-identity/contracts/brand-tokens.schema.json",
+  "title": "Brand tokens — identidad visual Manuelita",
+  "description": "Forma serializada de BrandTokens (BrandTokens.to_dict()).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "palette",
+    "contrast_pairs",
+    "type_scale",
+    "font_stack",
+    "radius",
+    "spacing_unit",
+    "brand_name",
+    "project_name",
+    "tagline",
+    "attribution",
+    "affiliation_note"
+  ],
+  "properties": {
+    "palette": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "forest",
+        "orange",
+        "lime",
+        "yellow",
+        "orange_light",
+        "white",
+        "surface",
+        "ink",
+        "ink_muted",
+        "success",
+        "warning",
+        "info",
+        "danger"
+      ],
+      "patternProperties": {
+        "^[a-z_]+$": { "$ref": "#/$defs/hexColor" }
+      }
+    },
+    "contrast_pairs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "background", "minimum"],
+        "properties": {
+          "text": { "type": "string", "minLength": 1 },
+          "background": { "type": "string", "minLength": 1 },
+          "minimum": { "type": "number", "minimum": 1, "maximum": 21 }
+        }
+      }
+    },
+    "type_scale": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["display", "heading", "body", "caption"],
+      "properties": {
+        "display": { "type": "integer", "minimum": 20, "maximum": 48 },
+        "heading": { "type": "integer", "minimum": 16, "maximum": 40 },
+        "body": { "type": "integer", "minimum": 13, "maximum": 20 },
+        "caption": { "type": "integer", "minimum": 11, "maximum": 16 }
+      }
+    },
+    "font_stack": { "type": "string", "minLength": 10 },
+    "radius": { "type": "integer", "minimum": 0, "maximum": 32 },
+    "spacing_unit": { "type": "integer", "minimum": 2, "maximum": 16 },
+    "brand_name": { "type": "string", "minLength": 3 },
+    "project_name": { "type": "string", "minLength": 3 },
+    "tagline": { "type": "string", "minLength": 10 },
+    "attribution": { "type": "string", "minLength": 10 },
+    "affiliation_note": { "type": "string", "minLength": 20 }
+  },
+  "$defs": {
+    "hexColor": {
+      "type": "string",
+      "pattern": "^#[0-9A-F]{6}$"
+    }
+  }
+}

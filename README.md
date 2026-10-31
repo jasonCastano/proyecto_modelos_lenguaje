@@ -433,9 +433,33 @@ uv run streamlit run app.py
 PML_DEMO=1 uv run streamlit run app.py
 ```
 
-La app abre tres pestañas —**Resumen**, **FAQ** y **Q&A**— con citas, fuentes clicables y panel de métricas.
+La app abre cuatro pestañas: **Consulta** (chat con sugerencias, historial, validación de 500 caracteres y
+tarjetas de fuentes), **Resumen** (paquete de contexto 8k o 32k), **FAQ** (10 a 20 preguntas expandibles con
+estado Lista/Revisar/Sin evidencia) y **Métricas** (tarjetas, gráficos y la explicación de las capas bronce,
+plata y oro). La barra lateral concentra el modo demostración, las métricas del corpus y la descarga o
+limpieza de la sesión. Todo es de solo lectura: la app no escribe en `data/` ni en el repositorio.
+
 El modo demostración usa el modelo falso y no requiere red. La guía completa está en
 [`specs/008-streamlit-qa-app/quickstart.md`](specs/008-streamlit-qa-app/quickstart.md).
+
+#### Identidad visual
+
+La interfaz adopta la identidad pública de Grupo Manuelita (spec
+[`009-manuelita-visual-identity`](specs/009-manuelita-visual-identity/spec.md)): cabecera con firma
+institucional, tarjetas de fuente, badges de estado y pie con atribución. La paleta se extrae del logotipo
+oficial y no requiere conexión:
+
+| Color | Valor | Uso |
+|-------|-------|-----|
+| Verde bosque | `#387C2B` | Primario |
+| Naranja | `#E86D1F` | Acento |
+| Verde lima | `#B0BC22` | Apoyo |
+| Amarillo | `#FFD200` | Apoyo |
+| Naranja claro | `#F6A01A` | Apoyo |
+
+Los tokens viven en `src/proyecto_modelos_lenguaje/brand.py`, el tema base en `.streamlit/config.toml` y el
+contraste (4.5:1 / 3:1) se verifica en `tests/unit/test_brand.py`. Es un proyecto académico: la app lo
+declara y no sugiere afiliación oficial.
 
 ## Capas de datos
 

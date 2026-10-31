@@ -28,23 +28,24 @@ def _app(monkeypatch, *, demo: bool = True) -> AppTest:
     return AppTest.from_file(PROJECT_ROOT / "app.py").run(timeout=60)
 
 
-def test_app_shell_has_three_tabs(monkeypatch) -> None:
+def test_app_shell_has_four_tabs(monkeypatch) -> None:
     at = _app(monkeypatch)
     assert not at.exception
-    assert [tab.label for tab in at.tabs] == ["Resumen", "FAQ", "Q&A"]
+    assert [tab.label for tab in at.tabs] == ["Consulta", "Resumen", "FAQ", "Métricas"]
     assert at.sidebar.toggle[0].value is True
     assert any("Panel" in header.value for header in at.sidebar.header)
 
 
 def test_qa_demo_mode_returns_citation_or_fallback(monkeypatch) -> None:
     at = _app(monkeypatch)
-    at.text_area[0].input("¿Qué productos ofrece Manuelita?")
-    at.form_submit_button[0].click()
-    at.run(timeout=60)
+    at.chat_input[0].set_value("¿Qué productos ofrece Manuelita?").run(timeout=60)
     assert not at.exception
     text = "\n".join(item.value for item in at.markdown)
     assert "[U1]" in text or "No hay evidencia suficiente" in text
-    assert any(button.label == "Reintentar" for button in at.button)
+    history = at.session_state["chat_history"]
+    assert len(history) == 2
+    assert history[1]["role"] == "assistant"
+    assert history[1]["result"] is not None or history[1]["error"] is not None
 
 
 def test_summary_and_faq_demo_mode(monkeypatch) -> None:
@@ -69,8 +70,7 @@ def test_summary_and_faq_demo_mode(monkeypatch) -> None:
 
 def test_empty_question_is_rejected(monkeypatch) -> None:
     at = _app(monkeypatch)
-    at.form_submit_button[0].click()
-    at.run(timeout=60)
+    at.chat_input[0].set_value("   ").run(timeout=60)
     assert not at.exception
     assert any("Escribe una pregunta" in warning.value for warning in at.warning)
 

@@ -15,6 +15,7 @@ import streamlit as st
 
 from proyecto_modelos_lenguaje.app_metrics import (
     AppMetrics,
+    format_metric,
     format_status,
     load_app_metrics,
     metric_rows,
@@ -42,6 +43,7 @@ from proyecto_modelos_lenguaje.llm import (
     health_check,
     load_llm_config,
 )
+from proyecto_modelos_lenguaje.metrics_layout import KPI_KEY, METRICS_VIEW_KEY
 from proyecto_modelos_lenguaje.retrieval import (
     RetrievalError,
     load_entity_index,
@@ -293,6 +295,10 @@ def _render_panel(metrics: AppMetrics, demo_mode: bool) -> str:
         st.subheader("Corpus")
         for row in metric_rows(metrics):
             st.metric(row.label, row.value, help=row.help)
+        st.caption(
+            f"Descartes de plata: {format_metric(metrics.skipped)} · "
+            f"omisiones: {format_metric(metrics.omissions)}"
+        )
         if metrics.data_status != "complete":
             st.error("Datos incompletos.")
             st.caption(metrics.detail or "Ejecuta `git lfs pull`.")
@@ -587,18 +593,24 @@ def _medallion_layers(metrics: AppMetrics) -> None:
 
 def render_metrics(metrics: AppMetrics) -> None:
     """Cards, charts and the medallion explanation."""
+    with st.container(key=METRICS_VIEW_KEY):
+        _render_metrics_content(metrics)
+
+
+def _render_metrics_content(metrics: AppMetrics) -> None:
     st.subheader("Métricas del corpus")
     st.caption("Lectura directa de los reportes y del catálogo; la app no escribe nada.")
-    first = st.columns(4)
-    first[0].metric("Documentos", _money(metrics.canonical_documents))
-    first[1].metric("Fragmentos", _money(metrics.chunks))
-    first[2].metric("Unidades", _money(metrics.units))
-    first[3].metric("Hechos", _money(metrics.facts))
-    second = st.columns(4)
-    second[0].metric("Cobertura", f"{metrics.coverage_covered}/{metrics.coverage_total}")
-    second[1].metric("Conflictos", _money(metrics.conflicts))
-    second[2].metric("Tokens plata", _money(metrics.silver_tokens))
-    second[3].metric("Tokens oro", _money(metrics.gold_tokens))
+    with st.container(key=KPI_KEY):
+        first = st.columns(4)
+        first[0].metric("Documentos", _money(metrics.canonical_documents))
+        first[1].metric("Fragmentos", _money(metrics.chunks))
+        first[2].metric("Unidades", _money(metrics.units))
+        first[3].metric("Hechos", _money(metrics.facts))
+        second = st.columns(4)
+        second[0].metric("Cobertura", f"{metrics.coverage_covered}/{metrics.coverage_total}")
+        second[1].metric("Conflictos", _money(metrics.conflicts))
+        second[2].metric("Tokens plata", _money(metrics.silver_tokens))
+        second[3].metric("Tokens oro", _money(metrics.gold_tokens))
 
     st.markdown("#### Volumen del corpus")
     st.bar_chart(

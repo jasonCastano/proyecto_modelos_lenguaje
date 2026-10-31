@@ -51,6 +51,16 @@ def render_data_warning(incomplete: bool) -> None:
     streamlit_app._data_warning(metrics)
 
 
+def render_data_state(state: str) -> None:
+    """Render the warning and the metrics view for a data state."""
+    import app as streamlit_app
+
+    detail = None if state == "complete" else "Falta git lfs pull"
+    metrics = sample_metrics(data_status=state, detail=detail)
+    streamlit_app._data_warning(metrics)
+    streamlit_app.render_metrics(metrics)
+
+
 def render_chat_view() -> None:
     """Render the Consulta tab (chat) with the demo model."""
     import app as streamlit_app

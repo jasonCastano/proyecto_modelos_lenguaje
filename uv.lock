@@ -1596,6 +1596,7 @@ asr = [
 dev = [
     { name = "fpdf2" },
     { name = "jsonschema" },
+    { name = "playwright" },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -1624,6 +1625,7 @@ provides-extras = ["asr"]
 dev = [
     { name = "fpdf2", specifier = ">=2.9.0" },
     { name = "jsonschema", specifier = ">=4.26.0" },
+    { name = "playwright", specifier = ">=1.64" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.17.3" },
 ]

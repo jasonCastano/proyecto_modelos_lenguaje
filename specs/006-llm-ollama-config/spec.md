@@ -378,12 +378,12 @@ No añadir en esta tarea: embeddings, base vectorial, Streamlit ni LangChain exp
 | `.env.example` | Creado con `OLLAMA_BASE_URL`; sin claves |
 | `src/proyecto_modelos_lenguaje/llm.py` | Creado con configuración, `ChatOllama`, modelo falso, reintentos y `health_check` |
 | `--print-config` | Devuelve la configuración efectiva, sin secretos |
-| `--check` | Devuelve `2` con mensaje accionable cuando Ollama no está en ejecución |
-| Pruebas | 185 recolectadas; 184 pasan y 1 se omite (integración real con Ollama) |
+| `--check` | Devuelve `0` con Ollama y `llama3.1:8b` disponibles; `2` con mensaje accionable si falta el servidor o el modelo |
+| Invocación real | LangChain respondió `OK` en 7,75 s |
+| Pruebas | 185 recolectadas; 184 pasan y 1 se omite por defecto (la integración real pasa con `OLLAMA_RUN_INTEGRATION=1`) |
 | Ruff | Limpio |
 | CI | Verde |
 | Decisión | `docs/decisions/0006-ollama-llm.md` |
 
-**Limitación observada**: Ollama no estaba en ejecución en el entorno de implementación. El chequeo de
-salud devuelve el mensaje esperado (`ollama serve`) y la prueba de integración real queda condicionada a
-`OLLAMA_RUN_INTEGRATION=1`.
+**Validación real**: Ollama `0.40.5` está instalado, el servidor responde en `127.0.0.1:11434`, el modelo
+`llama3.1:8b` está descargado (4,9 GB), `--check` devuelve `0` y la prueba de integración real pasa.

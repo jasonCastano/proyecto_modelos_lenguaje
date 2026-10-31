@@ -124,7 +124,7 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
 | Pruebas | ✅ | 271 pruebas offline |
 | Calidad de código | ✅ | Ruff limpio |
-| Modelo y entorno | ✅ | Ollama local, `config/llm.toml`, adaptador offline |
+| Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
 | App Streamlit + LangChain | ✅ | `app.py` con Resumen, FAQ y Q&A, citas y panel |
 | Evaluación de 40 preguntas | 🟡 | Pendiente |
 | Informe del Módulo 1 | 🟡 | Pendiente |
@@ -281,29 +281,28 @@ uv run python scripts/verify_official_channels.py
 El detalle de qué se pudo capturar en cada canal, qué quedó bloqueado y por qué está en
 [`docs/fuentes_oficiales.md`](docs/fuentes_oficiales.md).
 
-### Modelo local (Ollama)
+### Modelo por API (DeepSeek)
 
-El Módulo 1 usa un modelo local de bajo costo. La configuración vive en `config/llm.toml`; no se
-versionan claves ni `.env`.
+El Módulo 1 usa **DeepSeek V4.1 Flash 1017** por API. La configuración vive en `config/llm.toml`; la
+clave se lee de una variable de entorno y nunca se versiona.
 
 ```bash
-# Instalar Ollama y descargar el modelo (runtime del sistema, fuera de uv)
-ollama serve
-ollama pull llama3.1:8b
-ollama list
-
-# Ver la configuración efectiva y comprobar el modelo
+cp .env.example .env      # completa DEEPSEEK_API_KEY
 uv run python -m proyecto_modelos_lenguaje.llm --print-config
 uv run python -m proyecto_modelos_lenguaje.llm --check
 ```
 
-- Modelo por defecto: `llama3.1:8b`.
-- Respaldo para equipos con poca RAM/VRAM: `llama3.2:3b`.
-- Contexto configurado: 16.384 tokens; paquete por defecto: 8.000 tokens.
-- `OLLAMA_BASE_URL` se puede cambiar en `.env` (copia `.env.example`).
-- `--check` devuelve `0` si Ollama responde y el modelo está descargado; `2` con un mensaje accionable si
-  falta el servidor o el modelo.
-- Las pruebas usan `build_fake_model()` y no requieren Ollama ni red.
+- Modelo por defecto: `deepseek-flash` (configurable con `DEEPSEEK_MODEL`).
+- URL base: `https://api.deepseek.com/v1` (configurable con `DEEPSEEK_BASE_URL`).
+- Clave: `DEEPSEEK_API_KEY` en `.env`; `.env` está ignorado por Git.
+- `--print-config` muestra `api_key_env` y `api_key_present`, **nunca** el valor de la clave.
+- `--check` devuelve `0` si la clave es válida y el modelo existe; `2` con un mensaje accionable si falta
+  la clave, la clave es inválida o el modelo no está disponible.
+- Las tarifas (`cost_per_1k_input`, `cost_per_1k_output`) alimentan el costo estimado del panel; con `0.0`
+  el panel indica «costo no configurado».
+- Sin red o sin cuota, activa el modo demostración (`PML_DEMO=1`): respuestas de prueba, sin llamadas
+  remotas.
+- Las pruebas usan `build_fake_model()` y un transporte simulado: no requieren clave ni red.
 
 ### Capa plata (silver)
 
@@ -393,7 +392,7 @@ uv run python -m proyecto_modelos_lenguaje.tasks summary --pack 8000 --json
 uv run python -m proyecto_modelos_lenguaje.tasks faq --limit 12 --json
 ```
 
-- `--fake` usa un modelo falso determinista: no requiere Ollama ni red, ideal para CI y para revisar el flujo.
+- `--fake` usa un modelo falso determinista: no requiere clave ni red, ideal para CI y para revisar el flujo.
 - `--config` apunta a otra configuración; `--json` emite un único objeto JSON (o una lista, en `faq`).
 - Códigos de salida: `0` resultado (incluido `fallback`), `1` error controlado del modelo, `2` error de uso.
 - La variable `PML_GOLD_DIR` permite apuntar a otra capa de oro (por defecto `data/gold`).
@@ -426,10 +425,10 @@ próximos pasos.
 ### Aplicación Q&A
 
 ```bash
-# Modelo real (Ollama activo)
+# Modelo real (DEEPSEEK_API_KEY configurada)
 uv run streamlit run app.py
 
-# Modo demostración sin Ollama
+# Modo demostración (sin red ni costo)
 PML_DEMO=1 uv run streamlit run app.py
 ```
 
@@ -578,7 +577,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Plan de la entrada canónica de scraping](specs/005-scrape-empresa-entrypoint/plan.md)
 - [Guía de validación de la entrada canónica](specs/005-scrape-empresa-entrypoint/quickstart.md)
 - [Decisión de arquitectura de la entrada canónica](docs/decisions/0005-scrape-entrypoint.md)
-- [Especificación técnica del modelo Ollama](specs/006-llm-ollama-config/spec.md)
+- [Especificación del proveedor DeepSeek](specs/010-deepseek-api-model/spec.md)
 - [Especificación de tareas LangChain](specs/007-langchain-qa-tasks/spec.md)
 - [Plan de tareas LangChain](specs/007-langchain-qa-tasks/plan.md)
 - [Tareas de LangChain](specs/007-langchain-qa-tasks/tasks.md)
@@ -588,7 +587,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Tareas de la app Streamlit](specs/008-streamlit-qa-app/tasks.md)
 - [Guía de validación de la app Streamlit](specs/008-streamlit-qa-app/quickstart.md)
 - [Decisión de arquitectura de la app Streamlit](docs/decisions/0009-streamlit-app.md)
-- [Decisión de arquitectura del modelo Ollama](docs/decisions/0006-ollama-llm.md)
+- [Decisión de arquitectura del modelo](docs/decisions/0011-deepseek-api.md)
 - [Verificación de canales oficiales](docs/fuentes_oficiales.md)
 - [Bitácora del 2026-10-29](bitacora/2026-10-29.md)
 - [Guía de validación del bronce](specs/001-bronze-web-scraping/quickstart.md)

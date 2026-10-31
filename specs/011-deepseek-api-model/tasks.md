@@ -1,6 +1,6 @@
 # Tareas: Modelo DeepSeek vía API en lugar de Ollama local
 
-**Entrada**: documentos de diseño de `/specs/010-deepseek-api-model/`
+**Entrada**: documentos de diseño de `/specs/011-deepseek-api-model/`
 
 **Prerrequisitos**: `plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md`
 
@@ -48,7 +48,7 @@ pruebas en `tests/`.
 - [x] T010 Implementar en `llm.py` el mapeo de fallos al error del proyecto según `contracts/provider-errors.md` §1 (401/403 → `auth_failed`, 404 → `model_unavailable`, 429 → `rate_limited`, timeout → `timeout`, 5xx/red → `provider_unavailable`, vacío → `empty_response`, JSON inválido → `invalid_response`).
 - [x] T011 Implementar en `llm.py` la política de reintentos: solo `rate_limited`, `timeout`, `provider_unavailable`, `empty_response` e `invalid_response`; nunca `auth_failed` ni `model_unavailable`.
 - [x] T012 Implementar en `llm.py` la función que construye el mensaje accionable por error y garantiza que ninguna salida incluye la clave ni el encabezado `Authorization`.
-- [x] T013 [P] Añadir en `tests/contract/test_llm_contract.py` la validación de `ProviderConfig.to_dict()` contra `specs/010-deepseek-api-model/contracts/provider-config.schema.json`, incluido `additionalProperties: false`.
+- [x] T013 [P] Añadir en `tests/contract/test_llm_contract.py` la validación de `ProviderConfig.to_dict()` contra `specs/011-deepseek-api-model/contracts/provider-config.schema.json`, incluido `additionalProperties: false`.
 - [x] T014 [P] Añadir en `tests/unit/test_llm.py` pruebas de: configuración válida, cada rango inválido, campo de secreto prohibido, `api_key_present` verdadero y falso, y ausencia de la clave en `to_dict()`.
 
 **Punto de control**: configuración, errores, cliente y redacción listos.
@@ -165,12 +165,12 @@ pruebas en `tests/`.
 **Propósito**: retirada de Ollama, documentación, decisión y verificación final.
 
 - [x] T040 Retirar de `README.md`, `.env.example`, `scripts/` y `config/llm.toml` toda referencia a Ollama, `llama3.1:8b`, `keep_alive` y `seed`, y confirmar que `uv tree` ya no muestra `langchain-ollama`.
-- [x] T041 Crear `docs/decisions/0011-deepseek-api.md` con la justificación §3.5 (costo, latencia, calidad, idioma y disponibilidad), el mapeo de errores y la política de datos enviados.
+- [x] T041 Crear `docs/decisions/0012-deepseek-api.md` con la justificación §3.5 (costo, latencia, calidad, idioma y disponibilidad), el mapeo de errores y la política de datos enviados.
 - [x] T042 Actualizar `docs/prompt_log.md` con la nueva línea base: modelo, parámetros, prompts y una muestra observada.
 - [x] T043 Ejecutar `uv run ruff check .` y `uv run ruff format --check .` y corregir hallazgos en `llm.py`, `app.py` y `tests/`.
 - [x] T044 Ejecutar `uv run pytest` y corregir fallos, verificando que la suite termina en menos de 2 minutos y sin red.
-- [ ] T045 Ejecutar los escenarios de `specs/010-deepseek-api-model/quickstart.md` con la clave real: `--print-config`, `--check`, Q&A, Resumen y FAQ; registrar latencia, tokens y citas. *(Bloqueada: no hay `DEEPSEEK_API_KEY` en el equipo.)*
-- [ ] T046 Verificar en `specs/010-deepseek-api-model/quickstart.md` §7 los caminos de error: clave ausente, clave inválida y modo demo sin red. *(Bloqueada: requiere la clave real; la simulación de los mismos caminos está cubierta por `tests/integration/test_llm_api.py`.)*
+- [ ] T045 Ejecutar los escenarios de `specs/011-deepseek-api-model/quickstart.md` con la clave real: `--print-config`, `--check`, Q&A, Resumen y FAQ; registrar latencia, tokens y citas. *(Bloqueada: no hay `DEEPSEEK_API_KEY` en el equipo.)*
+- [ ] T046 Verificar en `specs/011-deepseek-api-model/quickstart.md` §7 los caminos de error: clave ausente, clave inválida y modo demo sin red. *(Bloqueada: requiere la clave real; la simulación de los mismos caminos está cubierta por `tests/integration/test_llm_api.py`.)*
 - [x] T047 Regenerar la bitácora con `uv run python .opencode/skills/bitacora/scripts/generate_bitacora.py`.
 
 ---

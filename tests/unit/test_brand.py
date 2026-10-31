@@ -123,8 +123,10 @@ def test_stylesheet_declares_the_four_type_levels() -> None:
     assert "font-size: 13px" in css
 
 
-def test_stylesheet_has_no_fixed_max_width() -> None:
-    assert "min-width" not in brand_css()
+def test_stylesheet_allows_components_to_shrink() -> None:
+    css = brand_css()
+    assert "min-width: 0" in css
+    assert "min-width: 320px" not in css
 
 
 # --- estados -----------------------------------------------------------------------------------

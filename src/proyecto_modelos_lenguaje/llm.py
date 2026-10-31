@@ -4,7 +4,7 @@ La clave se lee exclusivamente de la variable de entorno indicada por ``api_key_
 escribe en archivos versionados, registros ni resultados. El módulo expone un ``BaseChatModel``
 para que ``tasks.py`` y la app no conozcan al proveedor.
 
-Ver `specs/010-deepseek-api-model/` (spec, plan, contrato y modelo de datos).
+Ver `specs/011-deepseek-api-model/` (spec, plan, contrato y modelo de datos).
 """
 
 from __future__ import annotations

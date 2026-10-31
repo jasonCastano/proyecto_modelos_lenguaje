@@ -1147,7 +1147,7 @@ def _configure_output() -> None:
             continue
         try:
             reconfigure(encoding="utf-8", errors="replace")
-        except (ValueError, OSError):  # pragma: no cover - depende de la consola
+        except ValueError, OSError:  # pragma: no cover - depende de la consola
             continue
 
 

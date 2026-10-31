@@ -1,6 +1,6 @@
 # Feature Specification: Modelo DeepSeek vía API en lugar de Ollama local
 
-**Feature Branch**: `010-deepseek-api-model`
+**Feature Branch**: `feat/010-deepseek-api-model`
 
 **Created**: 2026-10-31
 

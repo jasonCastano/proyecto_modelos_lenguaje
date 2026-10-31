@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/jasonCastano/proyecto_modelos_lenguaje/specs/010-deepseek-api-model/contracts/provider-config.schema.json",
+  "$id": "https://github.com/jasonCastano/proyecto_modelos_lenguaje/specs/011-deepseek-api-model/contracts/provider-config.schema.json",
   "title": "LLM provider configuration",
   "description": "Forma serializada de ProviderConfig (config/llm.toml). Nunca contiene el valor de la clave.",
   "type": "object",

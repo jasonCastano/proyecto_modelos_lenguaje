@@ -14,7 +14,7 @@ from proyecto_modelos_lenguaje.llm import load_llm_config, main
 SCHEMA_PATH = (
     Path(__file__).resolve().parents[2]
     / "specs"
-    / "010-deepseek-api-model"
+    / "011-deepseek-api-model"
     / "contracts"
     / "provider-config.schema.json"
 )

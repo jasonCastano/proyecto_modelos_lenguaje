@@ -124,4 +124,3 @@ plantilla y navegación que compiten con el contenido sustantivo. Candidatos de 
 (2) exigir cobertura de varios términos de la pregunta además de la frecuencia, y (3) revisar el peso del
 tema frente a la coincidencia léxica. No se ajusta todavía porque la decisión debe basarse en la
 evaluación de 40 preguntas.
-

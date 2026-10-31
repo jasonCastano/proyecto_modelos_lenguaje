@@ -1,6 +1,6 @@
 # Fase 0 — Investigación: DeepSeek por API en lugar de Ollama local
 
-**Feature**: `010-deepseek-api-model`
+**Feature**: `011-deepseek-api-model`
 **Fecha**: 2026-10-31
 **Estado**: decisiones cerradas; sin `NEEDS CLARIFICATION`.
 
@@ -132,7 +132,7 @@
 
 ## 12. Trazabilidad del cambio
 
-- **Decisión**: registrar la decisión en `docs/decisions/0011-deepseek-api.md` con la justificación §3.5
+- **Decisión**: registrar la decisión en `docs/decisions/0012-deepseek-api.md` con la justificación §3.5
   (costo, latencia, calidad, idioma y disponibilidad) y actualizar `docs/prompt_log.md` con la nueva línea
   base.
 - **Racional**: la constitución exige justificar la elección del modelo y mantener el registro de

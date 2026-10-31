@@ -1,8 +1,8 @@
 # Implementation Plan: Modelo DeepSeek vía API en lugar de Ollama local
 
-**Branch**: `010-deepseek-api-model` | **Date**: 2026-10-31 | **Spec**: [spec.md](./spec.md)
+**Branch**: `feat/010-deepseek-api-model` | **Date**: 2026-10-31 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `/specs/010-deepseek-api-model/spec.md`
+**Input**: Feature specification from `/specs/011-deepseek-api-model/spec.md`
 
 ## Summary
 
@@ -72,7 +72,7 @@ actuales en `llm.py`.
 ### Documentation (this feature)
 
 ```text
-specs/010-deepseek-api-model/
+specs/011-deepseek-api-model/
 ├── plan.md              # Este archivo
 ├── research.md          # Fase 0: decisiones y alternativas
 ├── data-model.md        # Fase 1: entidades y validaciones

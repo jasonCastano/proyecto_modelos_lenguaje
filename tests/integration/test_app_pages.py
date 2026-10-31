@@ -6,6 +6,7 @@ import json
 from collections.abc import Callable
 from pathlib import Path
 
+import pytest
 from streamlit.testing.v1 import AppTest
 
 from proyecto_modelos_lenguaje.config import PROJECT_ROOT
@@ -41,6 +42,12 @@ def _reset_script() -> None:
     reset_and_capture()
 
 
+def _state_script(state: str) -> None:
+    from tests.app_page_helpers import render_data_state
+
+    render_data_state(state)
+
+
 def _run(script: Callable[[], None]) -> AppTest:
     app = AppTest.from_function(script, default_timeout=120).run(timeout=120)
     assert not app.exception
@@ -65,6 +72,35 @@ def test_metrics_view_shows_cards_and_medallion_layers() -> None:
     assert "15.211" in values
     assert "24/24" in values
     assert "Arquitectura medallion" in " ".join(_texts(app, "markdown"))
+
+
+def test_metrics_view_has_exactly_eight_kpis() -> None:
+    app = _run(_metrics_script)
+    labels = [str(item.label) for item in app.get("metric")]
+    assert labels == [
+        "Documentos",
+        "Fragmentos",
+        "Unidades",
+        "Hechos",
+        "Cobertura",
+        "Conflictos",
+        "Tokens plata",
+        "Tokens oro",
+    ]
+    assert len(app.get("metric")) == 8
+
+
+@pytest.mark.parametrize("state", ["complete", "incomplete", "unknown"])
+def test_metrics_data_states_render_warning_separately(state: str) -> None:
+    app = AppTest.from_function(_state_script, args=(state,), default_timeout=120).run(timeout=120)
+    assert not app.exception
+    warnings = [str(item.value) for item in app.warning]
+    if state == "complete":
+        assert warnings == []
+    else:
+        assert any("datos de oro no están completos" in value for value in warnings)
+    assert len(app.get("metric")) == 8
+    assert len(app.get("expander")) == 3
 
 
 def test_metrics_view_has_charts() -> None:

@@ -1,6 +1,6 @@
 # Contrato de errores y diagnóstico del proveedor
 
-**Feature**: `010-deepseek-api-model`
+**Feature**: `011-deepseek-api-model`
 **Versión**: 1.0
 **Fecha**: 2026-10-31
 

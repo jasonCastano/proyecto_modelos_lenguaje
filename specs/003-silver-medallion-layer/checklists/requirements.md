@@ -59,4 +59,3 @@
 | SC-014 | PASS | Pruebas offline; segunda ejecución con caché sin red |
 
 **Nota SC-002**: se mide sobre documentos canónicos. Los 92 alias son duplicados o versiones anteriores; conservan texto para auditoría pero no se indexan, por lo que no representan contenido nuevo.
-

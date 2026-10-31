@@ -1,8 +1,8 @@
-# ADR 0011 — Modelo DeepSeek por API en lugar de Ollama local
+# ADR 0012 — Modelo DeepSeek por API en lugar de Ollama local
 
 - **Fecha**: 2026-10-31
 - **Estado**: Aceptada
-- **Contexto**: spec `010-deepseek-api-model`. El Módulo 1 usaba `llama3.1:8b` servido por Ollama en el
+- **Contexto**: spec `011-deepseek-api-model`. El Módulo 1 usaba `llama3.1:8b` servido por Ollama en el
   equipo; el equipo pasa a consumir **DeepSeek V4.1 Flash 1017** como servicio remoto.
 
 ## Contexto
@@ -65,4 +65,4 @@ máquina; además ataba la demo al hardware disponible.
 - `src/proyecto_modelos_lenguaje/llm.py`, `config/llm.toml`, `.env.example`.
 - `tests/unit/test_llm.py`, `tests/contract/test_llm_contract.py` y `tests/integration/test_llm_api.py`
   (transporte simulado: éxito, 401, 404, 429, 500, timeout y respuesta vacía).
-- `specs/010-deepseek-api-model/quickstart.md` para la verificación con la clave real.
+- `specs/011-deepseek-api-model/quickstart.md` para la verificación con la clave real.

@@ -630,9 +630,7 @@ def check_llm() -> Check:
         status,
         f"LangChain={'sí' if has_langchain else 'no'}; tasks.py={'sí' if has_tasks else 'no'}; "
         f"prompts={'sí' if has_prompts else 'no'}; señales={tasks or 'ninguna'}",
-        ""
-        if status == "done"
-        else "Añadir LangChain y las tres tareas con prompts versionados",
+        "" if status == "done" else "Añadir LangChain y las tres tareas con prompts versionados",
         critical=status != "done",
     )
 

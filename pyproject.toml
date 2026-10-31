@@ -29,7 +29,7 @@ dependencies = [
 [project.optional-dependencies]
 asr = [
     "faster-whisper>=1.2.1",
-    "av>=14,<19",
+    "av>=14,<20",
 ]
 
 [project.urls]
@@ -48,6 +48,8 @@ build-backend = "uv_build"
 dev = [
     "fpdf2>=2.9.0",
     "jsonschema>=4.26.0",
+    "playwright>=1.64",
+    "pre-commit>=4.7.0",
     "pytest>=9.1.1",
     "ruff>=0.17.3",
 ]
@@ -56,6 +58,7 @@ dev = [
 line-length = 100
 target-version = "py314"
 src = ["src", "tests", "scripts"]
+extend-exclude = [".agents"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]

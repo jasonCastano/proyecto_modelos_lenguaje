@@ -1,5 +1,5 @@
 [llm]
-# Proveedor DeepSeek por API (spec 010). La clave NO va aquí: se lee de DEEPSEEK_API_KEY.
+# Proveedor DeepSeek por API (spec 011). La clave NO va aquí: se lee de DEEPSEEK_API_KEY.
 provider = "deepseek"
 model = "deepseek-flash"
 base_url = "https://api.deepseek.com/v1"

@@ -1,0 +1,274 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Pipeline de datos y Q&A de Manuelita",
+    "locale": "es",
+    "output": "docs/arquitectura.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
+      "provider": "github",
+      "revision": "cef79c8b2fe43b7ca001c37fa5a64b886b6f76d3"
+    }
+  },
+  "stages": [
+    {
+      "label": "Fuentes"
+    },
+    {
+      "label": "Adquisición"
+    },
+    {
+      "label": "Medallón"
+    },
+    {
+      "label": "Recuperación"
+    },
+    {
+      "label": "Consumo"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "sources",
+      "type": "external",
+      "label": "Fuentes públicas",
+      "sublabel": "sitio ? YouTube",
+      "tag": "público",
+      "stage": 0,
+      "row": 1,
+      "sources": [
+        {
+          "path": "config/sources.toml",
+          "line": 5,
+          "end_line": 29
+        },
+        {
+          "path": "config/official_channels.toml",
+          "line": 1,
+          "end_line": 24
+        }
+      ]
+    },
+    {
+      "id": "campaign",
+      "type": "backend",
+      "label": "Adquisici?n",
+      "sublabel": "robots ? sitemap",
+      "tag": "reanudable",
+      "stage": 1,
+      "row": 1,
+      "sources": [
+        {
+          "path": "scripts/scrape_empresa.py",
+          "line": 13,
+          "end_line": 14
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/campaign_service.py",
+          "line": 30,
+          "end_line": 68
+        }
+      ]
+    },
+    {
+      "id": "bronze",
+      "type": "database",
+      "label": "Bronce inmutable",
+      "sublabel": "bytes + SHA-256",
+      "tag": "inmutable",
+      "stage": 2,
+      "row": 0,
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/storage.py",
+          "line": 53,
+          "end_line": 83
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/campaign_service.py",
+          "line": 60,
+          "end_line": 66
+        }
+      ]
+    },
+    {
+      "id": "silver",
+      "type": "backend",
+      "label": "Plata limpia",
+      "sublabel": "canónicos · dedupe · chunks",
+      "tag": "determinista",
+      "stage": 2,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/silver/pipeline.py",
+          "line": 119,
+          "end_line": 154
+        }
+      ]
+    },
+    {
+      "id": "gold",
+      "type": "database",
+      "label": "Oro trazable",
+      "sublabel": "unidades · hechos · contexto",
+      "tag": "con citas",
+      "stage": 2,
+      "row": 2,
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/gold/pipeline.py",
+          "line": 75,
+          "end_line": 116
+        }
+      ]
+    },
+    {
+      "id": "retrieval",
+      "type": "backend",
+      "label": "Recuperación léxica",
+      "sublabel": "BM25 · top-k · presupuesto",
+      "tag": "sin embeddings",
+      "stage": 3,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/retrieval.py",
+          "line": 430,
+          "end_line": 536
+        }
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "backend",
+      "label": "Tareas LangChain",
+      "sublabel": "Resumen · FAQ · Q&A",
+      "tag": "Ollama local",
+      "stage": 4,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/tasks.py",
+          "line": 699,
+          "end_line": 805
+        },
+        {
+          "path": "config/llm.toml",
+          "line": 1,
+          "end_line": 10
+        }
+      ]
+    },
+    {
+      "id": "app",
+      "type": "frontend",
+      "label": "App Streamlit",
+      "sublabel": "chat ? resumen ? FAQ",
+      "tag": "solo lectura",
+      "stage": 4,
+      "row": 2,
+      "sources": [
+        {
+          "path": "app.py",
+          "line": 407,
+          "end_line": 440
+        },
+        {
+          "path": "app.py",
+          "line": 594,
+          "end_line": 687
+        }
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "id": "discovery",
+      "from": "sources",
+      "to": "campaign",
+      "label": "descubrimiento",
+      "classification": "URLs y sitemaps",
+      "variant": "emphasis"
+    },
+    {
+      "id": "raw-artifacts",
+      "from": "campaign",
+      "to": "bronze",
+      "label": "bytes + hash",
+      "classification": "artefactos crudos",
+      "variant": "emphasis"
+    },
+    {
+      "id": "canonical-text",
+      "from": "bronze",
+      "to": "silver",
+      "label": "texto canónico",
+      "classification": "limpieza y dedupe",
+      "variant": "emphasis"
+    },
+    {
+      "id": "knowledge",
+      "from": "silver",
+      "to": "gold",
+      "label": "unidades + hechos",
+      "classification": "base de conocimiento",
+      "variant": "emphasis"
+    },
+    {
+      "id": "evidence",
+      "from": "gold",
+      "to": "retrieval",
+      "label": "contexto [U#]",
+      "classification": "evidencia citada",
+      "variant": "emphasis"
+    },
+    {
+      "id": "prompt-context",
+      "from": "retrieval",
+      "to": "llm",
+      "label": "evidencia",
+      "classification": "contexto del prompt",
+      "variant": "default"
+    },
+    {
+      "id": "answer",
+      "from": "llm",
+      "to": "app",
+      "label": "respuesta citada",
+      "classification": "respuesta o fallback",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Trazabilidad de extremo a extremo",
+      "items": [
+        "Cada artefacto conserva URL, fecha UTC, fuente y hash SHA-256.",
+        "El catálogo SQLite registra procedencia, deduplicación y auditoría.",
+        "Los datos se versionan en Git LFS; la cuarentena queda fuera."
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Consumo del Módulo 1",
+      "items": [
+        "La recuperación es léxica y determinista: no usa embeddings.",
+        "Las tres tareas usan prompts versionados y citas [U#].",
+        "Si no hay evidencia, la app declara fallback explícito."
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Límites declarados",
+      "items": [
+        "La app es de solo lectura: no escribe en data/.",
+        "Ollama es local; el modo demostración no requiere red.",
+        "Embeddings, base vectorial y memoria pertenecen al Módulo 2."
+      ]
+    }
+  ]
+}

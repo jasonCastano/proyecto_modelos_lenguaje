@@ -1,6 +1,6 @@
 # Fase 1 — Modelo de datos: proveedor DeepSeek por API
 
-**Feature**: `010-deepseek-api-model`
+**Feature**: `011-deepseek-api-model`
 **Fecha**: 2026-10-31
 
 ## 1. Configuración del proveedor

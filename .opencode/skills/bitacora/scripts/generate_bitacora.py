@@ -891,14 +891,23 @@ def check_secrets() -> Check:
     offenders = [
         path
         for path in tracked
-        if path == ".env" or path.startswith("data/") or ".pem" in path or path.endswith(".key")
+        if path == ".env"
+        or path.startswith("data/quarantine/")
+        or (
+            path.startswith("data/")
+            and not path.startswith(("data/bronze/", "data/silver/", "data/gold/"))
+        )
+        or ".pem" in path
+        or path.endswith(".key")
     ]
     return Check(
         "secrets",
-        "Sin secretos ni datos versionados",
+        "Sin secretos ni cuarentena versionada",
         "Seguridad",
         "done" if not offenders else "pending",
-        "Sin .env, data/ ni claves" if not offenders else f"Archivos sensibles: {offenders[:5]}",
+        "Sin .env, cuarentena ni claves; datos medallion en LFS"
+        if not offenders
+        else f"Archivos sensibles: {offenders[:5]}",
         "" if not offenders else "Eliminar del historial y añadir a .gitignore",
         critical=bool(offenders),
     )

@@ -23,8 +23,15 @@ dist/
 *.egg-info/
 *.egg
 
-# Project data (medallion layers are not versioned)
-data/
+# Medallion data: bronze, silver and gold are versioned in Git LFS.
+# Quarantine, caches, smoke runs and transient SQLite files stay out of Git.
+data/quarantine/
+data/*/_meta/cache/
+data/*/_meta/smoke/
+data/module1/
+data.zip
+*.sqlite3-wal
+*.sqlite3-shm
 
 # OS / editors
 .DS_Store

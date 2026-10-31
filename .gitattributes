@@ -1,0 +1,4 @@
+# Medallion data in Git LFS. Quarantine is excluded by .gitignore.
+data/bronze/** filter=lfs diff=lfs merge=lfs -text
+data/silver/** filter=lfs diff=lfs merge=lfs -text
+data/gold/** filter=lfs diff=lfs merge=lfs -text

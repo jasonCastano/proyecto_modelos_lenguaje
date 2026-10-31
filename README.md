@@ -195,12 +195,17 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 - Conexión a internet solo para campañas reales; las pruebas no la requieren.
 
 ```bash
+git lfs install
 git clone https://github.com/jasonCastano/proyecto_modelos_lenguaje.git
 cd proyecto_modelos_lenguaje
+git lfs pull
 uv sync --frozen
 uv run ruff check .
 uv run pytest
 ```
+
+Los datos de bronce, plata y oro se descargan con Git LFS (~489 MB). La cuarentena no se versiona ni se
+descarga.
 
 ## Uso
 
@@ -423,8 +428,9 @@ data/silver/
 └── reports/<run_id>/quality.{json,md}      # calidad por ejecución
 ```
 
-El límite de 10 GB se controla sobre `data/bronze/`. `data/` no se versiona; los datos se referencian por
-manifiesto y hash.
+El límite de 10 GB se controla sobre `data/bronze/`. Bronce, plata y oro se versionan en **Git LFS**;
+la cuarentena, los cachés, los smoke runs y `data/module1/` quedan fuera de Git. Los datos también se
+referencian por manifiesto y hash.
 
 ## Estructura del repositorio
 
@@ -478,7 +484,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   académicos.
 - El contenido de terceros pertenece a sus fuentes y se atribuye; se atienden solicitudes de retiro.
 - Las respuestas del sistema no constituyen asesoría oficial de Ingenio Manuelita.
-- No se versionan claves, `.env`, datos ni credenciales.
+- No se versionan claves, `.env`, cuarentena ni credenciales; bronce, plata y oro van en Git LFS.
 
 ## Limitaciones conocidas
 

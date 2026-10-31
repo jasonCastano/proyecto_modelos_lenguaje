@@ -381,6 +381,190 @@ def status_items(metrics: AppMetrics, model_state: str) -> list[tuple[str, str, 
     return items
 
 
+def _bullets(items: list[str]) -> str:
+    """Join short bullet texts as a Markdown list."""
+    return "\n".join(f"- {item}" for item in items)
+
+
+def _data_warning(metrics: AppMetrics) -> None:
+    if metrics.data_status != "complete":
+        st.warning(
+            "Los datos no están completos. Ejecuta `git lfs pull` o el pipeline de la capa "
+            "y recarga la app."
+        )
+        if metrics.detail:
+            st.caption(metrics.detail)
+
+
+def _money(value: int) -> str:
+    """Format an integer with dots as thousands separator."""
+    return f"{value:,}".replace(",", ".")
+
+
+def render_home(demo_mode: bool, data_ready: bool) -> None:
+    """Consola de consulta: Resumen, FAQ y Q&A."""
+    tabs = st.tabs(["Resumen", "FAQ", "Q&A"])
+    with tabs[0]:
+        render_summary(demo_mode, data_ready)
+    with tabs[1]:
+        render_faq(demo_mode, data_ready)
+    with tabs[2]:
+        render_qa(demo_mode, data_ready)
+
+
+def render_bronze_page(metrics: AppMetrics) -> None:
+    """Explica la capa bronce: adquisición inmutable de los originales."""
+    st.subheader("Capa bronce — adquisición inmutable")
+    st.markdown(
+        "El bronce guarda **los bytes originales** de cada fuente pública, tal como se "
+        "descargaron, con su hash SHA-256, su procedencia y la fecha de captura. Nada se "
+        "reescribe: si una página cambia, se guarda una versión nueva. Es la evidencia "
+        "primaria del proyecto."
+    )
+    _data_warning(metrics)
+    columns = st.columns(4)
+    columns[0].metric("Artefactos activos", _money(metrics.active_artifacts))
+    columns[1].metric("Descartados", _money(metrics.skipped))
+    columns[2].metric("Omisiones", _money(metrics.omissions))
+    columns[3].metric("Estado de datos", format_status(metrics.data_status))
+
+    st.markdown("#### Cómo se construyó")
+    st.markdown(
+        _bullets(
+            [
+                "**Fuentes declaradas**: sitio oficial, prensa, gremios, datos abiertos, YouTube "
+                "y Linktree, cada una con su política en `config/sources.toml`.",
+                "**Rastreo respetuoso**: `scrapling` con `robots.txt`, sitemaps, límite de tasa "
+                "y exclusión de los dominios que lo prohíben.",
+                "**Identidad por contenido**: cada archivo se nombra con su SHA-256, de modo que "
+                "un duplicado no se vuelve a almacenar.",
+                "**Catálogo SQLite** (`data/bronze/_meta/bronze.sqlite3`): procedencia, "
+                "deduplicación, versiones, cobertura y auditoría.",
+                "**Cuarentena**: lo retirado se mueve a `data/quarantine/` con auditoría y "
+                "ventana de reversibilidad; no se borra sin rastro.",
+            ]
+        )
+    )
+    st.markdown("#### Dónde vive")
+    st.code(
+        "data/bronze/raw/<fuente>/<campaña>/<sha256>.<ext>\n"
+        "data/bronze/manifests/<campaña>.jsonl\n"
+        "data/bronze/reports/<campaña>/\n"
+        "data/bronze/_meta/bronze.sqlite3",
+        language="text",
+    )
+    st.markdown("#### Límites")
+    st.caption(
+        "No se hace OCR ni se interpreta contenido: un PDF escaneado sin texto se registra como "
+        "omitido. Los originales se versionan en Git LFS, no en el historial de Git."
+    )
+
+
+def render_silver_page(metrics: AppMetrics) -> None:
+    """Explica la capa plata: texto limpio, secciones y fragmentos."""
+    st.subheader("Capa plata — texto limpio y fragmentos")
+    st.markdown(
+        "La plata convierte cada original en **texto legible y citable**: quita navegación y "
+        "ruido, repara la codificación, detecta el idioma, reconstruye secciones y corta el "
+        "contenido en fragmentos recuperables. Es determinista: no usa LLM, embeddings ni OCR."
+    )
+    _data_warning(metrics)
+    columns = st.columns(4)
+    columns[0].metric("Documentos canónicos", _money(metrics.canonical_documents))
+    columns[1].metric("Fragmentos", _money(metrics.chunks))
+    columns[2].metric("Alias", _money(metrics.aliases))
+    columns[3].metric("Tokens", _money(metrics.silver_tokens))
+    st.caption(f"Última ejecución de plata: `{metrics.silver_run}`")
+
+    st.markdown("#### Cómo se construyó")
+    st.markdown(
+        _bullets(
+            [
+                "**Extracción por formato**: HTML, PDF y subtítulos VTT; cada formato tiene su "
+                "extractor y sus reglas de limpieza.",
+                "**Normalización**: espacios, saltos, mojibake y caracteres de control; el texto "
+                "conserva las palabras y las cifras originales.",
+                "**Deduplicación**: los documentos duplicados se enlazan como alias de un "
+                "canónico, sin perder la trazabilidad del artefacto.",
+                "**Secciones y chunks**: se reconstruye la jerarquía de títulos y se corta en "
+                "fragmentos con su ruta de sección y su rango de caracteres.",
+                "**Idioma**: detección heurística por documento para no mezclar contenido en "
+                "inglés.",
+            ]
+        )
+    )
+    st.markdown("#### Dónde vive")
+    st.code(
+        "data/silver/documents.jsonl   # documentos canónicos y alias\n"
+        "data/silver/chunks.jsonl      # fragmentos recuperables\n"
+        "data/silver/markdown/         # revisión humana con frontmatter\n"
+        "data/silver/reports/          # calidad por ejecución",
+        language="text",
+    )
+    st.markdown("#### Límites")
+    st.caption(
+        "La plata no resume ni responde: eso ocurre en las tareas del Módulo 1 sobre la capa "
+        "de oro. Un documento sin texto útil se omite con una razón registrada."
+    )
+
+
+def render_gold_page(metrics: AppMetrics) -> None:
+    """Explica la capa oro: base de conocimiento extractiva y trazable."""
+    st.subheader("Capa oro — base de conocimiento trazable")
+    st.markdown(
+        "El oro es la **base de conocimiento del proyecto**: unidades extractivas que conservan "
+        "su cita, hechos numéricos, entidades, conflictos, la matriz de cobertura de los 24 "
+        "ítems, las preguntas semilla de la FAQ y los paquetes de contexto de 8k y 32k. Cada "
+        "afirmación puede rastrearse hasta su URL y su sección."
+    )
+    _data_warning(metrics)
+    columns = st.columns(4)
+    columns[0].metric("Unidades", _money(metrics.units))
+    columns[1].metric("Hechos", _money(metrics.facts))
+    columns[2].metric("Entidades", _money(metrics.entities))
+    columns[3].metric("Conflictos", _money(metrics.conflicts))
+    columns = st.columns(3)
+    columns[0].metric("Cobertura", f"{metrics.coverage_covered}/{metrics.coverage_total}")
+    columns[1].metric("Tokens", _money(metrics.gold_tokens))
+    columns[2].metric("Ejecución", metrics.gold_run)
+    st.caption(f"Última ejecución de oro: `{metrics.gold_run}`")
+
+    st.markdown("#### Cómo se construyó")
+    st.markdown(
+        _bullets(
+            [
+                "**Unidades extractivas**: texto con tema, autoridad, estado, entidades y "
+                "banderas de calidad; nunca texto generado por un modelo.",
+                "**Hechos y entidades**: cifras, fechas y actores normalizados para responder "
+                "preguntas concretas sin inventar.",
+                "**Conflictos preservados**: si dos fuentes discrepan, se guardan ambas versiones "
+                "con su cita en lugar de promediar.",
+                "**Cobertura de los 24 ítems**: cada ítem declara si está cubierto, parcial o "
+                "ausente, y por qué.",
+                "**Paquetes de contexto**: selección por cobertura, autoridad, vigencia y "
+                "diversidad, con presupuesto de 8.000 y 32.000 tokens.",
+            ]
+        )
+    )
+    st.markdown("#### Dónde vive")
+    st.code(
+        "data/gold/knowledge_units.jsonl   # unidades con evidencia\n"
+        "data/gold/facts.jsonl             # hechos numéricos y fechados\n"
+        "data/gold/entities.jsonl          # entidades canónicas y alias\n"
+        "data/gold/conflicts.jsonl         # contradicciones con su cita\n"
+        "data/gold/faq_seeds.jsonl         # preguntas semilla de la FAQ\n"
+        "data/gold/context_8000.json       # paquete de contexto por defecto\n"
+        "data/gold/coverage.json           # matriz de los 24 ítems",
+        language="text",
+    )
+    st.markdown("#### Límites")
+    st.caption(
+        "El oro no resume ni responde: eso lo hacen las tareas del Módulo 1 con LangChain, "
+        "citando estas unidades. Si la evidencia no alcanza, la app responde con un fallback "
+        "explícito."
+    )
+
+
 def main() -> None:
     st.set_page_config(page_title=PAGE_TITLE, page_icon="🌱", layout="wide")
     inject_brand_styles()
@@ -408,13 +592,34 @@ def main() -> None:
     _render_panel(metrics, demo_mode)
     if not data_ready:
         st.warning("Los datos de oro no están completos. Ejecuta `git lfs pull` y recarga la app.")
-    tabs = st.tabs(["Resumen", "FAQ", "Q&A"])
-    with tabs[0]:
-        render_summary(demo_mode, data_ready)
-    with tabs[1]:
-        render_faq(demo_mode, data_ready)
-    with tabs[2]:
-        render_qa(demo_mode, data_ready)
+
+    pages = [
+        st.Page(
+            lambda: render_home(demo_mode, data_ready),
+            title="Consulta",
+            icon=":material/chat:",
+            default=True,
+        ),
+        st.Page(
+            lambda: render_bronze_page(metrics),
+            title="Bronce",
+            icon=":material/archive:",
+            url_path="bronce",
+        ),
+        st.Page(
+            lambda: render_silver_page(metrics),
+            title="Plata",
+            icon=":material/layers:",
+            url_path="plata",
+        ),
+        st.Page(
+            lambda: render_gold_page(metrics),
+            title="Oro",
+            icon=":material/diamond:",
+            url_path="oro",
+        ),
+    ]
+    st.navigation(pages).run()
     st.html(footer_html())
 
 

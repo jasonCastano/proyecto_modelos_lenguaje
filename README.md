@@ -437,6 +437,11 @@ La app abre tres pestañas —**Resumen**, **FAQ** y **Q&A**— con citas, fuent
 El modo demostración usa el modelo falso y no requiere red. La guía completa está en
 [`specs/008-streamlit-qa-app/quickstart.md`](specs/008-streamlit-qa-app/quickstart.md).
 
+El menú lateral añade tres páginas que explican la arquitectura medallion con las cifras reales del
+corpus: **Bronce** (adquisición inmutable, manifiestos y cuarentena), **Plata** (texto limpio, secciones y
+chunks) y **Oro** (unidades, hechos, entidades, conflictos, cobertura y paquetes de contexto). Son solo
+lectura y no modifican `data/`.
+
 #### Identidad visual
 
 La interfaz adopta la identidad pública de Grupo Manuelita (spec

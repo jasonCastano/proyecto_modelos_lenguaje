@@ -10,6 +10,7 @@ on:
         "004-gold-medallion-layer",
         "005-scrape-empresa-entrypoint",
         "008-streamlit-qa-app",
+        "010-metrics-panel-layout",
       ]
   pull_request:
 
@@ -28,8 +29,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Pre-commit
+        run: uv run pre-commit run --all-files --show-diff-on-failure
+
       - name: Lint
         run: uv run ruff check .
+
+      - name: Format check
+        run: uv run ruff format --check .
 
       - name: Tests
         run: uv run pytest -q

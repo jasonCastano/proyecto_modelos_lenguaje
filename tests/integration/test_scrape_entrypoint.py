@@ -106,9 +106,7 @@ def test_resume_after_pause_does_not_duplicate(
     assert len(hashes) == len(set(hashes))
 
 
-def test_dry_run_does_not_touch_real_bronze(
-    tmp_path: Path, write_config, server, capsys
-) -> None:
+def test_dry_run_does_not_touch_real_bronze(tmp_path: Path, write_config, server, capsys) -> None:
     config_path = write_config(server)
     database = _database(tmp_path)
     before = _campaign_count(database)
@@ -133,9 +131,7 @@ def test_dry_run_does_not_touch_real_bronze(
     assert _campaign_count(database) == before
 
 
-def test_blocked_source_is_recorded(
-    tmp_path: Path, write_config, server, capsys
-) -> None:
+def test_blocked_source_is_recorded(tmp_path: Path, write_config, server, capsys) -> None:
     config_path = write_config(server)
     code = main(
         ["--config", str(config_path), "--campaign", "c-policy", "--limit", "10", "--json"],

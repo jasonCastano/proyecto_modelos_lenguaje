@@ -492,9 +492,7 @@ def load_prompt(
         )
     heading = HEADING_PATTERN.search(text)
     if heading is None:
-        raise TaskError(
-            "invalid_config", f"El prompt {task} no tiene título.", task=task
-        )
+        raise TaskError("invalid_config", f"El prompt {task} no tiene título.", task=task)
     return PromptTemplate(
         task=task,
         version=version_match.group(1),
@@ -605,9 +603,7 @@ def _invoke(model: ChatModel, system_text: str, user_text: str, *, task: str) ->
     return answer
 
 
-def _parse_citations(
-    answer: str, selection: EvidenceSelection
-) -> tuple[list[Citation], list[str]]:
+def _parse_citations(answer: str, selection: EvidenceSelection) -> tuple[list[Citation], list[str]]:
     label_map = selection.label_map()
     citations: list[Citation] = []
     invalid: list[str] = []
@@ -783,9 +779,7 @@ def answer_question(
     )
 
 
-def _pack_blocks(
-    pack: ContextPack, units_by_id: dict[str, GoldUnit]
-) -> list[SelectedUnit]:
+def _pack_blocks(pack: ContextPack, units_by_id: dict[str, GoldUnit]) -> list[SelectedUnit]:
     selected: list[SelectedUnit] = []
     for block in pack.blocks:
         unit = units_by_id.get(block.unit_id)
@@ -871,9 +865,7 @@ def summarize_corpus(
     latency = round(time.perf_counter() - started, 3)
     input_tokens = estimate_tokens(system_text)
     output_tokens = estimate_tokens(answer)
-    header = "\n".join(
-        [f"**Paquete de contexto:** {resolved_pack} tokens", *declarations]
-    )
+    header = "\n".join([f"**Paquete de contexto:** {resolved_pack} tokens", *declarations])
     answer = f"{header}\n\n{answer}"
 
     if len(citations) < min_citations:
@@ -1141,7 +1133,7 @@ def _configure_output() -> None:
             continue
         try:
             reconfigure(encoding="utf-8", errors="replace")
-        except (ValueError, OSError):  # pragma: no cover - depende de la consola
+        except ValueError, OSError:  # pragma: no cover - depende de la consola
             continue
 
 

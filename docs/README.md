@@ -20,7 +20,7 @@ README o la constitución.
 
 Las features viven en [`../specs/`](../specs/) con `spec.md`, `plan.md`, `tasks.md`, `quickstart.md`
 y contratos cuando aplica. La más reciente es
-[`010-metrics-panel-layout`](../specs/010-metrics-panel-layout/spec.md).
+[`011-deepseek-api-model`](../specs/011-deepseek-api-model/spec.md).
 
 ## Bitácoras
 

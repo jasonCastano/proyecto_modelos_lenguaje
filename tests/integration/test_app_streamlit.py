@@ -109,4 +109,4 @@ def test_app_reports_unavailable_model(monkeypatch) -> None:
     monkeypatch.setattr(llm, "health_check", unavailable)
     at = _app(monkeypatch, demo=False)
     assert not at.exception
-    assert any("Ollama no disponible" in warning.value for warning in at.sidebar.warning)
+    assert any("Proveedor no disponible" in warning.value for warning in at.sidebar.warning)

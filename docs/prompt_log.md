@@ -82,9 +82,28 @@ Hallazgo registrado: con un modelo de razonamiento y `max_output_tokens=1024` el
 contenido vacío con `done_reason=length`; el sistema lo reporta como `model_error` con instrucción
 accionable (aumentar `llm.max_output_tokens` o usar un modelo sin razonamiento).
 
+### 3.3 Modelo DeepSeek por API (2026-10-31)
+
+El proveedor pasa de Ollama local a **DeepSeek V4.1 Flash 1017** por API (spec 010). Configuración
+versionada en `config/llm.toml`: `model = "deepseek-flash"`, `base_url = "https://api.deepseek.com/v1"`,
+`timeout_seconds = 60`, `max_retries = 1`.
+
+| Tarea | Estado | Citas | Latencia | Entrada / salida | Respuesta observada |
+|-------|--------|-------|----------|------------------|---------------------|
+| Q&A (simulada) | ok | ≥1 | 0,0 s (doble HTTP) | 120 / 30 tokens reportados | Cita `[U1]` mapeada a la unidad y a su URL |
+| Resumen (simulada) | ok | 8–12 | 0,0 s (doble HTTP) | reportados | Paquete declarado y citas |
+| Errores (simulados) | error controlado | — | — | — | 401, 404, 429, 500, timeout y respuesta vacía con mensaje propio |
+
+**Estado de la línea base real: pendiente.** No hay clave del proveedor disponible en este equipo, así que
+la validación con el servicio real (T045/T046) queda abierta. La suite cubre el comportamiento con un
+transporte simulado: éxito, errores y tokens.
+
 ## 4. Pendiente
 
-- Ampliar la línea base con las 40 preguntas de evaluación (M1-08) y comparar `llama3.1:8b` contra la
+- Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).
+- Verificar con la clave real los caminos de error: ausente, inválida y sin red (T046).
+- Confirmar el identificador `deepseek-flash` y las tarifas por token con la cuenta del proveedor.
+- Ampliar la línea base con las 40 preguntas de evaluación (M1-08) y comparar el proveedor contra la
   variante ajustada (M1-09).
 - Registrar la variante final de prompts tras el ajuste con evidencia (M1-09).
 

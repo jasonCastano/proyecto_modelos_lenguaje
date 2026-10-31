@@ -69,3 +69,22 @@ accionable (aumentar `llm.max_output_tokens` o usar un modelo sin razonamiento).
 - Repetir las tres tareas con `llama3.1:8b` y con el corpus de oro real para completar la línea base de
   M1-06 y la comparación de M1-08.
 - Registrar la variante final de prompts tras el ajuste con evidencia (M1-09).
+
+## 5. Observaciones sobre el corpus real (15.211 unidades)
+
+Primera ejecución sobre `data/gold` real (2026-10-30, modelo falso, sin ajuste de prompts):
+
+- `¿Qué productos ofrece Manuelita?` devuelve 8 unidades; la primera es de tema `productos` pero su texto
+  es una plantilla de formulario («Enviar información sobre ofertas…»). La segunda sí aporta catálogo.
+- `¿Dónde está la casa matriz de Manuelita?` devuelve como primera unidad un texto literal sobre la
+  localización de la casa matriz; el resto incluye ruido de fundación y certificaciones.
+- `¿Qué certificaciones tiene Manuelita?` acierta el tema en la primera unidad («Manuelita obtiene
+  certificación del IIA»).
+
+Conclusión para M1-08/M1-09: la puntuación léxica ordena por tema, pero el corpus contiene páginas de
+plantilla y navegación que compiten con el contenido sustantivo. Candidatos de ajuste, en este orden:
+(1) penalizar unidades con `unit_type=passage` de baja densidad informativa y textos de formulario,
+(2) exigir cobertura de varios términos de la pregunta además de la frecuencia, y (3) revisar el peso del
+tema frente a la coincidencia léxica. No se ajusta todavía porque la decisión debe basarse en la
+evaluación de 40 preguntas.
+

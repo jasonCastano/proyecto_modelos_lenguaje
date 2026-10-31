@@ -1,4 +1,4 @@
-"""Unit tests for the brand identity helpers (T011, T013, T017, T020, T023, T026)."""
+"""Unit tests for the brand palette, tokens, contrast and status mapping."""
 
 from __future__ import annotations
 
@@ -10,37 +10,10 @@ from proyecto_modelos_lenguaje.brand import (
     STATUS_VARIANTS,
     BrandPalette,
     BrandTokens,
-    brand_css,
-    citation_location,
     contrast_failures,
     contrast_ratio,
-    footer_html,
-    header_html,
-    source_card_html,
-    source_cards_html,
-    status_bar_html,
     status_variant,
 )
-from proyecto_modelos_lenguaje.tasks import Citation
-
-
-def _citation(**overrides: object) -> Citation:
-    payload: dict[str, object] = {
-        "label": "U1",
-        "unit_id": "unit_0123456789abcdef",
-        "title": "Manuelita — Productos",
-        "url": "https://www.manuelita.com/manuelita-productos",
-        "section_path": ("Productos", "Azúcar"),
-        "page_start": 3,
-        "page_end": None,
-        "time_start": None,
-        "time_end": None,
-        "authority": "first_party",
-        "citation": "Manuelita — Productos — https://www.manuelita.com/manuelita-productos",
-    }
-    payload.update(overrides)
-    return Citation(**payload)  # type: ignore[arg-type]
-
 
 # --- contraste ---------------------------------------------------------------------------------
 
@@ -102,33 +75,6 @@ def test_palette_uses_the_official_logo_colours() -> None:
     assert palette.orange_light == "#F6A01A"
 
 
-# --- estilos -----------------------------------------------------------------------------------
-
-
-def test_stylesheet_has_no_remote_or_absolute_resources() -> None:
-    css = brand_css()
-    assert "http://" not in css
-    assert "https://" not in css
-    assert "url(" not in css
-    assert "@font-face" not in css
-    assert "C:\\" not in css
-    assert "--pml-forest: #387C2B" in css
-
-
-def test_stylesheet_declares_the_four_type_levels() -> None:
-    css = brand_css()
-    assert "font-size: 28px" in css
-    assert "font-size: 22px" in css
-    assert "font-size: 16px" in css
-    assert "font-size: 13px" in css
-
-
-def test_stylesheet_allows_components_to_shrink() -> None:
-    css = brand_css()
-    assert "min-width: 0" in css
-    assert "min-width: 320px" not in css
-
-
 # --- estados -----------------------------------------------------------------------------------
 
 
@@ -149,60 +95,3 @@ def test_status_mapping_preserves_the_functional_semantics() -> None:
     assert status_variant("demo").label == "Modo demo"
     with pytest.raises(KeyError):
         status_variant("unknown")
-
-
-# --- fragmentos --------------------------------------------------------------------------------
-
-
-def test_header_contains_signature_project_and_tagline() -> None:
-    markup = header_html()
-    assert "pml-header" in markup
-    assert "Grupo Manuelita" in markup
-    assert "Ingenio Manuelita" in markup
-    assert BrandTokens().project_name in markup
-    assert BrandTokens().tagline in markup
-
-
-def test_status_bar_marks_demo_and_escapes_text() -> None:
-    markup = status_bar_html([("ok", "✓", "Datos completos"), ("demo", "●", "Modo demo")])
-    assert "pml-chip" in markup
-    assert "is-demo" in markup
-    assert "Datos completos" in markup
-    hostile = status_bar_html([("ok", "✓", "<script>alert(1)</script>")])
-    assert "<script>" not in hostile
-    assert "&lt;script&gt;" in hostile
-
-
-def test_source_card_contains_label_title_location_and_link() -> None:
-    markup = source_card_html(_citation())
-    assert "pml-source" in markup
-    assert "[U1]" in markup
-    assert "Manuelita — Productos" in markup
-    assert "sección: Productos &gt; Azúcar" in markup
-    assert 'href="https://www.manuelita.com/manuelita-productos"' in markup
-    assert 'target="_blank"' in markup
-
-
-def test_source_card_declares_missing_location() -> None:
-    markup = source_card_html(_citation(section_path=(), page_start=None))
-    assert "sin sección declarada" in markup
-
-
-def test_source_cards_render_empty_state() -> None:
-    assert "Sin fuentes citadas." in source_cards_html(())
-    markup = source_cards_html([_citation(), _citation(label="U2")])
-    assert markup.count("pml-source") == 2
-
-
-def test_citation_location_includes_section_page_and_time() -> None:
-    assert citation_location(_citation()) == "sección: Productos > Azúcar, p. 3"
-    timed = _citation(section_path=("Video",), page_start=None, time_start=61.5)
-    assert citation_location(timed) == "sección: Video, 61 s"
-
-
-def test_footer_declares_academic_scope_and_attribution() -> None:
-    markup = footer_html()
-    assert "pml-footer" in markup
-    assert "No afiliado" in markup
-    assert "titulares" in markup
-    assert "Maestría" in markup

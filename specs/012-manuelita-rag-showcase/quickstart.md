@@ -133,12 +133,8 @@ Resultado esperado:
 ## 8. Pruebas automatizadas
 
 ```bash
-make check            # Python: Ruff + pytest
-cd web
-npm run test          # Vitest + RTL
-npm run build         # build de producción
-cd ..
-uv run pytest tests/e2e -q   # Playwright E2E (modo demo)
+make check            # Python + web: Ruff + pytest + Vitest + build
+make e2e              # Playwright E2E (modo demo, PML_E2E=1)
 ```
 
 Resultado esperado:
@@ -147,6 +143,24 @@ Resultado esperado:
 - Componentes con estados de carga, error y fallback.
 - Build sin claves ni rutas absolutas.
 - E2E sin red, sin DeepSeek y sin claves.
+
+### 8.1 Presupuesto del bundle
+
+Medición local del build de producción (`npm run build`):
+
+| Recurso | Tamaño | Gzip |
+|---------|--------|------|
+| JS inicial (`index-*.js`) | 250,29 kB | 78,10 kB |
+| CSS (`index-*.css`) | 22,40 kB | 5,49 kB |
+| Fuentes | `woff2` autohospedadas en `dist/assets/` | — |
+
+El presupuesto es JS inicial < 250 kB gzip: se cumple con margen. No hay peticiones a CDNs ni claves en el
+bundle; para verificarlo:
+
+```bash
+grep -r "DEEPSEEK_API_KEY" web/dist   # no debe devolver resultados
+grep -r "http://localhost" web/dist   # no debe devolver resultados
+```
 
 ## 9. Contratos
 

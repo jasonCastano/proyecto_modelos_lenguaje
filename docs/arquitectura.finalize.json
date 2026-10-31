@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
-  "ok": true,
+  "ok": false,
   "command": "finalize",
-  "status": "pass",
+  "status": "fail",
   "type": "dataflow",
   "quality": "showcase",
-  "startedAt": "2026-10-31T15:08:50.148Z",
+  "startedAt": "2026-10-31T18:33:52.561Z",
   "specification": {
     "path": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "c228d4998c1938c7f2784c3e7a1ef15c4d246a9bc85bd19bf4895bf1ec96bd3d",
-    "bytes": 6641
+    "sha256": "25f5eeb4ca3b5463044f506deb3b1b14b984baa0aa6fa3b7c7ed269be9dfa7ec",
+    "bytes": 6664
   },
   "artifact": {
     "path": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "6062a80c4a77d67508d0c35065981b938209a55e7cf243074db04e28b64abce9",
-    "bytes": 844561
+    "sha256": "37826c9cded094b08be76deed5eb43cf0d28509370e693f3acd3f5ffed6a96fc",
+    "bytes": 844594
   },
   "stages": {
     "validate": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "c228d4998c1938c7f2784c3e7a1ef15c4d246a9bc85bd19bf4895bf1ec96bd3d",
-          "bytes": 6641
+          "sha256": "25f5eeb4ca3b5463044f506deb3b1b14b984baa0aa6fa3b7c7ed269be9dfa7ec",
+          "bytes": 6664
         },
         "validation": {
           "checksPassed": 9,
@@ -56,7 +56,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 802,
+      "durationMs": 1050,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\JCastano\\AppData\\Local\\Temp\\opencode\\archify-src\\archify\\bin\\archify.mjs",
@@ -72,19 +72,19 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "2ce819a2-575c-4937-b0ea-c0d43712c54a",
+        "receiptId": "c8812666-aa76-430e-8c57-a40f25e65220",
         "ok": true,
         "command": "deliver",
         "type": "dataflow",
         "input": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
         "output": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "specification": {
-          "sha256": "c228d4998c1938c7f2784c3e7a1ef15c4d246a9bc85bd19bf4895bf1ec96bd3d",
-          "bytes": 6641
+          "sha256": "25f5eeb4ca3b5463044f506deb3b1b14b984baa0aa6fa3b7c7ed269be9dfa7ec",
+          "bytes": 6664
         },
         "artifact": {
-          "sha256": "6062a80c4a77d67508d0c35065981b938209a55e7cf243074db04e28b64abce9",
-          "bytes": 844561
+          "sha256": "37826c9cded094b08be76deed5eb43cf0d28509370e693f3acd3f5ffed6a96fc",
+          "bytes": 844594
         },
         "validation": {
           "checksPassed": 9,
@@ -97,7 +97,7 @@
         "evidence": {
           "verified": true,
           "repository": "https://github.com/jasonCastano/proyecto_modelos_lenguaje",
-          "revision": "cef79c8b2fe43b7ca001c37fa5a64b886b6f76d3",
+          "revision": "9a6f5054d2956f8047c1662adb21c55edc96a140",
           "references": 13
         },
         "update": {
@@ -116,7 +116,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 193,
+      "durationMs": 300,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\JCastano\\AppData\\Local\\Temp\\opencode\\archify-src\\archify\\bin\\archify.mjs",
@@ -128,8 +128,8 @@
         "ok": true,
         "file": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "artifact": {
-          "sha256": "6062a80c4a77d67508d0c35065981b938209a55e7cf243074db04e28b64abce9",
-          "bytes": 844561
+          "sha256": "37826c9cded094b08be76deed5eb43cf0d28509370e693f3acd3f5ffed6a96fc",
+          "bytes": 844594
         },
         "checks": [
           {
@@ -246,13 +246,13 @@
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "2ce819a2-575c-4937-b0ea-c0d43712c54a"
+        "deliveryReceiptId": "c8812666-aa76-430e-8c57-a40f25e65220"
       }
     },
     "browser-check": {
-      "status": "pass",
-      "exitCode": 0,
-      "durationMs": 1439,
+      "status": "fail",
+      "exitCode": 1,
+      "durationMs": 64,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\JCastano\\AppData\\Local\\Temp\\opencode\\archify-src\\archify\\bin\\archify.mjs",
@@ -264,690 +264,62 @@
       "execution": "in-process",
       "receipt": {
         "schemaVersion": 1,
-        "ok": true,
+        "ok": false,
         "command": "browser-check",
         "evidenceKind": "automated-browser",
-        "status": "pass",
+        "status": "fail",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "2ce819a2-575c-4937-b0ea-c0d43712c54a",
+        "deliveryReceiptId": "c8812666-aa76-430e-8c57-a40f25e65220",
         "artifact": {
           "path": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-          "sha256": "6062a80c4a77d67508d0c35065981b938209a55e7cf243074db04e28b64abce9",
-          "bytes": 844561
+          "sha256": "37826c9cded094b08be76deed5eb43cf0d28509370e693f3acd3f5ffed6a96fc",
+          "bytes": 844594
         },
         "state": {
           "detail": "read",
           "motion": "still"
         },
         "chrome": {
-          "status": "available",
-          "executable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+          "status": "not-checked",
+          "executable": null
         },
-        "diagnostics": [],
+        "diagnostics": [
+          {
+            "code": "viewer/evidence-path-conflict",
+            "severity": "error",
+            "message": "browser-check will not replace the existing unowned evidence path \"D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json\".",
+            "subject": {
+              "artifact": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+              "evidencePath": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+            },
+            "evidence": {
+              "reason": {
+                "code": "ownership-artifact-mismatch"
+              }
+            },
+            "supportedFixes": [
+              "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+            ]
+          }
+        ],
         "containment": {
-          "status": "pass",
+          "status": "fail",
           "policy": "fit-or-reader-declared-readable-vertical-scroll",
-          "viewports": [
-            {
-              "width": 1440,
-              "height": 900,
-              "theme": "light",
-              "innerWidth": 1440,
-              "innerHeight": 900,
-              "scrollWidth": 1440,
-              "scrollHeight": 900,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1376,
-              "diagramWidth": 1346,
-              "pageComposition": {
-                "bodyPaddingPx": 12,
-                "headerPx": 52,
-                "diagramChromePx": 78,
-                "svgPx": 645,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1600,
-              "height": 1000,
-              "theme": "light",
-              "innerWidth": 1600,
-              "innerHeight": 1000,
-              "scrollWidth": 1600,
-              "scrollHeight": 1000,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1536,
-              "diagramWidth": 1506,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 60,
-                "diagramChromePx": 84,
-                "svgPx": 722,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1920,
-              "height": 1080,
-              "theme": "light",
-              "innerWidth": 1920,
-              "innerHeight": 1080,
-              "scrollWidth": 1920,
-              "scrollHeight": 1080,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1856,
-              "diagramWidth": 1602,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 60,
-                "diagramChromePx": 176,
-                "svgPx": 768,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 29,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 0,
-              "viewerChromeActive": false,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 2048,
-              "height": 1320,
-              "theme": "light",
-              "innerWidth": 2048,
-              "innerHeight": 1320,
-              "scrollWidth": 2048,
-              "scrollHeight": 1320,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1920,
-              "diagramWidth": 1602,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 68,
-                "diagramChromePx": 408,
-                "svgPx": 768,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 145,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 0,
-              "viewerChromeActive": false,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            }
-          ]
+          "viewports": []
         },
         "themeStates": {
-          "status": "pass",
-          "viewports": [
-            {
-              "width": 1440,
-              "height": 900,
-              "requestedTheme": "light",
-              "resolvedTheme": "light",
-              "ok": true
-            },
-            {
-              "width": 1600,
-              "height": 1000,
-              "requestedTheme": "light",
-              "resolvedTheme": "light",
-              "ok": true
-            },
-            {
-              "width": 1920,
-              "height": 1080,
-              "requestedTheme": "light",
-              "resolvedTheme": "light",
-              "ok": true
-            },
-            {
-              "width": 2048,
-              "height": 1320,
-              "requestedTheme": "light",
-              "resolvedTheme": "light",
-              "ok": true
-            },
-            {
-              "width": 1440,
-              "height": 900,
-              "requestedTheme": "dark",
-              "resolvedTheme": "dark",
-              "ok": true
-            },
-            {
-              "width": 2048,
-              "height": 1320,
-              "requestedTheme": "dark",
-              "resolvedTheme": "dark",
-              "ok": true
-            }
-          ]
+          "status": "fail",
+          "viewports": []
         },
         "readability": {
-          "status": "pass",
+          "status": "fail",
           "minimumProjectedNodeTextPx": 6,
-          "viewports": [
-            {
-              "width": 1440,
-              "height": 900,
-              "theme": "light",
-              "innerWidth": 1440,
-              "innerHeight": 900,
-              "scrollWidth": 1440,
-              "scrollHeight": 900,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1376,
-              "diagramWidth": 1346,
-              "pageComposition": {
-                "bodyPaddingPx": 12,
-                "headerPx": 52,
-                "diagramChromePx": 78,
-                "svgPx": 645,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1600,
-              "height": 1000,
-              "theme": "light",
-              "innerWidth": 1600,
-              "innerHeight": 1000,
-              "scrollWidth": 1600,
-              "scrollHeight": 1000,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1536,
-              "diagramWidth": 1506,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 60,
-                "diagramChromePx": 84,
-                "svgPx": 722,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1920,
-              "height": 1080,
-              "theme": "light",
-              "innerWidth": 1920,
-              "innerHeight": 1080,
-              "scrollWidth": 1920,
-              "scrollHeight": 1080,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1856,
-              "diagramWidth": 1602,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 60,
-                "diagramChromePx": 176,
-                "svgPx": 768,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 29,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 0,
-              "viewerChromeActive": false,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 2048,
-              "height": 1320,
-              "theme": "light",
-              "innerWidth": 2048,
-              "innerHeight": 1320,
-              "scrollWidth": 2048,
-              "scrollHeight": 1320,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1920,
-              "diagramWidth": 1602,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 68,
-                "diagramChromePx": 408,
-                "svgPx": 768,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 145,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 0,
-              "viewerChromeActive": false,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            }
-          ]
+          "viewports": []
         },
         "viewerChrome": {
-          "status": "pass",
-          "viewports": [
-            {
-              "width": 1440,
-              "height": 900,
-              "theme": "light",
-              "innerWidth": 1440,
-              "innerHeight": 900,
-              "scrollWidth": 1440,
-              "scrollHeight": 900,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1376,
-              "diagramWidth": 1346,
-              "pageComposition": {
-                "bodyPaddingPx": 12,
-                "headerPx": 52,
-                "diagramChromePx": 78,
-                "svgPx": 645,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1600,
-              "height": 1000,
-              "theme": "light",
-              "innerWidth": 1600,
-              "innerHeight": 1000,
-              "scrollWidth": 1600,
-              "scrollHeight": 1000,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1536,
-              "diagramWidth": 1506,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 60,
-                "diagramChromePx": 84,
-                "svgPx": 722,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 10,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 54,
-              "viewerChromeActive": true,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 1920,
-              "height": 1080,
-              "theme": "light",
-              "innerWidth": 1920,
-              "innerHeight": 1080,
-              "scrollWidth": 1920,
-              "scrollHeight": 1080,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1856,
-              "diagramWidth": 1602,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 60,
-                "diagramChromePx": 176,
-                "svgPx": 768,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 29,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 0,
-              "viewerChromeActive": false,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            },
-            {
-              "width": 2048,
-              "height": 1320,
-              "theme": "light",
-              "innerWidth": 2048,
-              "innerHeight": 1320,
-              "scrollWidth": 2048,
-              "scrollHeight": 1320,
-              "overflowX": false,
-              "overflowY": false,
-              "verticalScrollAccepted": false,
-              "overflowDisposition": "contained",
-              "readerLayout": "adaptive",
-              "readerOverflow": null,
-              "readerFit": "intrinsic-height",
-              "ok": true,
-              "readerWidth": 1920,
-              "diagramWidth": 1602,
-              "pageComposition": {
-                "bodyPaddingPx": 64,
-                "headerPx": 68,
-                "diagramChromePx": 408,
-                "svgPx": 768,
-                "cardsPx": 0,
-                "viewBoxHeight": 512
-              },
-              "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "sitio ? YouTube",
-              "minimumProjectedNodeTextDetail": "context",
-              "minimumProjectedNodeTextOwner": {
-                "kind": "node",
-                "id": "sources"
-              },
-              "minimumRequiredNodeTextPx": 6,
-              "readabilityOk": true,
-              "hasLegend": true,
-              "hasNavigationDock": true,
-              "legendDockIntersectionArea": 0,
-              "dockStageIntersectionArea": 0,
-              "dockStageGap": 145,
-              "requiredDockStageGap": 10,
-              "viewerChromeStageOk": true,
-              "viewerChromeReserve": 0,
-              "viewerChromeActive": false,
-              "viewerChromeOk": true,
-              "resolvedTheme": "light"
-            }
-          ]
+          "status": "fail",
+          "viewports": []
         },
         "captures": {
           "status": "not-requested",
@@ -957,23 +329,43 @@
         "sidecars": {
           "receipt": "arquitectura.browser-check.json",
           "files": []
-        }
+        },
+        "error": "browser-check will not replace the existing unowned evidence path \"D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json\"."
       }
     }
   },
   "browserCheck": {
     "requested": true,
-    "ran": true
+    "ran": false
   },
-  "diagnostics": [],
+  "diagnostics": [
+    {
+      "code": "viewer/evidence-path-conflict",
+      "severity": "error",
+      "message": "browser-check will not replace the existing unowned evidence path \"D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json\".",
+      "subject": {
+        "artifact": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+        "evidencePath": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+      },
+      "evidence": {
+        "reason": {
+          "code": "ownership-artifact-mismatch"
+        }
+      },
+      "supportedFixes": [
+        "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+      ]
+    }
+  ],
   "evidence": {
     "receipt": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize.json",
     "summaryReceipt": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize-summary.json",
     "browserCheckReceipt": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-10-31T15:08:52.935Z",
-  "durationMs": 2786,
+  "failedStage": "browser-check",
+  "finishedAt": "2026-10-31T18:33:54.321Z",
+  "durationMs": 1760,
   "update": {
     "status": "current",
     "installedVersion": "3.2.0",

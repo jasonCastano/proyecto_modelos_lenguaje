@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "receiptId": "2ce819a2-575c-4937-b0ea-c0d43712c54a",
+  "receiptId": "bba1ee4c-b15b-4b16-8db1-17f9e54d6f8f",
   "status": "current",
   "command": "deliver",
   "type": "dataflow",
   "input": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
   "output": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
   "specification": {
-    "sha256": "c228d4998c1938c7f2784c3e7a1ef15c4d246a9bc85bd19bf4895bf1ec96bd3d",
-    "bytes": 6641
+    "sha256": "25f5eeb4ca3b5463044f506deb3b1b14b984baa0aa6fa3b7c7ed269be9dfa7ec",
+    "bytes": 6664
   },
   "artifact": {
-    "sha256": "6062a80c4a77d67508d0c35065981b938209a55e7cf243074db04e28b64abce9",
-    "bytes": 844561
+    "sha256": "37826c9cded094b08be76deed5eb43cf0d28509370e693f3acd3f5ffed6a96fc",
+    "bytes": 844594
   }
 }

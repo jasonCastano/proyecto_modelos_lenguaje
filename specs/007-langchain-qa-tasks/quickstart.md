@@ -157,3 +157,30 @@ Los tiempos reales dependen del hardware y del modelo Ollama.
 
 El CLI no escribe en `data/gold/`; solo lee. Si se añade una salida para el prompt log, se guarda en
 `data/module1/` o en `docs/prompt_log.md`, nunca en las capas medallion.
+
+## 12. Resultados observados
+
+**Ejecución offline** (2026-10-30, `uv run`, Windows 11, suite con modelo falso):
+
+| Comando | Resultado observado |
+|---------|---------------------|
+| `qa --question "¿Qué productos ofrece Manuelita?" --fake --json` | `status=ok`, 2 citas (`U1`, `U2`), `prompt_version=1.0`, `model=scripted-fake`, 894 tokens de entrada, 24 de salida |
+| `summary --fake --json` | `status=ok`, 10 citas, 12 unidades usadas del paquete `pack_summary_8000` |
+| `faq --limit 12 --fake --json` | 12 elementos, todos `ready`, cada uno con al menos una cita |
+
+Los tres comandos devolvieron código `0`. La capa de oro de esta ejecución fue un fixture sintético
+fiel al esquema (`tests/tasks_helpers.py`), porque `data/gold/` no existe todavía en el repositorio;
+con el corpus real deben repetirse los mismos comandos sin `--fake` en la ruta indicada en la sección 5.
+
+**Ejecución con modelo real** (2026-10-30, Ollama activo, `qwen3.5:4b` con razonamiento desactivado
+porque `llama3.1:8b` no estaba descargado en el equipo):
+
+| Tarea | Resultado observado |
+|-------|---------------------|
+| Q&A «¿Qué productos ofrece Manuelita?» | `status=ok`, 2 citas (`U5`, `U1`), latencia 2,91 s |
+| Resumen 8k | `status=ok`, 12 citas, latencia 4,01 s, paquete declarado en la respuesta |
+
+Hallazgo: con un modelo de razonamiento y `max_output_tokens=1024`, el modelo puede consumir todo el
+presupuesto en el bloque de pensamiento y devolver contenido vacío (`done_reason=length`). El sistema
+lo reporta como `model_error` con un mensaje accionable en lugar de producir una respuesta vacía.
+

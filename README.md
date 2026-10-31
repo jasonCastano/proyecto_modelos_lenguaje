@@ -375,6 +375,32 @@ data/gold/
 La capa oro es extractiva y determinista: no resume, no responde, no traduce y no usa embeddings. Cada unidad
 conserva su cita; los conflictos se preservan y los vacíos de cobertura se declaran.
 
+### Tareas del Módulo 1: Resumen, FAQ y Q&A (M1-05)
+
+Las tres tareas usan LangChain sobre la capa de oro, con recuperación léxica determinista (sin embeddings),
+prompts versionados en `prompts/` y citas `[U#]` verificables. La configuración vive en `config/tasks.toml`.
+
+```bash
+# Q&A con citas y fallback explícito
+uv run python -m proyecto_modelos_lenguaje.tasks qa \
+  --question "¿Qué productos ofrece Manuelita?" --json
+
+# Resumen del paquete de contexto (8.000 tokens por defecto)
+uv run python -m proyecto_modelos_lenguaje.tasks summary --pack 8000 --json
+
+# FAQ con evidencia (10 a 20 preguntas)
+uv run python -m proyecto_modelos_lenguaje.tasks faq --limit 12 --json
+```
+
+- `--fake` usa un modelo falso determinista: no requiere Ollama ni red, ideal para CI y para revisar el flujo.
+- `--config` apunta a otra configuración; `--json` emite un único objeto JSON (o una lista, en `faq`).
+- Códigos de salida: `0` resultado (incluido `fallback`), `1` error controlado del modelo, `2` error de uso.
+- La variable `PML_GOLD_DIR` permite apuntar a otra capa de oro (por defecto `data/gold`).
+- Si el corpus no sostiene la respuesta, el resultado es `status=fallback`, `citations=[]` y el mensaje
+  «No hay evidencia suficiente en el corpus para responder.»; nunca se inventa contenido.
+- Guía de validación completa: [`specs/007-langchain-qa-tasks/quickstart.md`](specs/007-langchain-qa-tasks/quickstart.md).
+- Decisión de arquitectura: [`docs/decisions/0007-langchain-tasks.md`](docs/decisions/0007-langchain-tasks.md).
+
 ### Curaduría de relevancia
 
 ```bash

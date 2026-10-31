@@ -33,6 +33,9 @@ data.zip
 *.sqlite3-wal
 *.sqlite3-shm
 
+# Local agent memory (Engram)
+.engram/
+
 # OS / editors
 .DS_Store
 Thumbs.db

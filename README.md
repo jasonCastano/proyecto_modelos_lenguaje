@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-185%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-271%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/status-M%C3%B3dulo%201%20en%20progreso-yellow)](CONSTITUTION.md)
 
@@ -21,8 +21,9 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual**: las capas bronce, plata y oro están implementadas y validadas. La app Streamlit, las tareas
-> LangChain, la evaluación de 40 preguntas (20 núcleo + 20 extendidas) y el informe del Módulo 1 están en desarrollo.
+> **Estado actual**: las capas bronce, plata y oro están implementadas y validadas. La app Streamlit y las
+> tareas LangChain están operativas; la evaluación de 40 preguntas (20 núcleo + 20 extendidas) y el informe
+> del Módulo 1 están en desarrollo.
 
 ---
 
@@ -121,13 +122,13 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 185 pruebas offline |
+| Pruebas | ✅ | 271 pruebas offline |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | Ollama local, `config/llm.toml`, adaptador offline |
-| App Streamlit + LangChain | 🟡 | Dependencias LangChain instaladas; tareas pendientes (Módulo 1) |
+| App Streamlit + LangChain | ✅ | `app.py` con Resumen, FAQ y Q&A, citas y panel |
 | Evaluación de 40 preguntas | 🟡 | Pendiente |
 | Informe del Módulo 1 | 🟡 | Pendiente |
-| CI y Pull Requests | 🟡 | 14 PRs fusionados; workflow de CI verde |
+| CI y Pull Requests | 🟡 | 21 PRs fusionados; workflow de CI verde |
 | Cobertura de los 24 ítems | ✅ | 24/24 evaluados por la capa oro con evidencia |
 
 ### Cifras actuales
@@ -149,7 +150,7 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Oro | 0,20 GB |
 | Cuarentena | 8,93 GB |
 | Datos totales | 9,52 GB (límite: 10 GB) |
-| Pruebas offline | 185 |
+| Pruebas offline | 271 |
 
 ## Fuentes de datos
 
@@ -422,13 +423,19 @@ uv run python .opencode/skills/bitacora/scripts/generate_bitacora.py
 Genera un archivo fechado en `bitacora/` con el estado de Git local/remoto, el avance, los pendientes y los
 próximos pasos.
 
-### Aplicación Q&A (pendiente)
-
-Cuando se implemente la interfaz del Módulo 1:
+### Aplicación Q&A
 
 ```bash
+# Modelo real (Ollama activo)
 uv run streamlit run app.py
+
+# Modo demostración sin Ollama
+PML_DEMO=1 uv run streamlit run app.py
 ```
+
+La app abre tres pestañas —**Resumen**, **FAQ** y **Q&A**— con citas, fuentes clicables y panel de métricas.
+El modo demostración usa el modelo falso y no requiere red. La guía completa está en
+[`specs/008-streamlit-qa-app/quickstart.md`](specs/008-streamlit-qa-app/quickstart.md).
 
 ## Capas de datos
 
@@ -487,7 +494,7 @@ referencian por manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 185 pruebas unitarias, de integración y de contrato.
+- **Pruebas offline**: 271 pruebas unitarias, de integración y de contrato.
 - **Lint**: `uv run ruff check .` sin hallazgos.
 - **Integridad**: SHA-256 por artefacto; verificación de muestras del corpus activo.
 - **Procedencia**: URL canónica, fecha UTC, tipo, tamaño, categoría, idioma y campaña.
@@ -523,8 +530,8 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   evidencia verificable.
 - La capa oro produjo 15.211 unidades extractivas, 381 hechos, 15 entidades y 38 conflictos; 24/24 ítems
   evaluados. Los conflictos y la cobertura requieren revisión muestral antes de la evaluación final.
-- La app Streamlit, LangChain, las 40 preguntas y el informe del Módulo 1 están pendientes.
-- El repositorio tiene 7 PRs fusionados y CI verde en GitHub Actions.
+- La evaluación de 40 preguntas, el informe, el guion de demo y las capturas del Módulo 1 están pendientes.
+- El repositorio tiene 21 PRs fusionados y CI verde en GitHub Actions.
 
 ## Documentación
 
@@ -552,6 +559,11 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Plan de tareas LangChain](specs/007-langchain-qa-tasks/plan.md)
 - [Tareas de LangChain](specs/007-langchain-qa-tasks/tasks.md)
 - [Guía de validación de tareas LangChain](specs/007-langchain-qa-tasks/quickstart.md)
+- [Especificación de la app Streamlit](specs/008-streamlit-qa-app/spec.md)
+- [Plan de la app Streamlit](specs/008-streamlit-qa-app/plan.md)
+- [Tareas de la app Streamlit](specs/008-streamlit-qa-app/tasks.md)
+- [Guía de validación de la app Streamlit](specs/008-streamlit-qa-app/quickstart.md)
+- [Decisión de arquitectura de la app Streamlit](docs/decisions/0009-streamlit-app.md)
 - [Decisión de arquitectura del modelo Ollama](docs/decisions/0006-ollama-llm.md)
 - [Verificación de canales oficiales](docs/fuentes_oficiales.md)
 - [Bitácora del 2026-10-29](bitacora/2026-10-29.md)
@@ -565,7 +577,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [x] Curación de relevancia y cuarentena auditada.
 - [ ] Capas silver/gold y chunks.
 - [ ] Tareas LangChain: Resumen, FAQ y Q&A.
-- [ ] App Streamlit con métricas y citas.
+- [x] App Streamlit con métricas y citas.
 - [ ] 40 preguntas evaluadas (20 núcleo + 20 extendidas) y comparación de prompts.
 - [ ] Informe y demo 12+3 minutos.
 - [ ] CI, Pull Requests y tag `v0.1.0-modulo1`.

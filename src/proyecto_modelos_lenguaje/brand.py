@@ -14,6 +14,12 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from proyecto_modelos_lenguaje.metrics_layout import (
+    KPI_KEY,
+    METRICS_BREAKPOINTS,
+    METRICS_VIEW_KEY,
+)
+
 HEX_PATTERN = re.compile(r"^#[0-9A-F]{6}$")
 BRAND_NAME = "Grupo Manuelita"
 PROJECT_NAME = "RAG Ingenio Manuelita"
@@ -213,6 +219,9 @@ def brand_css(tokens: BrandTokens | None = None) -> str:
 html, body, [class*="st-"] {{
   font-family: {settings.font_stack};
 }}
+[data-testid="stIconMaterial"] {{
+  font-family: "Material Symbols Rounded" !important;
+}}
 h1 {{
   color: var(--pml-forest);
   font-size: {scale["display"]}px;
@@ -343,6 +352,63 @@ blockquote {{
 }}
 .pml-footer p {{
   margin: 0 0 {settings.spacing_unit // 2}px;
+}}
+.st-key-{METRICS_VIEW_KEY} h4 {{
+  margin-top: {settings.spacing_unit * 2}px;
+  margin-bottom: {settings.spacing_unit // 2}px;
+}}
+.st-key-{KPI_KEY} [data-testid="stHorizontalBlock"] {{
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: {settings.spacing_unit}px;
+  align-items: stretch;
+}}
+.st-key-{KPI_KEY} [data-testid="stColumn"] {{
+  width: auto !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}}
+.st-key-{KPI_KEY} [data-testid="stMetric"] {{
+  min-width: 0;
+  height: 100%;
+}}
+.st-key-{KPI_KEY} [data-testid="stMetricLabel"],
+.st-key-{KPI_KEY} [data-testid="stMetricLabel"] p,
+.st-key-{KPI_KEY} [data-testid="stMetricValue"] {{
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  text-overflow: clip !important;
+  overflow: visible !important;
+  hyphens: auto;
+}}
+.st-key-{KPI_KEY} [data-testid="stMetricValue"] {{
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}}
+.st-key-{METRICS_VIEW_KEY} [data-testid="stVegaLiteChart"],
+.st-key-{METRICS_VIEW_KEY} [data-testid="stArrowVegaLiteChart"] {{
+  min-height: 260px;
+}}
+.st-key-{METRICS_VIEW_KEY} [data-testid="stCaptionContainer"] {{
+  margin-top: {settings.spacing_unit // 2}px;
+  margin-bottom: {settings.spacing_unit}px;
+}}
+.st-key-{METRICS_VIEW_KEY} [data-testid="stExpander"] {{
+  margin-top: {settings.spacing_unit // 2}px;
+}}
+@media (max-width: {METRICS_BREAKPOINTS["wide"] - 1}px) {{
+  .st-key-{KPI_KEY} [data-testid="stHorizontalBlock"] {{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }}
+}}
+@media (max-width: {METRICS_BREAKPOINTS["compact"]}px) {{
+  .st-key-{KPI_KEY} [data-testid="stHorizontalBlock"] {{
+    grid-template-columns: minmax(0, 1fr);
+  }}
+  .st-key-{KPI_KEY} [data-testid="stMetricValue"] {{
+    font-size: {scale["heading"]}px;
+  }}
 }}
 """.strip()
 

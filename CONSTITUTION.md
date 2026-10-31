@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.0.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-10-29
+**Versión**: 1.1.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-10-31
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -12,6 +12,8 @@ Universidad Autónoma de Occidente, 2026-2S
 **Empresa**: Ingenio Manuelita S.A. — Valle del Cauca, Colombia — https://www.manuelita.com/
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
+
+**Mantenedor**: Jason Alejandro Castaño — GitHub `@jasonCastano` — `jasonale3007@gmail.com`
 
 **Alcance**: proyecto de curso organizado en fases (Módulo 1, Módulo 2 y módulos siguientes). Esta constitución
 rige la creación, ejecución, evaluación y entrega de cada fase.
@@ -58,7 +60,8 @@ aprendizaje y la sustentación.
 - NO SE DEBE usar `pip`, `conda` ni entornos manuales para el flujo oficial.
 - Toda ejecución relevante DEBE registrar comando, configuración, versión del modelo, semilla (si aplica) y
   fecha.
-- Los datos y artefactos pesados NO se versionan; se referencian por manifiesto y hash.
+- Los datos y artefactos pesados se versionan por **Git LFS** (bronce, plata y oro); la cuarentena,
+  cachés y artefactos temporales quedan fuera. Todo conjunto se referencia por manifiesto y hash.
 - La app DEBE correr con el comando documentado, sin pasos manuales no registrados.
 
 **Razón**: la rúbrica exige un repositorio que corra desde cero; la reproducibilidad es la condición mínima
@@ -168,14 +171,19 @@ entrega y la calidad de la demostración.
 ### 3.2 Estructura del repositorio
 
 ```text
-app.py                         # interfaz Streamlit/Gradio (Módulo 1)
+app.py                         # interfaz Streamlit (Consulta, Resumen, FAQ, Métricas)
 src/proyecto_modelos_lenguaje/ # paquete: datos, prompts, LLM, RAG
-scripts/                       # entradas operativas reproducibles
+scripts/                       # entradas operativas reproducibles y auditoría visual
 config/                        # fuentes, reglas y parámetros versionados
-data/                          # capas medallion (no versionado)
+data/                          # capas medallion versionadas por Git LFS
 specs/                         # especificaciones, planes y contratos
-tests/                         # unitarias, integración y contrato
-docs/                          # alcance, decisiones, informe, prompt log
+tests/                         # unitarias, integración, contrato y visuales
+docs/                          # alcance, decisiones, arquitectura, informe, prompt log
+.github/                       # PR/issue templates, CI, labels y Dependabot
+.opencode/                     # comandos y skill de bitácora
+AGENTS.md                      # contexto para asistentes LLM
+CONTRIBUTING.md                # guía de contribución
+Makefile                       # interfaz de comandos
 README.md
 CONSTITUTION.md
 LICENSE
@@ -198,7 +206,8 @@ uv.lock
 - Los outputs DEBEN ser JSONL y/o Markdown con frontmatter YAML.
 - La deduplicación DEBE ser por hash de contenido; las URL alternas se conservan como alias.
 - El corpus activo DEBE excluir contenido irrelevante o retirado; los retiros conservan auditoría.
-- El presupuesto de almacenamiento de la capa bronce es 10 GB; `data/` nunca se versiona.
+- El presupuesto de almacenamiento de la capa bronce es 10 GB. Bronce, plata y oro se versionan por
+  Git LFS; la cuarentena, cachés y temporales no se versionan.
 
 ### 3.4 Pipeline de scraping
 
@@ -249,6 +258,8 @@ uv.lock
 ### 3.8 Pruebas y calidad
 
 - `uv run pytest` DEBE pasar sin red para las pruebas unitarias y de contrato.
+- `make check` DEBE ejecutar Ruff (lint + formato) y `pytest`; el CI corre lo mismo.
+- La app DEBE auditarse visualmente con `make audit` en los perfiles definidos por la feature 010.
 - Cada módulo crítico (scraping, chunking, prompts, recuperación, app) DEBE tener al menos una prueba.
 - `uv run ruff check .` DEBE pasar sin errores.
 - Un PR no se fusiona con pruebas fallidas, lint pendiente o conflictos sin resolver.
@@ -272,6 +283,10 @@ uv.lock
 - Licencia declarada en `README.md` y en `pyproject.toml`.
 - `README.md` DEBE incluir: badges, problema y solución, arquitectura, instalación con `uv sync`, uso,
   estructura, capturas de la app, fuentes de datos, limitaciones, licencia y créditos.
+- `README.md` DEBE enlazar el diagrama interactivo `docs/arquitectura.html` y su fuente
+  `docs/arquitectura.json`, regenerados con Archify.
+- La gobernanza visible (PR/issue templates, labels, Dependabot, pre-commit y Makefile) DEBE estar
+  versionada y enlazada desde el README.
 - Los créditos DEBEN nombrar a ambos integrantes y al curso.
 
 ### 4.2 Ramas, Pull Requests y revisión
@@ -294,6 +309,7 @@ uv.lock
 ### 4.4 Integración continua
 
 - GitHub Actions DEBE ejecutar `uv sync --frozen`, `uv run ruff check .` y `uv run pytest`.
+- La interfaz local `make check` DEBE reflejar el mismo lint, formato y pruebas que el CI.
 - El badge de CI DEBE mostrarse en el README.
 - Un fallo de CI bloquea la fusión.
 - Se recomienda publicar cobertura y un artefacto de ejemplo del corpus.
@@ -303,6 +319,20 @@ uv.lock
 - Cada entrega se etiqueta: `v0.1.0-modulo1`, `v0.2.0-modulo2`, etc.
 - El tag debe apuntar a un commit con CI verde y README actualizado.
 - Las releases incluyen notas de cambios y limitaciones conocidas.
+
+### 4.6 Estándares de gobernanza y documentación viva
+
+- **Makefile**: interfaz única para `install`, `dev`, `lint`, `format`, `test`, `check`, `app`, `audit`,
+  `build` y `clean`.
+- **Pre-commit**: higiene de archivos, Ruff y sincronización de `uv.lock`; se instala con `make dev`.
+- **GitHub**: plantilla de PR, formularios de issue, labels declarativas, Dependabot y workflow de labels.
+- **Contribución**: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` y `AGENTS.md` describen el flujo y el contexto.
+- **Arquitectura**: `docs/arquitectura.json` es la fuente; `docs/arquitectura.html` se regenera con
+  Archify y se enlaza desde el README. El HTML no se edita a mano.
+- **Identidad**: el mantenedor y la cuenta de GitHub se declaran en README y constitución; no se usan
+  credenciales ni rutas absolutas en la documentación.
+
+**Razón**: un proyecto académico defendible debe poder auditarse y reproducirse sin conocimiento tácito.
 
 ---
 
@@ -635,6 +665,27 @@ scraper, deploy en Hugging Face Spaces y diagrama de arquitectura.
 
 ---
 
+## Anexo D — Estado de estandarización al 2026-10-31 (no normativo)
+
+Auditoría con `jan-project-standard` sobre el repositorio:
+
+- **Identidad verificada**: GitHub `jasonCastano`, autor Jason Alejandro Castaño,
+  correo `jasonale3007@gmail.com`, remoto `https://github.com/jasonCastano/proyecto_modelos_lenguaje.git`.
+- **Añadido**: `.editorconfig`, `Makefile`, `.pre-commit-config.yaml`, `CONTRIBUTING.md`,
+  `CODE_OF_CONDUCT.md`, `AGENTS.md`, `.opencode/rules/tgrep.md`, plantillas de PR e issues,
+  Dependabot, labels, workflow de labels e índice `docs/README.md`.
+- **Conservado**: `README.md`, `CONSTITUTION.md`, `LICENSE`, `pyproject.toml`, `.gitignore` y
+  `.github/workflows/ci.yml`, adaptados sin reemplazarlos.
+- **Arquitectura**: `docs/arquitectura.json` + `docs/arquitectura.html` generados y validados con
+  Archify (`finalize --quality showcase`); captura enlazada desde el README. Decisión registrada en
+  `docs/decisions/0011-project-standard.md`.
+- **Estado técnico**: app Streamlit de cuatro pestañas, tareas LangChain, capas medallion y auditoría
+  visual de Métricas operativas; 346 pruebas pasan y CI está verde.
+- **Pendiente**: evaluación de 40 preguntas, informe, guion de demo, capturas restantes y tag
+  `v0.1.0-modulo1`.
+
+---
+
 ## Firmas
 
 Ratificada por los coautores del proyecto:
@@ -647,4 +698,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.0.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-10-29
+**Versión**: 1.1.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-10-31

@@ -1,6 +1,6 @@
 # Quickstart — modelo DeepSeek por API
 
-**Feature**: `010-deepseek-api-model`
+**Feature**: `011-deepseek-api-model`
 **Fecha**: 2026-10-31
 
 Guía de validación del cambio de proveedor. Ningún paso escribe en `data/` ni en el repositorio.

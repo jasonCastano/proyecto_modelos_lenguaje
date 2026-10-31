@@ -29,7 +29,7 @@ dependencies = [
 [project.optional-dependencies]
 asr = [
     "faster-whisper>=1.2.1",
-    "av>=14,<19",
+    "av>=14,<20",
 ]
 
 [project.urls]

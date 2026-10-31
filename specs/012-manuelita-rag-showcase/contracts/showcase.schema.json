@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jasonCastano/proyecto_modelos_lenguaje/specs/012-manuelita-rag-showcase/contracts/showcase.schema.json",
+  "title": "Module 1 showcase payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["generated_at", "data_status", "sections", "metrics"],
+  "properties": {
+    "generated_at": { "type": "string", "format": "date-time" },
+    "data_status": { "enum": ["complete", "incomplete", "unknown"] },
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/section" }
+    },
+    "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/metric" }
+    }
+  },
+  "$defs": {
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "order", "title", "body", "status", "metrics", "evidence"],
+      "properties": {
+        "id": { "enum": ["problem", "data", "medallion", "prompts", "tasks", "app", "metrics", "limits"] },
+        "order": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "body": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["done", "partial", "pending"] },
+        "metrics": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/metric" }
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/evidence" }
+        }
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "label", "value", "unit", "source", "status"],
+      "properties": {
+        "key": {
+          "enum": [
+            "active_artifacts",
+            "canonical_documents",
+            "aliases",
+            "chunks",
+            "units",
+            "facts",
+            "entities",
+            "conflicts",
+            "coverage",
+            "tokens_silver",
+            "tokens_gold"
+          ]
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "value": { "type": "number", "minimum": 0 },
+        "unit": { "type": "string", "minLength": 1 },
+        "source": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["complete", "incomplete", "unknown"] }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "href", "kind"],
+      "properties": {
+        "label": { "type": "string", "minLength": 1 },
+        "href": { "type": "string", "minLength": 1 },
+        "kind": { "enum": ["spec", "adr", "report", "code", "bitacora"] }
+      }
+    }
+  }
+}

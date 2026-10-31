@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jasonCastano/proyecto_modelos_lenguaje/specs/012-manuelita-rag-showcase/contracts/answer.schema.json",
+  "title": "Cited RAG answer",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "query_id",
+    "status",
+    "answer",
+    "citations",
+    "model",
+    "provider",
+    "prompt_version",
+    "latency_ms",
+    "input_tokens",
+    "output_tokens",
+    "review_required"
+  ],
+  "properties": {
+    "query_id": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["ok", "fallback", "error"] },
+    "answer": { "type": "string", "minLength": 1 },
+    "citations": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/citation" }
+    },
+    "model": { "type": "string", "minLength": 1 },
+    "provider": { "type": "string", "minLength": 1 },
+    "prompt_version": { "type": "string", "minLength": 1 },
+    "latency_ms": { "type": "number", "minimum": 0 },
+    "input_tokens": { "type": "integer", "minimum": 0 },
+    "output_tokens": { "type": "integer", "minimum": 0 },
+    "cost_usd": { "type": ["number", "null"], "minimum": 0 },
+    "review_required": { "type": "boolean" },
+    "error": {
+      "oneOf": [
+        { "$ref": "#/$defs/apiError" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "ok" } } },
+      "then": {
+        "properties": {
+          "citations": { "minItems": 1 },
+          "error": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "fallback" } } },
+      "then": {
+        "properties": {
+          "citations": { "maxItems": 0 },
+          "error": { "type": "null" }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "error" } } },
+      "then": {
+        "required": ["error"],
+        "properties": { "error": { "$ref": "#/$defs/apiError" } }
+      }
+    }
+  ],
+  "$defs": {
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "title", "url", "section_path", "authority"],
+      "properties": {
+        "label": { "type": "string", "pattern": "^U[0-9]+$" },
+        "title": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "format": "uri", "pattern": "^https?://" },
+        "section_path": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "page": { "type": ["integer", "null"], "minimum": 1 },
+        "time_start": { "type": ["number", "null"], "minimum": 0 },
+        "authority": { "enum": ["first_party", "third_party", "unknown"] },
+        "snippet": { "type": ["string", "null"] }
+      }
+    },
+    "apiError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "retryable", "action"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 },
+        "retryable": { "type": "boolean" },
+        "action": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

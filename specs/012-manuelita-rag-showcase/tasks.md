@@ -174,7 +174,7 @@ Aplicación web con backend Python y frontend en `web/`; pruebas de API/E2E en `
 - [X] T066 Ejecutar la matriz E2E 360/768/1440/1920, revisar foco, contraste, reduced motion y ausencia de scroll horizontal; guardar capturas en `docs/capturas/web/`.
 - [X] T067 Verificar el bundle: JS inicial < 250 KB gzip, fuentes autohospedadas y cero claves/rutas absolutas; documentar medición.
 - [X] T068 Regenerar la bitácora con `uv run python .opencode/skills/bitacora/scripts/generate_bitacora.py`.
-- [ ] T069 Crear rama, commits atómicos y PR que incluya `specs/012-manuelita-rag-showcase/`, capturas, resultados y checklist de la constitución; no fusionar hasta CI verde.
+- [X] T069 Crear rama, commits atómicos y PR que incluya `specs/012-manuelita-rag-showcase/`, capturas, resultados y checklist de la constitución; no fusionar hasta CI verde.
 
 ---
 

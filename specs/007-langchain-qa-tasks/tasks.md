@@ -160,7 +160,7 @@ Proyecto único: prompts en `prompts/`, configuración en `config/`, código en
 - [x] T049 Ejecutar `uv run pytest -q` y corregir fallos en `tests/unit/test_tasks.py`, `tests/unit/test_retrieval.py`, `tests/contract/test_tasks_contract.py`, `tests/integration/test_tasks_fake.py` y `tests/integration/test_tasks_ollama.py`.
 - [x] T050 Ejecutar `uv build` y verificar que el paquete incluye `tasks.py` y `retrieval.py` y que el CLI `python -m proyecto_modelos_lenguaje.tasks` funciona.
 - [x] T051 Ejecutar el quickstart con `--fake` para Q&A, resumen y FAQ, y anexar los resultados observados en `specs/007-langchain-qa-tasks/quickstart.md`.
-- [ ] T052 Ejecutar una prueba real con `llama3.1:8b` para Q&A y resumen, y registrar latencia y citas en `docs/prompt_log.md` o en el quickstart.
+- [x] T052 Ejecutar una prueba real con `llama3.1:8b` para Q&A y resumen, y registrar latencia y citas en `docs/prompt_log.md` o en el quickstart.
 - [x] T053 Regenerar la bitácora con `uv run python .opencode/skills/bitacora/scripts/generate_bitacora.py` y confirmar que M1-05 y G3 pasan a completadas.
 
 ---

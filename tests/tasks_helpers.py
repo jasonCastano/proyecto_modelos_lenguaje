@@ -199,8 +199,7 @@ def _pack(units: list[dict[str, Any]], budget: int) -> dict[str, Any]:
                 "unit_id": unit["unit_id"],
                 "text": unit["text"],
                 "citation": (
-                    f"{unit['title']} — {unit['url']} "
-                    f"(sección: {' > '.join(unit['section_path'])})"
+                    f"{unit['title']} — {unit['url']} (sección: {' > '.join(unit['section_path'])})"
                 ),
                 "tokens": tokens,
                 "topic_id": unit["topic_id"],

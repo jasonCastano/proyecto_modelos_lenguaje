@@ -134,9 +134,7 @@ def _columns_from_cards(cards: list[Any]) -> int:
     if not boxes:
         return 0
     first_y = min(box.y for box in boxes)
-    first_row = [
-        round(box.x / 10) * 10 for box in boxes if abs(box.y - first_y) <= 4
-    ]
+    first_row = [round(box.x / 10) * 10 for box in boxes if abs(box.y - first_y) <= 4]
     return max(1, len(set(first_row)))
 
 

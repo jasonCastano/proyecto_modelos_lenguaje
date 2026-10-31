@@ -214,4 +214,3 @@ Las campañas de prueba permanecen en el catálogo por trazabilidad. Usa siempre
 
 **Nota**: el `--dry-run` real tardó 613 s por la latencia y el descubrimiento del sitio. Para demos,
 usa un `--config` reducido o el servidor local; el `--limit` acota objetivos, no el descubrimiento.
-

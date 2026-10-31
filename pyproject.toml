@@ -49,6 +49,7 @@ dev = [
     "fpdf2>=2.9.0",
     "jsonschema>=4.26.0",
     "playwright>=1.64",
+    "pre-commit>=4.7.0",
     "pytest>=9.1.1",
     "ruff>=0.17.3",
 ]

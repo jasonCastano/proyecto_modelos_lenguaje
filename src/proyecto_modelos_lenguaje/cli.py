@@ -127,9 +127,7 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 def cmd_campaign_start(args: argparse.Namespace) -> int:
     config = load_config(args.config)
-    if args.max_bytes is not None and (
-        args.max_bytes < 1 or args.max_bytes > STORAGE_HARD_LIMIT
-    ):
+    if args.max_bytes is not None and (args.max_bytes < 1 or args.max_bytes > STORAGE_HARD_LIMIT):
         return _error("--max-bytes must be between 1 and 10000000000", 3)
     run = start_campaign(
         config,

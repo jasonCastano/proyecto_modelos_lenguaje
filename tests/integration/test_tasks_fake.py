@@ -137,8 +137,6 @@ def test_environment_variable_points_to_the_gold_layer(
 ) -> None:
     gold = write_gold(tmp_path)
     monkeypatch.setenv("PML_GOLD_DIR", str(gold))
-    result = answer_question(
-        "¿Qué productos ofrece Manuelita?", model=build_scripted_model("qa")
-    )
+    result = answer_question("¿Qué productos ofrece Manuelita?", model=build_scripted_model("qa"))
     assert result.status == "ok"
     assert result.citations

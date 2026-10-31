@@ -60,4 +60,3 @@
 
 **Nota**: la cobertura y los conflictos se basan en reglas deterministas; se recomienda una revisión muestral
 antes de la evaluación final del Módulo 1.
-

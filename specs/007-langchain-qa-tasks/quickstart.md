@@ -187,4 +187,3 @@ presupuesto en el bloque de pensamiento y devolver contenido vacío (`done_reaso
 lo reporta como `model_error` con un mensaje accionable en lugar de producir una respuesta vacía. La
 primera ejecución del resumen también reveló que una consola `cp1252` rompía la impresión de acentos
 combinados; el CLI ahora fuerza UTF-8 con reemplazo en `stdout`/`stderr`.
-

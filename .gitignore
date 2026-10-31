@@ -36,6 +36,12 @@ data.zip
 # Local agent memory (Engram)
 .engram/
 
+# Local agent skills and tooling
+.agents/
+skills-lock.json
+.tgrep/
+.archify/
+
 # Visual audit artifacts
 artifacts/metrics-layout/
 

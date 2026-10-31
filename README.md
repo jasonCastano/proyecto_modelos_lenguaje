@@ -21,9 +21,9 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual**: las capas bronce, plata y oro están implementadas y validadas. La app Streamlit y las
-> tareas LangChain están operativas; la evaluación de 40 preguntas (20 núcleo + 20 extendidas) y el informe
-> del Módulo 1 están en desarrollo.
+> **Estado actual**: las capas bronce, plata y oro están implementadas y validadas. La app Streamlit
+> (cuatro pestañas), las tareas LangChain y la auditoría visual de Métricas están operativas; la evaluación
+> de 40 preguntas (20 núcleo + 20 extendidas) y el informe del Módulo 1 están en desarrollo.
 
 ---
 
@@ -32,15 +32,18 @@ Universidad Autónoma de Occidente, 2026-2S.
 - [Problema](#problema)
 - [Solución](#solución)
 - [Arquitectura](#arquitectura)
+- [Arquitectura interactiva (Archify)](#arquitectura-interactiva-archify)
 - [Capturas](#capturas)
 - [Estado del proyecto](#estado-del-proyecto)
 - [Fuentes de datos](#fuentes-de-datos)
 - [Stack técnico](#stack-técnico)
 - [Requisitos e instalación](#requisitos-e-instalación)
 - [Uso](#uso)
+- [Comandos rápidos](#comandos-rápidos)
 - [Capas de datos](#capas-de-datos)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Calidad y reproducibilidad](#calidad-y-reproducibilidad)
+- [Gobernanza y contribución](#gobernanza-y-contribución)
 - [Ética, privacidad y legalidad](#ética-privacidad-y-legalidad)
 - [Limitaciones conocidas](#limitaciones-conocidas)
 - [Documentación](#documentación)
@@ -72,7 +75,8 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
 - **Q&A anclado al contexto**: el modelo responde solo con el contexto recuperado, cita fuentes y declara cuando
   no tiene evidencia.
 - **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores.
-- **Interfaz de prueba** en Streamlit con Resumen, FAQ y Q&A.
+- **Interfaz de prueba** en Streamlit con Consulta, Resumen, FAQ y Métricas, citas y modo demostración.
+- **Verificación visual reproducible** del panel de Métricas con Playwright y reporte JSON.
 
 ## Arquitectura
 
@@ -102,10 +106,35 @@ flowchart LR
 - El contenido retirado se mueve a `data/quarantine/` con auditoría y ventana de reversibilidad.
 - El dominio oficial `manuelita.com` nunca se elimina del corpus activo.
 
+### Arquitectura interactiva (Archify)
+
+El pipeline completo se puede explorar como un diagrama interactivo autocontenido: pan/zoom, temas
+claro/oscuro, búsqueda y trazabilidad de relaciones. La fuente tipada es
+[`docs/arquitectura.json`](docs/arquitectura.json) y el HTML se genera con Archify; no se edita a mano.
+
+[![Pipeline de datos y Q&A de Manuelita](docs/arquitectura.visual-check.2048x1320.dark.png)](docs/arquitectura.html)
+
+Regenerar y validar (con la skill Archify instalada):
+
+```bash
+node ~/.agents/skills/archify/bin/archify.mjs finalize dataflow \
+  docs/arquitectura.json docs/arquitectura.html \
+  --repo-root . --quality showcase --json
+```
+
+Si la copia global de la skill está incompleta, clona
+[`tt-a1i/archify`](https://github.com/tt-a1i/archify) y usa `archify/bin/archify.mjs`.
+
+El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → recuperación léxica →
+tareas LangChain → app Streamlit**. Los embeddings y la base vectorial pertenecen al Módulo 2 y no se
+muestran como implementados.
+
 ## Capturas
 
-Las capturas de la interfaz Streamlit se agregarán cuando se implemente la app del Módulo 1. Por ahora la
-verificación se realiza con la CLI, los reportes de campaña y el catálogo; no se incluyen imágenes simuladas.
+![Panel de Métricas de la app](docs/capturas/metricas-escritorio.png)
+
+La captura corresponde a la app real en 1440×900. La verificación visual de Métricas se ejecuta con
+`make audit` y no se versionan capturas temporales de la auditoría.
 
 ## Estado del proyecto
 
@@ -125,10 +154,12 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Pruebas | ✅ | 346 pruebas offline |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | Ollama local, `config/llm.toml`, adaptador offline |
-| App Streamlit + LangChain | ✅ | `app.py` con Resumen, FAQ y Q&A, citas y panel |
+| App Streamlit + LangChain | ✅ | `app.py` con Consulta, Resumen, FAQ y Métricas; citas y panel |
+| Auditoría visual de Métricas | ✅ | 7 perfiles, 3 estados, 0 solapamientos; `scripts/audit_metrics_layout.py` |
 | Evaluación de 40 preguntas | 🟡 | Pendiente |
 | Informe del Módulo 1 | 🟡 | Pendiente |
-| CI y Pull Requests | 🟡 | 21 PRs fusionados; workflow de CI verde |
+| CI y Pull Requests | ✅ | 25+ PRs fusionados; CI verde |
+| Gobernanza del repositorio | ✅ | PR/issue templates, labels, Dependabot, pre-commit y Makefile |
 | Cobertura de los 24 ítems | ✅ | 24/24 evaluados por la capa oro con evidencia |
 
 ### Cifras actuales
@@ -185,8 +216,8 @@ verificación se realiza con la CLI, los reportes de campaña y el catálogo; no
 | Catálogo | SQLite (WAL) + manifiestos JSONL |
 | Pruebas | `pytest` |
 | Lint y formato | `ruff` |
-| LLM (Módulo 1) | LangChain (planificado) |
-| Interfaz (Módulo 1) | Streamlit (planificado) |
+| LLM (Módulo 1) | LangChain + Ollama local (`llama3.1:8b`) |
+| Interfaz (Módulo 1) | Streamlit con identidad visual y auditoría Playwright |
 | RAG (Módulo 2) | Embeddings + base vectorial (planificado) |
 
 ## Requisitos e instalación
@@ -209,6 +240,20 @@ Los datos de bronce, plata y oro se descargan con Git LFS (~489 MB). La cuarente
 descarga.
 
 ## Uso
+
+### Comandos rápidos
+
+```bash
+make help      # lista los objetivos
+make dev       # uv sync + hooks de pre-commit
+make check     # lint + formato + pruebas
+make app       # abre la app Streamlit
+make audit     # auditoría visual de Métricas (app en :8501)
+make build     # sdist + wheel
+```
+
+La app corre con `uv run streamlit run app.py`; el modo demostración usa `PML_DEMO=1` y no requiere
+Ollama ni red.
 
 ### Pipeline bronce
 
@@ -511,22 +556,28 @@ referencian por manifiesto y hash.
 
 ```text
 .
-├── app.py                         # Interfaz Streamlit (pendiente, Módulo 1)
+├── app.py                         # App Streamlit: Consulta, Resumen, FAQ, Métricas
 ├── bitacora/                      # Bitácoras fechadas del proyecto
-├── config/                        # Fuentes, cobertura, exclusiones y reglas
-├── data/                          # Capas medallion (no versionado)
+├── config/                        # Fuentes, cobertura, LLM, prompts y reglas
+├── data/                          # Capas medallion versionadas por Git LFS
 │   ├── bronze/                    # Crudo, inmutable
 │   ├── silver/                    # Texto limpio, secciones y chunks
-│   ├── gold/                      # Base de conocimiento (pendiente)
-│   └── quarantine/                # Retiros con auditoría
-├── scripts/                       # Entradas operativas reproducibles
-├── specs/                         # Especificaciones, planes y contratos
-│   ├── 001-bronze-web-scraping/
-│   └── 002-manuelita-relevance-filter/
-├── src/proyecto_modelos_lenguaje/ # Paquete: datos, catálogo, curación, CLI
-├── tests/                         # Unitarias, integración y contrato
-├── .opencode/skills/bitacora/     # Skill de bitácora
-├── CONSTITUTION.md                # Reglas del proyecto y rúbrica
+│   ├── gold/                      # Base de conocimiento con citas
+│   └── quarantine/                # Retiros con auditoría (fuera de Git)
+├── docs/                          # Alcance, ficha de datos, ADRs y arquitectura
+│   ├── arquitectura.json          # Fuente Archify
+│   ├── arquitectura.html          # Diagrama interactivo
+│   └── decisions/                 # ADRs
+├── scripts/                       # Entradas operativas y auditoría visual
+├── specs/                         # Especificaciones, planes y tareas (001–010)
+├── src/proyecto_modelos_lenguaje/ # Pipeline, retrieval, tareas LangChain y branding
+├── tests/                         # Unitarias, integración, contrato y visuales
+├── .github/                       # PR/issue templates, CI, labels y Dependabot
+├── .opencode/                     # Comandos y skill de bitácora
+├── AGENTS.md                      # Contexto para asistentes LLM
+├── CONSTITUTION.md                # Fuente única de verdad
+├── CONTRIBUTING.md                # Guía de contribución
+├── Makefile                       # Interfaz de comandos
 ├── LICENSE                        # MIT 2026
 ├── README.md
 ├── pyproject.toml
@@ -537,6 +588,8 @@ referencian por manifiesto y hash.
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
 - **Pruebas offline**: 346 pruebas unitarias, de integración y de contrato.
+- **Verificación completa**: `make check` ejecuta lint, formato y pruebas; CI corre lo mismo.
+- **Auditoría visual**: `make audit` recorre 7 perfiles y 3 estados de datos con Playwright.
 - **Lint**: `uv run ruff check .` sin hallazgos.
 - **Integridad**: SHA-256 por artefacto; verificación de muestras del corpus activo.
 - **Procedencia**: URL canónica, fecha UTC, tipo, tamaño, categoría, idioma y campaña.
@@ -551,6 +604,22 @@ uv run ruff check .
 uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 --seed 1 --json
 ```
 
+## Gobernanza y contribución
+
+- **Mantenedor**: Jason Alejandro Castaño — GitHub [`@jasonCastano`](https://github.com/jasonCastano),
+  correo `jasonale3007@gmail.com`.
+- **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
+- **Rama estable**: `main`; todo cambio entra por Pull Request con CI verde.
+- **Plantillas**: PR e issues en [`.github/`](.github/), con checklist de constitución y pruebas.
+- **Etiquetas y Dependabot**: declaradas en [`.github/labels.yml`](.github/labels.yml) y
+  [`.github/dependabot.yml`](.github/dependabot.yml).
+- **Calidad local**: [`Makefile`](Makefile), [`.pre-commit-config.yaml`](.pre-commit-config.yaml) y
+  [`.editorconfig`](.editorconfig).
+- **Contribución**: lee [`CONTRIBUTING.md`](CONTRIBUTING.md) y el
+  [código de conducta](CODE_OF_CONDUCT.md).
+- **Contexto para agentes**: [`AGENTS.md`](AGENTS.md) y [`.opencode/rules/tgrep.md`](.opencode/rules/tgrep.md).
+- **Constitución**: [`CONSTITUTION.md`](CONSTITUTION.md) prevalece sobre cualquier otra práctica.
+
 ## Ética, privacidad y legalidad
 
 - Solo se recolecta información pública, sin autenticación, muros de pago ni elusión de controles.
@@ -560,11 +629,13 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - El contenido de terceros pertenece a sus fuentes y se atribuye; se atienden solicitudes de retiro.
 - Las respuestas del sistema no constituyen asesoría oficial de Ingenio Manuelita.
 - No se versionan claves, `.env`, cuarentena ni credenciales; bronce, plata y oro van en Git LFS.
+- El uso de asistentes de IA se declara; el equipo revisa, prueba y asume la responsabilidad del código,
+  prompts y afirmaciones.
 
 ## Limitaciones conocidas
 
 - El corpus activo es de 557 artefactos; 26.347 fueron retirados a cuarentena por no ser relevantes.
-- La cuarentena ocupa 8,93 GB y el total de datos está en 9,29 GB; la purga definitiva está pendiente.
+- La cuarentena ocupa 8,93 GB y el total de datos está en 9,52 GB; la purga definitiva está pendiente.
 - La capa plata produjo 404 documentos canónicos y 3.810 fragmentos; 92 artefactos quedaron como alias por
   duplicados o versiones. 61 se omitieron: 35 sin texto, 10 PDF escaneados, 6 PDF cifrados y 10 sitemaps.
 - Instagram y Linktree no se capturan por `robots.txt`; 30 videos de YouTube no están disponibles y 3 exigen sesión.
@@ -572,8 +643,9 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   evidencia verificable.
 - La capa oro produjo 15.211 unidades extractivas, 381 hechos, 15 entidades y 38 conflictos; 24/24 ítems
   evaluados. Los conflictos y la cobertura requieren revisión muestral antes de la evaluación final.
-- La evaluación de 40 preguntas, el informe, el guion de demo y las capturas del Módulo 1 están pendientes.
-- El repositorio tiene 21 PRs fusionados y CI verde en GitHub Actions.
+- La evaluación de 40 preguntas, el informe, el guion de demo y las capturas de Consulta/Resumen/FAQ están
+  pendientes.
+- El repositorio tiene 25+ PRs fusionados y CI verde en GitHub Actions.
 
 ## Documentación
 
@@ -606,9 +678,18 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Tareas de la app Streamlit](specs/008-streamlit-qa-app/tasks.md)
 - [Guía de validación de la app Streamlit](specs/008-streamlit-qa-app/quickstart.md)
 - [Decisión de arquitectura de la app Streamlit](docs/decisions/0009-streamlit-app.md)
+- [Especificación de identidad visual](specs/009-manuelita-visual-identity/spec.md)
+- [Decisión de arquitectura de identidad visual](docs/decisions/0010-brand-identity.md)
+- [Especificación del panel de Métricas](specs/010-metrics-panel-layout/spec.md)
+- [Plan del panel de Métricas](specs/010-metrics-panel-layout/plan.md)
+- [Tareas del panel de Métricas](specs/010-metrics-panel-layout/tasks.md)
+- [Guía de validación del panel de Métricas](specs/010-metrics-panel-layout/quickstart.md)
+- [Arquitectura interactiva (Archify)](docs/arquitectura.html)
+- [Decisión de estandarización y arquitectura viva](docs/decisions/0011-project-standard.md)
+- [Índice de documentación](docs/README.md)
 - [Decisión de arquitectura del modelo Ollama](docs/decisions/0006-ollama-llm.md)
 - [Verificación de canales oficiales](docs/fuentes_oficiales.md)
-- [Bitácora del 2026-10-29](bitacora/2026-10-29.md)
+- [Bitácora del 2026-10-31](bitacora/2026-10-31-0947.md)
 - [Guía de validación del bronce](specs/001-bronze-web-scraping/quickstart.md)
 
 ## Roadmap
@@ -617,9 +698,10 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 
 - [x] Pipeline bronce y catálogo de procedencia.
 - [x] Curación de relevancia y cuarentena auditada.
-- [ ] Capas silver/gold y chunks.
-- [ ] Tareas LangChain: Resumen, FAQ y Q&A.
+- [x] Capas silver/gold y chunks.
+- [x] Tareas LangChain: Resumen, FAQ y Q&A.
 - [x] App Streamlit con métricas y citas.
+- [x] Auditoría visual de Métricas y gobernanza del repositorio.
 - [ ] 40 preguntas evaluadas (20 núcleo + 20 extendidas) y comparación de prompts.
 - [ ] Informe y demo 12+3 minutos.
 - [ ] CI, Pull Requests y tag `v0.1.0-modulo1`.

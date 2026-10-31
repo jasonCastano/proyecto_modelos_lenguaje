@@ -124,9 +124,9 @@ CASCADE_STEPS: tuple[TaskStep, ...] = (
     TaskStep(
         "M1-07",
         4,
-        "Implementar la app Streamlit",
+        "Implementar la experiencia web (React + FastAPI)",
         ("M1-05", "M1-06"),
-        "app.py",
+        "web/, src/proyecto_modelos_lenguaje/api.py",
         "Resumen, FAQ y Q&A; citas; panel de URLs/tokens/descartes; errores y timeout controlados.",
         ("app", "ui_metrics"),
         "Roberto",
@@ -227,7 +227,7 @@ QUALITY_GATES: tuple[QualityGate, ...] = (
     QualityGate("G1", "M1-01", "Preguntas revisadas y aprobadas por ambos."),
     QualityGate("G2", "M1-03", "Wrapper canónico y ficha de datos reproducibles."),
     QualityGate("G3", "M1-06", "Tres tareas LangChain con citas y fallback."),
-    QualityGate("G4", "M1-07", "App ejecutable con tres funcionalidades y panel."),
+    QualityGate("G4", "M1-07", "Experiencia web ejecutable con tres funcionalidades y panel."),
     QualityGate("G5", "M1-09", "Evaluación completa y prompts ajustados con evidencia."),
     QualityGate("G6", "M1-12", "Informe, demo y README coherentes."),
     QualityGate("G7", "M1-15", "Tag publicado y demo ensayada."),
@@ -521,17 +521,19 @@ def check_readme() -> Check:
 
 
 def check_app() -> tuple[Check, Check]:
-    app = read("app.py")
-    pyproject = read("pyproject.toml")
-    has_streamlit = "streamlit" in pyproject.lower()
-    if not app:
+    package = read("web/package.json")
+    app = read("src/proyecto_modelos_lenguaje/api.py")
+    console = read("web/src/components/RagConsole.tsx")
+    showcase = read("src/proyecto_modelos_lenguaje/showcase.py")
+    has_web = bool(package) and bool(app)
+    if not has_web:
         app_check = Check(
             "app",
-            "App Streamlit/Gradio",
+            "Experiencia web React/FastAPI",
             "Aplicación",
             "pending",
-            "No existe app.py",
-            "Crear app.py con Resumen, FAQ y Q&A; ejecutar con uv run streamlit run app.py",
+            "No existe web/package.json o api.py",
+            "Crear el frontend React y la API FastAPI con Resumen, FAQ y Q&A; usar make app",
             critical=True,
         )
         ui_check = Check(
@@ -544,22 +546,23 @@ def check_app() -> tuple[Check, Check]:
             critical=True,
         )
         return app_check, ui_check
-    has_three = all(token in app.lower() for token in ("resumen", "faq", "pregunta"))
-    has_metrics = all(token in app.lower() for token in ("url", "token", "descarte"))
-    app_status = "done" if has_three and has_streamlit else "partial"
+    haystack = f"{console}\n{app}".lower()
+    has_three = all(token in haystack for token in ("resumen", "faq", "pregunta"))
+    has_metrics = bool(showcase) and "metrics" in showcase.lower()
+    app_status = "done" if has_three and has_metrics else "partial"
     app_evidence = (
-        f"app.py presente; tres funciones={'sí' if has_three else 'no'}; "
-        f"Streamlit={'sí' if has_streamlit else 'no'}"
+        f"web/ y api.py presentes; tres funciones={'sí' if has_three else 'no'}; "
+        f"métricas={'sí' if has_metrics else 'no'}"
     )
     app_check = Check(
         "app",
-        "App Streamlit/Gradio",
+        "Experiencia web React/FastAPI",
         "Aplicación",
         app_status,
         app_evidence,
         ""
         if app_status == "done"
-        else "Completar las tres funcionalidades y la dependencia Streamlit",
+        else "Completar las tres funcionalidades y las métricas del showcase",
         critical=app_status != "done",
     )
     ui_check = Check(
@@ -567,9 +570,9 @@ def check_app() -> tuple[Check, Check]:
         "Panel de scraping en la UI",
         "Aplicación",
         "done" if has_metrics else "pending",
-        "Métricas visibles en app.py"
+        "Métricas visibles en /api/showcase"
         if has_metrics
-        else "No se detectan URLs/tokens/descartes en app.py",
+        else "No se detectan métricas en showcase.py",
         "" if has_metrics else "Mostrar URLs, páginas, tokens y descartes",
         critical=not has_metrics,
     )

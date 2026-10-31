@@ -49,11 +49,29 @@ uv run python -m proyecto_modelos_lenguaje.tasks summary --fake --json
 uv run python -m proyecto_modelos_lenguaje.tasks faq --limit 12 --fake --json
 ```
 
-### 3.2 Modelo real (Ollama, 2026-10-30)
+### 3.2 Modelo configurado `llama3.1:8b` sobre el corpus real (2026-10-30)
 
-Modelo disponible en el equipo: `qwen3.5:4b` (el `llama3.1:8b` de `config/llm.toml` no estaba
-descargado). Se ejecutó con el razonamiento desactivado para que el presupuesto de salida no se
-consumiera en el bloque de pensamiento.
+Instalado con `ollama pull llama3.1:8b` (4,9 GB) y verificado con
+`uv run python -m proyecto_modelos_lenguaje.tasks` (`--check` → `ok`). Corpus real: 15.211 unidades.
+
+| Tarea | Estado | Citas | Latencia | Entrada (tok) | Salida (tok) | Respuesta observada |
+|-------|--------|-------|----------|---------------|--------------|---------------------|
+| Q&A «¿Qué productos ofrece Manuelita?» | ok | 3 | 26,84 s | 1.177 | 192 | Respuesta en español con tres fuentes citadas. |
+| Q&A «¿Dónde está la casa matriz?» | ok | 1 | 4,46 s | — | — | Declara que el contexto no especifica la ubicación y cita la unidad disponible; no inventa. |
+| Resumen 8k | ok | 8 | 27,45 s | 9.050 | 701 | Cinco bloques con citas y paquete declarado; 84 unidades en el paquete. |
+| FAQ (10) | 7 × ready, 3 × review | 1–2 por ítem | — | — | — | 70% con citas; los 3 `review` no citaron y quedan para M1-09. |
+
+Código de salida `0` en los cuatro comandos. El resumen usa 9.050 tokens de entrada (plantilla +
+paquete de 8.000) sobre una ventana de 16.384: no hay desbordamiento.
+
+Hallazgo: la primera ejecución del resumen falló al imprimir por consola de Windows (`cp1252`) porque la
+respuesta del modelo contenía un acento combinado (`U+0301`). El CLI ahora reconfigura `stdout`/`stderr`
+a UTF-8 con reemplazo, de modo que un carácter no representable nunca rompe la salida.
+
+### 3.3 Modelo de respaldo `qwen3.5:4b` (2026-10-30)
+
+Se ejecutó con el razonamiento desactivado para que el presupuesto de salida no se consumiera en el
+bloque de pensamiento.
 
 | Tarea | Estado | Citas | Latencia | Respuesta observada (extracto) |
 |-------|--------|-------|----------|-------------------------------|
@@ -66,8 +84,8 @@ accionable (aumentar `llm.max_output_tokens` o usar un modelo sin razonamiento).
 
 ## 4. Pendiente
 
-- Repetir las tres tareas con `llama3.1:8b` y con el corpus de oro real para completar la línea base de
-  M1-06 y la comparación de M1-08.
+- Ampliar la línea base con las 40 preguntas de evaluación (M1-08) y comparar `llama3.1:8b` contra la
+  variante ajustada (M1-09).
 - Registrar la variante final de prompts tras el ajuste con evidencia (M1-09).
 
 ## 5. Observaciones sobre el corpus real (15.211 unidades)

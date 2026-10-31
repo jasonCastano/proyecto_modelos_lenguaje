@@ -27,10 +27,10 @@ pruebas en `tests/`.
 
 **Propósito**: tema nativo y esqueleto del módulo de marca.
 
-- [ ] T001 [P] Crear `.streamlit/config.toml` con el tema nativo: `primaryColor="#387C2B"`, `backgroundColor="#FFFFFF"`, `secondaryBackgroundColor="#F5F7F3"`, `textColor="#14240F"` y `font="sans serif"`.
-- [ ] T002 [P] Crear `tests/contract/test_brand_contract.py` como esqueleto de validación de la paleta contra `specs/009-manuelita-visual-identity/contracts/brand-tokens.schema.json`.
-- [ ] T003 [P] Crear `tests/unit/test_brand.py` como esqueleto de pruebas de contraste, tokens y estados.
-- [ ] T004 [P] Crear `tests/integration/test_app_brand.py` como esqueleto de pruebas `AppTest` de cabecera, badges y pie.
+- [x] T001 [P] Crear `.streamlit/config.toml` con el tema nativo: `primaryColor="#387C2B"`, `backgroundColor="#FFFFFF"`, `secondaryBackgroundColor="#F5F7F3"`, `textColor="#14240F"` y `font="sans serif"`.
+- [x] T002 [P] Crear `tests/contract/test_brand_contract.py` como esqueleto de validación de la paleta contra `specs/009-manuelita-visual-identity/contracts/brand-tokens.schema.json`.
+- [x] T003 [P] Crear `tests/unit/test_brand.py` como esqueleto de pruebas de contraste, tokens y estados.
+- [x] T004 [P] Crear `tests/integration/test_app_brand.py` como esqueleto de pruebas `AppTest` de cabecera, badges y pie.
 
 ---
 
@@ -40,13 +40,13 @@ pruebas en `tests/`.
 
 **⚠ CRÍTICO**: no iniciar una historia de usuario hasta completar esta fase.
 
-- [ ] T005 Implementar en `src/proyecto_modelos_lenguaje/brand.py` el dataclass `BrandPalette` con los trece colores de `data-model.md` y validación de formato `^#[0-9A-F]{6}$`.
-- [ ] T006 Implementar en `src/proyecto_modelos_lenguaje/brand.py` el dataclass `BrandTokens` con `palette`, `contrast_pairs`, `type_scale`, `font_stack`, `radius`, `spacing_unit`, `brand_name`, `project_name`, `tagline`, `attribution` y `affiliation_note`, más `to_dict()`.
-- [ ] T007 Implementar en `src/proyecto_modelos_lenguaje/brand.py` `contrast_ratio(text, background)` con la fórmula WCAG 2.1 y `validate_contrast(tokens)` que devuelve la lista de pares incumplidos.
-- [ ] T008 Implementar en `src/proyecto_modelos_lenguaje/brand.py` el CSS de marca como constante y `inject_brand_styles()` usando `st.html`, con inyección idempotente por sesión.
-- [ ] T009 Implementar en `src/proyecto_modelos_lenguaje/brand.py` `status_variant(key)` con el mapeo de `data-model.md` (color, icono, etiqueta) y `demo` como variante adicional.
-- [ ] T010 [P] Añadir pruebas de contrato en `tests/contract/test_brand_contract.py`: `BrandTokens().to_dict()` valida contra el esquema y todos los hex cumplen el patrón.
-- [ ] T011 [P] Añadir pruebas unitarias en `tests/unit/test_brand.py`: `contrast_ratio` con valores conocidos (negro/blanco = 21), todos los pares cumplen su mínimo, tokens sin URLs ni rutas absolutas y el CSS no contiene `http`.
+- [x] T005 Implementar en `src/proyecto_modelos_lenguaje/brand.py` el dataclass `BrandPalette` con los trece colores de `data-model.md` y validación de formato `^#[0-9A-F]{6}$`.
+- [x] T006 Implementar en `src/proyecto_modelos_lenguaje/brand.py` el dataclass `BrandTokens` con `palette`, `contrast_pairs`, `type_scale`, `font_stack`, `radius`, `spacing_unit`, `brand_name`, `project_name`, `tagline`, `attribution` y `affiliation_note`, más `to_dict()`.
+- [x] T007 Implementar en `src/proyecto_modelos_lenguaje/brand.py` `contrast_ratio(text, background)` con la fórmula WCAG 2.1 y `validate_contrast(tokens)` que devuelve la lista de pares incumplidos.
+- [x] T008 Implementar en `src/proyecto_modelos_lenguaje/brand.py` el CSS de marca como constante y `inject_brand_styles()` usando `st.html`, con inyección idempotente por sesión.
+- [x] T009 Implementar en `src/proyecto_modelos_lenguaje/brand.py` `status_variant(key)` con el mapeo de `data-model.md` (color, icono, etiqueta) y `demo` como variante adicional.
+- [x] T010 [P] Añadir pruebas de contrato en `tests/contract/test_brand_contract.py`: `BrandTokens().to_dict()` valida contra el esquema y todos los hex cumplen el patrón.
+- [x] T011 [P] Añadir pruebas unitarias en `tests/unit/test_brand.py`: `contrast_ratio` con valores conocidos (negro/blanco = 21), todos los pares cumplen su mínimo, tokens sin URLs ni rutas absolutas y el CSS no contiene `http`.
 
 **Punto de control**: tokens, contraste y CSS listos; las historias pueden empezar.
 
@@ -60,14 +60,14 @@ pruebas en `tests/`.
 
 ### Pruebas de la Historia 1
 
-- [ ] T012 [US1] Añadir prueba `AppTest` en `tests/integration/test_app_brand.py`: la app no lanza excepción y renderiza `pml-header` con «Grupo Manuelita» y el nombre del proyecto.
-- [ ] T013 [US1] Añadir prueba unitaria en `tests/unit/test_brand.py`: `header_markdown()` incluye marca, proyecto y lema, y no contiene HTML ejecutable.
+- [x] T012 [US1] Añadir prueba `AppTest` en `tests/integration/test_app_brand.py`: la app no lanza excepción y renderiza `pml-header` con «Grupo Manuelita» y el nombre del proyecto.
+- [x] T013 [US1] Añadir prueba unitaria en `tests/unit/test_brand.py`: `header_markdown()` incluye marca, proyecto y lema, y no contiene HTML ejecutable.
 
 ### Implementación de la Historia 1
 
-- [ ] T014 [US1] Implementar `header_markdown(tokens)` en `src/proyecto_modelos_lenguaje/brand.py` y `render_header()` con la firma tipográfica.
-- [ ] T015 [US1] Sustituir `st.title(PAGE_TITLE)` por `brand.render_header()` y `brand.inject_brand_styles()` en `app.py`, y ajustar `st.set_page_config` (título e icono) sin `unsafe_allow_html`.
-- [ ] T016 [US1] Añadir en `app.py` la barra de estado persistente con datos, modelo y modo demo, reutilizando `metrics`, `current_model_status` y `session_state.demo_mode`.
+- [x] T014 [US1] Implementar `header_markdown(tokens)` en `src/proyecto_modelos_lenguaje/brand.py` y `render_header()` con la firma tipográfica.
+- [x] T015 [US1] Sustituir `st.title(PAGE_TITLE)` por `brand.render_header()` y `brand.inject_brand_styles()` en `app.py`, y ajustar `st.set_page_config` (título e icono) sin `unsafe_allow_html`.
+- [x] T016 [US1] Añadir en `app.py` la barra de estado persistente con datos, modelo y modo demo, reutilizando `metrics`, `current_model_status` y `session_state.demo_mode`.
 
 **Punto de control**: la app abre con identidad reconocible y estado visible.
 
@@ -81,12 +81,12 @@ pruebas en `tests/`.
 
 ### Pruebas de la Historia 2
 
-- [ ] T017 [US2] Añadir prueba en `tests/unit/test_brand.py`: el CSS define las cuatro escalas (`display`, `heading`, `body`, `caption`) y un ancho mínimo fluido sin `min-width` fijo mayor a 320 px.
-- [ ] T018 [US2] Añadir prueba `AppTest` en `tests/integration/test_app_brand.py`: las respuestas se renderizan dentro de contenedores con clase `pml-card` y los metadatos usan la clase de texto secundario.
+- [x] T017 [US2] Añadir prueba en `tests/unit/test_brand.py`: el CSS define las cuatro escalas (`display`, `heading`, `body`, `caption`) y un ancho mínimo fluido sin `min-width` fijo mayor a 320 px.
+- [x] T018 [US2] Añadir prueba `AppTest` en `tests/integration/test_app_brand.py`: las respuestas se renderizan dentro de contenedores con clase `pml-card` y los metadatos usan la clase de texto secundario.
 
 ### Implementación de la Historia 2
 
-- [ ] T019 [US2] Implementar en `brand.py` las reglas CSS de jerarquía (tamaños, pesos, interlineado y espaciado basado en `spacing_unit`) y aplicarlas en `app.py` a respuestas, metadatos y panel.
+- [x] T019 [US2] Implementar en `brand.py` las reglas CSS de jerarquía (tamaños, pesos, interlineado y espaciado basado en `spacing_unit`) y aplicarlas en `app.py` a respuestas, metadatos y panel.
 
 **Punto de control**: la lectura es clara y sin scroll horizontal a 360 px.
 
@@ -100,12 +100,12 @@ pruebas en `tests/`.
 
 ### Pruebas de la Historia 3
 
-- [ ] T020 [US3] Añadir prueba unitaria en `tests/unit/test_brand.py`: `source_card_markdown(citation)` incluye etiqueta, título, ubicación y URL, y declara «sin sección declarada» cuando falta la ubicación.
-- [ ] T021 [US3] Añadir prueba en `tests/unit/test_app.py` (sin romper las existentes): `citation_markdown` conserva la etiqueta `[U#]` y el enlace es clicable.
+- [x] T020 [US3] Añadir prueba unitaria en `tests/unit/test_brand.py`: `source_card_markdown(citation)` incluye etiqueta, título, ubicación y URL, y declara «sin sección declarada» cuando falta la ubicación.
+- [x] T021 [US3] Añadir prueba en `tests/unit/test_app.py` (sin romper las existentes): `citation_markdown` conserva la etiqueta `[U#]` y el enlace es clicable.
 
 ### Implementación de la Historia 3
 
-- [ ] T022 [US3] Implementar `source_card_markdown()` en `brand.py` y refactorizar `render_citations` en `app.py` para usarla en Q&A, Resumen y FAQ.
+- [x] T022 [US3] Implementar `source_card_markdown()` en `brand.py` y refactorizar `render_citations` en `app.py` para usarla en Q&A, Resumen y FAQ.
 
 **Punto de control**: las fuentes se leen como tarjetas en las tres pestañas.
 
@@ -119,12 +119,12 @@ pruebas en `tests/`.
 
 ### Pruebas de la Historia 4
 
-- [ ] T023 [US4] Añadir prueba unitaria en `tests/unit/test_brand.py`: cada variante tiene `label` e `icon` no vacíos y el mapeo conserva `ready|review|missing_evidence` y `ok|fallback|review|error`.
-- [ ] T024 [US4] Añadir prueba `AppTest` en `tests/integration/test_app_brand.py`: un resultado en fallback muestra badge informativo con texto «Sin evidencia» y no un badge de error.
+- [x] T023 [US4] Añadir prueba unitaria en `tests/unit/test_brand.py`: cada variante tiene `label` e `icon` no vacíos y el mapeo conserva `ready|review|missing_evidence` y `ok|fallback|review|error`.
+- [x] T024 [US4] Añadir prueba `AppTest` en `tests/integration/test_app_brand.py`: un resultado en fallback muestra badge informativo con texto «Sin evidencia» y no un badge de error.
 
 ### Implementación de la Historia 4
 
-- [ ] T025 [US4] Implementar `badge_markdown(key, label=None)` en `brand.py` y aplicarlo en `app.py` a `faq_status_badge`, `render_result` y `render_error`, manteniendo los textos actuales.
+- [x] T025 [US4] Implementar `badge_markdown(key, label=None)` en `brand.py` y aplicarlo en `app.py` a `faq_status_badge`, `render_result` y `render_error`, manteniendo los textos actuales.
 
 **Punto de control**: los estados se entienden sin color.
 
@@ -138,12 +138,12 @@ pruebas en `tests/`.
 
 ### Pruebas de la Historia 5
 
-- [ ] T026 [US5] Añadir prueba unitaria en `tests/unit/test_brand.py`: `footer_markdown()` incluye «no afiliado» y la atribución a los titulares de la marca.
-- [ ] T027 [US5] Añadir prueba `AppTest` en `tests/integration/test_app_brand.py`: el pie se renderiza al final de la app con `pml-footer`.
+- [x] T026 [US5] Añadir prueba unitaria en `tests/unit/test_brand.py`: `footer_markdown()` incluye «no afiliado» y la atribución a los titulares de la marca.
+- [x] T027 [US5] Añadir prueba `AppTest` en `tests/integration/test_app_brand.py`: el pie se renderiza al final de la app con `pml-footer`.
 
 ### Implementación de la Historia 5
 
-- [ ] T028 [US5] Implementar `footer_markdown(tokens)` en `brand.py` y `render_footer()` en `app.py`.
+- [x] T028 [US5] Implementar `footer_markdown(tokens)` en `brand.py` y `render_footer()` en `app.py`.
 
 **Punto de control**: la app declara su carácter académico.
 
@@ -153,13 +153,13 @@ pruebas en `tests/`.
 
 **Propósito**: documentación, accesibilidad manual, decisión de arquitectura y bitácora.
 
-- [ ] T029 Crear `docs/decisions/0010-brand-identity.md` con la paleta, la decisión de firma tipográfica, el uso de `st.html` y el aviso de no afiliación.
-- [ ] T030 Actualizar `README.md` con una captura de la nueva identidad y una nota de la paleta.
-- [ ] T031 Ejecutar `uv run ruff check .` y `uv run ruff format --check .` y corregir hallazgos en `brand.py`, `app.py` y `tests/`.
-- [ ] T032 Ejecutar `uv run pytest` y corregir fallos de `test_brand.py`, `test_brand_contract.py`, `test_app_brand.py` y `test_app.py`.
-- [ ] T033 Verificación manual del quickstart: 360 px sin scroll horizontal, escala de grises, videobeam y arranque con `PML_DEMO=1`.
-- [ ] T034 Medir el arranque con `uv run streamlit run app.py` y registrar el incremento respecto de la versión anterior (≤ 2 s).
-- [ ] T035 Regenerar la bitácora con `uv run python .opencode/skills/bitacora/scripts/generate_bitacora.py`.
+- [x] T029 Crear `docs/decisions/0010-brand-identity.md` con la paleta, la decisión de firma tipográfica, el uso de `st.html` y el aviso de no afiliación.
+- [x] T030 Actualizar `README.md` con una captura de la nueva identidad y una nota de la paleta.
+- [x] T031 Ejecutar `uv run ruff check .` y `uv run ruff format --check .` y corregir hallazgos en `brand.py`, `app.py` y `tests/`.
+- [x] T032 Ejecutar `uv run pytest` y corregir fallos de `test_brand.py`, `test_brand_contract.py`, `test_app_brand.py` y `test_app.py`.
+- [ ] T033 Verificación manual del quickstart: 360 px sin scroll horizontal, escala de grises, videobeam y arranque con `PML_DEMO=1`. *(Pendiente: el arranque con `PML_DEMO=1` se midió —salud en 2 s— y `AppTest` cubre la estructura; falta la revisión perceptual en navegador.)*
+- [x] T034 Medir el arranque con `uv run streamlit run app.py` y registrar el incremento respecto de la versión anterior (≤ 2 s).
+- [x] T035 Regenerar la bitácora con `uv run python .opencode/skills/bitacora/scripts/generate_bitacora.py`.
 
 ---
 

@@ -1,0 +1,17 @@
+# Configuración de las tareas LangChain del Módulo 1 (M1-05).
+# Se versiona en Git y se registra junto a cada resultado.
+
+[qa]
+top_k = 8
+token_budget = 6000
+min_score = 0.0
+
+[summary]
+pack = "8000"
+min_citations = 8
+
+[faq]
+limit = 12
+top_k = 5
+min_citations = 1
+question_max_chars = 500

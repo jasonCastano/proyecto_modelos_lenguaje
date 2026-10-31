@@ -1,17 +1,23 @@
 [llm]
-provider = "ollama"
-model = "llama3.1:8b"
-base_url = "http://localhost:11434"
+# Proveedor DeepSeek por API (spec 011). La clave NO va aquí: se lee de DEEPSEEK_API_KEY.
+provider = "deepseek"
+model = "deepseek-flash"
+base_url = "https://api.deepseek.com/v1"
+api_key_env = "DEEPSEEK_API_KEY"
 
 temperature = 0.1
 top_p = 0.9
 max_output_tokens = 1024
-context_window = 16384
+# Debe coincidir con la ventana documentada por el proveedor.
+context_window = 65536
 default_context_pack = "8000"
 
-timeout_seconds = 120
+timeout_seconds = 60
 max_retries = 1
 retry_backoff_seconds = 2.0
-keep_alive = "5m"
-seed = 42
+
+# Tarifas en USD por 1000 tokens. 0.0 = costo no configurado (se informa, no se inventa).
+cost_per_1k_input = 0.0
+cost_per_1k_output = 0.0
+
 language = "es"

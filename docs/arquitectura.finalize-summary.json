@@ -1,30 +1,49 @@
 {
   "schemaVersion": 1,
-  "ok": true,
+  "ok": false,
   "command": "finalize",
-  "status": "pass",
+  "status": "fail",
   "type": "dataflow",
   "quality": "showcase",
   "specification": {
     "path": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "c228d4998c1938c7f2784c3e7a1ef15c4d246a9bc85bd19bf4895bf1ec96bd3d",
-    "bytes": 6641
+    "sha256": "25f5eeb4ca3b5463044f506deb3b1b14b984baa0aa6fa3b7c7ed269be9dfa7ec",
+    "bytes": 6664
   },
   "artifact": {
     "path": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "6062a80c4a77d67508d0c35065981b938209a55e7cf243074db04e28b64abce9",
-    "bytes": 844561
+    "sha256": "37826c9cded094b08be76deed5eb43cf0d28509370e693f3acd3f5ffed6a96fc",
+    "bytes": 844594
   },
   "gates": {
     "validate": "pass",
     "deliver": "pass",
     "check": "pass",
-    "browser-check": "pass"
+    "browser-check": "fail"
   },
-  "diagnostics": [],
+  "failedStage": "browser-check",
+  "diagnostics": [
+    {
+      "code": "viewer/evidence-path-conflict",
+      "severity": "error",
+      "message": "browser-check will not replace the existing unowned evidence path \"D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json\".",
+      "subject": {
+        "artifact": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+        "evidencePath": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+      },
+      "evidence": {
+        "reason": {
+          "code": "ownership-artifact-mismatch"
+        }
+      },
+      "supportedFixes": [
+        "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+      ]
+    }
+  ],
   "diagnosticSummary": {
-    "total": 0,
-    "shown": 0,
+    "total": 1,
+    "shown": 1,
     "truncated": false
   },
   "evidence": {
@@ -43,9 +62,9 @@
     "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 2786,
+  "durationMs": 1760,
   "browserCheck": {
     "requested": true,
-    "ran": true
+    "ran": false
   }
 }

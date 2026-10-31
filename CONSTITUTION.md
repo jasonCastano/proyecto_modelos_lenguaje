@@ -683,7 +683,7 @@ Auditoría con `jan-project-standard` sobre el repositorio:
   Archify (`finalize --quality showcase`); captura enlazada desde el README. Decisión registrada en
   `docs/decisions/0011-project-standard.md`.
 - **Estado técnico**: experiencia web React + FastAPI, tareas LangChain, capas medallion y auditoría E2E
-  operativas; 333 pruebas Python + 12 pruebas web y CI verde.
+  operativas; 323 pruebas Python + 12 pruebas web y CI verde.
 - **Pendiente**: evaluación de 40 preguntas, informe, guion de demo, capturas restantes y tag
   `v0.1.0-modulo1`.
 

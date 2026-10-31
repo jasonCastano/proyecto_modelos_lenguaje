@@ -34,11 +34,10 @@ from proyecto_modelos_lenguaje.brand import (
 )
 from proyecto_modelos_lenguaje.config import PROJECT_ROOT
 from proyecto_modelos_lenguaje.llm import (
-    LLMConfigError,
-    LLMModelMissingError,
-    LLMResponseError,
-    LLMUnavailableError,
+    LLMError,
+    actionable_message,
     build_chat_model,
+    estimate_cost,
     health_check,
     load_llm_config,
 )
@@ -100,13 +99,8 @@ def real_model_cached():
 def model_health_cached() -> dict[str, Any]:
     try:
         return health_check(load_llm_config())
-    except (
-        LLMConfigError,
-        LLMUnavailableError,
-        LLMModelMissingError,
-        LLMResponseError,
-    ) as exc:
-        return {"ok": False, "error": type(exc).__name__, "detail": str(exc)}
+    except LLMError as exc:
+        return {"ok": False, "error": type(exc).__name__, "detail": actionable_message(exc)}
 
 
 def model_for(task: str, demo_mode: bool):
@@ -120,11 +114,24 @@ def current_model_status(demo_mode: bool) -> str:
         return "demo"
     health = model_health_cached()
     if health.get("ok"):
-        return "ollama_ready"
+        return "provider_ready"
     return {
-        "LLMModelMissingError": "model_missing",
-        "LLMUnavailableError": "ollama_unavailable",
-    }.get(str(health.get("error")), "ollama_unavailable")
+        "LLMConfigError": "missing_key",
+        "LLMAuthError": "auth_failed",
+        "LLMModelMissingError": "model_unavailable",
+        "LLMRateLimitError": "rate_limited",
+        "LLMTimeoutError": "provider_timeout",
+        "LLMUnavailableError": "provider_unavailable",
+        "LLMResponseError": "provider_error",
+    }.get(str(health.get("error")), "provider_unavailable")
+
+
+def provider_config():
+    """Best-effort provider configuration for the panel; never raises."""
+    try:
+        return load_llm_config(PROJECT_ROOT)
+    except LLMError:
+        return None
 
 
 def validate_question(question: str) -> str | None:
@@ -188,18 +195,10 @@ def render_error(exc: Exception) -> None:
 def error_message(exc: Exception) -> str:
     if isinstance(exc, TaskError):
         return exc.message
-    if isinstance(exc, LLMUnavailableError):
-        return "Ollama no responde. Ejecuta `ollama serve` o activa el modo demostración."
-    if isinstance(exc, LLMModelMissingError):
-        return "El modelo no está descargado. Ejecuta `ollama pull llama3.1:8b`."
-    if isinstance(exc, LLMResponseError):
-        return (
-            "El modelo no devolvió una respuesta utilizable. Reintenta o usa el modo demostración."
-        )
+    if isinstance(exc, LLMError):
+        return actionable_message(exc)
     if isinstance(exc, RetrievalError):
         return "No se pudo leer la base de conocimiento. Verifica `git lfs pull`."
-    if isinstance(exc, LLMConfigError):
-        return "La configuración del modelo es inválida. Revisa `config/llm.toml`."
     return "Ocurrió un error controlado. Revisa el panel y reintenta."
 
 
@@ -212,6 +211,33 @@ def _reset_session() -> None:
         if key.startswith("_pml_"):
             continue
         del st.session_state[key]
+
+
+def _usage_summary() -> dict[str, Any]:
+    """Aggregate calls, tokens and estimated cost for this session."""
+    results: list[Any] = [
+        turn.get("result")
+        for turn in st.session_state.get("chat_history", [])
+        if turn.get("result") is not None
+    ]
+    summary = st.session_state.get("summary_result")
+    if summary is not None:
+        results.append(summary)
+    calls = len(results)
+    input_tokens = sum(result.input_tokens for result in results)
+    output_tokens = sum(result.output_tokens for result in results)
+    payload: dict[str, Any] = {
+        "calls": calls,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+    }
+    config = provider_config()
+    if config is not None:
+        payload["provider"] = config.provider
+        payload["model"] = config.model
+        payload["cost_configured"] = config.cost_configured
+        payload["estimated_cost_usd"] = estimate_cost(input_tokens, output_tokens, config)
+    return payload
 
 
 def _session_payload(metrics: AppMetrics) -> str:
@@ -248,6 +274,7 @@ def _session_payload(metrics: AppMetrics) -> str:
         "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "demo_mode": bool(st.session_state.get("demo_mode")),
         "corpus": metrics.to_dict(),
+        "usage": _usage_summary(),
         "chat": chat,
         "summary": summary.to_dict() if summary is not None else None,
         "faq": [item.to_dict() for item in faq_items],
@@ -266,9 +293,14 @@ def status_items(metrics: AppMetrics, model_state: str) -> list[tuple[str, str, 
         else ("error", "×", "Datos incompletos")
     )
     model = {
-        "ollama_ready": ("ok", "✓", "Modelo listo"),
-        "ollama_unavailable": ("error", "×", "Ollama no responde"),
-        "model_missing": ("error", "×", "Modelo no descargado"),
+        "provider_ready": ("ok", "✓", "Proveedor listo"),
+        "missing_key": ("error", "×", "Falta la clave"),
+        "auth_failed": ("error", "×", "Clave inválida"),
+        "rate_limited": ("error", "×", "Cuota agotada"),
+        "provider_timeout": ("error", "×", "Sin respuesta"),
+        "provider_unavailable": ("error", "×", "Proveedor no disponible"),
+        "provider_error": ("error", "×", "Error del proveedor"),
+        "model_unavailable": ("error", "×", "Modelo no disponible"),
         "demo": ("demo", "●", "Modo demo"),
     }.get(model_state, ("review", "!", format_status(model_state)))
     items = [data, model]
@@ -283,10 +315,18 @@ def _render_panel(metrics: AppMetrics, demo_mode: bool) -> str:
         st.toggle(
             "Modo demostración (modelo falso)",
             key="demo_mode",
-            help="Usa respuestas de prueba sin Ollama. No representa al modelo real.",
+            help="Usa respuestas de prueba sin red ni costo. No representa al modelo real.",
         )
         demo_mode = bool(st.session_state.demo_mode)
         model_state = current_model_status(demo_mode)
+        if demo_mode:
+            st.info("Modelo de demostración: respuestas enlatadas, sin llamadas remotas.")
+        else:
+            config = provider_config()
+            if config is None:
+                st.caption("Proveedor no configurado. Revisa `config/llm.toml`.")
+            else:
+                st.caption(f"Proveedor: {config.provider} · modelo: `{config.model}`")
         st.subheader("Estado")
         for row in status_rows(metrics, model_status=model_state, demo_mode=demo_mode):
             st.metric(row.label, row.value, help=row.help)
@@ -296,7 +336,7 @@ def _render_panel(metrics: AppMetrics, demo_mode: bool) -> str:
         if metrics.data_status != "complete":
             st.error("Datos incompletos.")
             st.caption(metrics.detail or "Ejecuta `git lfs pull`.")
-        if not demo_mode and model_state in {"ollama_unavailable", "model_missing"}:
+        if not demo_mode and model_state != "provider_ready":
             st.warning(format_status(model_state))
         st.subheader("Última respuesta")
         result = st.session_state.get("last_result")
@@ -313,6 +353,10 @@ def _render_panel(metrics: AppMetrics, demo_mode: bool) -> str:
                 output_tokens=result.output_tokens,
             ):
                 st.metric(row.label, row.value, help=row.help)
+            config = provider_config()
+            if config is not None:
+                amount = estimate_cost(result.input_tokens, result.output_tokens, config)
+                st.caption(f"Costo estimado de la respuesta: {config.format_cost(amount)}")
         st.subheader("Sesión")
         st.download_button(
             "Descargar sesión (JSON)",

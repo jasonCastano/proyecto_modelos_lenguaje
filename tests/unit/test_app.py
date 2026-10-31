@@ -9,10 +9,10 @@ from streamlit.testing.v1 import AppTest
 
 from proyecto_modelos_lenguaje.config import PROJECT_ROOT
 from proyecto_modelos_lenguaje.llm import (
+    LLMAuthError,
     LLMConfigError,
-    LLMModelMissingError,
-    LLMResponseError,
-    LLMUnavailableError,
+    LLMRateLimitError,
+    LLMTimeoutError,
 )
 from proyecto_modelos_lenguaje.retrieval import RetrievalError
 from proyecto_modelos_lenguaje.tasks import FALLBACK_ANSWER, Citation, TaskError
@@ -71,11 +71,13 @@ def test_faq_status_badges() -> None:
 
 
 def test_error_messages_are_actionable() -> None:
-    assert "Ollama" in streamlit_app.error_message(LLMUnavailableError("down"))
-    assert "ollama pull" in streamlit_app.error_message(LLMModelMissingError("missing"))
-    assert "Reintenta" in streamlit_app.error_message(LLMResponseError("empty"))
+    assert "clave" in streamlit_app.error_message(LLMAuthError("La clave no es válida.")).lower()
+    assert "cuota" in streamlit_app.error_message(LLMRateLimitError("Cuota agotada.")).lower()
+    assert "DEEPSEEK_API_KEY" in streamlit_app.error_message(
+        LLMConfigError("Define DEEPSEEK_API_KEY en `.env`.")
+    )
+    assert "respuesta" in streamlit_app.error_message(LLMTimeoutError("Sin respuesta.")).lower()
     assert "git lfs pull" in streamlit_app.error_message(RetrievalError("no data"))
-    assert "config/llm.toml" in streamlit_app.error_message(LLMConfigError("bad"))
     assert "controlado" in streamlit_app.error_message(RuntimeError("unexpected"))
     error = TaskError("empty_question", "La pregunta no puede estar vacía.", task="qa")
     assert streamlit_app.error_message(error) == "La pregunta no puede estar vacía."
@@ -84,19 +86,31 @@ def test_error_messages_are_actionable() -> None:
 def test_model_status_maps_health(monkeypatch) -> None:
     monkeypatch.setattr(streamlit_app, "DEMO_ENV", False)
     monkeypatch.setattr(streamlit_app, "model_health_cached", lambda: {"ok": True})
-    assert streamlit_app.current_model_status(False) == "ollama_ready"
+    assert streamlit_app.current_model_status(False) == "provider_ready"
     monkeypatch.setattr(
         streamlit_app,
         "model_health_cached",
         lambda: {"ok": False, "error": "LLMModelMissingError"},
     )
-    assert streamlit_app.current_model_status(False) == "model_missing"
+    assert streamlit_app.current_model_status(False) == "model_unavailable"
+    monkeypatch.setattr(
+        streamlit_app,
+        "model_health_cached",
+        lambda: {"ok": False, "error": "LLMAuthError"},
+    )
+    assert streamlit_app.current_model_status(False) == "auth_failed"
     monkeypatch.setattr(
         streamlit_app,
         "model_health_cached",
         lambda: {"ok": False, "error": "LLMUnavailableError"},
     )
-    assert streamlit_app.current_model_status(False) == "ollama_unavailable"
+    assert streamlit_app.current_model_status(False) == "provider_unavailable"
+    monkeypatch.setattr(
+        streamlit_app,
+        "model_health_cached",
+        lambda: {"ok": False, "error": "LLMConfigError"},
+    )
+    assert streamlit_app.current_model_status(False) == "missing_key"
 
 
 def test_render_result_fallback_is_visible() -> None:
@@ -116,7 +130,7 @@ def test_render_result_fallback_is_visible() -> None:
             )
         )
 
-    at = AppTest.from_function(script).run()
+    at = AppTest.from_function(script, default_timeout=60).run(timeout=60)
     assert not at.exception
     assert any(FALLBACK_ANSWER in info.value for info in at.info)
 

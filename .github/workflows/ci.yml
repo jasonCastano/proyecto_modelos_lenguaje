@@ -9,6 +9,7 @@ on:
         "003-silver-medallion-layer",
         "004-gold-medallion-layer",
         "005-scrape-empresa-entrypoint",
+        "008-streamlit-qa-app",
       ]
   pull_request:
 
@@ -35,6 +36,9 @@ jobs:
 
       - name: Scrape entrypoint help
         run: uv run python scripts/scrape_empresa.py --help
+
+      - name: App smoke
+        run: PML_DEMO=1 uv run pytest tests/integration/test_app_streamlit.py -q
 
       - name: Gold contracts
         run: uv run pytest tests/contract/gold -q

@@ -9,7 +9,7 @@ default_language_version:
 
 minimum_pre_commit_version: "3.7.0"
 fail_fast: false
-exclude: ^(data/|artifacts/|\.agents/|dist/)
+exclude: ^(data/|artifacts/|\.agents/|dist/|docs/arquitectura\.)
 
 repos:
   # --- Higiene general de archivos ---

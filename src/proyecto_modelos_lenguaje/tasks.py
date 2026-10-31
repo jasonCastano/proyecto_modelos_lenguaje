@@ -1133,8 +1133,21 @@ def _build_model(fake: bool, task: str, root: Path) -> BaseChatModel:
     return build_chat_model(load_llm_config(project_root=root))
 
 
+def _configure_output() -> None:
+    """Make console output UTF-8 safe so non-Latin characters never crash the CLI."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):  # pragma: no cover - depende de la consola
+            continue
+
+
 def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None) -> int:
     """CLI entry point for ``summary``, ``faq`` and ``qa``."""
+    _configure_output()
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
     root = Path(project_root) if project_root is not None else PROJECT_ROOT

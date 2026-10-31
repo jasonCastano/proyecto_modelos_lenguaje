@@ -35,6 +35,7 @@ def test_header_shows_the_institutional_signature(monkeypatch: pytest.MonkeyPatc
     assert "Ingenio Manuelita" in header
     assert "RAG Ingenio Manuelita" in header
     assert "progreso y bienestar" in header
+    assert "No afiliado" in header
 
 
 def test_status_bar_shows_data_model_and_demo(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -52,9 +53,9 @@ def test_footer_declares_academic_scope(monkeypatch: pytest.MonkeyPatch) -> None
     assert "titulares" in footer
 
 
-def test_three_tabs_are_preserved(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_four_tabs_are_preserved(monkeypatch: pytest.MonkeyPatch) -> None:
     app = _run_app(monkeypatch)
-    assert [tab.label for tab in app.tabs] == ["Resumen", "FAQ", "Q&A"]
+    assert [tab.label for tab in app.tabs] == ["Consulta", "Resumen", "FAQ", "Métricas"]
 
 
 def test_citations_render_as_cards(monkeypatch: pytest.MonkeyPatch) -> None:

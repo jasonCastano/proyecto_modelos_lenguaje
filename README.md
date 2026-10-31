@@ -433,14 +433,14 @@ uv run streamlit run app.py
 PML_DEMO=1 uv run streamlit run app.py
 ```
 
-La app abre tres pestañas —**Resumen**, **FAQ** y **Q&A**— con citas, fuentes clicables y panel de métricas.
+La app abre cuatro pestañas: **Consulta** (chat con sugerencias, historial, validación de 500 caracteres y
+tarjetas de fuentes), **Resumen** (paquete de contexto 8k o 32k), **FAQ** (10 a 20 preguntas expandibles con
+estado Lista/Revisar/Sin evidencia) y **Métricas** (tarjetas, gráficos y la explicación de las capas bronce,
+plata y oro). La barra lateral concentra el modo demostración, las métricas del corpus y la descarga o
+limpieza de la sesión. Todo es de solo lectura: la app no escribe en `data/` ni en el repositorio.
+
 El modo demostración usa el modelo falso y no requiere red. La guía completa está en
 [`specs/008-streamlit-qa-app/quickstart.md`](specs/008-streamlit-qa-app/quickstart.md).
-
-El menú lateral añade tres páginas que explican la arquitectura medallion con las cifras reales del
-corpus: **Bronce** (adquisición inmutable, manifiestos y cuarentena), **Plata** (texto limpio, secciones y
-chunks) y **Oro** (unidades, hechos, entidades, conflictos, cobertura y paquetes de contexto). Son solo
-lectura y no modifican `data/`.
 
 #### Identidad visual
 

@@ -286,6 +286,13 @@ blockquote {{
   font-size: {scale["caption"]}px;
   margin: 0;
 }}
+.pml-note {{
+  color: var(--pml-muted);
+  font-size: {scale["caption"]}px;
+  margin: {settings.spacing_unit // 2}px 0 0;
+  border-left: 3px solid var(--pml-lime);
+  padding-left: {settings.spacing_unit}px;
+}}
 .pml-status {{
   display: flex;
   flex-wrap: wrap;
@@ -355,13 +362,14 @@ def _escape(value: str) -> str:
 
 
 def header_html(tokens: BrandTokens | None = None) -> str:
-    """Brand header: institutional signature, project name and tagline."""
+    """Brand header: institutional signature, project name, tagline and academic note."""
     settings = tokens or BrandTokens()
     return (
         '<div class="pml-header">'
         '<p class="pml-brand">Grupo Manuelita <span>· Ingenio Manuelita</span></p>'
         f'<p class="pml-project">{_escape(settings.project_name)}</p>'
         f'<p class="pml-tagline">{_escape(settings.tagline)}</p>'
+        f'<p class="pml-note">{_escape(settings.affiliation_note)}</p>'
         "</div>"
     )
 

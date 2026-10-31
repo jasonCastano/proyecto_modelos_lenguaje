@@ -1,4 +1,4 @@
-"""Helpers so AppTest can render a medallion page in a fresh script context."""
+"""Helpers so AppTest can render the app views in a fresh script context."""
 
 from __future__ import annotations
 
@@ -33,22 +33,60 @@ def sample_metrics(**overrides: Any) -> AppMetrics:
     return AppMetrics(**payload)
 
 
-def render_page(page: str, *, incomplete: bool = False) -> None:
-    """Render one medallion page outside the navigation router."""
+def render_metrics_view() -> None:
+    """Render the Métricas tab with deterministic data."""
+    import app as streamlit_app
+
+    streamlit_app.render_metrics(sample_metrics())
+
+
+def render_data_warning(incomplete: bool) -> None:
+    """Render the corpus warning used above the tabs."""
     import app as streamlit_app
 
     metrics = sample_metrics(
         data_status="incomplete" if incomplete else "complete",
         detail="Falta git lfs pull" if incomplete else None,
     )
-    getattr(streamlit_app, f"render_{page}_page")(metrics)
+    streamlit_app._data_warning(metrics)
 
 
-def render_page_from_env() -> None:
-    """Render the page selected by ``PML_TEST_PAGE`` (used from AppTest scripts)."""
-    import os
+def render_chat_view() -> None:
+    """Render the Consulta tab (chat) with the demo model."""
+    import app as streamlit_app
+    import streamlit as st
 
-    render_page(
-        os.environ["PML_TEST_PAGE"],
-        incomplete=os.environ.get("PML_TEST_INCOMPLETE") == "1",
-    )
+    for key, value in {
+        "chat_history": [],
+        "pending_question": "",
+        "last_question": "",
+        "last_result": None,
+        "qa_result": None,
+        "qa_error": None,
+    }.items():
+        st.session_state.setdefault(key, value)
+    streamlit_app.render_chat(demo_mode=True, data_ready=True)
+
+
+def capture_session_payload() -> None:
+    """Serialise the session (including a failed turn) into session state."""
+    import app as streamlit_app
+    import streamlit as st
+
+    st.session_state["chat_history"] = [
+        {"role": "user", "content": "¿Qué productos ofrece Manuelita?"},
+        {"role": "assistant", "result": None, "error": RuntimeError("boom")},
+    ]
+    st.session_state["captured_payload"] = streamlit_app._session_payload(sample_metrics())
+
+
+def reset_and_capture() -> None:
+    """Clear the session and report which keys survived."""
+    import app as streamlit_app
+    import streamlit as st
+
+    st.session_state["chat_history"] = [{"role": "user", "content": "hola"}]
+    st.session_state["summary_result"] = None
+    st.session_state["_pml_brand_styles"] = True
+    streamlit_app._reset_session()
+    st.session_state["captured_keys"] = sorted(st.session_state.keys())

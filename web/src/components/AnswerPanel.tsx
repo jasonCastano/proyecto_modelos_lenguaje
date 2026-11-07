@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { ApiError, CitedAnswer } from "../lib/types";
 import { statusLabel } from "../lib/format";
 import { SourceList } from "./SourceList";
+import { RetrievedFragments } from "./RetrievedFragments";
 
 function inline(text: string): ReactNode[] {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
@@ -118,6 +119,7 @@ export function AnswerPanel({ answer, error, status, onRetry, onDemo }: AnswerPa
       <div className="answer-body">
         <RichText text={answer.answer} />
       </div>
+      <RetrievedFragments trace={answer.retrieval} />
       <SourceList citations={answer.citations} />
       <div className="answer-actions">
         <button className="btn btn-secondary" type="button" onClick={onRetry}>

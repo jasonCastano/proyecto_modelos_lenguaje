@@ -18,7 +18,7 @@ import tomllib
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
@@ -51,6 +51,9 @@ from .retrieval import (
     select_evidence,
 )
 from .silver.cleaning import estimate_tokens
+
+if TYPE_CHECKING:
+    from .rag.hybrid import HybridRetriever, RetrievalTrace
 
 ChatModel = BaseChatModel
 
@@ -257,6 +260,7 @@ class TaskResult:
     review_required: bool = False
     error: str | None = None
     schema_version: str = SCHEMA_VERSION
+    retrieval: RetrievalTrace | None = None
 
     def __post_init__(self) -> None:
         if self.task not in VALID_TASKS:
@@ -290,6 +294,7 @@ class TaskResult:
             "fallback": self.fallback,
             "review_required": self.review_required,
             "error": self.error,
+            "retrieval": None if self.retrieval is None else self.retrieval.to_dict(),
         }
 
 
@@ -686,6 +691,7 @@ def _fallback_result(
     *,
     omitted: Sequence[str] = (),
     started: float | None = None,
+    retrieval: RetrievalTrace | None = None,
 ) -> TaskResult:
     return TaskResult(
         task=task,
@@ -703,6 +709,7 @@ def _fallback_result(
         fallback=True,
         review_required=False,
         error=None,
+        retrieval=retrieval,
     )
 
 
@@ -716,8 +723,13 @@ def answer_question(
     entity_index: EntityIndex | None = None,
     gold_dir: str | Path | None = None,
     project_root: Path | None = None,
+    retrieval: HybridRetriever | None = None,
 ) -> TaskResult:
-    """Answer one question with gold evidence, verifiable citations and explicit fallback."""
+    """Answer one question with gold evidence, verifiable citations and explicit fallback.
+
+    Con ``retrieval=None`` se usa la selección léxica del Módulo 1. Con un ``HybridRetriever`` la
+    evidencia proviene de la fusión semántica y léxica, y la traza se adjunta al resultado.
+    """
     root = Path(project_root) if project_root is not None else PROJECT_ROOT
     settings = config or load_task_config(project_root=root)
     template = prompt or load_prompt("qa", project_root=root)
@@ -729,17 +741,33 @@ def answer_question(
             entity_index = load_entity_index(directory)
         except RetrievalError:
             entity_index = EntityIndex()
-    selection = select_evidence(
-        text,
-        corpus,
-        entity_index=entity_index,
-        top_k=settings.qa_top_k,
-        token_budget=settings.qa_token_budget,
-        min_score=settings.qa_min_score,
-    )
+    trace: RetrievalTrace | None = None
+    if retrieval is None:
+        selection = select_evidence(
+            text,
+            corpus,
+            entity_index=entity_index,
+            top_k=settings.qa_top_k,
+            token_budget=settings.qa_token_budget,
+            min_score=settings.qa_min_score,
+        )
+    else:
+        selection, trace = retrieval.select(
+            text,
+            top_k=settings.qa_top_k,
+            token_budget=settings.qa_token_budget,
+            min_score=settings.qa_min_score,
+        )
     started = time.perf_counter()
     if not selection.selected:
-        return _fallback_result("qa", template, model, omitted=(), started=started)
+        return _fallback_result(
+            "qa",
+            template,
+            model,
+            omitted=selection.omitted_unit_ids,
+            started=started,
+            retrieval=trace,
+        )
 
     context = build_context(selection.selected)
     system_text = template.render(
@@ -772,6 +800,7 @@ def answer_question(
             fallback=False,
             review_required=True,
             error="missing_citations",
+            retrieval=trace,
         )
 
     return TaskResult(
@@ -790,6 +819,7 @@ def answer_question(
         fallback=False,
         review_required=bool(invalid),
         error=None,
+        retrieval=trace,
     )
 
 

@@ -4,10 +4,52 @@ import {
   type FaqResponse,
   type HealthStatus,
   type Mode,
+  type RetrievalFragment,
+  type RetrievalTrace,
   type ShowcaseResponse,
 } from "./types";
 
 const API_BASE = "/api";
+
+function asNumber(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function normalizeFragment(raw: Partial<RetrievalFragment>): RetrievalFragment {
+  return {
+    unit_id: String(raw.unit_id ?? ""),
+    title: String(raw.title ?? ""),
+    url: String(raw.url ?? ""),
+    score: asNumber(raw.score),
+    semantic_score:
+      typeof raw.semantic_score === "number" ? raw.semantic_score : null,
+    lexical_score:
+      typeof raw.lexical_score === "number" ? raw.lexical_score : null,
+    origin: raw.origin ?? "semantic",
+    status: raw.status ?? "used",
+    reason: raw.reason ?? null,
+  };
+}
+
+function normalizeTrace(raw: Partial<RetrievalTrace> | null | undefined): RetrievalTrace | null {
+  if (!raw || !Array.isArray(raw.fragments)) {
+    return null;
+  }
+  return {
+    mode: raw.mode ?? "none",
+    semantic_available: Boolean(raw.semantic_available),
+    candidates: asNumber(raw.candidates, raw.fragments.length),
+    threshold: asNumber(raw.threshold),
+    fragments: raw.fragments.map(normalizeFragment),
+    used_unit_ids: Array.isArray(raw.used_unit_ids) ? raw.used_unit_ids : [],
+    notes: Array.isArray(raw.notes) ? raw.notes : [],
+    elapsed_ms: asNumber(raw.elapsed_ms),
+  };
+}
+
+function normalizeAnswer(payload: CitedAnswer): CitedAnswer {
+  return { ...payload, retrieval: normalizeTrace(payload.retrieval) };
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
@@ -65,7 +107,7 @@ export function ask(
     method: "POST",
     body: JSON.stringify({ question, mode }),
     signal,
-  });
+  }).then(normalizeAnswer);
 }
 
 export function summarize(

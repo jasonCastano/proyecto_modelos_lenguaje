@@ -29,11 +29,20 @@
     },
     "task": {
       "type": "string",
-      "enum": ["summary", "faq", "qa"]
+      "enum": [
+        "summary",
+        "faq",
+        "qa"
+      ]
     },
     "status": {
       "type": "string",
-      "enum": ["ok", "fallback", "review", "error"]
+      "enum": [
+        "ok",
+        "fallback",
+        "review",
+        "error"
+      ]
     },
     "answer": {
       "type": "string",
@@ -92,42 +101,81 @@
       "type": "boolean"
     },
     "error": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "retrieval": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Traza de recuperación del Módulo 2 (spec 013). Opcional: null cuando se usa la recuperación léxica del Módulo 1."
     }
   },
   "allOf": [
     {
       "if": {
-        "properties": {"status": {"const": "fallback"}},
-        "required": ["status"]
+        "properties": {
+          "status": {
+            "const": "fallback"
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "then": {
         "properties": {
-          "fallback": {"const": true},
-          "citations": {"maxItems": 0}
+          "fallback": {
+            "const": true
+          },
+          "citations": {
+            "maxItems": 0
+          }
         }
       }
     },
     {
       "if": {
-        "properties": {"status": {"const": "ok"}},
-        "required": ["status"]
+        "properties": {
+          "status": {
+            "const": "ok"
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "then": {
         "properties": {
-          "fallback": {"const": false},
-          "citations": {"minItems": 1}
+          "fallback": {
+            "const": false
+          },
+          "citations": {
+            "minItems": 1
+          }
         }
       }
     },
     {
       "if": {
-        "properties": {"status": {"const": "error"}},
-        "required": ["status"]
+        "properties": {
+          "status": {
+            "const": "error"
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "then": {
         "properties": {
-          "error": {"type": "string", "minLength": 1}
+          "error": {
+            "type": "string",
+            "minLength": 1
+          }
         }
       }
     }
@@ -175,24 +223,40 @@
           }
         },
         "page_start": {
-          "type": ["integer", "null"],
+          "type": [
+            "integer",
+            "null"
+          ],
           "minimum": 1
         },
         "page_end": {
-          "type": ["integer", "null"],
+          "type": [
+            "integer",
+            "null"
+          ],
           "minimum": 1
         },
         "time_start": {
-          "type": ["number", "null"],
+          "type": [
+            "number",
+            "null"
+          ],
           "minimum": 0
         },
         "time_end": {
-          "type": ["number", "null"],
+          "type": [
+            "number",
+            "null"
+          ],
           "minimum": 0
         },
         "authority": {
           "type": "string",
-          "enum": ["first_party", "open_data", "third_party"]
+          "enum": [
+            "first_party",
+            "open_data",
+            "third_party"
+          ]
         },
         "citation": {
           "type": "string",

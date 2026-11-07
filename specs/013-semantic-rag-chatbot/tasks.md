@@ -193,7 +193,7 @@ informe declara si el híbrido supera la línea base léxica.
 - [X] T055 Medir la latencia extremo a extremo de 10 preguntas en modo `real` y compararla con la línea base del Módulo 1; registrar media y p95 en `docs/evaluacion_modulo2.md` y verificar SC-006 (≤ 1.2× la línea base).
 - [X] T056 Ejecutar `uv run ruff check .`, `uv run pytest -q`, `cd web && npm run build` y `make check`; corregir lo que falle en `src/`, `tests/` o `web/` y confirmar que la suite completa tarda menos de 3 minutos sin red (SC-008).
 - [X] T057 Verificar higiene del repositorio: `git status --short` sin `data/module2/`, sin `.env`, sin capturas temporales y con `.env.example` sin claves; confirmar con `git log --all -S "sk-" -- .env.example` que ninguna clave entró al historial.
-- [ ] T058 Abrir un PR en borrador desde `013-semantic-rag-chatbot` hacia `main` con resumen, evidencias de `specs/013-semantic-rag-chatbot/quickstart.md` y resultados de `docs/evaluacion_modulo2.md`; **no mergear**: la aprobación y el merge los hace el propietario.
+- [X] T058 Abrir un PR en borrador desde `013-semantic-rag-chatbot` hacia `main` con resumen, evidencias de `specs/013-semantic-rag-chatbot/quickstart.md` y resultados de `docs/evaluacion_modulo2.md`; **no mergear**: la aprobación y el merge los hace el propietario.
 
 ---
 

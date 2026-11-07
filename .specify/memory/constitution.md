@@ -166,4 +166,9 @@ constitución. Las desviaciones se documentan y aprueban explícitamente; el inc
 justificado bloquea la integración. La revisión de cumplimiento se realiza al cierre de cada
 fase y en cada entrega evaluable del curso.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-10-27
+**Alineación con `CONSTITUTION.md`**: el documento canónico prevalece. Desde su v1.3.0 (2026-11-07) la Fase 2
+es «Agente con memoria y enrutador» (base vectorial, memoria por `thread_id`, enrutamiento documental vs.
+estructurado, RAG Chain vs. Agent, blindaje XML, HITL y evaluación Recall@10/nDCG@10); todo plan de Spec Kit
+DEBE verificar la puerta de la Fase 2 definida allí.
+
+**Version**: 1.0.1 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-11-07

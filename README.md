@@ -3,9 +3,9 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-335%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-408%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
-[![Status](https://img.shields.io/badge/status-M%C3%B3dulo%201%20en%20progreso-yellow)](CONSTITUTION.md)
+[![Status](https://img.shields.io/badge/status-M%C3%B3dulo%202%20en%20progreso-yellow)](CONSTITUTION.md)
 
 Sistema de preguntas y respuestas (Q&A) construido sobre información pública de **Ingenio Manuelita S.A.**,
 empresa agroindustrial del Valle del Cauca, Colombia. El proyecto evoluciona desde una base de conocimiento
@@ -152,13 +152,16 @@ versionan capturas temporales de la auditoría.
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 335 pruebas offline |
+| Pruebas | ✅ | 408 pruebas offline (391 Python + 17 web) |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
 | App web + LangChain | ✅ | Frontend React + API FastAPI; hero, consola RAG y showcase del Módulo 1 |
 | Auditoría E2E | ✅ | Playwright: 360–1920 px, demo, fallback y foco; `make e2e` |
-| Evaluación de 40 preguntas | 🟡 | Pendiente |
-| Informe del Módulo 1 | 🟡 | Pendiente |
+| Evaluación de 40 preguntas | 🟡 | Herramienta lista (`module1_eval`); falta la ejecución real y la calificación humana |
+| Informe del Módulo 1 | 🟡 | Borrador en `docs/informe_modulo1.md`; resultados pendientes de M1-08 |
+| Tag `v0.1.0-modulo1` | 🟡 | Pendiente de cerrar la puerta de la Fase 1 |
+| Módulo 2 — recuperación semántica (spec 013) | ✅ | PR #34 fusionado; `docs/evaluacion_modulo2.md` (ver hallazgos en `docs/revision_pr34.md`) |
+| Módulo 2 — memoria, enrutador y agente (spec 014) | 🟡 | Especificado; `specs/014-rag-agent-memory-router/` |
 | CI y Pull Requests | ✅ | 25+ PRs fusionados; CI verde |
 | Gobernanza del repositorio | ✅ | PR/issue templates, labels, Dependabot, pre-commit y Makefile |
 | Cobertura de los 24 ítems | ✅ | 24/24 evaluados por la capa oro con evidencia |
@@ -182,7 +185,7 @@ versionan capturas temporales de la auditoría.
 | Oro | 0,20 GB |
 | Cuarentena | 8,93 GB |
 | Datos totales | 9,52 GB (límite: 10 GB) |
-| Pruebas offline | 335 |
+| Pruebas offline | 408 |
 
 ## Fuentes de datos
 
@@ -500,6 +503,9 @@ uv run pml curate purge --run 2026-10-curation-01 --expired --confirm
 uv run python .opencode/skills/bitacora/scripts/generate_bitacora.py
 ```
 
+En Claude Code, la misma bitácora se invoca con `/bitacora` (skill en `.claude/skills/bitacora/`, que
+reutiliza este generador).
+
 Genera un archivo fechado en `bitacora/` con el estado de Git local/remoto, el avance, los pendientes y los
 próximos pasos.
 
@@ -606,10 +612,11 @@ referencian por manifiesto y hash.
 │   ├── arquitectura.html          # Diagrama interactivo
 │   └── decisions/                 # ADRs
 ├── scripts/                       # Entradas operativas
-├── specs/                         # Especificaciones, planes y tareas (001–012)
+├── specs/                         # Especificaciones, planes y tareas (001–014)
 ├── tests/                         # Unitarias, integración, contrato y E2E
 ├── .github/                       # PR/issue templates, CI, labels y Dependabot
-├── .opencode/                     # Comandos y skill de bitácora
+├── .opencode/                     # Comandos y skill de bitácora (generador compartido)
+├── .claude/skills/                # Skills de Claude Code (speckit-*, bitacora)
 ├── AGENTS.md                      # Contexto para asistentes LLM
 ├── CONSTITUTION.md                # Fuente única de verdad
 ├── CONTRIBUTING.md                # Guía de contribución
@@ -623,7 +630,7 @@ referencian por manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 335 pruebas unitarias, de integración y de contrato.
+- **Pruebas offline**: 408 pruebas unitarias, de integración y de contrato.
 - **Verificación completa**: `make check` ejecuta Ruff, pytest, Vitest y build web; CI separa Python y web.
 - **Auditoría visual**: `make audit` recorre 7 perfiles y 3 estados de datos con Playwright.
 - **Lint**: `uv run ruff check .` sin hallazgos.

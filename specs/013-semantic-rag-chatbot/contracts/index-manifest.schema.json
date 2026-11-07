@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jasonCastano/proyecto_modelos_lenguaje/specs/013-semantic-rag-chatbot/contracts/index-manifest.schema.json",
+  "title": "IndexManifest",
+  "description": "Manifiesto del índice vectorial del Módulo 2. Se escribe junto a vectors.npy e index.sqlite3 y se valida al cargar el índice.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "model",
+    "dimension",
+    "normalize",
+    "max_tokens",
+    "count",
+    "gold_sha256",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identificador del modelo de embeddings, p. ej. intfloat/multilingual-e5-small."
+    },
+    "dimension": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Ancho de la matriz de vectores."
+    },
+    "normalize": {
+      "type": "boolean",
+      "description": "true si cada vector tiene norma L2 = 1."
+    },
+    "max_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Límite de tokens por fragmento del modelo."
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Número de vectores y de filas de metadatos."
+    },
+    "gold_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 del knowledge_units.jsonl usado para construir el índice."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha de construcción en ISO-8601 UTC."
+    },
+    "library": {
+      "type": "string",
+      "description": "Biblioteca y versión usada para embeber, p. ej. fastembed 0.7.1."
+    },
+    "gold_path": {
+      "type": "string",
+      "description": "Ruta relativa al repositorio del archivo de oro usado."
+    },
+    "command": {
+      "type": "string",
+      "description": "Comando exacto que construyó el índice."
+    }
+  },
+  "examples": [
+    {
+      "schema_version": 1,
+      "model": "intfloat/multilingual-e5-small",
+      "dimension": 384,
+      "normalize": true,
+      "max_tokens": 512,
+      "count": 15211,
+      "gold_sha256": "0f3c2a9d6b1e4c7a8d5f0b2e6c9a4d7f1b8e3c5a0d2f6b9e4c7a1d8f3b6e9c2a",
+      "created_at": "2026-11-06T18:42:00Z",
+      "library": "fastembed 0.7.1",
+      "gold_path": "data/gold/knowledge_units.jsonl",
+      "command": "uv run python -m proyecto_modelos_lenguaje.rag index build"
+    }
+  ]
+}

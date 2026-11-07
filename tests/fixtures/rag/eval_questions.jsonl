@@ -1,0 +1,40 @@
+{"question_id": "p01", "question": "¿Cómo evita la empresa que sus desechos líquidos lleguen a los ríos?", "expected_unit_ids": ["unit_8537ad9053e21e86"], "type": "paraphrase", "notes": ""}
+{"question_id": "p02", "question": "¿De qué manera reutiliza el agua en el cultivo de palma?", "expected_unit_ids": ["unit_5f60e2f836e754a1"], "type": "paraphrase", "notes": ""}
+{"question_id": "p03", "question": "¿Qué subproductos obtiene del tallo azucarero?", "expected_unit_ids": ["unit_f77f231c18db5855"], "type": "paraphrase", "notes": ""}
+{"question_id": "p04", "question": "¿Cómo apoya a los agricultores de menor escala?", "expected_unit_ids": ["unit_82f4f63481fcd10a", "unit_642fce10507c598c"], "type": "paraphrase", "notes": ""}
+{"question_id": "p05", "question": "¿Qué hace por la formación de los niños en Palmira?", "expected_unit_ids": ["unit_7e59e553ba634091"], "type": "paraphrase", "notes": ""}
+{"question_id": "p06", "question": "¿Qué acciones ambientales adelanta para conservar bosques?", "expected_unit_ids": ["unit_102eab52bc5bc370"], "type": "paraphrase", "notes": ""}
+{"question_id": "p07", "question": "¿Cómo gobierna los asuntos de sostenibilidad?", "expected_unit_ids": ["unit_4b5beda398884784"], "type": "paraphrase", "notes": ""}
+{"question_id": "p08", "question": "¿Qué bebida alcohólica vende en el exterior?", "expected_unit_ids": ["unit_593610333f0f660a"], "type": "paraphrase", "notes": ""}
+{"question_id": "p09", "question": "¿Cómo reduce la contaminación del aire por quema de caña?", "expected_unit_ids": ["unit_2ed97740d64eb035"], "type": "paraphrase", "notes": ""}
+{"question_id": "p10", "question": "¿Qué portafolio ofrece a las industrias de alimentos?", "expected_unit_ids": ["unit_77e3f71ed00f3ebd"], "type": "paraphrase", "notes": ""}
+{"question_id": "p11", "question": "¿Qué derivados del aceite de palma comercializa?", "expected_unit_ids": ["unit_98edbb9cf955fd3b"], "type": "paraphrase", "notes": ""}
+{"question_id": "p12", "question": "¿Cómo mide los temas relevantes para sus grupos de interés?", "expected_unit_ids": ["unit_2f3dcfc83ad8956a"], "type": "paraphrase", "notes": ""}
+{"question_id": "f01", "question": "¿Cuántas hectáreas de caña tiene Manuelita en Colombia?", "expected_unit_ids": ["unit_117e6edefbf678f9"], "type": "figure", "notes": ""}
+{"question_id": "f02", "question": "¿Cuántas toneladas diarias de caña muele la operación colombiana?", "expected_unit_ids": ["unit_117e6edefbf678f9"], "type": "figure", "notes": ""}
+{"question_id": "f03", "question": "¿A cuánto ascendió la inversión social en 2024?", "expected_unit_ids": ["unit_a98751627bbb6fdd"], "type": "figure", "notes": ""}
+{"question_id": "f04", "question": "¿Cuántos millones invierte en programas sociales y ambientales?", "expected_unit_ids": ["unit_56e39e575b51458e"], "type": "figure", "notes": ""}
+{"question_id": "f05", "question": "¿Cuántos jóvenes accedieron a educación superior con la Fundación?", "expected_unit_ids": ["unit_1b645a64b6b22de4"], "type": "figure", "notes": ""}
+{"question_id": "f06", "question": "¿Cuántas hectáreas de caña se cultivan en los dos campos?", "expected_unit_ids": ["unit_920e1d7ff60abf40"], "type": "figure", "notes": ""}
+{"question_id": "f07", "question": "¿Cuántas hectáreas tiene Aceites Manuelita en San Carlos de Guaroa?", "expected_unit_ids": ["unit_482c2b3017b82b9f"], "type": "figure", "notes": ""}
+{"question_id": "f08", "question": "¿Cuántos proveedores agrícolas integra Manuelita?", "expected_unit_ids": ["unit_5060717494638ae9"], "type": "figure", "notes": ""}
+{"question_id": "f09", "question": "¿Cuántos millones invirtió en energía renovable en el Valle?", "expected_unit_ids": ["unit_d3716013b5b30eb4"], "type": "figure", "notes": ""}
+{"question_id": "f10", "question": "¿Qué déficit presentó la Fundación Manuelita en 2023?", "expected_unit_ids": ["unit_857444ded3b90d76"], "type": "figure", "notes": ""}
+{"question_id": "n01", "question": "¿Qué es la certificación BONSUCRO?", "expected_unit_ids": ["unit_bea0095c114f50fe"], "type": "proper_noun", "notes": ""}
+{"question_id": "n02", "question": "¿Qué certificación tiene Manuelita Aceites y Energía?", "expected_unit_ids": ["unit_6bba5c26bd9e722c"], "type": "proper_noun", "notes": ""}
+{"question_id": "n03", "question": "¿Qué dijo Harold Eder sobre la certificación ISCC?", "expected_unit_ids": ["unit_8449f7162522d271"], "type": "proper_noun", "notes": ""}
+{"question_id": "n04", "question": "¿Qué compromiso asumió Agroindustrial Laredo?", "expected_unit_ids": ["unit_2ed97740d64eb035"], "type": "proper_noun", "notes": ""}
+{"question_id": "n05", "question": "¿Qué certificaciones RSPO tiene Manuelita?", "expected_unit_ids": ["unit_74226476a8606f7f"], "type": "proper_noun", "notes": ""}
+{"question_id": "n06", "question": "¿Qué producto es Manuelita Pulverizada?", "expected_unit_ids": ["unit_267816458c65ab22"], "type": "proper_noun", "notes": ""}
+{"question_id": "n07", "question": "¿En qué municipio opera Aceites Manuelita desde hace 25 años?", "expected_unit_ids": ["unit_482c2b3017b82b9f"], "type": "proper_noun", "notes": ""}
+{"question_id": "n08", "question": "¿En qué premio ocupó el décimo puesto en 2018?", "expected_unit_ids": ["unit_99bf122f11c2e227"], "type": "proper_noun", "notes": ""}
+{"question_id": "e01", "question": "How does Manuelita manage wastewater?", "expected_unit_ids": ["unit_8537ad9053e21e86"], "type": "english", "notes": ""}
+{"question_id": "e02", "question": "What certifications does Manuelita hold?", "expected_unit_ids": ["unit_bea0095c114f50fe", "unit_74226476a8606f7f"], "type": "english", "notes": ""}
+{"question_id": "e03", "question": "How many hectares of sugarcane does the company cultivate?", "expected_unit_ids": ["unit_920e1d7ff60abf40"], "type": "english", "notes": ""}
+{"question_id": "e04", "question": "How does the company support small farmers?", "expected_unit_ids": ["unit_642fce10507c598c"], "type": "english", "notes": ""}
+{"question_id": "e05", "question": "What renewable energy does Manuelita sell?", "expected_unit_ids": ["unit_d3716013b5b30eb4"], "type": "english", "notes": ""}
+{"question_id": "o01", "question": "¿Cuál es la receta de arepas de la abuela?", "expected_unit_ids": [], "type": "out_of_corpus", "notes": ""}
+{"question_id": "o02", "question": "¿Quién ganó el mundial de fútbol de 2022?", "expected_unit_ids": [], "type": "out_of_corpus", "notes": ""}
+{"question_id": "o03", "question": "¿Cuánto cuesta un tiquete de avión a Marte?", "expected_unit_ids": [], "type": "out_of_corpus", "notes": ""}
+{"question_id": "o04", "question": "¿Cuál es la capital de Mongolia?", "expected_unit_ids": [], "type": "out_of_corpus", "notes": ""}
+{"question_id": "o05", "question": "¿Qué modelo de auto eléctrico recomienda Manuelita?", "expected_unit_ids": [], "type": "out_of_corpus", "notes": ""}

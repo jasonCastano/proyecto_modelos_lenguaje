@@ -5,16 +5,16 @@
   "status": "fail",
   "type": "dataflow",
   "quality": "showcase",
-  "startedAt": "2026-10-31T18:33:52.561Z",
+  "startedAt": "2026-11-07T11:17:09.732Z",
   "specification": {
-    "path": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "25f5eeb4ca3b5463044f506deb3b1b14b984baa0aa6fa3b7c7ed269be9dfa7ec",
-    "bytes": 6664
+    "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
+    "sha256": "4184217d3fe37b8872af98814a3186916113c680d885a0a6d714a7b74642665c",
+    "bytes": 7796
   },
   "artifact": {
-    "path": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "37826c9cded094b08be76deed5eb43cf0d28509370e693f3acd3f5ffed6a96fc",
-    "bytes": 844594
+    "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+    "sha256": "0df94b3db9240e950cac0dec3ba054a325b706976b2b9fb7b16cefba777e150d",
+    "bytes": 848459
   },
   "stages": {
     "validate": {
@@ -24,15 +24,15 @@
       "execution": "embedded-in-deliver",
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "C:\\Users\\JCastano\\AppData\\Local\\Temp\\opencode\\archify-src\\archify\\bin\\archify.mjs",
+        "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
         "deliver",
         "dataflow",
-        "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-        "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+        "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
+        "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "--quality",
         "showcase",
         "--repo-root",
-        "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje",
+        "D:\\proyecto_modelos_lenguaje",
         "--json"
       ],
       "receipt": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "25f5eeb4ca3b5463044f506deb3b1b14b984baa0aa6fa3b7c7ed269be9dfa7ec",
-          "bytes": 6664
+          "sha256": "4184217d3fe37b8872af98814a3186916113c680d885a0a6d714a7b74642665c",
+          "bytes": 7796
         },
         "validation": {
           "checksPassed": 9,
@@ -56,35 +56,35 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 1050,
+      "durationMs": 1801,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "C:\\Users\\JCastano\\AppData\\Local\\Temp\\opencode\\archify-src\\archify\\bin\\archify.mjs",
+        "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
         "deliver",
         "dataflow",
-        "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-        "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+        "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
+        "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "--quality",
         "showcase",
         "--repo-root",
-        "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje",
+        "D:\\proyecto_modelos_lenguaje",
         "--json"
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "c8812666-aa76-430e-8c57-a40f25e65220",
+        "receiptId": "56dec305-bf35-421d-858c-f3353758ffce",
         "ok": true,
         "command": "deliver",
         "type": "dataflow",
-        "input": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-        "output": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+        "input": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
+        "output": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "specification": {
-          "sha256": "25f5eeb4ca3b5463044f506deb3b1b14b984baa0aa6fa3b7c7ed269be9dfa7ec",
-          "bytes": 6664
+          "sha256": "4184217d3fe37b8872af98814a3186916113c680d885a0a6d714a7b74642665c",
+          "bytes": 7796
         },
         "artifact": {
-          "sha256": "37826c9cded094b08be76deed5eb43cf0d28509370e693f3acd3f5ffed6a96fc",
-          "bytes": 844594
+          "sha256": "0df94b3db9240e950cac0dec3ba054a325b706976b2b9fb7b16cefba777e150d",
+          "bytes": 848459
         },
         "validation": {
           "checksPassed": 9,
@@ -97,8 +97,8 @@
         "evidence": {
           "verified": true,
           "repository": "https://github.com/jasonCastano/proyecto_modelos_lenguaje",
-          "revision": "9a6f5054d2956f8047c1662adb21c55edc96a140",
-          "references": 13
+          "revision": "6e9e799addad4eb455a539ca277739b8da841629",
+          "references": 16
         },
         "update": {
           "status": "unavailable",
@@ -116,20 +116,20 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 300,
+      "durationMs": 351,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "C:\\Users\\JCastano\\AppData\\Local\\Temp\\opencode\\archify-src\\archify\\bin\\archify.mjs",
+        "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
         "check",
-        "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+        "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "--require-provenance"
       ],
       "receipt": {
         "ok": true,
-        "file": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+        "file": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "artifact": {
-          "sha256": "37826c9cded094b08be76deed5eb43cf0d28509370e693f3acd3f5ffed6a96fc",
-          "bytes": 844594
+          "sha256": "0df94b3db9240e950cac0dec3ba054a325b706976b2b9fb7b16cefba777e150d",
+          "bytes": 848459
         },
         "checks": [
           {
@@ -196,7 +196,7 @@
             "containerBorderRuns": 0,
             "labelRouteClearanceIssues": 0,
             "labelCanvasOverflowIssues": 0,
-            "minLabelRouteClearance": 37.9,
+            "minLabelRouteClearance": 37,
             "desktopReadabilityIssues": 0,
             "viewportHeightIssues": 0,
             "minProjectedNodeTextPx": 6.095505617977528,
@@ -204,8 +204,8 @@
             "routesOverSuggestedBends": 0,
             "maxStretch": 1,
             "routesOverSuggestedStretch": 0,
-            "minSegmentPx": 46.5,
-            "minInteriorSegmentPx": 114,
+            "minSegmentPx": 37.3,
+            "minInteriorSegmentPx": 105,
             "shortSegmentCount": 0,
             "shortEndpointSegmentCount": 0,
             "shortInteriorSegmentCount": 0,
@@ -241,23 +241,23 @@
             },
             "minimumSourceTextPx": 7,
             "minimumProjectedTextPx": 6.095505617977528,
-            "semanticTextCount": 23
+            "semanticTextCount": 27
           },
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "c8812666-aa76-430e-8c57-a40f25e65220"
+        "deliveryReceiptId": "56dec305-bf35-421d-858c-f3353758ffce"
       }
     },
     "browser-check": {
       "status": "fail",
       "exitCode": 1,
-      "durationMs": 64,
+      "durationMs": 11127,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
-        "C:\\Users\\JCastano\\AppData\\Local\\Temp\\opencode\\archify-src\\archify\\bin\\archify.mjs",
+        "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
         "browser-check",
-        "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+        "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "--json",
         "--require-provenance"
       ],
@@ -270,36 +270,34 @@
         "status": "fail",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "c8812666-aa76-430e-8c57-a40f25e65220",
+        "deliveryReceiptId": "56dec305-bf35-421d-858c-f3353758ffce",
         "artifact": {
-          "path": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-          "sha256": "37826c9cded094b08be76deed5eb43cf0d28509370e693f3acd3f5ffed6a96fc",
-          "bytes": 844594
+          "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+          "sha256": "0df94b3db9240e950cac0dec3ba054a325b706976b2b9fb7b16cefba777e150d",
+          "bytes": 848459
         },
         "state": {
           "detail": "read",
           "motion": "still"
         },
         "chrome": {
-          "status": "not-checked",
-          "executable": null
+          "status": "available",
+          "executable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
         },
         "diagnostics": [
           {
-            "code": "viewer/evidence-path-conflict",
+            "code": "viewer/temp-cleanup-incomplete",
             "severity": "error",
-            "message": "browser-check will not replace the existing unowned evidence path \"D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json\".",
+            "message": "Browser cleanup could not safely finish; inspect the reported retained path.",
             "subject": {
-              "artifact": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-              "evidencePath": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+              "artifact": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html"
             },
             "evidence": {
-              "reason": {
-                "code": "ownership-artifact-mismatch"
-              }
+              "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis\".",
+              "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis"
             },
             "supportedFixes": [
-              "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+              "resolve the reported process or filesystem failure; verify directory ownership before manual cleanup"
             ]
           }
         ],
@@ -330,7 +328,7 @@
           "receipt": "arquitectura.browser-check.json",
           "files": []
         },
-        "error": "browser-check will not replace the existing unowned evidence path \"D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json\"."
+        "error": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis\"."
       }
     }
   },
@@ -340,38 +338,36 @@
   },
   "diagnostics": [
     {
-      "code": "viewer/evidence-path-conflict",
+      "code": "viewer/temp-cleanup-incomplete",
       "severity": "error",
-      "message": "browser-check will not replace the existing unowned evidence path \"D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json\".",
+      "message": "Browser cleanup could not safely finish; inspect the reported retained path.",
       "subject": {
-        "artifact": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-        "evidencePath": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+        "artifact": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html"
       },
       "evidence": {
-        "reason": {
-          "code": "ownership-artifact-mismatch"
-        }
+        "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis\".",
+        "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis"
       },
       "supportedFixes": [
-        "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+        "resolve the reported process or filesystem failure; verify directory ownership before manual cleanup"
       ]
     }
   ],
   "evidence": {
-    "receipt": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize.json",
-    "summaryReceipt": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize-summary.json",
-    "browserCheckReceipt": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+    "receipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize.json",
+    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize-summary.json",
+    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
   },
   "visualReview": "not-requested",
   "failedStage": "browser-check",
-  "finishedAt": "2026-10-31T18:33:54.321Z",
-  "durationMs": 1760,
+  "finishedAt": "2026-11-07T11:17:23.458Z",
+  "durationMs": 13726,
   "update": {
     "status": "current",
     "installedVersion": "3.2.0",
     "availableVersion": "3.2.0",
     "releaseNotes": null,
-    "checkedAt": "2026-10-31T14:59:43.668Z",
+    "checkedAt": "2026-11-07T11:10:45.806Z",
     "source": "cache",
     "noticeRequired": false,
     "noticeText": null

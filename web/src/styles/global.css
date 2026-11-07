@@ -1452,3 +1452,89 @@ main {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Traza de recuperación (spec 013) */
+.fragments {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-3);
+}
+
+.fragments-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.fragments-badge {
+  font-family: var(--font-display);
+  font-size: var(--step--1);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--forest-deep);
+  background: var(--forest-soft);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+}
+
+.fragments-meta {
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.fragments-list,
+.fragments-omitted {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.fragments-list li,
+.fragments-omitted li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+  font-size: var(--step--1);
+}
+
+.fragment-score {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--forest);
+  min-width: 2.6rem;
+}
+
+.fragment-origin,
+.fragment-reason {
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+}
+
+.fragments-empty {
+  margin: var(--space-2) 0 0;
+  color: var(--ink-soft);
+  font-size: var(--step--1);
+}
+
+.fragments-notes {
+  margin: var(--space-2) 0 0;
+  padding-left: 1.1rem;
+  color: var(--warning);
+  font-size: var(--step--1);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-top: var(--space-2);
+  color: var(--forest);
+  font-size: var(--step--1);
+  text-decoration: underline;
+  cursor: pointer;
+}

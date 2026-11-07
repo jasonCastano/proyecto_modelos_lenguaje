@@ -1,6 +1,36 @@
 export type Mode = "real" | "demo";
 export type TaskKind = "qa" | "summary" | "faq";
 export type AnswerStatus = "ok" | "fallback" | "error";
+export type RetrievalMode = "semantic" | "lexical" | "hybrid" | "none";
+export type FragmentOrigin = "semantic" | "lexical" | "both";
+export type FragmentStatus =
+  | "used"
+  | "omitted_threshold"
+  | "omitted_budget"
+  | "omitted_duplicate";
+
+export interface RetrievalFragment {
+  unit_id: string;
+  title: string;
+  url: string;
+  score: number;
+  semantic_score: number | null;
+  lexical_score: number | null;
+  origin: FragmentOrigin;
+  status: FragmentStatus;
+  reason: string | null;
+}
+
+export interface RetrievalTrace {
+  mode: RetrievalMode;
+  semantic_available: boolean;
+  candidates: number;
+  threshold: number;
+  fragments: RetrievalFragment[];
+  used_unit_ids: string[];
+  notes: string[];
+  elapsed_ms: number;
+}
 
 export interface Citation {
   label: string;
@@ -34,6 +64,7 @@ export interface CitedAnswer {
   cost_usd?: number | null;
   review_required: boolean;
   error?: ApiError | null;
+  retrieval?: RetrievalTrace | null;
 }
 
 export interface FaqItem {

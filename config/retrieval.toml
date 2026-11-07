@@ -1,0 +1,24 @@
+# Configuración de la recuperación semántica del Módulo 2 (spec 013).
+# Se versiona en Git y se registra en el manifiesto del índice.
+
+[embedding]
+# Modelo multilingüe multilingüe pequeño de la familia E5, ejecutado en local con ONNX.
+model = "intfloat/multilingual-e5-small"
+dimension = 384
+normalize = true
+max_tokens = 512
+query_prefix = "query: "
+passage_prefix = "passage: "
+
+[index]
+path = "data/module2/index"
+batch_size = 64
+
+[hybrid]
+semantic_top_k = 12
+lexical_top_k = 8
+min_similarity = 0.30
+weight_semantic = 0.65
+weight_lexical = 0.35
+both_bonus = 0.05
+dedup_similarity = 0.98

@@ -19,6 +19,7 @@ from .api_models import (
     FaqRequest,
     FaqResponse,
     HealthStatus,
+    RetrievalTraceModel,
     SummaryRequest,
 )
 from .api_models import (
@@ -38,6 +39,11 @@ from .llm import (
     health_check,
     load_llm_config,
 )
+from .rag.config import load_retrieval_config
+from .rag.embeddings import EmbeddingProfile, build_embedder
+from .rag.errors import IndexInvalidError, IndexUnavailableError
+from .rag.hybrid import HybridRetriever
+from .rag.index import load_index
 from .retrieval import (
     RetrievalError,
     load_entity_index,
@@ -57,6 +63,7 @@ from .tasks import (
 )
 
 GOLD_DIR = PROJECT_ROOT / "data" / "gold"
+DEMO_INDEX = PROJECT_ROOT / "tests" / "fixtures" / "rag" / "index"
 WEB_DIST = PROJECT_ROOT / "web" / "dist"
 APP_TITLE = "RAG Ingenio Manuelita"
 
@@ -88,6 +95,32 @@ def _model(task: str, mode: str):
     if mode == "demo":
         return build_scripted_model(task)
     return build_chat_model(load_llm_config())
+
+
+@lru_cache(maxsize=2)
+def _retriever(mode: str) -> HybridRetriever | None:
+    """Build (once per mode) the hybrid retriever; never fail the request."""
+    try:
+        config = load_retrieval_config()
+        profile = EmbeddingProfile.from_config(config.embedding)
+        notes: list[str] = []
+        index_dir = DEMO_INDEX if mode == "demo" else config.index_dir
+        try:
+            index = load_index(index_dir, profile)
+        except (IndexUnavailableError, IndexInvalidError) as exc:
+            index = None
+            notes.append(f"Índice no utilizable: {exc}")
+        kind = "hash" if mode == "demo" else "fastembed"
+        return HybridRetriever(
+            _units(),
+            index=index,
+            embedder=build_embedder(profile, kind=kind),
+            entity_index=_entity_index(),
+            config=config,
+            notes=tuple(notes),
+        )
+    except Exception:
+        return None
 
 
 def _citation(citation: Citation) -> CitationModel:
@@ -138,6 +171,9 @@ def _to_answer(result: TaskResult, query_id: str, mode: str) -> CitedAnswer:
         cost_usd=_cost(result, mode),
         review_required=result.review_required,
         error=error,
+        retrieval=(
+            None if result.retrieval is None else RetrievalTraceModel(**result.retrieval.to_dict())
+        ),
     )
 
 
@@ -319,6 +355,7 @@ def ask(payload: AskRequest):
             entity_index=_entity_index(),
             gold_dir=GOLD_DIR,
             project_root=PROJECT_ROOT,
+            retrieval=_retriever(payload.mode),
         )
     except Exception as exc:
         return _exception_response(exc)

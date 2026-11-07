@@ -36,6 +36,8 @@ data/quarantine/
 data/*/_meta/cache/
 data/*/_meta/smoke/
 data/module1/
+# Índice vectorial del Módulo 2: artefacto derivado, reproducible con `rag index build`.
+data/module2/
 data.zip
 *.sqlite3-wal
 *.sqlite3-shm

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Mode = Literal["real", "demo"]
 TaskKind = Literal["qa", "summary", "faq"]
@@ -12,6 +12,9 @@ AnswerStatus = Literal["ok", "fallback", "error"]
 Authority = Literal["first_party", "third_party", "unknown"]
 SectionStatus = Literal["done", "partial", "pending"]
 DataStatus = Literal["complete", "incomplete", "unknown"]
+RetrievalMode = Literal["semantic", "lexical", "hybrid", "none"]
+FragmentOrigin = Literal["semantic", "lexical", "both"]
+FragmentStatus = Literal["used", "omitted_threshold", "omitted_budget", "omitted_duplicate"]
 
 
 class RequestModel(BaseModel):
@@ -63,6 +66,42 @@ class ApiError(BaseModel):
     action: str
 
 
+class RetrievalFragmentModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    unit_id: str
+    title: str = ""
+    url: str = ""
+    score: float = Field(ge=0.0, le=1.0)
+    semantic_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    lexical_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    origin: FragmentOrigin
+    status: FragmentStatus
+    reason: str | None = None
+
+
+class RetrievalTraceModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    mode: RetrievalMode
+    semantic_available: bool
+    candidates: int = Field(ge=0)
+    threshold: float = Field(ge=0.0, le=1.0)
+    fragments: list[RetrievalFragmentModel] = Field(default_factory=list)
+    used_unit_ids: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+    elapsed_ms: float = Field(ge=0.0)
+
+    @model_validator(mode="after")
+    def _used_ids_match_fragments(self) -> RetrievalTraceModel:
+        used = [fragment.unit_id for fragment in self.fragments if fragment.status == "used"]
+        if used != list(self.used_unit_ids):
+            raise ValueError("used_unit_ids debe coincidir con los fragmentos usados")
+        if len(used) != len(set(used)):
+            raise ValueError("used_unit_ids no puede contener duplicados")
+        return self
+
+
 class CitedAnswer(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -79,6 +118,7 @@ class CitedAnswer(BaseModel):
     cost_usd: float | None = None
     review_required: bool = False
     error: ApiError | None = None
+    retrieval: RetrievalTraceModel | None = None
 
 
 class FaqItem(BaseModel):

@@ -10,6 +10,7 @@ provienen de ejecuciones reales; no se estiman a mano.
 | Q&A | `prompts/qa.md` | 1.0 | `d09765504709` | rol, tarea, contexto, reglas, formato de cita, sin evidencia |
 | Resumen | `prompts/summary.md` | 1.0 | `f6cd198ba529` | idem |
 | FAQ | `prompts/faq.md` | 1.0 | `9bafea161abb` | idem |
+| Q&A línea base (evaluación) | `prompts/qa_zero_shot.md` | 0.1-zero-shot | `474d712010c9` | idem, mínimas; sin reglas anti-alucinación |
 
 El hash completo se registra en cada resultado (`prompt_sha256`) y se puede reproducir con
 `uv run python -c "from proyecto_modelos_lenguaje.tasks import load_prompt; print(load_prompt('qa').sha256)"`.
@@ -27,7 +28,8 @@ El hash completo se registra en cada resultado (`prompt_sha256`) y se puede repr
 | `faq.top_k` | 5 | `config/tasks.toml` |
 | `faq.min_citations` | 1 | `config/tasks.toml` |
 | `faq.question_max_chars` | 500 | `config/tasks.toml` |
-| `llm.model` | `llama3.1:8b` | `config/llm.toml` |
+| `llm.provider` / `llm.model` | `deepseek` / `deepseek-flash` (antes `llama3.1:8b`, hasta 2026-10-31) | `config/llm.toml` |
+| `llm.top_p` | 0.9 | `config/llm.toml` |
 | `llm.temperature` | 0.1 | `config/llm.toml` |
 | `llm.max_output_tokens` | 1.024 | `config/llm.toml` |
 
@@ -104,7 +106,10 @@ transporte simulado: éxito, errores y tokens.
 - Verificar con la clave real los caminos de error: ausente, inválida y sin red (T046).
 - Confirmar el identificador `deepseek-flash` y las tarifas por token con la cuenta del proveedor.
 - Ampliar la línea base con las 40 preguntas de evaluación (M1-08) y comparar el proveedor contra la
-  variante ajustada (M1-09).
+  variante ajustada (M1-09). Herramienta disponible desde 2026-11-07:
+  `uv run python -m proyecto_modelos_lenguaje.module1_eval` compara `prompts/qa_zero_shot.md` (línea
+  base zero-shot) con `prompts/qa.md` (final) y escribe `docs/evaluacion_modulo1.{md,json}`; la
+  corrección, coherencia y alucinación se califican a mano.
 - Registrar la variante final de prompts tras el ajuste con evidencia (M1-09).
 
 ## 5. Observaciones sobre el corpus real (15.211 unidades)

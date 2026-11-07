@@ -9,7 +9,7 @@
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "9a6f5054d2956f8047c1662adb21c55edc96a140"
+      "revision": "6e9e799addad4eb455a539ca277739b8da841629"
     }
   },
   "stages": [
@@ -142,7 +142,7 @@
         {
           "path": "src/proyecto_modelos_lenguaje/rag/hybrid.py",
           "line": 1,
-          "end_line": 380
+          "end_line": 383
         }
       ]
     },
@@ -200,12 +200,12 @@
         {
           "path": "src/proyecto_modelos_lenguaje/rag/index.py",
           "line": 1,
-          "end_line": 520
+          "end_line": 517
         },
         {
           "path": "src/proyecto_modelos_lenguaje/rag/embeddings.py",
           "line": 1,
-          "end_line": 230
+          "end_line": 228
         }
       ]
     }

@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.2.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-10-31
+**Versión**: 1.3.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-07
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -30,6 +30,11 @@ El proyecto construye un asistente de preguntas y respuestas sobre información 
 con un corpus trazable y una arquitectura que evoluciona desde una base de conocimiento con Prompt Engineering
 (Módulo 1) hacia un sistema RAG con embeddings, memoria y recuperación (Módulo 2), y finalmente un chatbot
 evaluado y desplegable.
+
+La cátedra define el Proyecto Integrador en tres fases con pesos **30 % · 30 % · 40 %**:
+**Fase 1** ingesta y base semántica; **Fase 2** agente con memoria y enrutador (base vectorial/RAG, memoria
+multi-turno y enrutamiento documental vs. estructurado SQL/CSV); **Fase 3** productización y despliegue (FastAPI /
+Agent OS, persistencia de estado y canales reales como WhatsApp o Telegram).
 
 Esta constitución es obligatoria para los dos integrantes. Aplica a código, datos, prompts, modelos,
 interfaces, pruebas, documentación, repositorio, presentación y uso de herramientas de IA.
@@ -181,7 +186,8 @@ specs/                         # especificaciones, planes y contratos
 tests/                         # unitarias, integración, contrato y visuales
 docs/                          # alcance, decisiones, arquitectura, informe, prompt log
 .github/                       # PR/issue templates, CI, labels y Dependabot
-.opencode/                     # comandos y skill de bitácora
+.opencode/                     # comandos y skill de bitácora (generador compartido)
+.claude/skills/                # skills de Claude Code (speckit-*, bitacora)
 AGENTS.md                      # contexto para asistentes LLM
 CONTRIBUTING.md                # guía de contribución
 Makefile                       # interfaz de comandos
@@ -417,52 +423,93 @@ LangChain y una experiencia web React/FastAPI.
 
 ---
 
-### Fase 2 — Módulo 2: Embeddings, memoria y RAG
+### Fase 2 — Módulo 2: Agente con memoria y enrutador (30 %)
 
-**Objetivo**: evolucionar el Q&A a un sistema RAG con recuperación semántica, embeddings y memoria persistente.
+**Objetivo**: evolucionar el Q&A a un **agente RAG** con base vectorial, memoria multi-turno y enrutamiento
+documental vs. estructurado (SQL/CSV), blindado contra inyección indirecta y con Human-in-the-Loop.
+
+**Especificaciones**: `specs/013-semantic-rag-chatbot/` (recuperación semántica e híbrida; PR #34, ADR
+`0014-semantic-rag.md`) y `specs/014-rag-agent-memory-router/` (memoria, enrutador, agente, blindaje y evaluación
+ampliada; ADR `0015-module2-scope.md`). Fuentes: diapositiva «Proyecto Integrador», Clases 6, 7 y 9; análisis
+del 2026-11-07.
+
+**Estado de la implementación (2026-11-07)**: el PR #34 implementa la recuperación semántica en
+`src/proyecto_modelos_lenguaje/rag/` con `intfloat/multilingual-e5-small` (384 d, 512 tokens, ONNX vía
+`fastembed`), índice `numpy` + SQLite con manifiesto en `data/module2/` (no versionado), fusión híbrida con
+respaldo léxico, traza visible en API e interfaz y evaluación Recall@5/MRR en `docs/evaluacion_modulo2.md`.
+Memoria, enrutador, agente y HITL siguen pendientes (spec 014).
 
 **Reglas mínimas**:
 
-1. **Embeddings**: elegir un modelo multilingüe adecuado para español y justificarlo por calidad, costo y
-   latencia. Registrar dimensión, normalización y límite de tokens.
-2. **Base vectorial**: elegir Chroma, FAISS, pgvector u otra, con justificación y persistencia reproducible.
-3. **Chunking**: definir tamaño, solapamiento, metadatos y estrategia de recuperación; documentar el impacto
-   en la calidad.
-4. **Recuperación**: medir al menos Recall@k, MRR y calidad de las citas; comparar con la línea base del
-   Módulo 1.
-5. **RAG**: el LLM responde solo con los fragmentos recuperados, cita fuentes y declara cuando no hay
-   evidencia.
-6. **Memoria**: si se implementa memoria conversacional, definir qué se persiste, por cuánto tiempo y cómo se
-   elimina; no almacenar datos sensibles.
-7. **Integración**: la app debe permitir ver la pregunta, los fragmentos recuperados, la respuesta y las
-   fuentes.
-8. **Evaluación**: conjunto de preguntas ampliado, métricas de recuperación y fidelidad, análisis de errores.
-9. **Informe y demo** actualizados; tag `v0.2.0-modulo2`.
+1. **Embeddings**: modelo multilingüe elegido con evidencia de **retrieval en español** (MTEB filtrado por
+   Retrieval/español; un promedio general alto no basta), costo y latencia. Registrar modelo, versión, dimensión,
+   normalización, prefijos de consulta/documento y límite de tokens. El embedding **no es intercambiable**: cambiar
+   de modelo obliga a reindexar.
+2. **Base vectorial**: embebida y persistente, con filtro por metadatos. La cátedra recomienda Chroma o FAISS;
+   el índice propio `numpy` + SQLite del PR #34 se acepta por decisión registrada (ADR 0014) siempre que se
+   exponga al agente como retriever/herramienta de LangChain. El índice es una **vista derivada** del
+   oro: se reconstruye con un comando y no se versiona como fuente; su manifiesto (modelo, fragmentación, fecha,
+   hash del oro) sí.
+3. **Chunking**: tamaño, solapamiento (10–20 %) y metadatos definidos y medidos; parámetros ANN (`ef_search`,
+   `nprobe`) calibrados con datos del proyecto y documentados en la arquitectura.
+4. **Recuperación híbrida**: comparar denso, léxico (BM25 del Módulo 1) e híbrido con pesos calibrados.
+5. **Memoria a corto plazo**: estado por `thread_id` con checkpointer persistente (SQLite en local);
+   recorte/resumen de hilos largos.
+6. **Memoria a largo plazo** (opcional, P3): Store entre hilos con namespace por usuario; declarar qué se guarda,
+   retención y borrado; nunca datos sensibles.
+7. **Enrutador**: puerta de decisión que clasifica cada mensaje en directo, documental, estructurado o fuera de
+   alcance, con confianza; con confianza baja pide aclaración. El origen estructurado (tabla SQL/CSV) se deriva
+   de hechos y entidades del oro con cita por fila; acceso **solo lectura**.
+8. **RAG Chain vs. RAG Agent**: implementar ambas variantes (recuperar siempre vs. retriever como `@tool` con
+   `create_agent`) y compararlas en calidad, latencia y número de llamadas.
+9. **Blindaje**: contexto recuperado aislado con etiquetas XML como dato; prueba adversarial con un documento
+   malicioso que DEBE pasar. Regla de oro HITL: **lectura automática, escritura con aprobación**
+   (`HumanInTheLoopMiddleware` / `interrupt()` + `Command(resume=...)` con el mismo `thread_id`).
+10. **Evaluación de retrieval**: 20–30 consultas reales con documento correcto y ruta esperada etiquetados; comparar
+    al menos dos configuraciones con **Recall@10, nDCG@10** y MRR, más precisión del enrutador, fidelidad de citas,
+    latencia y llamadas. Línea base: BM25 del Módulo 1.
+11. **Evaluación de generación y observabilidad**: fidelidad y relevancia con Ragas y trazas con LangSmith (Clase
+    10), sin enviar claves ni datos sensibles; las pruebas offline siguen pasando sin red.
+12. **Integración**: la app muestra por turno pregunta, ruta, fragmentos con puntaje, respuesta, fuentes e
+    historial; el modo demostración cubre todo sin red ni clave.
+13. **Prompts** nuevos (enrutador, agente, resumen de memoria) versionados en `prompts/` y `docs/prompt_log.md`.
+14. **Informe y demo** actualizados; tag `v0.2.0-modulo2`.
 
-**Estado de la implementación (2026-11-06)**: la recuperación semántica está implementada en
-`src/proyecto_modelos_lenguaje/rag/` con `intfloat/multilingual-e5-small` (384 dimensiones, 512 tokens,
-ONNX vía `fastembed`), índice en `numpy` + SQLite con manifiesto reproducible en `data/module2/`, fusión
-híbrida con respaldo léxico y traza visible en la API y la interfaz. La evaluación está en
-`docs/evaluacion_modulo2.md` y la decisión en `docs/decisions/0014-semantic-rag.md`. La memoria
-conversacional sigue fuera de alcance y el tag `v0.2.0-modulo2` se crea al cerrar la fase.
+**Opcionales que suman**: puerta System One (Jev `Noul`/`Choice`) para screening/routing; exportar el oro como
+bundle Open Knowledge Format (LLM Wiki).
 
-**Nota**: si la especificación oficial del Módulo 2 difiere, se enmienda esta constitución antes de iniciar la
-fase; no se improvisa sobre la marcha.
+**Puerta de la Fase 2**:
+
+- [ ] Índice vectorial reconstruible desde un clon limpio, con manifiesto.
+- [ ] Conjunto de 20–30 consultas etiquetadas y reporte comparativo (Recall@10, nDCG@10, MRR) vs. Módulo 1.
+- [ ] Memoria multi-turno por `thread_id` persistente entre reinicios.
+- [ ] Enrutador documental/estructurado/directo/fuera de alcance con ≥90 % de acierto en el conjunto.
+- [ ] Chain vs. Agent comparados en latencia y llamadas.
+- [ ] Prueba de inyección indirecta y flujo HITL en verde.
+- [ ] App con fragmentos, ruta y fuentes; modo demo completo; `make check` y CI verdes.
+- [ ] Informe, prompt log, ADRs y demo actualizados; tag `v0.2.0-modulo2`.
+
+**Nota**: a 2026-11-07 no hay especificación ni rúbrica oficial de la Entrega 2. Cuando se publiquen, se enmienda
+esta constitución y las specs 013/014 antes de continuar; no se improvisa sobre la marcha.
 
 ---
 
-### Fase 3 — Módulos siguientes: chatbot final
+### Fase 3 — Módulo 3: Productización y despliegue (40 %)
 
-**Objetivo**: convertir el Q&A/RAG en un chatbot evaluado y desplegable.
+**Objetivo**: convertir el agente RAG en un producto desplegado: FastAPI / Agent OS, persistencia de estado y
+canales reales (WhatsApp o Telegram), evaluado y observable.
 
 **Reglas mínimas**:
 
+0. **Canal real**: al menos un canal de mensajería (WhatsApp o Telegram) además de la web, con persistencia de
+   estado productiva (p. ej. PostgreSQL) y secretos fuera del repositorio.
 1. **Conversación**: manejo de contexto, memoria, turnos y fallback.
 2. **Guardrails**: rechazo de preguntas fuera de alcance, protección contra prompt injection y contenido
    dañino.
 3. **Evaluación**: conjunto de evaluación con métricas de fidelidad, relevancia, latencia y costo; pruebas de
    regresión.
-4. **Despliegue**: Hugging Face Spaces u otro entorno reproducible; variables de entorno seguras.
+4. **Despliegue**: FastAPI / Agent Server en contenedor, Hugging Face Spaces u otro entorno reproducible;
+   variables de entorno seguras.
 5. **Observabilidad**: logs sin datos sensibles, trazabilidad de fuentes y monitoreo de errores.
 6. **Documentación final**: README, informe, arquitectura, limitaciones y créditos.
 7. **Demo final** y tag de release.
@@ -545,6 +592,17 @@ se puntúa de 1.0 a 5.0 y la nota es `1.0 + 4 × (puntos / 100)`.
 | Pipeline de scraping | 20% | `uv run`, robots/sitemap, capas, deduplicación, JSONL/Markdown |
 | Revisión en el IDE | 15% | Proyecto abierto en VS Code, Cursor o Antigravity; estructura, ejecución, diff y decisión explicada en vivo |
 
+### 8.3 Pesos del Proyecto Integrador y Módulo 2 (provisional)
+
+| Fase | Peso | Evidencia esperada |
+|------|------|--------------------|
+| Fase 1 — Ingesta y base semántica | 30 % | Rúbrica del Módulo 1 (§8.1 y §8.2) |
+| Fase 2 — Agente con memoria y enrutador | 30 % | Puerta de la Fase 2; specs 013 y 014; reporte de retrieval |
+| Fase 3 — Productización y despliegue | 40 % | Canal real, despliegue, evaluación y observabilidad |
+
+La rúbrica detallada del Módulo 2 no se ha publicado; mientras tanto se asume la misma estructura del Módulo 1
+(repositorio, PRs, README, demo en vivo sin diapositivas) más las evidencias de la puerta de la Fase 2.
+
 ---
 
 ## 9. Documentación obligatoria
@@ -560,6 +618,8 @@ se puntúa de 1.0 a 5.0 y la nota es `1.0 + 4 × (puntos / 100)`.
 | `CONSTITUTION.md` | Reglas del proyecto | Ratificada y versionada |
 | `specs/` | Especificaciones y planes por fase | Antes de implementar |
 | `docs/demo.md` | Guion de 12+3 minutos y checklist | Antes de la sustentación |
+| `docs/evaluacion_modulo2.md` | Conjunto etiquetado, Recall@10, nDCG@10, MRR, enrutador, Chain vs. Agent | Cierre del Módulo 2 |
+| `docs/memoria.md` | Qué se persiste, retención, borrado y privacidad | Al implementar memoria |
 
 ---
 
@@ -696,6 +756,77 @@ Auditoría con `jan-project-standard` sobre el repositorio:
 
 ---
 
+## Anexo E — Análisis del material actualizado y ruta del Módulo 2 al 2026-11-07 (no normativo)
+
+**Identidad verificada**: GitHub `jasonCastano` (Jason Alejandro Castaño, `jasonale3007@gmail.com`), remoto
+`jasonCastano/proyecto_modelos_lenguaje`.
+
+**Material nuevo del curso**: `TAAML_diapositivas.md` (deck consolidado, extraído 2026-11-07), Clase 7 (bases
+vectoriales y ANN), Clase 9 (RAG avanzado, Jev y HITL) y su página de Campus. Sin documento oficial de la
+Entrega 2.
+
+**Requerimientos nuevos o precisados**:
+
+| # | Requerimiento | Fuente | Antes (v1.2.0) | Acción |
+|---|---------------|--------|----------------|--------|
+| 1 | Pesos 30/30/40 y nombre de la Fase 2 «Agente con memoria y enrutador» | Proyecto Integrador | No registrado | §1, §8.3 |
+| 2 | Enrutamiento documental vs. estructurado (SQL/CSV) | Proyecto Integrador | Ausente | Regla 7 Fase 2 |
+| 3 | Memoria corta (checkpointer/`thread_id`) y larga (Store) con retención | Clase 6 | Opcional y genérica | Reglas 5–6 |
+| 4 | Embeddings elegidos por retrieval en español (MTEB) | Clase 6 | Genérico | Regla 1 |
+| 5 | Base vectorial embebida persistente, índice como vista derivada | Clase 7 | Genérico | Regla 2 |
+| 6 | 20–30 consultas etiquetadas, Recall@10 y nDCG@10, dos configuraciones | Clase 7 | Recall@k y MRR | Regla 10 |
+| 7 | RAG Chain vs. RAG Agent (latencia, llamadas) | Clase 9 | Ausente | Regla 8 |
+| 8 | Inyección indirecta con etiquetas XML y prueba maliciosa | Clase 9 | Principio IV sin prueba | Regla 9 |
+| 9 | Human-in-the-Loop: lectura automática, escritura con aprobación | Clase 9 | Ausente | Regla 9 |
+| 10 | Ragas + LangSmith para evaluación y observabilidad | Clase 9 (próxima sesión) | Ausente | Regla 11 |
+| 11 | Fase 3 con canales WhatsApp/Telegram y Agent OS | Proyecto Integrador | Solo HF Spaces | Fase 3 |
+| 12 | Jev (System One) y LLM Wiki/OKF | Clase 9 | — | Opcionales |
+
+**Pendientes heredados del Módulo 1** (bitácora 2026-11-06): evaluación de 40 preguntas, informe, guion de demo,
+capturas y tag `v0.1.0-modulo1`. Se cierran antes de iniciar la implementación de la Fase 2 (puerta de fase).
+
+**Ruta de trabajo del Módulo 2** (cada paso por rama + PR revisado):
+
+1. Cerrar la puerta de la Fase 1 y etiquetar `v0.1.0-modulo1`.
+2. Revisar y fusionar el PR #34 (spec 013: índice semántico e híbrido) con aprobación cruzada formal.
+3. `/speckit-clarify` → `/speckit-plan` → `/speckit-tasks` sobre `specs/014-rag-agent-memory-router/`.
+4. Ampliar el conjunto de evaluación del PR #34 con ruta esperada y añadir Recall@10 y nDCG@10; citar evidencia
+   MTEB-es en la ADR 0014.
+5. Comparar léxica, semántica e híbrida en un solo reporte.
+6. Tabla estructurada derivada del oro + enrutador (directo/documental/estructurado/fuera de alcance).
+7. Agente con el retriever como herramienta, memoria por `thread_id` y comparación Chain vs. Agent.
+8. Blindaje: aislamiento XML, prueba de documento malicioso y HITL.
+9. App: conversación multi-turno con ruta, fragmentos y fuentes; modo demo completo; E2E.
+10. Ragas + LangSmith, informe, prompt log, ADRs, demo y tag `v0.2.0-modulo2`.
+
+---
+
+## Anexo F — Auditoría del proyecto al 2026-11-07 (no normativo)
+
+Auditoría con `jan-project-standard` (`new_project.py --audit`, con `PYTHONIOENCODING=utf-8` en Windows),
+`make check` y la API de GitHub. Ejecutada por Jason Alejandro Castaño con asistencia de Claude Code.
+
+| # | Hallazgo | Severidad | Regla | Acción |
+|---|----------|-----------|-------|--------|
+| 1 | Estándar: 0 FALTA, 7 OK, 18 DIFIERE (personalización legítima del proyecto) | Info | Skill | Ninguna |
+| 2 | `make check` verde: 323 pruebas Python (12 omitidas) + 13 web, Ruff limpio, build web OK | Info | §3.8 | Badges y cifras del README actualizados (336) |
+| 3 | `main` sin protección de rama ni rulesets: se permite push directo | Alta | §4.2 | Corregido: PR con 1 aprobación, checks `test` y `web`, sin force-push |
+| 4 | Los 32 PRs fusionados tienen 0 aprobaciones formales en GitHub | Alta | Principios VI y VIII, §4.2 | Pendiente: aprobar con «Approve» el PR del otro integrante desde ahora |
+| 5 | Colisión de numeración: spec `013-*` y ADR `0014-*` locales vs. PR #34 | Media | §5 transversal | Corregido: spec renumerada a 014 y ADR a 0015 |
+| 6 | Evaluación de 40 preguntas (M1-08) e informe sin hacer; la sustentación del 31-oct ya pasó | Alta | §5 Fase 1, §6 | Borrador de `docs/informe_modulo1.md`; evaluador `module1_eval` (zero-shot vs. final); falta ejecución real y calificación humana |
+| 7 | Sin tag `v0.1.0-modulo1` ni release | Media | §4.5 | Pendiente tras M1-08 |
+| 8 | PR #34 fusionado con 0 revisiones formales; reproduce sus cifras, pero no reporta Recall@10/nDCG@10 y el umbral 0,30 no abstiene fuera de corpus (similitudes 0,80–0,87) | Alta | §5 Fase 2 reglas 7 y 10 | Revisión en `docs/revision_pr34.md`; acciones en spec 014 (FR-011, FR-020) |
+| 9 | `.specify/memory/constitution.md` en v1.0.0, sin las enmiendas 1.1–1.3 | Baja | Prevalencia | Nota de alineación añadida (v1.0.1) |
+| 10 | `docs/demo.md` inexistente | Media | §9 | Borrador escrito; falta ensayo cronometrado |
+| 11 | Repositorio sin *topics* ni *homepage* en GitHub | Baja | README profesional | Opcional |
+| 12 | `docs/prompt_log.md` §2 aún declara `llama3.1:8b` y no hay línea base real con DeepSeek (T045/T046) | Media | §3.6 | Modelo corregido y prompt zero-shot registrado; la línea base real llega con M1-08 |
+
+**Verificado sin hallazgos**: repositorio público, `LICENSE` MIT reconocida por GitHub, CI verde en las últimas
+ejecuciones, `.env` fuera del índice de Git, sin claves ni binarios pesados fuera de Git LFS, Dependabot activo y
+19 etiquetas declarativas.
+
+---
+
 ## Firmas
 
 Ratificada por los coautores del proyecto:
@@ -708,4 +839,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.2.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-10-31
+**Versión**: 1.3.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-07

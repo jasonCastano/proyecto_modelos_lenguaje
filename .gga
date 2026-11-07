@@ -23,6 +23,10 @@
 #   PROVIDER="minimax"
 #   PROVIDER="minimax:MiniMax-M3"
 PROVIDER="claude"
+# Respaldo: si el CLI de Claude no está en el PATH, usa OpenCode (este archivo se ejecuta como bash).
+if ! command -v claude >/dev/null 2>&1 && command -v opencode >/dev/null 2>&1; then
+  PROVIDER="opencode"
+fi
 
 # File patterns to include in review (comma-separated)
 # Default: * (all files)

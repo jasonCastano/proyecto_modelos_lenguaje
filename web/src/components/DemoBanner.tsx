@@ -12,7 +12,8 @@ export function DemoBanner({ health, mode, onEnableDemo, onUseReal }: DemoBanner
     return (
       <div className="demo-banner" data-testid="demo-banner" role="status">
         <span>
-          Modo demostración: las respuestas son simuladas y no representan al modelo real.
+          Modo demostración: las respuestas son simuladas y no representan al modelo real. La
+          recuperación usa el índice de prueba y el modelo guionizado, sin red.
         </span>
         <button className="btn btn-secondary" onClick={onUseReal} type="button">
           Volver al proveedor real

@@ -220,7 +220,7 @@ versionan capturas temporales de la auditoría.
 | LLM (Módulo 1) | LangChain + DeepSeek API (`deepseek-flash`) |
 | Interfaz (Módulo 1) | React 19 + Vite + TypeScript; FastAPI + Uvicorn |
 | Arquitectura viva | Archify (`docs/arquitectura.html`) |
-| RAG (Módulo 2) | Embeddings + base vectorial (planificado) |
+| RAG (Módulo 2) | `fastembed` (ONNX) + `numpy`; índice `.npy` + SQLite |
 
 ## Requisitos e instalación
 
@@ -454,6 +454,33 @@ uv run python -m proyecto_modelos_lenguaje.tasks faq --limit 12 --json
   «No hay evidencia suficiente en el corpus para responder.»; nunca se inventa contenido.
 - Guía de validación completa: [`specs/007-langchain-qa-tasks/quickstart.md`](specs/007-langchain-qa-tasks/quickstart.md).
 - Decisión de arquitectura: [`docs/decisions/0007-langchain-tasks.md`](docs/decisions/0007-langchain-tasks.md).
+
+### Recuperación semántica (Módulo 2)
+
+El chatbot ya puede responder con **RAG**: recupera fragmentos por similitud semántica y los fusiona con la
+búsqueda léxica. El modelo `intfloat/multilingual-e5-small` (384 dimensiones, 512 tokens) corre en local con
+ONNX, sin costo por consulta y sin enviar el corpus a terceros.
+
+```bash
+# Construir y verificar el índice (la primera vez descarga el modelo, ~120 MB)
+uv run python -m proyecto_modelos_lenguaje.rag index build
+uv run python -m proyecto_modelos_lenguaje.rag index verify
+
+# Ver qué fragmentos sustentan una respuesta, sin llamar al LLM
+uv run python -m proyecto_modelos_lenguaje.rag search "¿cómo cuida Manuelita el agua?" --k 8
+
+# Comparar semántica, léxica e híbrida y escribir el informe
+uv run python -m proyecto_modelos_lenguaje.rag evaluate \
+  --questions tests/fixtures/rag/eval_questions.jsonl \
+  --out docs/evaluacion_modulo2.md
+```
+
+- El índice vive en `data/module2/index/` (no versionado; se reconstruye con un comando).
+- Espacio requerido: ~120 MB del modelo y ~23 MB del índice de 15.211 unidades.
+- Si el índice falta o no es válido, la app responde con recuperación léxica y lo declara en la traza.
+- Validación completa: [`specs/013-semantic-rag-chatbot/quickstart.md`](specs/013-semantic-rag-chatbot/quickstart.md).
+- Resultados: [`docs/evaluacion_modulo2.md`](docs/evaluacion_modulo2.md) · Decisión:
+  [`docs/decisions/0014-semantic-rag.md`](docs/decisions/0014-semantic-rag.md).
 
 ### Curaduría de relevancia
 

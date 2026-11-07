@@ -439,6 +439,13 @@ LangChain y una experiencia web React/FastAPI.
 8. **Evaluación**: conjunto de preguntas ampliado, métricas de recuperación y fidelidad, análisis de errores.
 9. **Informe y demo** actualizados; tag `v0.2.0-modulo2`.
 
+**Estado de la implementación (2026-11-06)**: la recuperación semántica está implementada en
+`src/proyecto_modelos_lenguaje/rag/` con `intfloat/multilingual-e5-small` (384 dimensiones, 512 tokens,
+ONNX vía `fastembed`), índice en `numpy` + SQLite con manifiesto reproducible en `data/module2/`, fusión
+híbrida con respaldo léxico y traza visible en la API y la interfaz. La evaluación está en
+`docs/evaluacion_modulo2.md` y la decisión en `docs/decisions/0014-semantic-rag.md`. La memoria
+conversacional sigue fuera de alcance y el tag `v0.2.0-modulo2` se crea al cerrar la fase.
+
 **Nota**: si la especificación oficial del Módulo 2 difiere, se enmienda esta constitución antes de iniciar la
 fase; no se improvisa sobre la marcha.
 

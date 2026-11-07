@@ -6,14 +6,14 @@
   "type": "dataflow",
   "quality": "showcase",
   "specification": {
-    "path": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "25f5eeb4ca3b5463044f506deb3b1b14b984baa0aa6fa3b7c7ed269be9dfa7ec",
-    "bytes": 6664
+    "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
+    "sha256": "4184217d3fe37b8872af98814a3186916113c680d885a0a6d714a7b74642665c",
+    "bytes": 7796
   },
   "artifact": {
-    "path": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "37826c9cded094b08be76deed5eb43cf0d28509370e693f3acd3f5ffed6a96fc",
-    "bytes": 844594
+    "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+    "sha256": "0df94b3db9240e950cac0dec3ba054a325b706976b2b9fb7b16cefba777e150d",
+    "bytes": 848459
   },
   "gates": {
     "validate": "pass",
@@ -24,20 +24,18 @@
   "failedStage": "browser-check",
   "diagnostics": [
     {
-      "code": "viewer/evidence-path-conflict",
+      "code": "viewer/temp-cleanup-incomplete",
       "severity": "error",
-      "message": "browser-check will not replace the existing unowned evidence path \"D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json\".",
+      "message": "Browser cleanup could not safely finish; inspect the reported retained path.",
       "subject": {
-        "artifact": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-        "evidencePath": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+        "artifact": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html"
       },
       "evidence": {
-        "reason": {
-          "code": "ownership-artifact-mismatch"
-        }
+        "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis\".",
+        "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis"
       },
       "supportedFixes": [
-        "move the conflicting file aside, or choose a separate --out-dir, then rerun browser-check"
+        "resolve the reported process or filesystem failure; verify directory ownership before manual cleanup"
       ]
     }
   ],
@@ -47,22 +45,22 @@
     "truncated": false
   },
   "evidence": {
-    "receipt": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize.json",
-    "summaryReceipt": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize-summary.json",
-    "browserCheckReceipt": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+    "receipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize.json",
+    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize-summary.json",
+    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
   },
   "update": {
     "status": "current",
     "installedVersion": "3.2.0",
     "availableVersion": "3.2.0",
     "releaseNotes": null,
-    "checkedAt": "2026-10-31T14:59:43.668Z",
+    "checkedAt": "2026-11-07T11:10:45.806Z",
     "source": "cache",
     "noticeRequired": false,
     "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 1760,
+  "durationMs": 13726,
   "browserCheck": {
     "requested": true,
     "ran": false

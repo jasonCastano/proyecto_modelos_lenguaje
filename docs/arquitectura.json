@@ -2,14 +2,14 @@
   "schema_version": 1,
   "diagram_type": "dataflow",
   "meta": {
-    "title": "Pipeline de datos y Q&A de Manuelita",
+    "title": "Pipeline de datos y RAG de Manuelita",
     "locale": "es",
     "output": "docs/arquitectura.html",
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "6e9e799addad4eb455a539ca277739b8da841629"
+      "revision": "45d3a3f100439f34753989ee149051b514fc3d05"
     }
   },
   "stages": [
@@ -34,7 +34,7 @@
       "id": "sources",
       "type": "external",
       "label": "Fuentes públicas",
-      "sublabel": "sitio ? YouTube",
+      "sublabel": "sitio · YouTube",
       "tag": "público",
       "stage": 0,
       "row": 1,
@@ -54,8 +54,8 @@
     {
       "id": "campaign",
       "type": "backend",
-      "label": "Adquisici?n",
-      "sublabel": "robots ? sitemap",
+      "label": "Adquisición",
+      "sublabel": "robots · sitemap",
       "tag": "reanudable",
       "stage": 1,
       "row": 1,
@@ -136,8 +136,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/retrieval.py",
-          "line": 430,
-          "end_line": 536
+          "line": 429,
+          "end_line": 533
         },
         {
           "path": "src/proyecto_modelos_lenguaje/rag/hybrid.py",
@@ -151,19 +151,19 @@
       "type": "backend",
       "label": "Tareas LangChain",
       "sublabel": "Resumen · FAQ · Q&A",
-      "tag": "Ollama local",
+      "tag": "DeepSeek API",
       "stage": 4,
       "row": 1,
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/tasks.py",
-          "line": 699,
-          "end_line": 805
+          "line": 716,
+          "end_line": 825
         },
         {
           "path": "config/llm.toml",
           "line": 1,
-          "end_line": 10
+          "end_line": 23
         }
       ]
     },
@@ -179,12 +179,17 @@
         {
           "path": "web/src/App.tsx",
           "line": 1,
-          "end_line": 80
+          "end_line": 94
         },
         {
           "path": "src/proyecto_modelos_lenguaje/api.py",
+          "line": 304,
+          "end_line": 395
+        },
+        {
+          "path": "web/src/components/RetrievedFragments.tsx",
           "line": 1,
-          "end_line": 60
+          "end_line": 103
         }
       ]
     },
@@ -264,7 +269,7 @@
       "from": "llm",
       "to": "app",
       "label": "respuesta citada",
-      "classification": "respuesta o fallback",
+      "classification": "respuesta, fallback y traza",
       "variant": "emphasis"
     },
     {
@@ -296,11 +301,12 @@
     },
     {
       "dot": "orange",
-      "title": "Consumo del Módulo 1",
+      "title": "Recuperación y respuesta",
       "items": [
-        "La recuperación es léxica y determinista: no usa embeddings.",
-        "Las tres tareas usan prompts versionados y citas [U#].",
-        "Si no hay evidencia, la app declara fallback explícito."
+        "Recuperación híbrida: e5-small semántico fusionado con BM25 léxico del Módulo 1.",
+        "Sin índice válido, cae a recuperación léxica y lo declara en la traza.",
+        "Resumen, FAQ y Q&A con LangChain y DeepSeek, prompts versionados y citas [U#].",
+        "Sin evidencia suficiente, la app declara fallback y muestra los fragmentos recuperados."
       ]
     },
     {
@@ -308,8 +314,8 @@
       "title": "Límites declarados",
       "items": [
         "La app es de solo lectura: no escribe en data/bronze, data/silver ni data/gold.",
-        "El índice semántico vive en data/module2 y no se versiona.",
-        "La memoria conversacional sigue fuera de alcance (Fase 3)."
+        "El índice semántico es una vista derivada del oro en data/module2: se reconstruye, no se versiona.",
+        "Memoria multi-turno, enrutador y agente RAG: Fase 2 pendiente (spec 014)."
       ]
     }
   ]

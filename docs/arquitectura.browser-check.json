@@ -6,11 +6,11 @@
   "status": "fail",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "56dec305-bf35-421d-858c-f3353758ffce",
+  "deliveryReceiptId": "aace44e2-2e71-4c78-9fc0-04556bd07507",
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "0df94b3db9240e950cac0dec3ba054a325b706976b2b9fb7b16cefba777e150d",
-    "bytes": 848459
+    "sha256": "14ee17600328c9f11cc43deac5032c30d38bf44d00a40789befbad16112fa75d",
+    "bytes": 848956
   },
   "state": {
     "detail": "read",
@@ -29,8 +29,8 @@
         "artifact": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html"
       },
       "evidence": {
-        "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis\".",
-        "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis"
+        "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B\".",
+        "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B"
       },
       "supportedFixes": [
         "resolve the reported process or filesystem failure; verify directory ownership before manual cleanup"
@@ -61,8 +61,9 @@
     "contactSheet": null
   },
   "sidecars": {
+    "directory": "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1",
     "receipt": "arquitectura.browser-check.json",
     "files": []
   },
-  "error": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis\"."
+  "error": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B\"."
 }

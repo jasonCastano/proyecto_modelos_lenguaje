@@ -439,6 +439,12 @@ del 2026-11-07.
 respaldo léxico, traza visible en API e interfaz y evaluación Recall@5/MRR en `docs/evaluacion_modulo2.md`.
 Memoria, enrutador, agente y HITL siguen pendientes (spec 014).
 
+**Avance de la spec 014 (2026-11-10)**: plan y 77 tareas en `specs/014-rag-agent-memory-router/`; fundamentos
+implementados en `src/proyecto_modelos_lenguaje/agent/` (configuración `config/agent.toml`, estado en
+`MANUELITA_STATE_DIR` fuera del repositorio, modelos tipados, aislamiento XML y modo demo). Dependencias
+nuevas: `langgraph` y `langgraph-checkpoint-sqlite`. Ragas queda diferido: no instala en Python 3.14
+(`specs/014-rag-agent-memory-router/research.md` §12).
+
 **Reglas mínimas**:
 
 1. **Embeddings**: modelo multilingüe elegido con evidencia de **retrieval en español** (MTEB filtrado por

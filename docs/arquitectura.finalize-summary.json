@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "4184217d3fe37b8872af98814a3186916113c680d885a0a6d714a7b74642665c",
-    "bytes": 7796
+    "sha256": "34d3e6829d31e5a4b0cf2e641447259a4322db34e3a4c1efaf019601a78e5ba2",
+    "bytes": 8169
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "0df94b3db9240e950cac0dec3ba054a325b706976b2b9fb7b16cefba777e150d",
-    "bytes": 848459
+    "sha256": "14ee17600328c9f11cc43deac5032c30d38bf44d00a40789befbad16112fa75d",
+    "bytes": 848956
   },
   "gates": {
     "validate": "pass",
@@ -31,8 +31,8 @@
         "artifact": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html"
       },
       "evidence": {
-        "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis\".",
-        "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis"
+        "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B\".",
+        "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B"
       },
       "supportedFixes": [
         "resolve the reported process or filesystem failure; verify directory ownership before manual cleanup"
@@ -45,22 +45,12 @@
     "truncated": false
   },
   "evidence": {
-    "receipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize.json",
-    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize-summary.json",
-    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
-  },
-  "update": {
-    "status": "current",
-    "installedVersion": "3.2.0",
-    "availableVersion": "3.2.0",
-    "releaseNotes": null,
-    "checkedAt": "2026-11-07T11:10:45.806Z",
-    "source": "cache",
-    "noticeRequired": false,
-    "noticeText": null
+    "receipt": "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1\\arquitectura.finalize.json",
+    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1\\arquitectura.finalize-summary.json",
+    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1\\arquitectura.browser-check.json"
   },
   "visualReview": "not-requested",
-  "durationMs": 13726,
+  "durationMs": 82587,
   "browserCheck": {
     "requested": true,
     "ran": false

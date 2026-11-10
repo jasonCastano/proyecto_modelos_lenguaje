@@ -147,6 +147,12 @@ Cada decisión resuelve una incógnita del contexto técnico del [plan](./plan.m
 - **Alternatives considered**: DeepEval (otra API, menos alineada con la Clase 10); juez humano exclusivo
   (se mantiene para una muestra de 10 respuestas como control).
 
+**Actualización 2026-11-10 (T002)**: Ragas no instala en el stack actual. `ragas` 0.4.3 depende de
+`scikit-network`, que no publica wheel para Python 3.14 y falla al compilar; `ragas` 0.2.15 instala pero
+importa `langchain_community.chat_models.vertexai`, eliminado en `langchain-community` reciente. Decisión
+provisional: diferir el extra `eval` a T067 y, si sigue bloqueado, implementar fidelidad y relevancia como
+juez LLM propio con las mismas definiciones de Ragas, documentando la desviación.
+
 ## 13. Interfaz y API
 
 - **Decision**: cuatro endpoints nuevos (`POST /api/chat`, `GET /api/threads/{thread_id}`,

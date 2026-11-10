@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eval-query.schema.json",
+  "title": "EvalQuery",
+  "description": "Una línea de tests/fixtures/rag/module2_queries.jsonl (FR-019).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["query_id", "question", "expected_route", "type"],
+  "properties": {
+    "query_id": {"type": "string", "pattern": "^r[0-9]{2}$"},
+    "question": {"type": "string", "minLength": 3, "maxLength": 500},
+    "expected_route": {"enum": ["direct", "documental", "structured", "out_of_scope", "clarify"]},
+    "expected_unit_ids": {"type": "array", "items": {"type": "string", "pattern": "^unit_[0-9a-f]{16}$"}},
+    "expected_fact_ids": {"type": "array", "items": {"type": "string", "pattern": "^fact_[0-9a-f]{16}$"}},
+    "type": {"enum": ["greeting", "documental", "structured", "out_of_corpus", "ambiguous", "follow_up", "english"]},
+    "follow_up_of": {"type": ["string", "null"]},
+    "notes": {"type": "string"}
+  },
+  "allOf": [
+    {"if": {"properties": {"expected_route": {"const": "documental"}}},
+     "then": {"required": ["expected_unit_ids"], "properties": {"expected_unit_ids": {"minItems": 1}}}},
+    {"if": {"properties": {"expected_route": {"const": "structured"}}},
+     "then": {"required": ["expected_fact_ids"], "properties": {"expected_fact_ids": {"minItems": 1}}}},
+    {"if": {"properties": {"type": {"const": "follow_up"}}},
+     "then": {"required": ["follow_up_of"]}}
+  ]
+}

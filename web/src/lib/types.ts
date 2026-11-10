@@ -19,6 +19,8 @@ export interface RetrievalFragment {
   origin: FragmentOrigin;
   status: FragmentStatus;
   reason: string | null;
+  anomalous?: boolean;
+  anomaly_reasons?: string[];
 }
 
 export interface RetrievalTrace {

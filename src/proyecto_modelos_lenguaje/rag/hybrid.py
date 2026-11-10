@@ -41,6 +41,8 @@ class RetrievedFragment:
     origin: str
     status: str = "used"
     reason: str | None = None
+    anomalous: bool = False
+    anomaly_reasons: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.origin not in VALID_ORIGINS:
@@ -51,6 +53,8 @@ class RetrievedFragment:
             raise ValueError("score debe estar en [0, 1]")
         if self.status != "used" and not self.reason:
             raise ValueError("reason es obligatorio cuando status != used")
+        if self.anomalous != bool(self.anomaly_reasons):
+            raise ValueError("anomaly_reasons debe tener motivos si y solo si anomalous es True")
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -65,6 +69,8 @@ class RetrievedFragment:
             "origin": self.origin,
             "status": self.status,
             "reason": self.reason,
+            "anomalous": self.anomalous,
+            "anomaly_reasons": list(self.anomaly_reasons),
         }
 
 

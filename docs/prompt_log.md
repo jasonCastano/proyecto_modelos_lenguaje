@@ -120,12 +120,39 @@ Hallazgos:
   abstención para la evidencia nula.
 - Corrección, coherencia y alucinación: calificación humana pendiente.
 
+### 3.5 M1-09: `qa.md` 1.1 — evidencia parcial vs. nula (2026-11-10)
+
+Cambio único respecto a 1.0: la sección 6 distingue **evidencia parcial** (responder la parte cubierta con citas
+y declarar lo que falta) de **evidencia nula** (frase de abstención exacta). Reevaluación
+`m1-09-qa-v1.1` sobre las 16 preguntas que la 1.0 abstuvo indebidamente más P14 (`X`) y P15 (`P, X`) como
+control. Registro: `docs/evaluacion_m1_09.{md,json}`.
+
+| Métrica (18 preguntas) | `qa.md` 1.0 (M1-08) | `qa.md` 1.1 (M1-09) |
+|------------------------|--------------------:|--------------------:|
+| Respuestas `ok` con cita | 1 | 12 |
+| Abstenciones | 17 | 6 |
+| Abstenciones indebidas (de 16) | 16 | 6 |
+| Abstención en P14 (`X`) | sí | **no** |
+| Latencia media (s) | — | 2,65 |
+
+Hallazgos:
+
+- Se recuperan 10 respuestas (P01, P06, P09, P13, P16, P21, P29, P31, P32, P37). Siguen abstenidas P08, P12, P17,
+  P20, P35 y P38: la recuperación léxica no trae unidades pertinentes (el zero-shot también declara que el
+  contexto no tiene lo pedido).
+- **Regresión en P14**: en lugar de abstenerse, responde que el corpus no tiene el listado y cita la única
+  mención relacionada. No inventa, pero ya no cumple la conducta `X` esperada. Debe decidirlo la calificación
+  humana.
+- Varias respuestas parciales empiezan con «El corpus no contiene…» y luego citan algo cercano; la calificación
+  humana dirá si son útiles o ruido.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).
 - Verificar con la clave real los caminos de error: ausente, inválida y sin red (T046).
 - Confirmar el identificador `deepseek-flash` y las tarifas por token con la cuenta del proveedor.
-- Calificar a mano corrección, coherencia y alucinación de M1-08 (§3.4) y ajustar el prompt final (M1-09).
+- Calificar a mano corrección, coherencia y alucinación de M1-08 (§3.4) y M1-09 (§3.5); decidir si `qa.md` 1.1
+  queda como final pese a la regresión en P14.
 - Registrar la variante final de prompts tras el ajuste con evidencia (M1-09).
 
 ## 5. Observaciones sobre el corpus real (15.211 unidades)

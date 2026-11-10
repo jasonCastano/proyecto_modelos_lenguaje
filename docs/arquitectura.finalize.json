@@ -5,16 +5,16 @@
   "status": "fail",
   "type": "dataflow",
   "quality": "showcase",
-  "startedAt": "2026-11-07T11:17:09.732Z",
+  "startedAt": "2026-11-10T16:46:12.313Z",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "4184217d3fe37b8872af98814a3186916113c680d885a0a6d714a7b74642665c",
-    "bytes": 7796
+    "sha256": "34d3e6829d31e5a4b0cf2e641447259a4322db34e3a4c1efaf019601a78e5ba2",
+    "bytes": 8169
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "0df94b3db9240e950cac0dec3ba054a325b706976b2b9fb7b16cefba777e150d",
-    "bytes": 848459
+    "sha256": "14ee17600328c9f11cc43deac5032c30d38bf44d00a40789befbad16112fa75d",
+    "bytes": 848956
   },
   "stages": {
     "validate": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "4184217d3fe37b8872af98814a3186916113c680d885a0a6d714a7b74642665c",
-          "bytes": 7796
+          "sha256": "34d3e6829d31e5a4b0cf2e641447259a4322db34e3a4c1efaf019601a78e5ba2",
+          "bytes": 8169
         },
         "validation": {
           "checksPassed": 9,
@@ -56,7 +56,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 1801,
+      "durationMs": 41178,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -72,19 +72,19 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "56dec305-bf35-421d-858c-f3353758ffce",
+        "receiptId": "aace44e2-2e71-4c78-9fc0-04556bd07507",
         "ok": true,
         "command": "deliver",
         "type": "dataflow",
         "input": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
         "output": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "specification": {
-          "sha256": "4184217d3fe37b8872af98814a3186916113c680d885a0a6d714a7b74642665c",
-          "bytes": 7796
+          "sha256": "34d3e6829d31e5a4b0cf2e641447259a4322db34e3a4c1efaf019601a78e5ba2",
+          "bytes": 8169
         },
         "artifact": {
-          "sha256": "0df94b3db9240e950cac0dec3ba054a325b706976b2b9fb7b16cefba777e150d",
-          "bytes": 848459
+          "sha256": "14ee17600328c9f11cc43deac5032c30d38bf44d00a40789befbad16112fa75d",
+          "bytes": 848956
         },
         "validation": {
           "checksPassed": 9,
@@ -97,8 +97,8 @@
         "evidence": {
           "verified": true,
           "repository": "https://github.com/jasonCastano/proyecto_modelos_lenguaje",
-          "revision": "6e9e799addad4eb455a539ca277739b8da841629",
-          "references": 16
+          "revision": "45d3a3f100439f34753989ee149051b514fc3d05",
+          "references": 17
         },
         "update": {
           "status": "unavailable",
@@ -116,7 +116,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 351,
+      "durationMs": 10281,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -128,8 +128,8 @@
         "ok": true,
         "file": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "artifact": {
-          "sha256": "0df94b3db9240e950cac0dec3ba054a325b706976b2b9fb7b16cefba777e150d",
-          "bytes": 848459
+          "sha256": "14ee17600328c9f11cc43deac5032c30d38bf44d00a40789befbad16112fa75d",
+          "bytes": 848956
         },
         "checks": [
           {
@@ -246,20 +246,22 @@
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "56dec305-bf35-421d-858c-f3353758ffce"
+        "deliveryReceiptId": "aace44e2-2e71-4c78-9fc0-04556bd07507"
       }
     },
     "browser-check": {
       "status": "fail",
       "exitCode": 1,
-      "durationMs": 11127,
+      "durationMs": 25670,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
         "browser-check",
         "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "--json",
-        "--require-provenance"
+        "--require-provenance",
+        "--out-dir",
+        "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1"
       ],
       "execution": "in-process",
       "receipt": {
@@ -270,11 +272,11 @@
         "status": "fail",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "56dec305-bf35-421d-858c-f3353758ffce",
+        "deliveryReceiptId": "aace44e2-2e71-4c78-9fc0-04556bd07507",
         "artifact": {
           "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-          "sha256": "0df94b3db9240e950cac0dec3ba054a325b706976b2b9fb7b16cefba777e150d",
-          "bytes": 848459
+          "sha256": "14ee17600328c9f11cc43deac5032c30d38bf44d00a40789befbad16112fa75d",
+          "bytes": 848956
         },
         "state": {
           "detail": "read",
@@ -293,8 +295,8 @@
               "artifact": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html"
             },
             "evidence": {
-              "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis\".",
-              "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis"
+              "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B\".",
+              "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B"
             },
             "supportedFixes": [
               "resolve the reported process or filesystem failure; verify directory ownership before manual cleanup"
@@ -325,10 +327,11 @@
           "contactSheet": null
         },
         "sidecars": {
+          "directory": "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1",
           "receipt": "arquitectura.browser-check.json",
           "files": []
         },
-        "error": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis\"."
+        "error": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B\"."
       }
     }
   },
@@ -345,8 +348,8 @@
         "artifact": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html"
       },
       "evidence": {
-        "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis\".",
-        "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-iZOpis"
+        "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B\".",
+        "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B"
       },
       "supportedFixes": [
         "resolve the reported process or filesystem failure; verify directory ownership before manual cleanup"
@@ -354,22 +357,23 @@
     }
   ],
   "evidence": {
-    "receipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize.json",
-    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize-summary.json",
-    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+    "receipt": "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1\\arquitectura.finalize.json",
+    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1\\arquitectura.finalize-summary.json",
+    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1\\arquitectura.browser-check.json"
   },
   "visualReview": "not-requested",
   "failedStage": "browser-check",
-  "finishedAt": "2026-11-07T11:17:23.458Z",
-  "durationMs": 13726,
+  "finishedAt": "2026-11-10T16:47:34.902Z",
+  "durationMs": 82587,
   "update": {
-    "status": "current",
-    "installedVersion": "3.2.0",
-    "availableVersion": "3.2.0",
+    "status": "unavailable",
+    "installedVersion": null,
+    "availableVersion": null,
     "releaseNotes": null,
-    "checkedAt": "2026-11-07T11:10:45.806Z",
-    "source": "cache",
+    "checkedAt": null,
+    "source": null,
     "noticeRequired": false,
-    "noticeText": null
+    "noticeText": null,
+    "reason": "timeout"
   }
 }

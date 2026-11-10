@@ -9,8 +9,13 @@
 
 Sistema de preguntas y respuestas (Q&A) construido sobre información pública de **Ingenio Manuelita S.A.**,
 empresa agroindustrial del Valle del Cauca, Colombia. El proyecto evoluciona desde una base de conocimiento
-con Prompt Engineering (Módulo 1) hacia un sistema RAG con embeddings, recuperación y memoria (Módulo 2), y
-finalmente un chatbot evaluado y desplegable.
+con Prompt Engineering (Módulo 1) hacia un agente RAG con memoria y enrutador (Módulo 2), y finalmente un
+producto desplegado en canales reales (Módulo 3).
+
+El Proyecto Integrador se evalúa en tres fases con pesos **30 % · 30 % · 40 %**: **Fase 1** ingesta y base
+semántica; **Fase 2** agente con memoria y enrutador (base vectorial/RAG, memoria multi-turno y enrutamiento
+documental vs. estructurado SQL/CSV); **Fase 3** productización y despliegue (FastAPI / Agent OS, persistencia de
+estado y canales como WhatsApp o Telegram). Las reglas de cada fase viven en [`CONSTITUTION.md`](CONSTITUTION.md).
 
 **Curso**: Técnicas Avanzadas de IA aplicadas en Modelos de Lenguaje — Maestría en IA y Ciencia de Datos,
 Universidad Autónoma de Occidente, 2026-2S.
@@ -21,9 +26,11 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual**: las capas bronce, plata y oro están implementadas y validadas. La experiencia web
-> (React + FastAPI) y las tareas LangChain están operativas; la evaluación de 40 preguntas (20 núcleo +
-> 20 extendidas) y el informe del Módulo 1 están en desarrollo.
+> **Estado actual (constitución v1.3.0, 2026-11-07)**: las capas bronce, plata y oro, la experiencia web
+> (React + FastAPI) y las tareas LangChain están operativas. La recuperación semántica e híbrida del Módulo 2
+> (spec 013, PR #34) está fusionada. Para cerrar la Fase 1 faltan la ejecución real de la evaluación de
+> 40 preguntas, los resultados del informe, el ensayo de la demo y el tag `v0.1.0-modulo1`. La memoria, el
+> enrutador y el agente (spec 014) están especificados y pendientes de implementación.
 
 ---
 
@@ -74,7 +81,10 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
 - **Procedencia completa**: URL, título, fecha UTC, hash SHA-256, fuente, tipo, idioma y categoría.
 - **Q&A anclado al contexto**: el modelo responde solo con el contexto recuperado, cita fuentes y declara cuando
   no tiene evidencia.
-- **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores.
+- **Recuperación semántica e híbrida** (Módulo 2): embeddings `multilingual-e5-small` en local, índice
+  `numpy` + SQLite reconstruible y fusión con la búsqueda léxica BM25, con traza visible en la API y la interfaz.
+- **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores;
+  en el Módulo 2, Recall@k/MRR sobre consultas etiquetadas.
 - **Interfaz web propia** con hero editorial, consola RAG, fuentes citadas y modo demostración.
 - **Página del Módulo 1** que explica datos, arquitectura, prompts, app, métricas y límites.
 - **Verificación E2E** con Playwright y matriz responsive.
@@ -89,15 +99,19 @@ flowchart LR
     C[Catálogo SQLite<br/>procedencia · dedupe · auditoría]
     V[Plata<br/>data/silver<br/>limpieza + chunks]
     G[Oro<br/>data/gold<br/>base de conocimiento]
-    L[LangChain<br/>Resumen · FAQ · Q&A]
-    UI[Web React<br/>consola + citas]
-    E[Embeddings + base vectorial]
-    R[RAG con memoria]
+    I[(Índice semántico<br/>e5-small 384d<br/>numpy + SQLite)]
+    H[Recuperación híbrida<br/>semántica + BM25 · traza]
+    L[LangChain + DeepSeek<br/>Resumen · FAQ · Q&A]
+    UI[Web React + FastAPI<br/>citas · fragmentos]
+    M[Memoria · enrutador · agente<br/>spec 014]
+    D[Despliegue y canales<br/>WhatsApp / Telegram]
 
     S --> P --> B
     B --> C
-    B --> V --> G --> L --> UI
-    G -. Fase 2 .-> E --> R
+    B --> V --> G
+    G --> I --> H
+    G --> H --> L --> UI
+    H -. Fase 2 pendiente .-> M -. Fase 3 .-> D
 ```
 
 **Decisiones clave**:
@@ -106,6 +120,9 @@ flowchart LR
 - El catálogo SQLite es la fuente de verdad para procedencia, deduplicación, versiones, cobertura y auditoría.
 - El contenido retirado se mueve a `data/quarantine/` con auditoría y ventana de reversibilidad.
 - El dominio oficial `manuelita.com` nunca se elimina del corpus activo.
+- El índice semántico es una **vista derivada** del oro: se reconstruye con un comando y no se versiona; su
+  manifiesto (modelo, fragmentación, fecha y hash del oro) sí. Cambiar el modelo de embeddings obliga a reindexar.
+- La app es de **solo lectura**: no escribe en `data/` ni en el repositorio.
 
 ### Arquitectura interactiva (Archify)
 
@@ -113,7 +130,7 @@ El pipeline completo se puede explorar como un diagrama interactivo autocontenid
 claro/oscuro, búsqueda y trazabilidad de relaciones. La fuente tipada es
 [`docs/arquitectura.json`](docs/arquitectura.json) y el HTML se genera con Archify; no se edita a mano.
 
-[![Pipeline de datos y Q&A de Manuelita](docs/arquitectura.visual-check.2048x1320.dark.png)](docs/arquitectura.html)
+[![Pipeline de datos y RAG de Manuelita](docs/capturas/arquitectura.png)](docs/arquitectura.html)
 
 Regenerar y validar (con la skill Archify instalada):
 
@@ -126,9 +143,9 @@ node ~/.agents/skills/archify/bin/archify.mjs finalize dataflow \
 Si la copia global de la skill está incompleta, clona
 [`tt-a1i/archify`](https://github.com/tt-a1i/archify) y usa `archify/bin/archify.mjs`.
 
-El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → recuperación léxica →
-tareas LangChain → experiencia web**. Los embeddings y la base vectorial pertenecen al Módulo 2 y no se
-muestran como implementados.
+El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → índice semántico y
+recuperación híbrida → tareas LangChain → experiencia web**. La memoria, el enrutador y el agente de la Fase 2
+siguen pendientes (spec 014) y no se muestran como implementados.
 
 ## Capturas
 
@@ -162,7 +179,9 @@ versionan capturas temporales de la auditoría.
 | Tag `v0.1.0-modulo1` | 🟡 | Pendiente de cerrar la puerta de la Fase 1 |
 | Módulo 2 — recuperación semántica (spec 013) | ✅ | PR #34 fusionado; `docs/evaluacion_modulo2.md` (ver hallazgos en `docs/revision_pr34.md`) |
 | Módulo 2 — memoria, enrutador y agente (spec 014) | 🟡 | Especificado; `specs/014-rag-agent-memory-router/` |
-| CI y Pull Requests | ✅ | 25+ PRs fusionados; CI verde |
+| Módulo 2 — Recall@10, nDCG@10 y abstención fuera de corpus | 🟡 | Pendiente según `docs/revision_pr34.md` (spec 014, FR-011 y FR-020) |
+| CI y Pull Requests | ✅ | 38 PRs fusionados; CI verde |
+| Protección de `main` | ✅ | PR con 1 aprobación y checks `test` y `web`; sin push directo ni force-push |
 | Gobernanza del repositorio | ✅ | PR/issue templates, labels, Dependabot, pre-commit y Makefile |
 | Cobertura de los 24 ítems | ✅ | 24/24 evaluados por la capa oro con evidencia |
 
@@ -224,6 +243,7 @@ versionan capturas temporales de la auditoría.
 | Interfaz (Módulo 1) | React 19 + Vite + TypeScript; FastAPI + Uvicorn |
 | Arquitectura viva | Archify (`docs/arquitectura.html`) |
 | RAG (Módulo 2) | `fastembed` (ONNX) + `numpy`; índice `.npy` + SQLite |
+| Desarrollo guiado por specs | Spec Kit (`.specify/`), con comandos para OpenCode y Claude Code |
 
 ## Requisitos e instalación
 
@@ -652,7 +672,12 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - **Mantenedor**: Jason Alejandro Castaño — GitHub [`@jasonCastano`](https://github.com/jasonCastano),
   correo `jasonale3007@gmail.com`.
 - **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
-- **Rama estable**: `main`; todo cambio entra por Pull Request con CI verde.
+- **Rama estable**: `main`, protegida: todo cambio entra por Pull Request con al menos una aprobación del otro
+  integrante y los checks `test` y `web` en verde; el autor no aprueba su propio PR.
+- **Ramas**: `feat/...`, `fix/...`, `docs/...` o `chore/...`; commits con Conventional Commits.
+- **Especificaciones**: cada fase tiene especificación, plan y tareas en [`specs/`](specs/), gestionados con
+  Spec Kit (`/speckit-specify`, `/speckit-plan`, `/speckit-tasks`, …).
+- **Entregas**: cada módulo se etiqueta (`v0.1.0-modulo1`, `v0.2.0-modulo2`) sobre un commit con CI verde.
 - **Plantillas**: PR e issues en [`.github/`](.github/), con checklist de constitución y pruebas.
 - **Etiquetas y Dependabot**: declaradas en [`.github/labels.yml`](.github/labels.yml) y
   [`.github/dependabot.yml`](.github/dependabot.yml).
@@ -686,9 +711,15 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   evidencia verificable.
 - La capa oro produjo 15.211 unidades extractivas, 381 hechos, 15 entidades y 38 conflictos; 24/24 ítems
   evaluados. Los conflictos y la cobertura requieren revisión muestral antes de la evaluación final.
-- La evaluación de 40 preguntas, el informe, el guion de demo y las capturas de Consulta/Resumen/FAQ están
-  pendientes.
-- El repositorio tiene 25+ PRs fusionados y CI verde en GitHub Actions.
+- La evaluación de 40 preguntas tiene la herramienta lista (`module1_eval`), pero falta la ejecución real con
+  DeepSeek y la calificación humana; el informe y el guion de demo son borradores y faltan las capturas de
+  Consulta/Resumen/FAQ.
+- La recuperación semántica aún no reporta Recall@10/nDCG@10 y su umbral (0,30) no abstiene fuera de corpus
+  (similitudes de 0,80–0,87); ver [`docs/revision_pr34.md`](docs/revision_pr34.md).
+- Los PRs fusionados antes del 2026-11-07 no tienen aprobaciones formales en GitHub; desde entonces `main` exige
+  revisión cruzada.
+- No existe aún una rúbrica oficial de la Entrega 2; cuando se publique se enmiendan la constitución y las
+  specs 013/014.
 
 ## Documentación
 
@@ -733,17 +764,28 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Guía de validación del frontend Manuelita](specs/012-manuelita-rag-showcase/quickstart.md)
 - [Decisión de arquitectura del frontend web](docs/decisions/0013-web-frontend.md)
 - [Decisión de arquitectura del proveedor DeepSeek](docs/decisions/0012-deepseek-api.md)
+- [Especificación de la recuperación semántica (Módulo 2)](specs/013-semantic-rag-chatbot/spec.md)
+- [Plan de la recuperación semántica](specs/013-semantic-rag-chatbot/plan.md)
+- [Guía de validación de la recuperación semántica](specs/013-semantic-rag-chatbot/quickstart.md)
+- [Decisión de arquitectura del RAG semántico](docs/decisions/0014-semantic-rag.md)
+- [Especificación de memoria, enrutador y agente (Módulo 2)](specs/014-rag-agent-memory-router/spec.md)
+- [Decisión de alcance del Módulo 2](docs/decisions/0015-module2-scope.md)
+- [Informe del Módulo 1 (borrador)](docs/informe_modulo1.md)
+- [Guion de demo 12+3](docs/demo.md)
+- [Evaluación de recuperación del Módulo 2](docs/evaluacion_modulo2.md)
+- [Revisión del PR #34](docs/revision_pr34.md)
+- [Prompt log](docs/prompt_log.md)
 - [Arquitectura interactiva (Archify)](docs/arquitectura.html)
 - [Decisión de estandarización y arquitectura viva](docs/decisions/0011-project-standard.md)
 - [Índice de documentación](docs/README.md)
-- [Decisión de arquitectura del modelo Ollama](docs/decisions/0006-ollama-llm.md)
+- [Decisión de arquitectura del modelo Ollama (histórica; reemplazada por DeepSeek)](docs/decisions/0006-ollama-llm.md)
 - [Verificación de canales oficiales](docs/fuentes_oficiales.md)
-- [Bitácora del 2026-10-31](bitacora/2026-10-31-0947.md)
+- [Bitácoras del proyecto](bitacora/)
 - [Guía de validación del bronce](specs/001-bronze-web-scraping/quickstart.md)
 
 ## Roadmap
 
-### Fase 1 — Módulo 1: base de conocimiento y Q&A
+### Fase 1 — Módulo 1: ingesta y base semántica (30 %)
 
 - [x] Pipeline bronce y catálogo de procedencia.
 - [x] Curación de relevancia y cuarentena auditada.
@@ -751,22 +793,29 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [x] Tareas LangChain: Resumen, FAQ y Q&A.
 - [x] Experiencia web React + FastAPI con consola RAG y showcase del Módulo 1.
 - [x] Auditoría visual de Métricas y gobernanza del repositorio.
-- [ ] 40 preguntas evaluadas (20 núcleo + 20 extendidas) y comparación de prompts.
-- [ ] Informe y demo 12+3 minutos.
-- [ ] CI, Pull Requests y tag `v0.1.0-modulo1`.
+- [x] CI verde y Pull Requests fusionados.
+- [x] Evaluador de 40 preguntas (`module1_eval`), borrador del informe y guion de demo.
+- [ ] Ejecución real de las 40 preguntas (zero-shot vs. prompt final) con calificación humana.
+- [ ] Informe con resultados y demo 12+3 ensayada.
+- [ ] Tag `v0.1.0-modulo1`.
 
-### Fase 2 — Módulo 2: embeddings, memoria y RAG
+### Fase 2 — Módulo 2: agente con memoria y enrutador (30 %)
 
-- [ ] Modelo de embeddings multilingüe.
-- [ ] Base vectorial y recuperación.
-- [ ] Métricas Recall@k, MRR y fidelidad.
-- [ ] RAG con citas y memoria conversacional.
+- [x] Embeddings multilingües (`multilingual-e5-small`) e índice reconstruible con manifiesto (spec 013).
+- [x] Recuperación híbrida semántica + léxica con traza en API e interfaz.
+- [ ] Conjunto de 20–30 consultas etiquetadas con Recall@10, nDCG@10 y MRR frente al BM25 del Módulo 1.
+- [ ] Memoria multi-turno por `thread_id` con checkpointer persistente.
+- [ ] Enrutador directo / documental / estructurado (SQL/CSV) / fuera de alcance con ≥90 % de acierto.
+- [ ] RAG Chain vs. RAG Agent comparados en calidad, latencia y llamadas.
+- [ ] Blindaje contra inyección indirecta y Human-in-the-Loop.
+- [ ] Evaluación con Ragas y trazas con LangSmith; informe, demo y tag `v0.2.0-modulo2`.
 
-### Fase 3 — Chatbot final
+### Fase 3 — Módulo 3: productización y despliegue (40 %)
 
-- [ ] Guardrails y evaluación.
-- [ ] Despliegue reproducible.
-- [ ] Observabilidad y documentación final.
+- [ ] Canal real (WhatsApp o Telegram) con persistencia de estado productiva.
+- [ ] Guardrails, evaluación de fidelidad, relevancia, latencia y costo.
+- [ ] Despliegue reproducible (FastAPI / Agent Server en contenedor u otro entorno).
+- [ ] Observabilidad, documentación final y tag de release.
 
 ## Créditos
 

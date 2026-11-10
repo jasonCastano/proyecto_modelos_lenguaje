@@ -100,16 +100,32 @@ versionada en `config/llm.toml`: `model = "deepseek-flash"`, `base_url = "https:
 la validación con el servicio real (T045/T046) queda abierta. La suite cubre el comportamiento con un
 transporte simulado: éxito, errores y tokens.
 
+### 3.4 M1-08: 40 preguntas, zero-shot vs. final con DeepSeek (2026-11-10)
+
+Ejecución `m1-eval-2026-11-10-deepseek`, modelo `deepseek-flash`, misma recuperación léxica para ambas variantes.
+Registro: `docs/evaluacion_modulo1.{md,json}`.
+
+| Variante | Prompt | ok | fallback | error | Con cita | Acierto de fallback | Latencia media | Entrada / salida (tok) |
+|----------|--------|---:|---------:|------:|---------:|--------------------:|---------------:|-----------------------:|
+| Zero-shot | `qa_zero_shot.md` 0.1-zero-shot | 40 | 0 | 0 | 40 | 0,974 | 3,77 s | 34.685 / 20.715 |
+| Final | `qa.md` 1.0 | 23 | 17 | 0 | 23 | 0,590 | 3,65 s | 49.645 / 20.242 |
+
+Hallazgos:
+
+- La primera corrida marcó 17 respuestas del prompt final como `error=missing_citations`: el modelo respondía
+  exactamente la frase de abstención y el código la trataba como falta de citas. Se corrigió en `tasks.py`
+  (`is_model_fallback`) y se reejecutó; las cifras de arriba son de la segunda corrida.
+- El zero-shot nunca se abstiene (tampoco en la pregunta `X`); el final se abstiene en 16 preguntas con
+  respuesta esperada. Candidato de ajuste para M1-09: permitir una respuesta parcial con cita y reservar la
+  abstención para la evidencia nula.
+- Corrección, coherencia y alucinación: calificación humana pendiente.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).
 - Verificar con la clave real los caminos de error: ausente, inválida y sin red (T046).
 - Confirmar el identificador `deepseek-flash` y las tarifas por token con la cuenta del proveedor.
-- Ampliar la línea base con las 40 preguntas de evaluación (M1-08) y comparar el proveedor contra la
-  variante ajustada (M1-09). Herramienta disponible desde 2026-11-07:
-  `uv run python -m proyecto_modelos_lenguaje.module1_eval` compara `prompts/qa_zero_shot.md` (línea
-  base zero-shot) con `prompts/qa.md` (final) y escribe `docs/evaluacion_modulo1.{md,json}`; la
-  corrección, coherencia y alucinación se califican a mano.
+- Calificar a mano corrección, coherencia y alucinación de M1-08 (§3.4) y ajustar el prompt final (M1-09).
 - Registrar la variante final de prompts tras el ajuste con evidencia (M1-09).
 
 ## 5. Observaciones sobre el corpus real (15.211 unidades)

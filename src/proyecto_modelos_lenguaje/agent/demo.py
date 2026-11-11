@@ -9,7 +9,13 @@ from typing import Any
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.outputs import ChatGeneration, ChatResult
 
 from ..config import PROJECT_ROOT
@@ -25,6 +31,7 @@ DOCUMENT_PATTERN = re.compile(r'<documento id="([UF]\d+)"[^>]*>(.*?)</documento>
 SENTENCE_END = re.compile(r"(?<=[.!?])\s")
 QUESTION_PATTERN = re.compile(r"<pregunta>(.*?)</pregunta>", re.DOTALL)
 SNIPPET_CHARS = 220
+BULLETS_HINT = "formato de respuesta: viñetas"
 
 
 def build_demo_model(
@@ -51,7 +58,7 @@ def _question(text: str) -> str:
     return (asked.group(1) if asked else text).strip()
 
 
-def demo_answer(evidence_text: str) -> str:
+def demo_answer(evidence_text: str, *, bullets: bool = False) -> str:
     """Respuesta extractiva: la primera oración de los dos primeros documentos, con su cita."""
     documents = DOCUMENT_PATTERN.findall(evidence_text)
     if not documents:
@@ -59,6 +66,8 @@ def demo_answer(evidence_text: str) -> str:
     parts = [f"{_first_sentence(text)} [{label}]." for label, text in documents[:2] if text.strip()]
     if not parts:
         return FALLBACK_ANSWER
+    if bullets:
+        return "Según los documentos públicos de Manuelita:\n" + "\n".join(f"- {p}" for p in parts)
     return "Según los documentos públicos de Manuelita: " + " ".join(parts)
 
 
@@ -108,5 +117,6 @@ class DemoChatModel(BaseChatModel):
                 # Resultado de una acción de escritura (o su rechazo): se informa tal cual.
                 message = AIMessage(content=evidence.strip())
             else:
-                message = AIMessage(content=demo_answer(evidence))
+                system = " ".join(str(m.content) for m in messages if isinstance(m, SystemMessage))
+                message = AIMessage(content=demo_answer(evidence, bullets=BULLETS_HINT in system))
         return ChatResult(generations=[ChatGeneration(message=message)])

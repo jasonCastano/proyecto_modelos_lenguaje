@@ -13,13 +13,13 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 from langchain_core.tools import BaseTool, StructuredTool
 from langgraph.store.base import BaseStore
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from .memory import PreferenceError, UserMemory
 from .structured import normalize
 
 WRITE_TOOLS: tuple[str, ...] = ("forget_memory", "save_preference", "export_conversation")
@@ -124,10 +124,6 @@ def detect_write_intent(message: str) -> WriteIntent | None:
 # ---------------------------------------------------------------- efectos
 
 
-def preferences_namespace(user_id: str) -> tuple[str, ...]:
-    return ("users", user_id, "preferences")
-
-
 def export_markdown(turns: Sequence[dict[str, Any]]) -> str:
     lines = ["# Conversación con el asistente de Manuelita", ""]
     for turn in list(turns)[-EXPORT_PREVIEW_TURNS:]:
@@ -156,23 +152,14 @@ def execute_action(
         return f"Exporté la conversación ({len(turns)} turnos):\n\n{export_markdown(turns)}"
     if store is None:
         return "La memoria de preferencias no está disponible en este servidor."
-    namespace = preferences_namespace(user_id)
+    memory = UserMemory(store, ttl_days)
     if tool == "forget_memory":
-        items = store.search(namespace, limit=100)
-        for item in items:
-            store.delete(namespace, item.key)
-        return f"Olvidé {len(items)} preferencias guardadas."
-    now = datetime.now(UTC)
-    store.put(
-        namespace,
-        clean["key"],
-        {
-            "value": clean["value"],
-            "created_at": now.isoformat(),
-            "expires_at": (now + timedelta(days=ttl_days)).isoformat(),
-        },
-    )
-    return f"Guardé tu preferencia: {clean['key']} = {clean['value']}."
+        return f"Olvidé {memory.forget(user_id)} preferencias guardadas."
+    try:
+        item = memory.save(user_id, clean["key"], clean["value"])
+    except PreferenceError as exc:
+        raise ActionArgsError(str(exc)) from exc
+    return f"Guardé tu preferencia: {item.key} = {item.value}."
 
 
 def build_write_tools(

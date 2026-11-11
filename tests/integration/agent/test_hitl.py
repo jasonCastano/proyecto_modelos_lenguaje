@@ -6,12 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from proyecto_modelos_lenguaje.agent.actions import preferences_namespace
 from proyecto_modelos_lenguaje.agent.memory import (
     build_checkpointer,
     build_store,
     memory_checkpointer,
     memory_store,
+    preferences_namespace,
 )
 from proyecto_modelos_lenguaje.agent.service import ChatError
 from tests.agent_helpers import make_service

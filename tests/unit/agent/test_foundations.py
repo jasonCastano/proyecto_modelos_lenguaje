@@ -55,10 +55,7 @@ def test_anomaly_flag_and_reasons_must_agree(overrides: dict[str, object]) -> No
         _fragment(**overrides)
 
 
-@pytest.mark.parametrize(
-    "argv",
-    [["chat", "hola"], ["build-structured"], ["evaluate"]],
-)
+@pytest.mark.parametrize("argv", [["chat", "hola"]])
 def test_cli_subcommands_exist_and_report_pending(argv: list[str]) -> None:
     # Act
     code = main(argv)

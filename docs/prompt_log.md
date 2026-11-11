@@ -100,6 +100,20 @@ versionada en `config/llm.toml`: `model = "deepseek-flash"`, `base_url = "https:
 la validación con el servicio real (T045/T046) queda abierta. La suite cubre el comportamiento con un
 transporte simulado: éxito, errores y tokens.
 
+### 3.6 Enrutador del agente: `router.md` 1.0 (2026-11-10, spec 014)
+
+Prompt nuevo `prompts/router.md` (versión `1.0`, seis secciones). Clasifica en `direct`, `documental`,
+`structured`, `out_of_scope` o `clarify` con confianza y motivo, en JSON; historial y mensaje van en
+etiquetas XML como dato. Modelo `deepseek-flash`, temperatura 0. Solo se invoca cuando las reglas no
+deciden (saludos y temas ajenos se resuelven sin modelo).
+
+| Ejecución | Casos | Precisión | Sin búsqueda | Llamadas | Latencia media |
+|-----------|------:|----------:|-------------:|---------:|---------------:|
+| `router-real-2026-11-10` | 36 | 0,972 | 10/10 | 26 | 1,3 s |
+
+Único error: r32 («¿Cuánto bioetanol produce allá al año?»), etiquetada `documental` y clasificada
+`structured`. Detalle en `docs/evaluacion_modulo2.md` y `docs/evaluacion_enrutador.json`.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

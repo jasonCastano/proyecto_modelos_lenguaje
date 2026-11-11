@@ -43,6 +43,19 @@ Cada decisión resuelve una incógnita del contexto técnico del [plan](./plan.m
 - **Alternatives considered**: guardar resúmenes completos de conversación (riesgo de datos sensibles); vector
   store de memorias (innecesario para < 10 preferencias por usuario).
 
+**Desviaciones al implementar (T060–T065, 2026-11-11)**:
+
+- La redacción de datos personales se aplica en tres puntos y no solo antes de `save_preference`: al mensaje
+  del usuario antes de guardarlo en el hilo (el checkpointer también es memoria, FR-010), al valor de cada
+  preferencia en `UserMemory.save` y a la entrada del modelo del agente con `PIIMiddleware(redact)`. Correo y
+  tarjeta usan los detectores de LangChain; teléfono y documento colombianos, patrones propios
+  (`agent/privacy.py`).
+- La expiración se controla con `expires_at` en cada ítem y limpieza al leer, en lugar del TTL nativo del
+  Store, para que sea comprobable con un reloj inyectado en las pruebas.
+- `DELETE /api/memory/{user_id}?thread_id=…` reutiliza el flujo HITL: envía al hilo el pedido canónico
+  «Olvida mis preferencias guardadas», que propone `forget_memory`; solo borra tras `/resume` con `approve`.
+  El hilo debe pertenecer a ese `user_id` (si no, 404).
+
 ## 4. Evidencia MTEB-es para el embedding (FR-004)
 
 - **Decision**: mantener `intfloat/multilingual-e5-small` y ampliar la ADR 0014 con la tabla del leaderboard

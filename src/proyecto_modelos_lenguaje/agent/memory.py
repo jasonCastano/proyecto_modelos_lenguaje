@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Sequence
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -20,10 +22,12 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.store.base import BaseStore
 from langgraph.store.memory import InMemoryStore
 from langgraph.store.sqlite import SqliteStore
 
 from .config import MemoryConfig
+from .privacy import redact_pii
 from .prompts import load_agent_prompt
 
 CHECKPOINT_FILE = "checkpoints.sqlite3"
@@ -138,3 +142,103 @@ def build_summarization_middleware(
         keep=("messages", memory.keep_last_messages),
         summary_prompt=template,
     )
+
+
+# ------------------------------------------------- memoria larga (US5, FR-009, FR-010)
+
+PREFERENCE_KEYS: tuple[str, ...] = ("response_format", "topics_of_interest", "language")
+PREFERENCE_LABELS = {
+    "response_format": "formato de respuesta",
+    "topics_of_interest": "temas de interés",
+    "language": "idioma",
+}
+PREFERENCE_MAX_CHARS = 200
+PREFERENCE_SEARCH_LIMIT = 100
+
+
+class PreferenceError(ValueError):
+    """Clave fuera de la lista cerrada o valor inválido."""
+
+
+def preferences_namespace(user_id: str) -> tuple[str, ...]:
+    return ("users", user_id, "preferences")
+
+
+@dataclass(frozen=True, slots=True)
+class PreferenceItem:
+    key: str
+    value: str
+    created_at: str
+    expires_at: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            "key": self.key,
+            "value": self.value,
+            "created_at": self.created_at,
+            "expires_at": self.expires_at,
+        }
+
+
+class UserMemory:
+    """Preferencias declaradas por usuario: lista cerrada de claves, TTL y redacción de PII."""
+
+    def __init__(self, store: BaseStore, ttl_days: int) -> None:
+        self.store = store
+        self.ttl_days = ttl_days
+
+    def list(self, user_id: str, *, now: datetime | None = None) -> list[PreferenceItem]:
+        """Preferencias vigentes; las expiradas se borran al leer."""
+        now = now or datetime.now(UTC)
+        namespace = preferences_namespace(user_id)
+        items: list[PreferenceItem] = []
+        for item in self.store.search(namespace, limit=PREFERENCE_SEARCH_LIMIT):
+            value = item.value or {}
+            expires_at = str(value.get("expires_at", ""))
+            if not expires_at or datetime.fromisoformat(expires_at) <= now:
+                self.store.delete(namespace, item.key)
+                continue
+            items.append(
+                PreferenceItem(item.key, str(value["value"]), str(value["created_at"]), expires_at)
+            )
+        return sorted(items, key=lambda preference: PREFERENCE_KEYS.index(preference.key))
+
+    def save(
+        self, user_id: str, key: str, value: str, *, now: datetime | None = None
+    ) -> PreferenceItem:
+        if key not in PREFERENCE_KEYS:
+            raise PreferenceError(f"Clave de preferencia no permitida: {key}.")
+        clean = redact_pii(" ".join(str(value).split()))
+        if not clean or len(clean) > PREFERENCE_MAX_CHARS:
+            raise PreferenceError(f"El valor debe tener 1 a {PREFERENCE_MAX_CHARS} caracteres.")
+        now = now or datetime.now(UTC)
+        item = PreferenceItem(
+            key, clean, now.isoformat(), (now + timedelta(days=self.ttl_days)).isoformat()
+        )
+        self.store.put(
+            preferences_namespace(user_id),
+            key,
+            {"value": item.value, "created_at": item.created_at, "expires_at": item.expires_at},
+        )
+        return item
+
+    def forget(self, user_id: str) -> int:
+        namespace = preferences_namespace(user_id)
+        items = self.store.search(namespace, limit=PREFERENCE_SEARCH_LIMIT)
+        for item in items:
+            self.store.delete(namespace, item.key)
+        return len(items)
+
+
+def render_preferences(items: Sequence[PreferenceItem]) -> str:
+    """Bloque para el system prompt: solo la forma de responder, nunca la evidencia."""
+    if not items:
+        return ""
+    lines = [
+        "## Preferencias declaradas por el usuario",
+        "",
+        "Aplícalas a la forma de responder; nunca cambian la evidencia ni las reglas de cita.",
+        "",
+    ]
+    lines += [f"- {PREFERENCE_LABELS[item.key]}: {item.value}" for item in items]
+    return "\n".join(lines)

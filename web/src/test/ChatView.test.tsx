@@ -201,4 +201,70 @@ describe("ChatView", () => {
     });
     expect(screen.queryByTestId("approval-card")).not.toBeInTheDocument();
   });
+
+  it("muestra las preferencias guardadas y pide aprobación para olvidarlas", async () => {
+    const threadId = "8f6c1e0a-0000-4000-8000-000000000003";
+    const pending: ChatResponse = {
+      thread_id: threadId,
+      turn: makeTurn({ question: "Prefiero respuestas en viñetas", answer: "", citations: [], fragments: [] }),
+      status: "pending_approval",
+      pending_action: {
+        action_id: "act_01",
+        tool: "save_preference",
+        args: { key: "response_format", value: "viñetas" },
+        proposed_at: "2026-11-11T10:00:00Z",
+      },
+      anomalies: [],
+    };
+    const saved: ChatResponse = {
+      ...pending,
+      turn: makeTurn({ answer: "Guardé tu preferencia.", citations: [], fragments: [] }),
+      status: "answered",
+      pending_action: null,
+    };
+    const memory = {
+      user_id: "anon-x",
+      items: [
+        {
+          key: "response_format",
+          value: "viñetas",
+          created_at: "2026-11-11T10:00:00Z",
+          expires_at: "2026-12-11T10:00:00Z",
+        },
+      ],
+    };
+    const forget = {
+      status: "pending_approval",
+      thread_id: threadId,
+      pending_action: { action_id: "act_02", tool: "forget_memory", args: {}, proposed_at: "x" },
+    };
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      const body =
+        url.endsWith("/chat")
+          ? pending
+          : url.endsWith("/resume")
+            ? saved
+            : init?.method === "DELETE"
+              ? forget
+              : memory;
+      return Promise.resolve(
+        new Response(JSON.stringify(body), { status: init?.method === "DELETE" ? 202 : 200 }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    render(<ChatView mode="demo" />);
+    await user.type(screen.getByTestId("chat-input"), "Prefiero respuestas en viñetas");
+    await user.click(screen.getByTestId("chat-send"));
+    await user.click(await screen.findByRole("button", { name: "Aprobar" }));
+    const strip = await screen.findByTestId("preferences");
+    expect(strip).toHaveTextContent("formato: viñetas");
+    await user.click(screen.getByRole("button", { name: "Olvidar" }));
+
+    expect(await screen.findByTestId("approval-card")).toHaveTextContent("Olvidar tus preferencias");
+    const deleteCall = fetchMock.mock.calls.find((call) => call[1]?.method === "DELETE");
+    expect(String(deleteCall?.[0])).toContain(`/memory/anon-`);
+    expect(String(deleteCall?.[0])).toContain(`thread_id=${threadId}`);
+  });
 });

@@ -53,7 +53,7 @@ export function getMemory(userId: string): Promise<MemoryView> {
 export function deleteMemory(
   userId: string,
   threadId: string,
-): Promise<{ status: "pending_approval"; pending_action: PendingAction }> {
+): Promise<{ status: "pending_approval"; thread_id: string; pending_action: PendingAction }> {
   return request(`/memory/${encodeURIComponent(userId)}?thread_id=${encodeURIComponent(threadId)}`, {
     method: "DELETE",
   });

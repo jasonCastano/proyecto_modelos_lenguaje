@@ -27,7 +27,9 @@ from .graph import (
     build_agent_graph,
     build_chain_graph,
 )
+from .memory import UserMemory
 from .models import Decision, PendingAction, RouteDecision, Turn
+from .privacy import redact_pii
 from .structured import StructuredError, StructuredStore
 
 Variant = Literal["chain", "agent"]
@@ -38,6 +40,7 @@ CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 
 INTERRUPT_CHANNEL = "__interrupt__"
+FORGET_MESSAGE = "Olvida mis preferencias guardadas"
 
 
 def pending_from_interrupt(item: Any, timestamp: str | None) -> dict[str, Any]:
@@ -217,7 +220,7 @@ class ChatService:
         variant: Variant = "chain",
         mode: Mode = "demo",
     ) -> ChatOutcome:
-        question = validate_message(message)
+        question = redact_pii(validate_message(message))
         validate_user_id(user_id)
         state: dict[str, Any] = {"question": question, "mode": mode}
         if thread_id is None:
@@ -280,6 +283,28 @@ class ChatService:
                 as_node="finalize",
             )
         return self._outcome(thread_id, result)
+
+    def preferences(self, user_id: str) -> dict[str, Any]:
+        """``GET /api/memory/{user_id}``: preferencias vigentes (las expiradas se borran)."""
+        validate_user_id(user_id)
+        if self.store is None:
+            return {"user_id": user_id, "items": []}
+        memory = UserMemory(self.store, self.config.memory.preference_ttl_days)
+        return {"user_id": user_id, "items": [item.to_dict() for item in memory.list(user_id)]}
+
+    def request_forget(self, user_id: str, thread_id: str) -> ChatOutcome:
+        """``DELETE /api/memory/{user_id}``: propone ``forget_memory`` en el hilo; no borra aún."""
+        validate_user_id(user_id)
+        values, _pending = self._load(thread_id)
+        if values.get("user_id") != user_id:
+            raise ChatError("thread_not_found", "No existe ese hilo para este usuario.", 404)
+        return self.send(
+            FORGET_MESSAGE,
+            thread_id=thread_id,
+            user_id=user_id,
+            variant=values.get("variant", "chain"),
+            mode=values.get("mode", "demo"),
+        )
 
     def thread(self, thread_id: str) -> dict[str, Any]:
         values, pending = self._load(thread_id)

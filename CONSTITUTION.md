@@ -456,7 +456,11 @@ fragmentos con instrucciones embebidas marcados y reportados en `anomalies[]`, r
 system prompt descartadas, y acciones de escritura (`save_preference`, `forget_memory`,
 `export_conversation`) detenidas por `interrupt()`/`HumanInTheLoopMiddleware` hasta una decisión humana
 (`POST /api/threads/{id}/resume`), que queda registrada y sobrevive al reinicio; memoria larga en
-`memory.sqlite3` (`SqliteStore`) dentro de `MANUELITA_STATE_DIR`.
+`memory.sqlite3` (`SqliteStore`) dentro de `MANUELITA_STATE_DIR`. US5 (preferencias): lista cerrada
+(`response_format`, `topics_of_interest`, `language`), valores ≤ 200 caracteres, expiración a 30 días,
+datos personales redactados antes de persistir (mensajes, preferencias y entrada del agente con
+`PIIMiddleware`), preferencias aplicadas al system prompt de ambas variantes, `GET|DELETE /api/memory/{user_id}`
+(el borrado pasa por aprobación) y política en `docs/memoria.md`.
 
 **Reglas mínimas**:
 

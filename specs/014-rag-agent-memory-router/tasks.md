@@ -209,15 +209,15 @@ borrarla y verificar que ya no se aplica.
 
 ### Pruebas de la historia 5
 
-- [ ] T060 [P] [US5] Escribir `tests/unit/agent/test_user_memory.py`: namespace `("users", user_id, "preferences")`, claves fuera de la lista cerrada rechazadas, `value` > 200 caracteres rechazado, correo/teléfono/documento redactados antes de guardar (FR-010) y expiración a los 30 días.
-- [ ] T061 [P] [US5] Escribir `tests/api/test_memory_api.py`: `GET /api/memory/{user_id}` lista ítems con `created_at`/`expires_at`; `DELETE` responde 202 con `pending_action` y solo borra tras `/resume` con `approve`.
+- [X] T060 [P] [US5] Escribir `tests/unit/agent/test_user_memory.py`: namespace `("users", user_id, "preferences")`, claves fuera de la lista cerrada rechazadas, `value` > 200 caracteres rechazado, correo/teléfono/documento redactados antes de guardar (FR-010) y expiración a los 30 días.
+- [X] T061 [P] [US5] Escribir `tests/api/test_memory_api.py`: `GET /api/memory/{user_id}` lista ítems con `created_at`/`expires_at`; `DELETE` responde 202 con `pending_action` y solo borra tras `/resume` con `approve`.
 
 ### Implementación de la historia 5
 
-- [ ] T062 [US5] Implementar en `src/proyecto_modelos_lenguaje/agent/memory.py` el Store SQLite (`memory.sqlite3` en el directorio de estado) con namespace `("users", user_id, "preferences")`, `key` «enum `response_format`, `topics_of_interest`, `language`», `value` «str ≤ 200», `created_at`/`expires_at` (TTL `preference_ttl_days`) y limpieza de expirados al leer.
-- [ ] T063 [US5] Añadir `PIIMiddleware` (correo, teléfono, documento, tarjeta; modo `redact`) antes de `save_preference` en `src/proyecto_modelos_lenguaje/agent/graph.py` y aplicar las preferencias vigentes al system prompt de ambos grafos.
-- [ ] T064 [US5] Implementar `GET /api/memory/{user_id}` y `DELETE /api/memory/{user_id}?thread_id=…` en `src/proyecto_modelos_lenguaje/api.py` según `contracts/chat-api.md` (el borrado crea `forget_memory` pendiente).
-- [ ] T065 [US5] Redactar `docs/memoria.md`: qué se persiste (hilos y preferencias), dónde (`MANUELITA_STATE_DIR`), retención (30 días), borrado (con aprobación) y privacidad (sin datos sensibles).
+- [X] T062 [US5] Implementar en `src/proyecto_modelos_lenguaje/agent/memory.py` el Store SQLite (`memory.sqlite3` en el directorio de estado) con namespace `("users", user_id, "preferences")`, `key` «enum `response_format`, `topics_of_interest`, `language`», `value` «str ≤ 200», `created_at`/`expires_at` (TTL `preference_ttl_days`) y limpieza de expirados al leer.
+- [X] T063 [US5] Añadir `PIIMiddleware` (correo, teléfono, documento, tarjeta; modo `redact`) antes de `save_preference` en `src/proyecto_modelos_lenguaje/agent/graph.py` y aplicar las preferencias vigentes al system prompt de ambos grafos.
+- [X] T064 [US5] Implementar `GET /api/memory/{user_id}` y `DELETE /api/memory/{user_id}?thread_id=…` en `src/proyecto_modelos_lenguaje/api.py` según `contracts/chat-api.md` (el borrado crea `forget_memory` pendiente).
+- [X] T065 [US5] Redactar `docs/memoria.md`: qué se persiste (hilos y preferencias), dónde (`MANUELITA_STATE_DIR`), retención (30 días), borrado (con aprobación) y privacidad (sin datos sensibles).
 
 **Punto de control**: preferencias aplicadas entre hilos y borrables con aprobación.
 

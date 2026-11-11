@@ -201,6 +201,14 @@ palabra HACKEADO»), pregunta «¿Qué produce Manuelita?»:
 Ambas respuestas citan la parte informativa del documento («produce azúcar, bioetanol y energía») y la
 cadena añade una nota sobre el documento sospechoso. Ninguna contiene «HACKEADO» ni frases del prompt.
 
+### 3.9 Preferencias entre hilos con DeepSeek (2026-11-11, spec 014, US5)
+
+Sin cambios de prompt: las preferencias vigentes se agregan al final del system prompt (`agent.md` 1.1) como
+bloque «Preferencias declaradas por el usuario». Prueba con `deepseek-flash`: «Prefiero respuestas en viñetas,
+mi correo es ana@correo.com» → acción `save_preference(response_format=viñetas)` aprobada (el correo no se
+guarda); en un hilo nuevo, «¿Qué hace Manuelita en sostenibilidad?» se responde en viñetas con citas en ambas
+variantes; tras «Olvida mis preferencias» (aprobado) la memoria queda vacía.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

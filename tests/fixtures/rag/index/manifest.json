@@ -5,8 +5,11 @@
   "normalize": true,
   "max_tokens": 512,
   "count": 50,
-  "gold_sha256": "5d20d6ba758d59bafaff2d2cb2d02ac0dd07f2e598728c05ce9932f51fda2abe",
-  "created_at": "2026-11-07T01:33:45+00:00",
+  "gold_sha256": "9b8de8356fa2097c60c848fe715c9e5bf1ede4a0f73dd8cf712c50142c58dd7c",
+  "created_at": "2026-11-11T00:08:39+00:00",
+  "chunk_strategy": "unit+window",
+  "chunk_size_tokens": 400,
+  "chunk_overlap_tokens": 60,
   "library": "fastembed 0.9.1",
   "gold_path": "tests/fixtures/rag/gold_sample.jsonl",
   "command": "uv run python tests/fixtures/rag/build_fixture.py"

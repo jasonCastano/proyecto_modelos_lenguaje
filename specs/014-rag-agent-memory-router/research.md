@@ -79,6 +79,10 @@ Cada decisión resuelve una incógnita del contexto técnico del [plan](./plan.m
 - **Alternatives considered**: solo similitud (descartado por los datos); solo LLM (más llamadas y latencia);
   Jev/System One (opcional según la Clase 9; se deja como extensión).
 
+**Actualización 2026-11-10 (T034)**: la etapa 2 pide JSON y lo valida contra `RouteDecision` en lugar de
+`with_structured_output`, que exige *tool calling* y no lo soportan los modelos guionados de la suite. Con
+DeepSeek el enrutador acertó 35/36 rutas sin ninguna salida inválida.
+
 ## 7. Origen estructurado
 
 - **Decision**: CLI `agent build-structured` que lee `data/gold/entities.jsonl` (15) y `data/gold/facts.jsonl`
@@ -146,6 +150,12 @@ Cada decisión resuelve una incógnita del contexto técnico del [plan](./plan.m
 - **Rationale**: regla F2-11; no deben romper la suite offline ni CI.
 - **Alternatives considered**: DeepEval (otra API, menos alineada con la Clase 10); juez humano exclusivo
   (se mantiene para una muestra de 10 respuestas como control).
+
+**Actualización 2026-11-10 (T002)**: Ragas no instala en el stack actual. `ragas` 0.4.3 depende de
+`scikit-network`, que no publica wheel para Python 3.14 y falla al compilar; `ragas` 0.2.15 instala pero
+importa `langchain_community.chat_models.vertexai`, eliminado en `langchain-community` reciente. Decisión
+provisional: diferir el extra `eval` a T067 y, si sigue bloqueado, implementar fidelidad y relevancia como
+juez LLM propio con las mismas definiciones de Ragas, documentando la desviación.
 
 ## 13. Interfaz y API
 

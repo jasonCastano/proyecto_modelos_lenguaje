@@ -23,7 +23,10 @@ recuperación comparadas con la línea base.
    metadatos de cada fragmento + `manifest.json` con modelo, dimensión, normalización, recuento, hash
    de la capa de oro y fecha. Búsqueda exacta por producto punto.
 4. **Chunking**: se reutilizan las unidades de oro como fragmentos; solo se trocean las que exceden
-   512 tokens (ventanas de 480 con 32 de solape), heredando el `unit_id` para conservar la cita.
+   512 tokens, heredando el `unit_id` para conservar la cita. Ventanas originales de 480 con 32 de
+   solape; **enmienda spec 014 (2026-11-10)**: ventanas de 400 tokens con 60 de solape (15 %, dentro del
+   10–20 % que pide la constitución), registradas en el manifiesto como `chunk_strategy`,
+   `chunk_size_tokens` y `chunk_overlap_tokens` (FR-003).
 5. **Fusión**: `0.65 × semántica + 0.35 × léxica + 0.05` si la unidad aparece en ambos modos, con
    umbral de similitud 0.30, deduplicación por `unit_id` y por similitud > 0.98, y presupuesto de
    contexto del Módulo 1.
@@ -31,6 +34,36 @@ recuperación comparadas con la línea base.
    unidades en `tests/fixtures/rag/` para la suite y el modo demostración.
 7. **Degradación**: si el índice falta o no es válido, la app responde con recuperación léxica y lo
    declara en la traza; nunca falla la petición por el índice.
+
+## Evidencia de recuperación en español (FR-004, spec 014)
+
+La Clase 6 pide elegir el embedding por su desempeño en **recuperación en español**, no por el
+promedio general de MTEB. Fuente común a los candidatos: el conjunto de desarrollo de **MIRACL** en
+español (Wikipedia, recuperación ad hoc), nDCG@10, tal como lo reportan los artículos de cada modelo.
+Consultado el 2026-11-10.
+
+| Modelo | Dimensión | nDCG@10 MIRACL-es (dev) | Fuente |
+|--------|----------:|------------------------:|--------|
+| `intfloat/multilingual-e5-small` (elegido) | 384 | 51,2 | [arXiv 2402.05672](https://arxiv.org/html/2402.05672), tabla 6 |
+| `intfloat/multilingual-e5-base` | 768 | 51,5 | [arXiv 2402.05672](https://arxiv.org/html/2402.05672), tabla 6 |
+| `intfloat/multilingual-e5-large` (referencia) | 1024 | 52,9 | arXiv 2402.05672, tabla 6, y [arXiv 2402.03216](https://arxiv.org/html/2402.03216), tabla 1 |
+| `BAAI/bge-m3` (denso) | 1024 | 56,1 | [arXiv 2402.03216](https://arxiv.org/html/2402.03216), tabla 1 |
+| `BAAI/bge-m3` (denso + disperso + multivector) | 1024 | 59,7 | arXiv 2402.03216, tabla 1 |
+| `paraphrase-multilingual-MiniLM-L12-v2` | 384 | no reportado | la [tarjeta del modelo](https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2) no trae evaluación de recuperación |
+| BM25 (referencia) | — | 7,7 | arXiv 2402.03216, tabla 1 |
+
+Lectura:
+
+- e5-small queda a 0,3 puntos de e5-base con la mitad de dimensiones y a 4,9 puntos de bge-m3 denso con
+  un modelo varias veces más pequeño (bge-m3 pesa ~2 GB y genera vectores de 1024 d). Para 15.211
+  unidades en CPU, el costo de bge-m3 no se justifica sin evidencia propia de que mejora este corpus.
+- La diferencia frente a BM25 en MIRACL (7,7) es mucho mayor que en nuestro corpus, donde la búsqueda
+  léxica del Módulo 1 sí aprovecha nombres propios y cifras; por eso se mantiene la fusión híbrida.
+- Límites de la evidencia: MIRACL no es MTEB y no se compara directamente con el leaderboard; el
+  leaderboard de MTEB no se pudo leer de forma automatizada (página dinámica), y en las tarjetas de e5
+  revisadas no aparecieron tareas de recuperación en español (MintakaRetrieval, XPQARetrieval,
+  SpanishPassageRetrieval). La decisión final se apoya también en la evaluación propia sobre el corpus
+  de Manuelita (`docs/evaluacion_modulo2.md`, SC-001).
 
 ## Alternativas rechazadas
 

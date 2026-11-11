@@ -1,0 +1,462 @@
+"""Grafos conversacionales del agente (spec 014, US1, FR-001 a FR-008).
+
+Dos variantes comparables sobre el mismo estado de hilo (``ChatState``) y el mismo checkpointer:
+
+- **Cadena** (``build_chain_graph``): ``route → retrieve → answer → finalize``. Siempre recupera una
+  vez (documentos o tabla estructurada según la ruta) y responde con una sola llamada (más un
+  reintento si faltan citas).
+- **Agente** (``build_agent_graph``): ``route → agent → finalize``. El agente de
+  ``langchain.agents.create_agent`` decide cuándo y cuántas veces buscar, con
+  ``ToolCallLimitMiddleware`` y ``ModelCallLimitMiddleware``.
+
+En ambas, la puerta de decisión resuelve saludos, preguntas ajenas y mensajes ambiguos sin buscar
+(``reply``), y ``finalize`` registra el turno visible, sus métricas y el resumen de memoria.
+
+Desviación del plan: el checkpointer vive en el grafo exterior y el agente se invoca como subgrafo
+(hereda el checkpointer), para que ambas variantes compartan la forma del estado y del turno.
+"""
+
+from __future__ import annotations
+
+import re
+import time
+from collections.abc import Sequence
+from dataclasses import dataclass
+from typing import Any, TypedDict
+
+from langchain.agents import create_agent
+from langchain.agents.middleware import ModelCallLimitMiddleware, ToolCallLimitMiddleware
+from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.outputs import LLMResult
+from langchain_core.runnables import RunnableConfig
+from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.types import Checkpointer
+
+from ..rag.hybrid import HybridRetriever, RetrievedFragment
+from ..tasks import FALLBACK_ANSWER, STRICT_REMINDER, is_model_fallback
+from .config import AgentConfig
+from .guard import GuardedDocument, render_documents
+from .memory import build_summarization_middleware, compact_history, render_turn, turns_to_keep
+from .models import RouteDecision, Turn, TurnMetrics
+from .prompts import load_agent_prompt
+from .router import apply_structured_fallback, contextual_query, route_message
+from .structured import StructuredFact, StructuredStore, normalize
+from .tools import ToolTrace, build_read_tools, query_structured_impl, search_documents_impl
+
+LABEL_PATTERN = re.compile(r"\[([UF]\d+)\]")
+ROUTER_HISTORY_TURNS = 3
+FAREWELL = re.compile(r"\b(gracias|adios|chao|hasta luego|hasta pronto|nos vemos|eso es todo)\b")
+GREETING_ANSWER = (
+    "¡Hola! Soy el asistente de información pública del Grupo Manuelita. Pregúntame por su "
+    "historia, productos, sostenibilidad, programas o filiales."
+)
+FAREWELL_ANSWER = "Con gusto. Si tienes otra pregunta sobre Manuelita, aquí estoy."
+OUT_OF_SCOPE_ANSWER = (
+    "Solo puedo responder sobre el Grupo Manuelita con su información pública; esa pregunta queda "
+    "fuera de ese alcance."
+)
+CLARIFY_ANSWER = (
+    "No estoy seguro de a qué te refieres. ¿Puedes precisar la pregunta, por ejemplo qué empresa, "
+    "producto o tema de Manuelita te interesa?"
+)
+NO_RETRIEVAL_ROUTES = frozenset({"direct", "out_of_scope", "clarify"})
+
+
+class ChatUnavailableError(RuntimeError):
+    """El índice de recuperación no está disponible para responder."""
+
+
+class ChatState(TypedDict, total=False):
+    """Estado persistido de un hilo (``data-model.md`` §5) más los campos del turno en curso."""
+
+    variant: str
+    user_id: str
+    turns: list[dict[str, Any]]
+    summary: str
+    summarized: int
+    pending_action: dict[str, Any] | None
+    question: str
+    decision: dict[str, Any]
+    fragments: list[dict[str, Any]]
+    structured_rows: list[dict[str, Any]]
+    evidence: dict[str, dict[str, Any]]
+    context: str
+    answer: str
+    citations: list[dict[str, Any]]
+    fallback: bool
+    retrievals: int
+
+
+@dataclass(slots=True)
+class GraphDeps:
+    """Dependencias ya cargadas (una vez por variante y modo)."""
+
+    config: AgentConfig
+    retriever: HybridRetriever | None
+    store: StructuredStore | None
+    model: BaseChatModel
+    router_model: BaseChatModel | None = None
+    summary_model: BaseChatModel | None = None
+
+
+class TurnMetricsHandler(BaseCallbackHandler):
+    """Callback común a ambos grafos: latencia, llamadas al modelo y tokens del turno (T044)."""
+
+    raise_error = False
+
+    def __init__(self) -> None:
+        self.started = time.perf_counter()
+        self.model_calls = 0
+        self.input_tokens = 0
+        self.output_tokens = 0
+
+    def on_chat_model_start(self, *_args: Any, **_kwargs: Any) -> None:
+        self.model_calls += 1
+
+    def on_llm_start(self, *_args: Any, **_kwargs: Any) -> None:
+        self.model_calls += 1
+
+    def on_llm_end(self, response: LLMResult, **_kwargs: Any) -> None:
+        for generations in response.generations:
+            for generation in generations:
+                usage = getattr(getattr(generation, "message", None), "usage_metadata", None)
+                if usage:
+                    self.input_tokens += int(usage.get("input_tokens", 0) or 0)
+                    self.output_tokens += int(usage.get("output_tokens", 0) or 0)
+
+    def snapshot(self, tool_calls: int) -> TurnMetrics:
+        return TurnMetrics(
+            latency_ms=round((time.perf_counter() - self.started) * 1000),
+            model_calls=self.model_calls,
+            tool_calls=tool_calls,
+            input_tokens=self.input_tokens,
+            output_tokens=self.output_tokens,
+        )
+
+
+def find_metrics_handler(config: RunnableConfig | None) -> TurnMetricsHandler | None:
+    callbacks = (config or {}).get("callbacks")
+    if isinstance(callbacks, list):
+        candidates: Sequence[Any] = callbacks
+    else:
+        candidates = [
+            *(getattr(callbacks, "handlers", None) or []),
+            *(getattr(callbacks, "inheritable_handlers", None) or []),
+        ]
+    return next((h for h in candidates if isinstance(h, TurnMetricsHandler)), None)
+
+
+# ---------------------------------------------------------------- evidencia y citas
+
+
+def _fragment_payload(label: str, fragment: RetrievedFragment) -> dict[str, Any]:
+    return {"label": label, **fragment.to_dict()}
+
+
+def _row_payload(label: str, fact: StructuredFact) -> dict[str, Any]:
+    payload = fact.to_dict()
+    payload.pop("snippet", None)
+    return {"label": label, **payload}
+
+
+def collect_evidence(
+    fragments: Sequence[RetrievedFragment], facts: Sequence[StructuredFact]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, dict[str, Any]]]:
+    """Etiqueta fragmentos (``U#``) y hechos (``F#``) y arma el mapa de citas válidas."""
+    fragment_rows = [_fragment_payload(f"U{i}", f) for i, f in enumerate(fragments, start=1)]
+    fact_rows = [_row_payload(f"F{i}", f) for i, f in enumerate(facts, start=1)]
+    evidence: dict[str, dict[str, Any]] = {}
+    for row in fragment_rows:
+        evidence[row["label"]] = {
+            "label": row["label"],
+            "unit_id": row["unit_id"],
+            "url": row["url"],
+            "title": row["title"],
+        }
+    for row, fact in zip(fact_rows, facts, strict=True):
+        first = fact.citations[0] if fact.citations else None
+        evidence[row["label"]] = {
+            "label": row["label"],
+            "unit_id": fact.unit_id,
+            "fact_id": fact.fact_id,
+            "url": first.url if first else "",
+            "title": first.title if first else fact.subject_label,
+        }
+    return fragment_rows, fact_rows, evidence
+
+
+def validate_answer(
+    text: str, evidence: dict[str, dict[str, Any]]
+) -> tuple[str, list[dict[str, Any]], bool]:
+    """Toda respuesta factual cita evidencia válida o pasa a fallo de evidencia (SC-003)."""
+    if not text.strip() or is_model_fallback(text):
+        return FALLBACK_ANSWER, [], True
+    labels = list(dict.fromkeys(LABEL_PATTERN.findall(text)))
+    citations = [evidence[label] for label in labels if label in evidence]
+    if not citations:
+        return FALLBACK_ANSWER, [], True
+    return text.strip(), citations, False
+
+
+def message_text(message: BaseMessage) -> str:
+    content = message.content
+    if isinstance(content, list):
+        return "".join(
+            str(part.get("text", "")) if isinstance(part, dict) else str(part) for part in content
+        )
+    return str(content)
+
+
+# ---------------------------------------------------------------- nodos comunes
+
+
+def _previous_question(state: ChatState) -> str | None:
+    turns = state.get("turns") or []
+    return turns[-1]["question"] if turns else None
+
+
+def _recent_turns(state: ChatState, deps: GraphDeps) -> list[dict[str, Any]]:
+    turns = state.get("turns") or []
+    start = max(state.get("summarized", 0), len(turns) - turns_to_keep(deps.config.memory))
+    return turns[start:]
+
+
+def _route_node(deps: GraphDeps):
+    def route(state: ChatState) -> dict[str, Any]:
+        history = [turn["question"] for turn in (state.get("turns") or [])[-ROUTER_HISTORY_TURNS:]]
+        result = route_message(
+            state["question"],
+            history=history,
+            model=deps.router_model,
+            min_confidence=deps.config.router.min_confidence,
+            temperature=deps.config.router.llm_temperature,
+        )
+        return {
+            "decision": result.decision.model_dump(mode="json"),
+            "fragments": [],
+            "structured_rows": [],
+            "evidence": {},
+            "context": "",
+            "answer": "",
+            "citations": [],
+            "fallback": False,
+            "retrievals": 0,
+        }
+
+    return route
+
+
+def _after_route(state: ChatState) -> str:
+    return "reply" if state["decision"]["route"] in NO_RETRIEVAL_ROUTES else "work"
+
+
+def reply_node(state: ChatState) -> dict[str, Any]:
+    """Respuestas sin búsqueda: saludo o despedida, fuera de alcance y aclaración."""
+    route = state["decision"]["route"]
+    if route == "direct":
+        farewell = FAREWELL.search(normalize(state["question"]))
+        answer = FAREWELL_ANSWER if farewell else GREETING_ANSWER
+    elif route == "out_of_scope":
+        answer = OUT_OF_SCOPE_ANSWER
+    else:
+        answer = CLARIFY_ANSWER
+    return {"answer": answer, "citations": [], "fallback": False}
+
+
+def _finalize_node(deps: GraphDeps):
+    def finalize(state: ChatState, config: RunnableConfig) -> dict[str, Any]:
+        handler = find_metrics_handler(config)
+        retrievals = state.get("retrievals", 0)
+        metrics = handler.snapshot(retrievals) if handler else TurnMetrics(tool_calls=retrievals)
+        turns = list(state.get("turns") or [])
+        citations = state.get("citations") or []
+        turn = Turn(
+            turn_id=len(turns) + 1,
+            question=state["question"],
+            route=RouteDecision.model_validate(state["decision"]),
+            fragments=state.get("fragments") or [],
+            structured_rows=state.get("structured_rows") or [],
+            answer=state.get("answer", ""),
+            citations=citations,
+            sources=list(dict.fromkeys(c["url"] for c in citations if c.get("url"))),
+            fallback=state.get("fallback", False),
+            metrics=metrics,
+        )
+        turns.append(turn.model_dump(mode="json"))
+        summary, summarized = compact_history(
+            turns,
+            state.get("summary", ""),
+            state.get("summarized", 0),
+            deps.config.memory,
+            deps.summary_model,
+        )
+        return {"turns": turns, "summary": summary, "summarized": summarized}
+
+    return finalize
+
+
+# ---------------------------------------------------------------- cadena
+
+
+def _retrieve_node(deps: GraphDeps):
+    def retrieve(state: ChatState) -> dict[str, Any]:
+        decision = RouteDecision.model_validate(state["decision"])
+        query = contextual_query(state["question"], _previous_question(state))
+        top_k = deps.config.agent.chain_top_k
+        retrievals = 0
+        facts: list[StructuredFact] = []
+        fragments: list[RetrievedFragment] = []
+        documents: list[GuardedDocument] = []
+        if decision.route == "structured" and deps.store is not None:
+            facts, documents, _ = query_structured_impl(deps.store, query=query, limit=top_k)
+            retrievals += 1
+        if decision.route == "structured" and not facts:
+            decision = apply_structured_fallback(decision, rows_found=0)
+        if decision.route == "documental":
+            if deps.retriever is None:
+                raise ChatUnavailableError("El índice de recuperación no está disponible.")
+            fragments, documents = search_documents_impl(deps.retriever, query, top_k=top_k)
+            retrievals += 1
+        fragment_rows, fact_rows, evidence = collect_evidence(fragments, facts)
+        return {
+            "decision": decision.model_dump(mode="json"),
+            "fragments": fragment_rows,
+            "structured_rows": fact_rows,
+            "evidence": evidence,
+            "context": render_documents(documents),
+            "retrievals": retrievals,
+        }
+
+    return retrieve
+
+
+def _chain_user_message(state: ChatState, deps: GraphDeps) -> str:
+    parts: list[str] = []
+    if state.get("summary"):
+        parts.append(f"<resumen>\n{state['summary']}\n</resumen>")
+    recent = _recent_turns(state, deps)
+    if recent:
+        parts.append(
+            "<historial>\n" + "\n\n".join(render_turn(t) for t in recent) + "\n</historial>"
+        )
+    parts.append(f"<evidencia>\n{state.get('context', '')}\n</evidencia>")
+    parts.append(f"<pregunta>{state['question']}</pregunta>")
+    return "\n\n".join(parts)
+
+
+def _answer_node(deps: GraphDeps):
+    system = load_agent_prompt("agent").render()
+
+    def answer(state: ChatState, config: RunnableConfig) -> dict[str, Any]:
+        evidence = state.get("evidence") or {}
+        if not evidence:
+            return {"answer": FALLBACK_ANSWER, "citations": [], "fallback": True}
+        user = _chain_user_message(state, deps)
+        text, citations, fallback = FALLBACK_ANSWER, [], True
+        for attempt in range(2):
+            instruction = system if attempt == 0 else f"{system}\n\n{STRICT_REMINDER}"
+            response = deps.model.invoke(
+                [SystemMessage(content=instruction), HumanMessage(content=user)], config
+            )
+            raw = message_text(response)
+            text, citations, fallback = validate_answer(raw, evidence)
+            if not fallback or is_model_fallback(raw):
+                break
+        return {"answer": text, "citations": citations, "fallback": fallback}
+
+    return answer
+
+
+def build_chain_graph(deps: GraphDeps, checkpointer: Checkpointer = None) -> CompiledStateGraph:
+    """Variante cadena: recuperación fija y una respuesta por turno."""
+    graph = StateGraph(ChatState)
+    graph.add_node("route", _route_node(deps))
+    graph.add_node("reply", reply_node)
+    graph.add_node("retrieve", _retrieve_node(deps))
+    graph.add_node("answer", _answer_node(deps))
+    graph.add_node("finalize", _finalize_node(deps))
+    graph.add_edge(START, "route")
+    graph.add_conditional_edges("route", _after_route, {"reply": "reply", "work": "retrieve"})
+    graph.add_edge("retrieve", "answer")
+    graph.add_edge("answer", "finalize")
+    graph.add_edge("reply", "finalize")
+    graph.add_edge("finalize", END)
+    return graph.compile(checkpointer=checkpointer)
+
+
+# ---------------------------------------------------------------- agente
+
+
+def _agent_messages(state: ChatState, deps: GraphDeps) -> list[BaseMessage]:
+    messages: list[BaseMessage] = []
+    summary = state.get("summary", "")
+    for turn in _recent_turns(state, deps):
+        messages.append(HumanMessage(content=turn["question"]))
+        messages.append(AIMessage(content=turn["answer"]))
+    question = f"<pregunta>{state['question']}</pregunta>"
+    if summary:
+        question = f"<resumen>\n{summary}\n</resumen>\n\n{question}"
+    messages.append(HumanMessage(content=question))
+    return messages
+
+
+def _final_answer(messages: Sequence[BaseMessage]) -> str:
+    for message in reversed(messages):
+        if isinstance(message, AIMessage):
+            return "" if message.tool_calls else message_text(message)
+    return ""
+
+
+def _agent_node(deps: GraphDeps):
+    system = load_agent_prompt("agent").render()
+    limits = deps.config.agent
+
+    def agent(state: ChatState, config: RunnableConfig) -> dict[str, Any]:
+        if deps.retriever is None:
+            raise ChatUnavailableError("El índice de recuperación no está disponible.")
+        trace = ToolTrace()
+        tools = build_read_tools(deps.retriever, deps.store, trace, top_k=limits.chain_top_k)
+        runnable = create_agent(
+            deps.model,
+            tools=list(tools),
+            system_prompt=system,
+            middleware=[
+                build_summarization_middleware(
+                    deps.config.memory, deps.summary_model or deps.model
+                ),
+                ToolCallLimitMiddleware(run_limit=limits.tool_call_limit),
+                ModelCallLimitMiddleware(run_limit=limits.model_call_limit),
+            ],
+        )
+        result = runnable.invoke({"messages": _agent_messages(state, deps)}, config)
+        fragment_rows, fact_rows, evidence = collect_evidence(trace.fragments, trace.facts)
+        text, citations, fallback = validate_answer(_final_answer(result["messages"]), evidence)
+        return {
+            "fragments": fragment_rows,
+            "structured_rows": fact_rows,
+            "evidence": evidence,
+            "answer": text,
+            "citations": citations,
+            "fallback": fallback,
+            "retrievals": trace.calls,
+        }
+
+    return agent
+
+
+def build_agent_graph(deps: GraphDeps, checkpointer: Checkpointer = None) -> CompiledStateGraph:
+    """Variante agente: la puerta de decisión y después ``create_agent`` con herramientas."""
+    graph = StateGraph(ChatState)
+    graph.add_node("route", _route_node(deps))
+    graph.add_node("reply", reply_node)
+    graph.add_node("agent", _agent_node(deps))
+    graph.add_node("finalize", _finalize_node(deps))
+    graph.add_edge(START, "route")
+    graph.add_conditional_edges("route", _after_route, {"reply": "reply", "work": "agent"})
+    graph.add_edge("agent", "finalize")
+    graph.add_edge("reply", "finalize")
+    graph.add_edge("finalize", END)
+    return graph.compile(checkpointer=checkpointer)

@@ -130,6 +130,22 @@ DeepSeek el enrutador acertó 35/36 rutas sin ninguna salida inválida.
 - **Rationale**: FR-014 y la regla F2-8 piden comparar calidad, latencia y llamadas; los límites evitan bucles.
 - **Alternatives considered**: comparar con modelos distintos (confunde la variable bajo estudio).
 
+**Desviaciones al implementar (T042–T047, 2026-11-11)**:
+
+- El checkpointer vive en un grafo exterior común a ambas variantes (`route → retrieve → answer → finalize` y
+  `route → agent → finalize`); `create_agent` se invoca como subgrafo dentro del nodo `agent` y hereda ese
+  checkpointer. Así las dos variantes comparten el estado del hilo (`turns`, `summary`) y la forma del turno.
+- La memoria del hilo se resume en `finalize` con `prompts/memory_summary.md` (ambas variantes); dentro del
+  agente, `SummarizationMiddleware` aplica la misma política a los mensajes de una ejecución.
+- La repregunta elíptica se resuelve sin llamada extra al modelo: la consulta de búsqueda antepone la pregunta
+  previa cuando el mensaje es corto o deíctico (`router.contextual_query`); el historial reciente va además en
+  el prompt de respuesta.
+- Saludos, fuera de alcance y aclaraciones responden con textos fijos (0 llamadas al modelo, 0 búsquedas).
+- Toda respuesta sin una cita válida se reemplaza por la frase de fallo de evidencia (SC-003); la cadena
+  reintenta una vez con el recordatorio de citas del Módulo 1.
+- El modo demo usa `DemoChatModel`: pide una búsqueda y responde de forma extractiva con la primera oración de
+  los documentos, sin red.
+
 ## 11. Evaluación ampliada
 
 - **Decision**: extender `rag/evaluate.py` con `recall_at(10)`, `ndcg_at(10)` (relevancia binaria, log2), tasa de

@@ -160,6 +160,29 @@ deciden (saludos y temas ajenos se resuelven sin modelo).
 Único error: r32 («¿Cuánto bioetanol produce allá al año?»), etiquetada `documental` y clasificada
 `structured`. Detalle en `docs/evaluacion_modulo2.md` y `docs/evaluacion_enrutador.json`.
 
+### 3.7 Agente conversacional: `agent.md` 1.0 y `memory_summary.md` 1.0 (2026-11-11, spec 014)
+
+Prompts nuevos (seis secciones cada uno):
+
+| Prompt | Archivo | Versión | SHA-256 (12 primeros) | Uso |
+|--------|---------|---------|-----------------------|-----|
+| Agente | `prompts/agent.md` | 1.0 | `a64cb34cd40f` | System prompt de ambas variantes (cadena y agente): solo `<documento>`, citas `[U#]`/`[F#]`, hasta tres búsquedas |
+| Memoria | `prompts/memory_summary.md` | 1.0 | `e0f515ba64ec` | Resumen del hilo al superar `memory.summarize_after_tokens`; conserva entidades, cifras y URL de las fuentes |
+
+Primera ejecución con `deepseek-flash` (CLI `agent chat --mode real`, 2026-11-11), conversación «¿Qué produce
+Manuelita?» → «¿Y dónde lo produce?»:
+
+| Variante | Turno | Ruta | Llamadas al modelo | Búsquedas | Tokens entrada/salida | Latencia |
+|----------|------:|------|-------------------:|----------:|----------------------:|---------:|
+| Cadena | 1 | documental | 2 | 1 | 3.191 / 482 | 20,5 s |
+| Cadena | 2 | documental (0,85) | 2 | 1 | 3.308 / 614 | 19,8 s |
+| Agente | 1 | documental | 3 | 1 | 5.930 / 348 | 14,8 s |
+| Agente | 2 | documental (0,87) | 3 | 2 | 6.169 / 737 | 17,2 s |
+
+Ambas variantes resuelven la repregunta elíptica con el hilo y citan cada afirmación. La latencia incluye cargar
+el índice y el modelo de embeddings en un proceso nuevo de la CLI; la comparación formal cadena vs. agente queda
+para T066.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

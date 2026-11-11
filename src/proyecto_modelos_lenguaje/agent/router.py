@@ -178,6 +178,26 @@ def route_message(
     return RouterResult(decision.effective(min_confidence), model_calls=1)
 
 
+FOLLOW_UP_MAX_WORDS = 8
+FOLLOW_UP_START = re.compile(r"^(y|e|pero|entonces|tambien|ademas)\b")
+
+
+def contextual_query(question: str, previous_question: str | None) -> str:
+    """Consulta de búsqueda para una repregunta elíptica: antepone la pregunta previa.
+
+    «¿Y dónde lo produce?» tras «¿Qué produce Manuelita?» se busca como ambas juntas; una
+    pregunta larga o autosuficiente se busca tal cual.
+    """
+    if not previous_question:
+        return question
+    normalized = normalize(question).lstrip("¿¡ ")
+    words = re.findall(r"\w+", normalized)
+    elliptic = FOLLOW_UP_START.match(normalized) is not None or bool(DEICTIC.search(normalized))
+    if elliptic or (len(words) <= FOLLOW_UP_MAX_WORDS and COMPANY.search(normalized) is None):
+        return f"{previous_question} {question}"
+    return question
+
+
 def apply_structured_fallback(decision: RouteDecision, rows_found: int) -> RouteDecision:
     """Si la ruta estructurada no encontró filas, cae a documental y lo registra."""
     if decision.route == "structured" and rows_found == 0:

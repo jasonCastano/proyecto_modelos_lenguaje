@@ -17,9 +17,10 @@ const ORIGIN_LABEL: Record<string, string> = {
 
 interface RetrievedFragmentsProps {
   trace: RetrievalTrace | null | undefined;
+  showMeta?: boolean;
 }
 
-export function RetrievedFragments({ trace }: RetrievedFragmentsProps) {
+export function RetrievedFragments({ trace, showMeta = true }: RetrievedFragmentsProps) {
   const [open, setOpen] = useState(false);
 
   if (!trace) {
@@ -39,10 +40,12 @@ export function RetrievedFragments({ trace }: RetrievedFragmentsProps) {
         <span className="fragments-badge" data-testid="retrieval-mode">
           Recuperación: {MODE_LABEL[trace.mode]}
         </span>
-        <span className="fragments-meta">
-          {trace.candidates} candidatos · umbral {trace.threshold.toFixed(2)} ·{" "}
-          {trace.elapsed_ms.toFixed(0)} ms
-        </span>
+        {showMeta ? (
+          <span className="fragments-meta">
+            {trace.candidates} candidatos · umbral {trace.threshold.toFixed(2)} ·{" "}
+            {trace.elapsed_ms.toFixed(0)} ms
+          </span>
+        ) : null}
       </div>
 
       {used.length === 0 ? (

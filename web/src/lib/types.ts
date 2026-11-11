@@ -1,5 +1,5 @@
 export type Mode = "real" | "demo";
-export type TaskKind = "qa" | "summary" | "faq";
+export type TaskKind = "qa" | "summary" | "faq" | "chat";
 export type AnswerStatus = "ok" | "fallback" | "error";
 export type RetrievalMode = "semantic" | "lexical" | "hybrid" | "none";
 export type FragmentOrigin = "semantic" | "lexical" | "both";
@@ -140,4 +140,106 @@ export class ApiClientError extends Error {
     this.name = "ApiClientError";
     this.apiError = apiError;
   }
+}
+
+// ---------------------------------------------------------------- conversación (spec 014, US1)
+
+export type ChatVariant = "chain" | "agent";
+export type ChatRouteName = "direct" | "documental" | "structured" | "out_of_scope" | "clarify";
+export type ChatStatus = "answered" | "fallback" | "clarify" | "pending_approval";
+
+export interface ChatRoute {
+  route: ChatRouteName;
+  confidence: number;
+  reason: string;
+  decided_by: "rules" | "llm" | "demo";
+  alternative?: ChatRouteName | null;
+  fallback_route?: "documental" | null;
+}
+
+export interface ChatFragment extends RetrievalFragment {
+  label: string;
+}
+
+export interface StructuredRow {
+  label: string;
+  fact_id: string;
+  subject_label: string;
+  attribute: string;
+  value: string;
+  year?: number | null;
+  unit_id: string;
+  citations: Array<{ url: string; title: string }>;
+}
+
+export interface ChatCitation {
+  label: string;
+  unit_id: string;
+  url: string;
+  title: string;
+  fact_id?: string | null;
+}
+
+export interface TurnMetrics {
+  latency_ms: number;
+  model_calls: number;
+  tool_calls: number;
+  input_tokens: number;
+  output_tokens: number;
+}
+
+export interface ChatTurn {
+  turn_id: number;
+  question: string;
+  route: ChatRoute;
+  fragments: ChatFragment[];
+  structured_rows: StructuredRow[];
+  answer: string;
+  citations: ChatCitation[];
+  sources: string[];
+  fallback: boolean;
+  metrics: TurnMetrics;
+}
+
+export interface PendingAction {
+  action_id: string;
+  tool: "forget_memory" | "save_preference" | "export_conversation";
+  args: Record<string, unknown>;
+  proposed_at: string;
+  decision?: "approve" | "edit" | "reject" | null;
+}
+
+export interface ChatAnomaly {
+  label?: string | null;
+  unit_id?: string | null;
+  reasons: string[];
+}
+
+export interface ChatResponse {
+  thread_id: string;
+  turn: ChatTurn;
+  status: ChatStatus;
+  pending_action: PendingAction | null;
+  anomalies: ChatAnomaly[];
+}
+
+export interface ThreadView {
+  thread_id: string;
+  variant: ChatVariant;
+  turns: ChatTurn[];
+  summary: string;
+  status: "idle" | "pending_approval";
+  pending_action: PendingAction | null;
+}
+
+export interface MemoryItem {
+  key: string;
+  value: string;
+  created_at: string;
+  expires_at: string;
+}
+
+export interface MemoryView {
+  user_id: string;
+  items: MemoryItem[];
 }

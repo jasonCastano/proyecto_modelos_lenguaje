@@ -443,7 +443,9 @@ Memoria, enrutador, agente y HITL siguen pendientes (spec 014).
 implementados en `src/proyecto_modelos_lenguaje/agent/` (configuración `config/agent.toml`, estado en
 `MANUELITA_STATE_DIR` fuera del repositorio, modelos tipados, aislamiento XML y modo demo). Dependencias
 nuevas: `langgraph` y `langgraph-checkpoint-sqlite`. Ragas queda diferido: no instala en Python 3.14
-(`specs/014-rag-agent-memory-router/research.md` §12).
+(`specs/014-rag-agent-memory-router/research.md` §12). US3 (medir): Recall@10, nDCG@10, abstención y
+calentamiento en `rag/evaluate.py`; conjunto de 30 consultas con ruta esperada; troceo 400/60 en el manifiesto;
+línea base en `docs/evaluacion_modulo2.md` (híbrido ≥ léxico; ningún modo se abstiene fuera de corpus).
 
 **Reglas mínimas**:
 

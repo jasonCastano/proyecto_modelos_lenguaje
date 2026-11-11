@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import pytest
@@ -113,17 +114,22 @@ def test_run_serializes_contract_fields(monkeypatch) -> None:
     assert set(payload) == {
         "run_id",
         "questions",
+        "scored_questions",
+        "warmup",
         "k_values",
         "modes",
         "baseline",
         "verdict",
         "errors",
+        "regressions",
     }
     assert set(payload["modes"]["hybrid"]) == {
         "mode",
         "recall_at_k",
+        "ndcg_at_10",
         "mrr",
         "citation_coverage",
+        "abstention_rate",
         "latency_ms",
     }
 
@@ -151,3 +157,45 @@ def test_evaluation_fixture_has_required_distribution() -> None:
     types = {question.type for question in questions}
     assert types == {"paraphrase", "figure", "proper_noun", "english", "out_of_corpus"}
     assert sum(1 for question in questions if not question.expected_unit_ids) == 5
+
+
+def test_abstention_ndcg_and_regressions(monkeypatch) -> None:
+    # Arrange
+    mode_rankings = {
+        "hybrid": {"q1": ["u9", "u1"], "q2": ["u2"], "q3": ["u3"], "q4": []},
+        "lexical": {"q1": ["u1"], "q2": ["u9"], "q3": ["u3"], "q4": ["u5"]},
+    }
+    monkeypatch.setattr(
+        evaluate_module,
+        "_rankings",
+        lambda retriever, question, mode, **kwargs: mode_rankings[mode][BY_TEXT[question]],
+    )
+
+    # Act
+    run = evaluate_questions(None, QUESTIONS, modes=("lexical", "hybrid"), warmup=2)
+
+    # Assert
+    hybrid, lexical = run.modes["hybrid"], run.modes["lexical"]
+    assert hybrid.abstention_rate == 1.0
+    assert lexical.abstention_rate == 0.0
+    assert hybrid.recall_at_k[10] == pytest.approx(1.0)
+    assert hybrid.ndcg_at_10 == pytest.approx((1 / math.log2(3) + 1 + 1) / 3)
+    assert [item["question_id"] for item in run.regressions] == ["q1"]
+    assert run.scored_questions == 3
+    assert run.warmup == 2
+
+
+def test_module2_query_format_is_loaded(tmp_path) -> None:
+    # Arrange
+    path = tmp_path / "queries.jsonl"
+    line = '{"query_id": "r01", "question": "Hola", "expected_route": "direct", "type": "greeting"}'
+    path.write_text(line + "\n", encoding="utf-8")
+
+    # Act
+    (question,) = load_questions(path)
+
+    # Assert
+    assert question.question_id == "r01"
+    assert question.expected_route == "direct"
+    assert question.scored is False
+    assert question.must_abstain is False

@@ -101,13 +101,16 @@ def test_load_task_config_rejects_unknown_pack(tmp_path: Path) -> None:
         load_task_config(path)
 
 
+PROMPT_VERSIONS = {"qa": "1.1", "summary": "1.0", "faq": "1.0"}  # qa 1.1: M1-09
+
+
 @pytest.mark.parametrize("task", ["qa", "summary", "faq"])
 def test_prompts_define_the_six_mandatory_sections(task: str) -> None:
     prompt = load_prompt(task)
     assert tuple(prompt.sections) == ("rol", "tarea", "contexto", "reglas", "formato", "fallback")
     assert all(value.strip() for value in prompt.sections.values())
     assert len(prompt.sha256) == 64
-    assert prompt.version == "1.0"
+    assert prompt.version == PROMPT_VERSIONS[task]
 
 
 def test_prompt_hash_changes_with_content(tmp_path: Path) -> None:

@@ -382,11 +382,12 @@ misma recuperación léxica. Códigos esperados en el banco: 19 D, 11 P, 4 C, 3 
 `docs/evaluacion_modulo1.md` las llenan ambos integrantes. Hasta entonces este informe no reporta respuestas
 correctas, coherencia media ni tasa de alucinación.
 
-**Ajuste de prompts (M1-09)**: (a) permitir una respuesta parcial con cita cuando la evidencia cubre parte de la
-pregunta y reservar la frase de abstención para la evidencia nula; (b) reejecutar solo las 16 preguntas
-afectadas con `--ids` y comparar. Siguen vigentes los candidatos de recuperación de `docs/prompt_log.md` §5:
-penalizar unidades de baja densidad y textos de formulario, exigir cobertura de varios términos de la pregunta y
-revisar el peso del tema frente a la coincidencia léxica.
+**Ajuste de prompts (M1-09)**: `prompts/qa.md` 1.1 distingue evidencia parcial (responder lo cubierto con citas
+y declarar lo que falta) de evidencia nula (abstención). En la reevaluación `m1-09-qa-v1.1` de las 16 preguntas
+afectadas más P14 y P15 ([`docs/evaluacion_m1_09.md`](evaluacion_m1_09.md)), las abstenciones indebidas bajan
+de 16 a 6. A cambio, P14 (`X`) deja de abstenerse: responde que el corpus no trae el dato y cita la única
+mención relacionada. Las 6 que siguen abstenidas apuntan a la recuperación léxica. Detalle en
+`docs/prompt_log.md` §3.5. Siguen vigentes los candidatos de recuperación de `docs/prompt_log.md` §5.
 
 ## 6. Limitaciones
 

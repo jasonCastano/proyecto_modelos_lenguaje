@@ -173,20 +173,22 @@ def _print_turn(outcome) -> None:
 def _chat(args: argparse.Namespace, root: Path) -> int:
     from ..tasks import _configure_output
     from .config import resolve_state_dir
-    from .memory import build_checkpointer
+    from .memory import build_checkpointer, build_store
     from .service import ChatError, ChatService, build_deps
 
     _configure_output()
     try:
         config = load_agent_config(project_root=root)
-        checkpointer = build_checkpointer(
-            resolve_state_dir(config.state_env_var, project_root=root)
-        )
+        state_dir = resolve_state_dir(config.state_env_var, project_root=root)
+        checkpointer = build_checkpointer(state_dir)
     except AgentConfigError as exc:
         print(f"error de configuración: {exc}", file=sys.stderr)
         return 5
     service = ChatService(
-        config, checkpointer, lambda mode: build_deps(mode, config, _cli_retriever(mode, root))
+        config,
+        checkpointer,
+        lambda mode: build_deps(mode, config, _cli_retriever(mode, root)),
+        store=build_store(state_dir),
     )
     try:
         outcome = service.send(

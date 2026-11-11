@@ -121,6 +121,24 @@ DeepSeek el enrutador acertó 35/36 rutas sin ninguna salida inválida.
   SQLite permite reanudar tras reiniciar el servidor (US4-3, SC-009).
 - **Alternatives considered**: confirmación solo en la UI (no queda registro en el estado del grafo).
 
+**Desviaciones al implementar (T052–T059, 2026-11-11)**:
+
+- Los pedidos de escritura se detectan con reglas deterministas antes del enrutador
+  (`agent/actions.py::detect_write_intent`: «prefiero viñetas», «olvida mis preferencias», «exporta la
+  conversación»). En la cadena llevan al nodo `action`, que llama a `interrupt()` con la misma forma de
+  solicitud que `HumanInTheLoopMiddleware`; en el agente, el modelo llama a la herramienta y el middleware la
+  detiene. Así la API trata igual las dos variantes.
+- La acción pendiente no se copia al estado: se lee del `interrupt` persistido por el checkpointer, que es la
+  fuente de verdad y sobrevive al reinicio. Cada decisión (aprobar, editar o rechazar) queda en
+  `actions[]` del estado del hilo con argumentos finales y fecha (SC-009).
+- Las herramientas de escritura no reciben `user_id` ni `thread_id` como argumentos: los toma el servidor
+  del hilo, para que el modelo no pueda escribir en la memoria de otra persona. Argumentos visibles:
+  `save_preference(key, value)`, `forget_memory()` y `export_conversation(format)`.
+- `export_conversation` devuelve el Markdown en la respuesta; no escribe archivos (la app no escribe en el
+  repositorio).
+- Segunda línea de defensa contra inyección: `guard.leaks_prompt` descarta cualquier respuesta que copie
+  una frase del system prompt y la convierte en fallo de evidencia.
+
 ## 10. Variantes Chain vs. Agent y su comparación
 
 - **Decision**: misma entrada, mismo retriever, mismo prompt de respuesta. La cadena recupera siempre una vez

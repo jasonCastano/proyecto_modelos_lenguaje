@@ -314,3 +314,12 @@ class ThreadView(BaseModel):
     summary: str = ""
     status: Literal["idle", "pending_approval"] = "idle"
     pending_action: dict[str, object] | None = None
+    actions: list[dict[str, object]] = Field(default_factory=list)
+
+
+class ResumeRequest(RequestModel):
+    """``POST /api/threads/{thread_id}/resume``: decisión humana sobre la acción pendiente."""
+
+    action_id: str = Field(min_length=1, max_length=128)
+    decision: Literal["approve", "edit", "reject"]
+    args: dict[str, object] | None = None

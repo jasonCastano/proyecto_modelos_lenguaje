@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "model": "intfloat/multilingual-e5-small",
+  "dimension": 384,
+  "normalize": true,
+  "max_tokens": 512,
+  "count": 6,
+  "gold_sha256": "8e118613853c0b0d24fee6cedec156e2635792388d4a256cda46334731859459",
+  "created_at": "2026-11-11T14:43:15+00:00",
+  "chunk_strategy": "unit+window",
+  "chunk_size_tokens": 400,
+  "chunk_overlap_tokens": 60,
+  "library": "fastembed 0.9.1",
+  "gold_path": "tests/fixtures/rag/malicious/gold_malicious.jsonl",
+  "command": "uv run python tests/fixtures/rag/build_fixture.py malicious"
+}

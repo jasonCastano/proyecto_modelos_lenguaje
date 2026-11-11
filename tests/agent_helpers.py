@@ -15,7 +15,7 @@ from pydantic import Field
 from proyecto_modelos_lenguaje.agent.config import AgentConfig, load_agent_config
 from proyecto_modelos_lenguaje.agent.demo import DemoChatModel
 from proyecto_modelos_lenguaje.agent.graph import GraphDeps
-from proyecto_modelos_lenguaje.agent.memory import memory_checkpointer
+from proyecto_modelos_lenguaje.agent.memory import memory_checkpointer, memory_store
 from proyecto_modelos_lenguaje.agent.service import ChatService
 from proyecto_modelos_lenguaje.config import PROJECT_ROOT
 from proyecto_modelos_lenguaje.rag.config import load_retrieval_config
@@ -25,20 +25,28 @@ from proyecto_modelos_lenguaje.rag.index import load_index
 from proyecto_modelos_lenguaje.retrieval import EntityIndex, GoldUnit
 
 FIXTURE_DIR = PROJECT_ROOT / "tests" / "fixtures" / "rag"
+FIXTURES = {
+    "default": (FIXTURE_DIR / "gold_sample.jsonl", FIXTURE_DIR / "index"),
+    "malicious": (
+        FIXTURE_DIR / "malicious" / "gold_malicious.jsonl",
+        FIXTURE_DIR / "malicious" / "index",
+    ),
+}
 
 
-def demo_retriever() -> HybridRetriever:
-    """Recuperador híbrido sobre el índice de prueba, con embeddings hash (sin red)."""
+def demo_retriever(fixture: str = "default") -> HybridRetriever:
+    """Recuperador híbrido sobre un índice de prueba, con embeddings hash (sin red)."""
+    gold, index_dir = FIXTURES[fixture]
     config = load_retrieval_config(project_root=PROJECT_ROOT)
     profile = EmbeddingProfile.from_config(config.embedding)
     units = [
         GoldUnit.from_dict(json.loads(line))
-        for line in (FIXTURE_DIR / "gold_sample.jsonl").read_text(encoding="utf-8").splitlines()
+        for line in gold.read_text(encoding="utf-8").splitlines()
         if line
     ]
     return HybridRetriever(
         units,
-        index=load_index(FIXTURE_DIR / "index", profile),
+        index=load_index(index_dir, profile),
         embedder=HashEmbedder(profile),
         entity_index=EntityIndex(),
         config=config,
@@ -58,15 +66,18 @@ def make_service(
     model: BaseChatModel | None = None,
     config: AgentConfig | None = None,
     summary_model: BaseChatModel | None = None,
+    store: Any = None,
+    retriever: HybridRetriever | None = None,
 ) -> ChatService:
     config = config or agent_config()
-    retriever = demo_retriever()
+    retriever = retriever or demo_retriever()
     return ChatService(
         config,
         checkpointer if checkpointer is not None else memory_checkpointer(),
         lambda _mode: GraphDeps(
             config, retriever, None, model or DemoChatModel(), summary_model=summary_model
         ),
+        store=store if store is not None else memory_store(),
     )
 
 

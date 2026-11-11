@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { getThread, sendChat } from "../lib/chat";
+import { getThread, resumeThread, sendChat } from "../lib/chat";
 import {
   ApiClientError,
   type ApiError,
@@ -9,8 +9,10 @@ import {
   type ChatVariant,
   type Citation,
   type Mode,
+  type PendingAction,
   type RetrievalTrace,
 } from "../lib/types";
+import { ApprovalCard } from "./ApprovalCard";
 import { RetrievedFragments } from "./RetrievedFragments";
 import { SourceList } from "./SourceList";
 
@@ -106,6 +108,7 @@ function turnCitations(turn: ChatTurn): Citation[] {
 export function ChatTurnCard({ turn }: { turn: ChatTurn }) {
   const route = turn.route;
   const kind = route.route === "clarify" ? "clarify" : turn.fallback ? "fallback" : "answered";
+  const anomalous = turn.fragments.filter((fragment) => fragment.anomalous);
   return (
     <li className="chat-turn" data-testid="chat-turn" data-kind={kind}>
       <p className="chat-question">
@@ -118,6 +121,16 @@ export function ChatTurnCard({ turn }: { turn: ChatTurn }) {
         </span>
         <span className="fragments-meta">{route.reason}</span>
       </div>
+      {anomalous.length > 0 ? (
+        <div className="console-message" data-kind="warning" data-testid="anomaly-warning" role="note">
+          {anomalous.map((fragment) => (
+            <p key={fragment.label}>
+              El fragmento [{fragment.label}] contiene instrucciones dirigidas al asistente (
+              {(fragment.anomaly_reasons ?? []).join(", ")}). Se trató como dato y no se obedeció.
+            </p>
+          ))}
+        </div>
+      ) : null}
       <RetrievedFragments trace={turnTrace(turn)} showMeta={false} />
       {turn.structured_rows.length > 0 ? (
         <ul className="chat-rows" data-testid="structured-rows">
@@ -147,7 +160,9 @@ export function ChatView({ mode }: { mode: Mode }) {
   const [threadId, setThreadId] = useState<string | null>(stored.current?.id ?? null);
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [message, setMessage] = useState("");
-  const [pending, setPending] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [action, setAction] = useState<PendingAction | null>(null);
+  const [actionQuestion, setActionQuestion] = useState("");
   const [error, setError] = useState<ApiError | null>(null);
   const userId = useRef(anonymousUser());
 
@@ -157,7 +172,9 @@ export function ChatView({ mode }: { mode: Mode }) {
     let active = true;
     void getThread(saved.id)
       .then((view) => {
-        if (active) setTurns(view.turns);
+        if (!active) return;
+        setTurns(view.turns);
+        setAction(view.pending_action);
       })
       .catch(() => {
         if (!active) return;
@@ -174,7 +191,36 @@ export function ChatView({ mode }: { mode: Mode }) {
     setVariant(nextVariant);
     setThreadId(null);
     setTurns([]);
+    setAction(null);
     setError(null);
+  }
+
+  function report(caught: unknown) {
+    setError(
+      caught instanceof ApiClientError
+        ? caught.apiError
+        : {
+            code: "unexpected_error",
+            message: "No se pudo completar la solicitud.",
+            retryable: true,
+            action: "reintentar",
+          },
+    );
+  }
+
+  async function decide(decision: "approve" | "edit" | "reject", args?: Record<string, unknown>) {
+    if (!threadId || !action) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await resumeThread(threadId, action.action_id, decision, args);
+      setTurns((previous) => [...previous, response.turn]);
+      setAction(response.status === "pending_approval" ? response.pending_action : null);
+    } catch (caught) {
+      report(caught);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -189,7 +235,7 @@ export function ChatView({ mode }: { mode: Mode }) {
       });
       return;
     }
-    setPending(true);
+    setBusy(true);
     setError(null);
     try {
       const response = await sendChat({
@@ -201,21 +247,17 @@ export function ChatView({ mode }: { mode: Mode }) {
       });
       setThreadId(response.thread_id);
       writeSession(THREAD_KEY, JSON.stringify({ id: response.thread_id, variant }));
-      setTurns((previous) => [...previous, response.turn]);
+      if (response.status === "pending_approval") {
+        setAction(response.pending_action);
+        setActionQuestion(response.turn.question);
+      } else {
+        setTurns((previous) => [...previous, response.turn]);
+      }
       setMessage("");
     } catch (caught) {
-      setError(
-        caught instanceof ApiClientError
-          ? caught.apiError
-          : {
-              code: "unexpected_error",
-              message: "No se pudo enviar el mensaje.",
-              retryable: true,
-              action: "reintentar",
-            },
-      );
+      report(caught);
     } finally {
-      setPending(false);
+      setBusy(false);
     }
   }
 
@@ -253,6 +295,18 @@ export function ChatView({ mode }: { mode: Mode }) {
         </p>
       )}
 
+      {action ? (
+        <>
+          {actionQuestion ? <p className="chat-question">{actionQuestion}</p> : null}
+          <ApprovalCard
+            action={action}
+            busy={busy}
+            key={action.action_id}
+            onDecide={(decision, args) => void decide(decision, args)}
+          />
+        </>
+      ) : null}
+
       <form className="console-form" onSubmit={(event) => void submit(event)}>
         <div className="field">
           <label htmlFor="chat-message">Tu mensaje</label>
@@ -271,8 +325,13 @@ export function ChatView({ mode }: { mode: Mode }) {
             </span>
           </div>
         </div>
-        <button className="btn btn-accent" data-testid="chat-send" disabled={pending} type="submit">
-          {pending ? "Pensando…" : "Enviar"}
+        <button
+          className="btn btn-accent"
+          data-testid="chat-send"
+          disabled={busy || action !== null}
+          type="submit"
+        >
+          {busy ? "Pensando…" : action ? "Decide la acción pendiente" : "Enviar"}
         </button>
       </form>
 

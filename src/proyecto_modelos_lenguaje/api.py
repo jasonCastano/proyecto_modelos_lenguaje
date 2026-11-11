@@ -24,6 +24,7 @@ from .api_models import (
     FaqRequest,
     FaqResponse,
     HealthStatus,
+    MemoryView,
     ResumeRequest,
     RetrievalTraceModel,
     SummaryRequest,
@@ -78,7 +79,7 @@ app = FastAPI(title=APP_TITLE, version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Content-Type"],
 )
 
@@ -468,6 +469,30 @@ def resume(thread_id: str, payload: ResumeRequest):
     except Exception as exc:
         return _chat_error(exc)
     return outcome.to_dict()
+
+
+@app.get("/api/memory/{user_id}", response_model=MemoryView)
+def memory(user_id: str):
+    try:
+        return _chat_service().preferences(user_id)
+    except Exception as exc:
+        return _chat_error(exc)
+
+
+@app.delete("/api/memory/{user_id}", status_code=202)
+def forget_memory(user_id: str, thread_id: str):
+    try:
+        outcome = _chat_service().request_forget(user_id, thread_id)
+    except Exception as exc:
+        return _chat_error(exc)
+    return JSONResponse(
+        status_code=202,
+        content={
+            "status": outcome.status,
+            "thread_id": outcome.thread_id,
+            "pending_action": outcome.pending_action,
+        },
+    )
 
 
 @app.get("/api/threads/{thread_id}", response_model=ThreadView)

@@ -98,7 +98,8 @@ Resuelve una acción pendiente (HITL) y continúa el hilo con `Command(resume=..
 
 - **GET** → `{"user_id": "…", "items": [{"key": "response_format", "value": "viñetas", "created_at": "…", "expires_at": "…"}]}`.
 - **DELETE** → no borra directamente: crea una acción `forget_memory` pendiente y responde 202
-  `{"status": "pending_approval", "pending_action": {...}}`. Se confirma con `/resume` en el hilo indicado por
+  `{"status": "pending_approval", "thread_id": "…", "pending_action": {...}}`. 404 si el hilo no existe o
+  pertenece a otro `user_id`; 422 si falta `thread_id`. Se confirma con `/resume` en el hilo indicado por
   `thread_id` (query param obligatorio). Regla de oro: escritura con aprobación.
 
 ## Garantías transversales

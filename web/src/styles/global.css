@@ -1538,3 +1538,46 @@ main {
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Conversación con memoria (spec 014, US1) */
+.chat-view {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.chat-turns {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-turn {
+  display: grid;
+  gap: var(--space-3);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.chat-question {
+  justify-self: end;
+  max-width: 85%;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: 1rem 1rem 0.25rem 1rem;
+  overflow-wrap: anywhere;
+}
+
+.chat-route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.chat-rows {
+  margin: 0;
+  padding-left: 1.25rem;
+}

@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { useRag } from "../hooks/useRag";
 import type { HealthStatus } from "../lib/types";
 import { AnswerPanel } from "./AnswerPanel";
+import { ChatView } from "./ChatView";
 import { DemoBanner } from "./DemoBanner";
 import { FaqResults } from "./FaqResults";
 import { TaskTabs } from "./TaskTabs";
@@ -88,73 +89,77 @@ export function RagConsole({ health }: { health: HealthStatus | null }) {
           }}
         />
 
-        <form className="console-form" onSubmit={submit}>
-          {rag.task === "qa" ? (
-            <div className="field">
-              <label htmlFor="question">Tu pregunta</label>
-              <textarea
-                className="question-input"
-                data-testid="question-input"
-                id="question"
-                maxLength={500}
-                onChange={(event) => setQuestion(event.target.value)}
-                placeholder="¿Qué productos ofrece Manuelita?"
-                value={question}
-              />
-              <div className="console-options">
-                <span>{question.length}/500 caracteres</span>
+        {rag.task === "chat" ? <ChatView mode={rag.mode} /> : null}
+
+        {rag.task !== "chat" ? (
+          <form className="console-form" onSubmit={submit}>
+            {rag.task === "qa" ? (
+              <div className="field">
+                <label htmlFor="question">Tu pregunta</label>
+                <textarea
+                  className="question-input"
+                  data-testid="question-input"
+                  id="question"
+                  maxLength={500}
+                  onChange={(event) => setQuestion(event.target.value)}
+                  placeholder="¿Qué productos ofrece Manuelita?"
+                  value={question}
+                />
+                <div className="console-options">
+                  <span>{question.length}/500 caracteres</span>
+                </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          {rag.task === "summary" ? (
-            <div className="field">
-              <label htmlFor="pack">Paquete de contexto</label>
-              <select
-                className="select-input"
-                id="pack"
-                onChange={(event) => setPack(event.target.value as "8000" | "32000")}
-                value={pack}
-              >
-                <option value="8000">8.000 tokens · lectura completa</option>
-                <option value="32000">32.000 tokens · contexto amplio</option>
-              </select>
-            </div>
-          ) : null}
+            {rag.task === "summary" ? (
+              <div className="field">
+                <label htmlFor="pack">Paquete de contexto</label>
+                <select
+                  className="select-input"
+                  id="pack"
+                  onChange={(event) => setPack(event.target.value as "8000" | "32000")}
+                  value={pack}
+                >
+                  <option value="8000">8.000 tokens · lectura completa</option>
+                  <option value="32000">32.000 tokens · contexto amplio</option>
+                </select>
+              </div>
+            ) : null}
 
-          {rag.task === "faq" ? (
-            <div className="field">
-              <label htmlFor="limit">Número de preguntas</label>
-              <select
-                className="select-input"
-                id="limit"
-                onChange={(event) => setLimit(Number(event.target.value))}
-                value={limit}
-              >
-                {Array.from({ length: 11 }, (_, index) => index + 10).map((value) => (
-                  <option key={value} value={value}>
-                    {value} preguntas
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
+            {rag.task === "faq" ? (
+              <div className="field">
+                <label htmlFor="limit">Número de preguntas</label>
+                <select
+                  className="select-input"
+                  id="limit"
+                  onChange={(event) => setLimit(Number(event.target.value))}
+                  value={limit}
+                >
+                  {Array.from({ length: 11 }, (_, index) => index + 10).map((value) => (
+                    <option key={value} value={value}>
+                      {value} preguntas
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
 
-          <button
-            className="btn btn-accent"
-            data-testid="ask-button"
-            disabled={rag.status === "submitting"}
-            type="submit"
-          >
-            {rag.status === "submitting"
-              ? "Consultando…"
-              : rag.task === "qa"
-                ? "Preguntar"
-                : rag.task === "summary"
-                  ? "Generar resumen"
-                  : "Generar FAQ"}
-          </button>
-        </form>
+            <button
+              className="btn btn-accent"
+              data-testid="ask-button"
+              disabled={rag.status === "submitting"}
+              type="submit"
+            >
+              {rag.status === "submitting"
+                ? "Consultando…"
+                : rag.task === "qa"
+                  ? "Preguntar"
+                  : rag.task === "summary"
+                    ? "Generar resumen"
+                    : "Generar FAQ"}
+            </button>
+          </form>
+        ) : null}
 
         {formError ? (
           <div className="console-message" data-kind="error" role="alert">
@@ -164,7 +169,7 @@ export function RagConsole({ health }: { health: HealthStatus | null }) {
 
         {rag.task === "faq" ? <FaqResults items={rag.faqItems} /> : null}
 
-        {rag.task !== "faq" ? (
+        {rag.task !== "faq" && rag.task !== "chat" ? (
           <AnswerPanel
             answer={rag.answer}
             error={rag.error}

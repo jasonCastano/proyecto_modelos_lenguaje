@@ -58,8 +58,16 @@ from .actions import (
 )
 from .config import AgentConfig
 from .guard import GuardedDocument, leaks_prompt, render_documents
-from .memory import build_summarization_middleware, compact_history, render_turn, turns_to_keep
+from .memory import (
+    UserMemory,
+    build_summarization_middleware,
+    compact_history,
+    render_preferences,
+    render_turn,
+    turns_to_keep,
+)
 from .models import RouteDecision, Turn, TurnMetrics
+from .privacy import build_pii_middleware
 from .prompts import load_agent_prompt
 from .router import apply_structured_fallback, contextual_query, route_message
 from .structured import StructuredFact, StructuredStore, normalize
@@ -302,6 +310,18 @@ def _after_route(state: ChatState) -> str:
     return "reply" if state["decision"]["route"] in NO_RETRIEVAL_ROUTES else "work"
 
 
+def system_with_preferences(system: str, deps: GraphDeps, state: ChatState) -> str:
+    """System prompt más las preferencias vigentes del usuario (memoria larga, US5)."""
+    store = get_store()
+    if store is None:
+        return system
+    items = UserMemory(store, deps.config.memory.preference_ttl_days).list(
+        state.get("user_id", "anon")
+    )
+    block = render_preferences(items)
+    return f"{system}\n\n{block}" if block else system
+
+
 def _run_action(deps: GraphDeps, state: ChatState, tool: str, args: dict[str, Any]) -> str:
     return execute_action(
         tool,
@@ -433,9 +453,10 @@ def _answer_node(deps: GraphDeps):
         if not evidence:
             return {"answer": FALLBACK_ANSWER, "citations": [], "fallback": True}
         user = _chain_user_message(state, deps)
+        personalized = system_with_preferences(system, deps, state)
         text, citations, fallback = FALLBACK_ANSWER, [], True
         for attempt in range(2):
-            instruction = system if attempt == 0 else f"{system}\n\n{STRICT_REMINDER}"
+            instruction = personalized if attempt == 0 else f"{personalized}\n\n{STRICT_REMINDER}"
             response = deps.model.invoke(
                 [SystemMessage(content=instruction), HumanMessage(content=user)], config
             )
@@ -522,8 +543,9 @@ def _agent_node(deps: GraphDeps):
         runnable = create_agent(
             deps.model,
             tools=tools,
-            system_prompt=system,
+            system_prompt=system_with_preferences(system, deps, state),
             middleware=[
+                *build_pii_middleware(),
                 HumanInTheLoopMiddleware(
                     interrupt_on={
                         tool: {

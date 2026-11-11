@@ -317,6 +317,22 @@ class ThreadView(BaseModel):
     actions: list[dict[str, object]] = Field(default_factory=list)
 
 
+class MemoryItemModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    key: Literal["response_format", "topics_of_interest", "language"]
+    value: str = Field(max_length=200)
+    created_at: str
+    expires_at: str
+
+
+class MemoryView(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    user_id: str
+    items: list[MemoryItemModel] = Field(default_factory=list)
+
+
 class ResumeRequest(RequestModel):
     """``POST /api/threads/{thread_id}/resume``: decisión humana sobre la acción pendiente."""
 

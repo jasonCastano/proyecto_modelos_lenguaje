@@ -25,20 +25,39 @@ from dataclasses import dataclass
 from typing import Any, TypedDict
 
 from langchain.agents import create_agent
-from langchain.agents.middleware import ModelCallLimitMiddleware, ToolCallLimitMiddleware
+from langchain.agents.middleware import (
+    HumanInTheLoopMiddleware,
+    ModelCallLimitMiddleware,
+    ToolCallLimitMiddleware,
+)
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+    ToolMessage,
+)
 from langchain_core.outputs import LLMResult
 from langchain_core.runnables import RunnableConfig
+from langgraph.config import get_store
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
-from langgraph.types import Checkpointer
+from langgraph.store.base import BaseStore
+from langgraph.types import Checkpointer, interrupt
 
 from ..rag.hybrid import HybridRetriever, RetrievedFragment
 from ..tasks import FALLBACK_ANSWER, STRICT_REMINDER, is_model_fallback
+from .actions import (
+    TOOL_DESCRIPTIONS,
+    WRITE_TOOLS,
+    build_write_tools,
+    detect_write_intent,
+    execute_action,
+)
 from .config import AgentConfig
-from .guard import GuardedDocument, render_documents
+from .guard import GuardedDocument, leaks_prompt, render_documents
 from .memory import build_summarization_middleware, compact_history, render_turn, turns_to_keep
 from .models import RouteDecision, Turn, TurnMetrics
 from .prompts import load_agent_prompt
@@ -63,6 +82,8 @@ CLARIFY_ANSWER = (
     "producto o tema de Manuelita te interesa?"
 )
 NO_RETRIEVAL_ROUTES = frozenset({"direct", "out_of_scope", "clarify"})
+REVIEW_DECISIONS = ["approve", "edit", "reject"]
+REJECTED_ANSWER = "Entendido: no realicé la acción porque fue rechazada en la revisión."
 
 
 class ChatUnavailableError(RuntimeError):
@@ -74,6 +95,7 @@ class ChatState(TypedDict, total=False):
 
     variant: str
     user_id: str
+    mode: str
     turns: list[dict[str, Any]]
     summary: str
     summarized: int
@@ -88,6 +110,8 @@ class ChatState(TypedDict, total=False):
     citations: list[dict[str, Any]]
     fallback: bool
     retrievals: int
+    intent: dict[str, Any] | None
+    actions: list[dict[str, Any]]
 
 
 @dataclass(slots=True)
@@ -189,10 +213,13 @@ def collect_evidence(
 
 
 def validate_answer(
-    text: str, evidence: dict[str, dict[str, Any]]
+    text: str, evidence: dict[str, dict[str, Any]], prompt_text: str = ""
 ) -> tuple[str, list[dict[str, Any]], bool]:
-    """Toda respuesta factual cita evidencia válida o pasa a fallo de evidencia (SC-003)."""
-    if not text.strip() or is_model_fallback(text):
+    """Toda respuesta factual cita evidencia válida o pasa a fallo de evidencia (SC-003).
+
+    Una respuesta que reproduce el system prompt también se descarta (FR-016).
+    """
+    if not text.strip() or is_model_fallback(text) or leaks_prompt(text, prompt_text):
         return FALLBACK_ANSWER, [], True
     labels = list(dict.fromkeys(LABEL_PATTERN.findall(text)))
     citations = [evidence[label] for label in labels if label in evidence]
@@ -224,18 +251,38 @@ def _recent_turns(state: ChatState, deps: GraphDeps) -> list[dict[str, Any]]:
     return turns[start:]
 
 
+def hitl_request(tool: str, args: dict[str, Any]) -> dict[str, Any]:
+    """Solicitud de revisión con la misma forma que la de ``HumanInTheLoopMiddleware``."""
+    return {
+        "action_requests": [
+            {"name": tool, "args": dict(args), "description": TOOL_DESCRIPTIONS[tool]}
+        ],
+        "review_configs": [{"action_name": tool, "allowed_decisions": REVIEW_DECISIONS}],
+    }
+
+
 def _route_node(deps: GraphDeps):
     def route(state: ChatState) -> dict[str, Any]:
-        history = [turn["question"] for turn in (state.get("turns") or [])[-ROUTER_HISTORY_TURNS:]]
-        result = route_message(
-            state["question"],
-            history=history,
-            model=deps.router_model,
-            min_confidence=deps.config.router.min_confidence,
-            temperature=deps.config.router.llm_temperature,
-        )
+        intent = detect_write_intent(state["question"])
+        if intent is not None:
+            decision = RouteDecision(
+                route="direct",
+                confidence=1.0,
+                reason=f"pedido de escritura: {intent.tool} (requiere aprobación)",
+                decided_by="rules",
+            )
+        else:
+            history = [t["question"] for t in (state.get("turns") or [])[-ROUTER_HISTORY_TURNS:]]
+            decision = route_message(
+                state["question"],
+                history=history,
+                model=deps.router_model,
+                min_confidence=deps.config.router.min_confidence,
+                temperature=deps.config.router.llm_temperature,
+            ).decision
         return {
-            "decision": result.decision.model_dump(mode="json"),
+            "intent": intent.to_dict() if intent else None,
+            "decision": decision.model_dump(mode="json"),
             "fragments": [],
             "structured_rows": [],
             "evidence": {},
@@ -250,7 +297,38 @@ def _route_node(deps: GraphDeps):
 
 
 def _after_route(state: ChatState) -> str:
+    if state.get("intent"):
+        return "action"
     return "reply" if state["decision"]["route"] in NO_RETRIEVAL_ROUTES else "work"
+
+
+def _run_action(deps: GraphDeps, state: ChatState, tool: str, args: dict[str, Any]) -> str:
+    return execute_action(
+        tool,
+        args,
+        store=get_store(),
+        user_id=state.get("user_id", "anon"),
+        turns=state.get("turns") or [],
+        ttl_days=deps.config.memory.preference_ttl_days,
+    )
+
+
+def _action_node(deps: GraphDeps):
+    def action(state: ChatState) -> dict[str, Any]:
+        """Cadena: ``interrupt()`` explícito antes de toda escritura (FR-017)."""
+        intent = state.get("intent") or {}
+        tool, args = intent["tool"], intent.get("args", {})
+        response = interrupt(hitl_request(tool, args))
+        decision = ((response or {}).get("decisions") or [{"type": "reject"}])[0]
+        if decision.get("type") == "reject":
+            answer = REJECTED_ANSWER
+        else:
+            if decision.get("type") == "edit":
+                args = decision.get("edited_action", {}).get("args", args)
+            answer = _run_action(deps, state, tool, args)
+        return {"answer": answer, "citations": [], "fallback": False}
+
+    return action
 
 
 def reply_node(state: ChatState) -> dict[str, Any]:
@@ -362,7 +440,7 @@ def _answer_node(deps: GraphDeps):
                 [SystemMessage(content=instruction), HumanMessage(content=user)], config
             )
             raw = message_text(response)
-            text, citations, fallback = validate_answer(raw, evidence)
+            text, citations, fallback = validate_answer(raw, evidence, system)
             if not fallback or is_model_fallback(raw):
                 break
         return {"answer": text, "citations": citations, "fallback": fallback}
@@ -370,21 +448,27 @@ def _answer_node(deps: GraphDeps):
     return answer
 
 
-def build_chain_graph(deps: GraphDeps, checkpointer: Checkpointer = None) -> CompiledStateGraph:
+def build_chain_graph(
+    deps: GraphDeps, checkpointer: Checkpointer = None, store: BaseStore | None = None
+) -> CompiledStateGraph:
     """Variante cadena: recuperación fija y una respuesta por turno."""
     graph = StateGraph(ChatState)
     graph.add_node("route", _route_node(deps))
     graph.add_node("reply", reply_node)
     graph.add_node("retrieve", _retrieve_node(deps))
     graph.add_node("answer", _answer_node(deps))
+    graph.add_node("action", _action_node(deps))
     graph.add_node("finalize", _finalize_node(deps))
     graph.add_edge(START, "route")
-    graph.add_conditional_edges("route", _after_route, {"reply": "reply", "work": "retrieve"})
+    graph.add_conditional_edges(
+        "route", _after_route, {"reply": "reply", "work": "retrieve", "action": "action"}
+    )
+    graph.add_edge("action", "finalize")
     graph.add_edge("retrieve", "answer")
     graph.add_edge("answer", "finalize")
     graph.add_edge("reply", "finalize")
     graph.add_edge("finalize", END)
-    return graph.compile(checkpointer=checkpointer)
+    return graph.compile(checkpointer=checkpointer, store=store)
 
 
 # ---------------------------------------------------------------- agente
@@ -403,6 +487,13 @@ def _agent_messages(state: ChatState, deps: GraphDeps) -> list[BaseMessage]:
     return messages
 
 
+def _last_tool_text(messages: Sequence[BaseMessage]) -> str:
+    for message in reversed(messages):
+        if isinstance(message, ToolMessage):
+            return message_text(message)
+    return ""
+
+
 def _final_answer(messages: Sequence[BaseMessage]) -> str:
     for message in reversed(messages):
         if isinstance(message, AIMessage):
@@ -418,12 +509,30 @@ def _agent_node(deps: GraphDeps):
         if deps.retriever is None:
             raise ChatUnavailableError("El índice de recuperación no está disponible.")
         trace = ToolTrace()
-        tools = build_read_tools(deps.retriever, deps.store, trace, top_k=limits.chain_top_k)
+        executed: list[str] = []
+
+        def run(tool: str, args: dict[str, Any]) -> str:
+            executed.append(tool)
+            return _run_action(deps, state, tool, args)
+
+        tools = [
+            *build_read_tools(deps.retriever, deps.store, trace, top_k=limits.chain_top_k),
+            *build_write_tools(run),
+        ]
         runnable = create_agent(
             deps.model,
-            tools=list(tools),
+            tools=tools,
             system_prompt=system,
             middleware=[
+                HumanInTheLoopMiddleware(
+                    interrupt_on={
+                        tool: {
+                            "allowed_decisions": REVIEW_DECISIONS,
+                            "description": TOOL_DESCRIPTIONS[tool],
+                        }
+                        for tool in WRITE_TOOLS
+                    }
+                ),
                 build_summarization_middleware(
                     deps.config.memory, deps.summary_model or deps.model
                 ),
@@ -433,7 +542,13 @@ def _agent_node(deps: GraphDeps):
         )
         result = runnable.invoke({"messages": _agent_messages(state, deps)}, config)
         fragment_rows, fact_rows, evidence = collect_evidence(trace.fragments, trace.facts)
-        text, citations, fallback = validate_answer(_final_answer(result["messages"]), evidence)
+        final = _final_answer(result["messages"])
+        if state.get("intent") or executed:
+            # Turno de escritura: responde con el resultado de la acción, sin exigir citas.
+            text = final or _last_tool_text(result["messages"]) or REJECTED_ANSWER
+            citations, fallback = [], False
+        else:
+            text, citations, fallback = validate_answer(final, evidence, system)
         return {
             "fragments": fragment_rows,
             "structured_rows": fact_rows,
@@ -447,7 +562,9 @@ def _agent_node(deps: GraphDeps):
     return agent
 
 
-def build_agent_graph(deps: GraphDeps, checkpointer: Checkpointer = None) -> CompiledStateGraph:
+def build_agent_graph(
+    deps: GraphDeps, checkpointer: Checkpointer = None, store: BaseStore | None = None
+) -> CompiledStateGraph:
     """Variante agente: la puerta de decisión y después ``create_agent`` con herramientas."""
     graph = StateGraph(ChatState)
     graph.add_node("route", _route_node(deps))
@@ -455,8 +572,10 @@ def build_agent_graph(deps: GraphDeps, checkpointer: Checkpointer = None) -> Com
     graph.add_node("agent", _agent_node(deps))
     graph.add_node("finalize", _finalize_node(deps))
     graph.add_edge(START, "route")
-    graph.add_conditional_edges("route", _after_route, {"reply": "reply", "work": "agent"})
+    graph.add_conditional_edges(
+        "route", _after_route, {"reply": "reply", "work": "agent", "action": "agent"}
+    )
     graph.add_edge("agent", "finalize")
     graph.add_edge("reply", "finalize")
     graph.add_edge("finalize", END)
-    return graph.compile(checkpointer=checkpointer)
+    return graph.compile(checkpointer=checkpointer, store=store)

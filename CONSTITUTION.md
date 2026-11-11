@@ -451,7 +451,12 @@ etapas (reglas + DeepSeek, `prompts/router.md`): 35/36 rutas correctas y abstenc
 enrutamiento. US1 (conversar, MVP): hilos con `thread_id` persistidos en `checkpoints.sqlite3`
 (`SqliteSaver`, fuera del repositorio), variantes cadena y agente (`create_agent` con límites de búsquedas y
 llamadas), resumen de memoria (`prompts/memory_summary.md`), `POST /api/chat`, `GET /api/threads/{id}`,
-`agent chat` y pestaña «Conversación» en la web; verificado en demo y con DeepSeek.
+`agent chat` y pestaña «Conversación» en la web; verificado en demo y con DeepSeek. US4 (blindar):
+fragmentos con instrucciones embebidas marcados y reportados en `anomalies[]`, respuestas que copian el
+system prompt descartadas, y acciones de escritura (`save_preference`, `forget_memory`,
+`export_conversation`) detenidas por `interrupt()`/`HumanInTheLoopMiddleware` hasta una decisión humana
+(`POST /api/threads/{id}/resume`), que queda registrada y sobrevive al reinicio; memoria larga en
+`memory.sqlite3` (`SqliteStore`) dentro de `MANUELITA_STATE_DIR`.
 
 **Reglas mínimas**:
 

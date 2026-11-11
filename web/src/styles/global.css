@@ -1581,3 +1581,29 @@ main {
   margin: 0;
   padding-left: 1.25rem;
 }
+
+/* Aprobación humana y avisos de inyección (spec 014, US4) */
+.approval-card {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 2px solid var(--line-strong);
+  border-radius: 0.75rem;
+}
+
+.approval-card h3 {
+  margin: 0;
+}
+
+.approval-args {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.console-message[data-kind="warning"] {
+  border-color: var(--orange);
+}
+
+.console-message[data-kind="warning"] p {
+  margin: 0;
+}

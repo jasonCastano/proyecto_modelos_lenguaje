@@ -1,0 +1,22 @@
+# Configuración del agente RAG con memoria y enrutador (spec 014).
+# La lee src/proyecto_modelos_lenguaje/agent/config.py; los valores vienen de research.md.
+
+[router]
+min_confidence = 0.6      # por debajo, la ruta efectiva es «clarify» (FR-015)
+llm_temperature = 0.0
+
+[agent]
+tool_call_limit = 3       # búsquedas máximas por turno (ToolCallLimitMiddleware)
+model_call_limit = 5      # llamadas máximas al modelo por turno (ModelCallLimitMiddleware)
+chain_top_k = 8           # fragmentos que recupera siempre la variante cadena
+
+[memory]
+summarize_after_tokens = 6000
+keep_last_messages = 6
+preference_ttl_days = 30
+
+[structured]
+path = "data/module2/structured"   # vista derivada del oro; solo la escribe el CLI
+
+[state]
+env_var = "MANUELITA_STATE_DIR"    # checkpointer y Store, siempre fuera del repositorio

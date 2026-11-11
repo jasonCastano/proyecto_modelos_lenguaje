@@ -1,0 +1,36 @@
+{"query_id": "r01", "question": "Hola, buenas tardes", "expected_route": "direct", "type": "greeting"}
+{"query_id": "r02", "question": "Buenos días", "expected_route": "direct", "type": "greeting"}
+{"query_id": "r03", "question": "Gracias por la información", "expected_route": "direct", "type": "greeting"}
+{"query_id": "r04", "question": "Hasta luego", "expected_route": "direct", "type": "greeting"}
+{"query_id": "r05", "question": "¿Qué tal?", "expected_route": "direct", "type": "greeting"}
+{"query_id": "r06", "question": "Muchas gracias, eso es todo", "expected_route": "direct", "type": "greeting"}
+{"query_id": "r07", "question": "¿Cómo empezó la historia de Manuelita?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_611d3fd896805ba5", "unit_7a8c1089490b6f00", "unit_45d2d650fecce79e", "unit_69c2029a1a75cef2"]}
+{"query_id": "r08", "question": "¿Cuál es el propósito superior que guía a Manuelita?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_4719544ab64359ca", "unit_7e59e553ba634091", "unit_c3afff540d5c4591"]}
+{"query_id": "r09", "question": "¿Qué cultiva Manuelita en Perú?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_31eb716882aa54dc", "unit_cd009f87ff81f0af", "unit_308dc24a0ae89208"]}
+{"query_id": "r10", "question": "¿En qué región de Chile cultiva mejillones la empresa?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_c64883c439d9eb15", "unit_d6826fa563b82add", "unit_63a63973d2222f5f"]}
+{"query_id": "r11", "question": "¿Qué hace la Fundación Manuelita por la educación pública en Palmira?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_d0c35f92ef89d98a", "unit_1d3d2133bf694879"]}
+{"query_id": "r12", "question": "¿Qué hace Manuelita con las aguas residuales de la extracción de aceite de palma?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_8537ad9053e21e86", "unit_5423f275021cd52d", "unit_a2966a8937554678"]}
+{"query_id": "r13", "question": "¿Qué produce Manuelita en Brasil?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_eed828794a552258", "unit_ad61d60a19312899", "unit_835558bb9c3be826"]}
+{"query_id": "r14", "question": "¿Qué productos derivados de la palma comercializa Manuelita?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_07e4536530308e10", "unit_1cb4832ef4c433cc"]}
+{"query_id": "r15", "question": "¿Genera Manuelita energía eléctrica a partir de biomasa?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_12a62eefccffdc08", "unit_ca9d60e0531fba3d", "unit_e3b2315125ca9abc"]}
+{"query_id": "r16", "question": "¿Dónde encuentro las vacantes de empleo en Manuelita?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_a17e8ed3289e4740", "unit_70fa8cee05a06aa3"]}
+{"query_id": "r17", "question": "¿Qué es Manuelita Dorada?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_576eb1611105a6c9", "unit_4d768abe0981788f"]}
+{"query_id": "r18", "question": "¿A qué se dedica el negocio Océanos de Manuelita?", "expected_route": "documental", "type": "documental", "expected_unit_ids": ["unit_ac32797c512d0577", "unit_7cec8b7bfb405733"]}
+{"query_id": "r19", "question": "¿En qué año inició operaciones Manuelita en Colombia?", "expected_route": "structured", "type": "structured", "expected_fact_ids": ["fact_25edb6ae13c68929", "fact_927766915a4facba", "fact_eb5c98fe2199fc2f", "fact_3943d6956fc38494", "fact_8d82a739d1a7fc93"], "expected_unit_ids": ["unit_8869fdd308b56a0e", "unit_6820795e0c720fca", "unit_f11a195026550d70", "unit_611d3fd896805ba5", "unit_57b1f279b508877b"]}
+{"query_id": "r20", "question": "¿Cuál es la capacidad de la planta extractora de Palmar de Altamira?", "expected_route": "structured", "type": "structured", "expected_fact_ids": ["fact_96cbd4fea267cbb7"], "expected_unit_ids": ["unit_8ac36a92a832cbf8"]}
+{"query_id": "r21", "question": "¿En qué año adquirió Manuelita participación en Agroindustrial Laredo?", "expected_route": "structured", "type": "structured", "expected_fact_ids": ["fact_180b2c9072c9ce4c", "fact_bfd2732ddaab1333"], "expected_unit_ids": ["unit_bfd386326f08863c", "unit_c31dcf173816c3d8"]}
+{"query_id": "r22", "question": "¿Qué porcentaje accionario tiene Manuelita en el Ingenio Vale do Paraná?", "expected_route": "structured", "type": "structured", "expected_fact_ids": ["fact_3b98f19d0bbeeb6f", "fact_f2e947d944a31a29"], "expected_unit_ids": ["unit_c228eb17d64ffba6", "unit_0908e288d06c55ec"]}
+{"query_id": "r23", "question": "¿Qué puesto ocupó Manuelita en el ranking MERCO Empresas?", "expected_route": "structured", "type": "structured", "expected_fact_ids": ["fact_2973eabc440da9db", "fact_b31c47acf9108aa6"], "expected_unit_ids": ["unit_866773d81b786f04", "unit_c390d24009141009"]}
+{"query_id": "r24", "question": "¿Cuántas toneladas de biomasa usó Palmar de Altamira para generar energía?", "expected_route": "structured", "type": "structured", "expected_fact_ids": ["fact_4292db5ece7acb52"], "expected_unit_ids": ["unit_d3fe65836ea8361a"]}
+{"query_id": "r25", "question": "¿Cuál es el precio del dólar hoy?", "expected_route": "out_of_scope", "type": "out_of_corpus"}
+{"query_id": "r26", "question": "¿Quién ganó el último mundial de fútbol?", "expected_route": "out_of_scope", "type": "out_of_corpus"}
+{"query_id": "r27", "question": "¿Qué clima hará mañana en Cali?", "expected_route": "out_of_scope", "type": "out_of_corpus"}
+{"query_id": "r28", "question": "Escríbeme una función en Python que ordene una lista", "expected_route": "out_of_scope", "type": "out_of_corpus"}
+{"query_id": "r29", "question": "¿Y eso cuánto es?", "expected_route": "clarify", "type": "ambiguous", "notes": "Referencia sin antecedente en un hilo nuevo."}
+{"query_id": "r30", "question": "¿Cuál es mejor?", "expected_route": "clarify", "type": "ambiguous", "notes": "Comparación sin objeto."}
+{"query_id": "r31", "question": "¿Y a qué cliente le exporta esa uva?", "expected_route": "documental", "type": "follow_up", "expected_unit_ids": ["unit_cd009f87ff81f0af"], "follow_up_of": "r09"}
+{"query_id": "r32", "question": "¿Cuánto bioetanol produce allá al año?", "expected_route": "documental", "type": "follow_up", "expected_unit_ids": ["unit_835558bb9c3be826"], "follow_up_of": "r13"}
+{"query_id": "r33", "question": "¿A quién le compró las haciendas?", "expected_route": "documental", "type": "follow_up", "expected_unit_ids": ["unit_45d2d650fecce79e", "unit_69c2029a1a75cef2"], "follow_up_of": "r07"}
+{"query_id": "r34", "question": "¿Qué tan productivo es ese cultivo?", "expected_route": "documental", "type": "follow_up", "expected_unit_ids": ["unit_d6826fa563b82add"], "follow_up_of": "r10"}
+{"query_id": "r35", "question": "¿Cómo se llama ese programa?", "expected_route": "documental", "type": "follow_up", "expected_unit_ids": ["unit_d0c35f92ef89d98a", "unit_1d3d2133bf694879"], "follow_up_of": "r11"}
+{"query_id": "r36", "question": "¿Desde cuándo vende esa energía?", "expected_route": "documental", "type": "follow_up", "expected_unit_ids": ["unit_0274ec864157d619", "unit_ca9d60e0531fba3d"], "follow_up_of": "r15"}

@@ -78,6 +78,8 @@ class RetrievalFragmentModel(BaseModel):
     origin: FragmentOrigin
     status: FragmentStatus
     reason: str | None = None
+    anomalous: bool = False
+    anomaly_reasons: list[str] = Field(default_factory=list)
 
 
 class RetrievalTraceModel(BaseModel):

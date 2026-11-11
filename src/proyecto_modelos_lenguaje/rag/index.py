@@ -7,6 +7,7 @@ import json
 import re
 import shutil
 import sqlite3
+import time
 import uuid
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
@@ -22,8 +23,12 @@ from .embeddings import Embedder, EmbeddingProfile
 from .errors import GoldError, IndexExistsError, IndexInvalidError, IndexUnavailableError
 
 CHARS_PER_TOKEN = 3.5
-CHUNK_TARGET_TOKENS = 480
-CHUNK_OVERLAP_TOKENS = 32
+# Spec 014 (research §5): ventanas de ~400 tokens con 15 % de solapamiento solo para las unidades
+# que exceden el límite del modelo; el resto se indexa entera ("unit+window").
+CHUNK_TARGET_TOKENS = 400
+CHUNK_OVERLAP_TOKENS = 60
+CHUNK_STRATEGY = "unit+window"
+CHUNK_STRATEGIES = ("unit", "unit+window")
 SCHEMA_VERSION = 1
 SHA256_PATTERN = re.compile(r"^[a-f0-9]{64}$")
 MANIFEST_NAME = "manifest.json"
@@ -116,6 +121,9 @@ class IndexManifest:
     library: str = ""
     gold_path: str = ""
     command: str = ""
+    chunk_strategy: str = CHUNK_STRATEGY
+    chunk_size_tokens: int = CHUNK_TARGET_TOKENS
+    chunk_overlap_tokens: int = CHUNK_OVERLAP_TOKENS
 
     def __post_init__(self) -> None:
         if self.schema_version != SCHEMA_VERSION:
@@ -128,6 +136,13 @@ class IndexManifest:
             raise ValueError("count debe ser >= 0")
         if not SHA256_PATTERN.match(self.gold_sha256):
             raise ValueError("gold_sha256 debe ser un SHA-256 hexadecimal de 64 caracteres")
+        if self.chunk_strategy not in CHUNK_STRATEGIES:
+            raise ValueError(f"chunk_strategy debe ser uno de {CHUNK_STRATEGIES}")
+        if not 0 < self.chunk_size_tokens <= self.max_tokens:
+            raise ValueError("chunk_size_tokens debe ser > 0 y <= max_tokens")
+        ratio = self.chunk_overlap_tokens / self.chunk_size_tokens
+        if not 0.10 <= ratio <= 0.20:
+            raise ValueError("chunk_overlap_tokens debe ser el 10-20 % de chunk_size_tokens")
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -139,6 +154,9 @@ class IndexManifest:
             "count": self.count,
             "gold_sha256": self.gold_sha256,
             "created_at": self.created_at,
+            "chunk_strategy": self.chunk_strategy,
+            "chunk_size_tokens": self.chunk_size_tokens,
+            "chunk_overlap_tokens": self.chunk_overlap_tokens,
         }
         if self.library:
             payload["library"] = self.library
@@ -150,6 +168,16 @@ class IndexManifest:
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> IndexManifest:
+        missing = [
+            key
+            for key in ("chunk_strategy", "chunk_size_tokens", "chunk_overlap_tokens")
+            if key not in payload
+        ]
+        if missing:
+            raise ValueError(
+                f"faltan los campos de fragmentación {missing} (manifiesto anterior a la spec "
+                "014); reconstruye con `rag index rebuild --force`"
+            )
         return cls(
             model=str(payload["model"]),
             dimension=int(payload["dimension"]),
@@ -162,6 +190,9 @@ class IndexManifest:
             library=str(payload.get("library", "")),
             gold_path=str(payload.get("gold_path", "")),
             command=str(payload.get("command", "")),
+            chunk_strategy=str(payload["chunk_strategy"]),
+            chunk_size_tokens=int(payload["chunk_size_tokens"]),
+            chunk_overlap_tokens=int(payload["chunk_overlap_tokens"]),
         )
 
     def matches(self, profile: EmbeddingProfile) -> bool:
@@ -205,6 +236,22 @@ def chunk_text(
         space = text.find(" ", next_start, min(next_start + 40, length))
         start = space + 1 if space != -1 else next_start
     return chunks or [text]
+
+
+def _rename_with_retry(source: Path, target: Path, *, attempts: int = 5) -> None:
+    """Rename a directory, retrying briefly on Windows sharing violations.
+
+    En Windows el antivirus o el indexador pueden retener por unos milisegundos los archivos recién
+    escritos; ``os.rename`` falla entonces con ``PermissionError`` aunque nada más use el índice.
+    """
+    for attempt in range(attempts):
+        try:
+            source.rename(target)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(0.2 * (attempt + 1))
 
 
 def build_fragments(units: Iterable[GoldUnit], profile: EmbeddingProfile) -> list[Fragment]:
@@ -394,8 +441,8 @@ def build_index(
         )
         if target.exists():
             backup = parent / f".index-old-{uuid.uuid4().hex}"
-            target.rename(backup)
-        temporary.rename(target)
+            _rename_with_retry(target, backup)
+        _rename_with_retry(temporary, target)
     except Exception:
         if backup is not None and backup.exists() and not target.exists():
             backup.rename(target)

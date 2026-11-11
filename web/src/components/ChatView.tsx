@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { getThread, resumeThread, sendChat } from "../lib/chat";
+import { deleteMemory, getMemory, getThread, resumeThread, sendChat } from "../lib/chat";
 import {
   ApiClientError,
   type ApiError,
@@ -8,6 +8,7 @@ import {
   type ChatTurn,
   type ChatVariant,
   type Citation,
+  type MemoryItem,
   type Mode,
   type PendingAction,
   type RetrievalTrace,
@@ -19,6 +20,11 @@ import { SourceList } from "./SourceList";
 const THREAD_KEY = "manuelita.chat.thread";
 const USER_KEY = "manuelita.chat.user";
 const MAX_CHARS = 500;
+const PREFERENCE_LABEL: Record<string, string> = {
+  response_format: "formato",
+  topics_of_interest: "temas",
+  language: "idioma",
+};
 
 const ROUTE_LABEL: Record<ChatRouteName, string> = {
   direct: "Directa",
@@ -164,7 +170,14 @@ export function ChatView({ mode }: { mode: Mode }) {
   const [action, setAction] = useState<PendingAction | null>(null);
   const [actionQuestion, setActionQuestion] = useState("");
   const [error, setError] = useState<ApiError | null>(null);
+  const [preferences, setPreferences] = useState<MemoryItem[]>([]);
   const userId = useRef(anonymousUser());
+
+  function refreshPreferences() {
+    void getMemory(userId.current)
+      .then((view) => setPreferences(view.items))
+      .catch(() => setPreferences([]));
+  }
 
   useEffect(() => {
     const saved = stored.current;
@@ -175,6 +188,7 @@ export function ChatView({ mode }: { mode: Mode }) {
         if (!active) return;
         setTurns(view.turns);
         setAction(view.pending_action);
+        refreshPreferences();
       })
       .catch(() => {
         if (!active) return;
@@ -216,6 +230,22 @@ export function ChatView({ mode }: { mode: Mode }) {
       const response = await resumeThread(threadId, action.action_id, decision, args);
       setTurns((previous) => [...previous, response.turn]);
       setAction(response.status === "pending_approval" ? response.pending_action : null);
+      refreshPreferences();
+    } catch (caught) {
+      report(caught);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function forgetPreferences() {
+    if (!threadId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await deleteMemory(userId.current, threadId);
+      setAction(response.pending_action);
+      setActionQuestion("Olvida mis preferencias guardadas");
     } catch (caught) {
       report(caught);
     } finally {
@@ -281,6 +311,25 @@ export function ChatView({ mode }: { mode: Mode }) {
           Nueva conversación
         </button>
       </div>
+
+      {preferences.length > 0 ? (
+        <div className="console-options" data-testid="preferences">
+          <span>
+            Tus preferencias:{" "}
+            {preferences
+              .map((item) => `${PREFERENCE_LABEL[item.key] ?? item.key}: ${item.value}`)
+              .join(" · ")}
+          </span>
+          <button
+            className="btn btn-link"
+            disabled={busy || action !== null || !threadId}
+            onClick={() => void forgetPreferences()}
+            type="button"
+          >
+            Olvidar
+          </button>
+        </div>
+      ) : null}
 
       {turns.length > 0 ? (
         <ol className="chat-turns" aria-label="Historial de la conversación">

@@ -1,4 +1,4 @@
-<!-- prompt_version: 1.0 -->
+<!-- prompt_version: 1.1 -->
 
 # Tarea Q&A del Módulo 1 — Ingenio Manuelita
 
@@ -48,10 +48,13 @@ Pregunta del usuario:
 - No cites una unidad que no aparezca en el contexto.
 - No añadas bibliografía, notas al pie ni enlaces: la aplicación resuelve la etiqueta a la fuente.
 
-## 6. Sin evidencia
+## 6. Sin evidencia completa: parcial o nula
 
-Si el contexto no contiene evidencia suficiente para responder, responde exactamente:
+1. **Evidencia parcial**: si el contexto responde solo una parte de la pregunta, responde esa parte
+   con sus citas y termina con una frase breve que diga qué parte no está en el corpus
+   (por ejemplo: «El corpus no detalla los precios.»). No completes lo que falta con conocimiento externo.
+2. **Evidencia nula**: solo si ninguna unidad del contexto se relaciona con la pregunta, responde exactamente:
 
 > No hay evidencia suficiente en el corpus para responder.
 
-En ese caso no cites unidades, no expliques qué falta y no ofrezcas información externa.
+   En ese caso no cites unidades ni ofrezcas información externa.

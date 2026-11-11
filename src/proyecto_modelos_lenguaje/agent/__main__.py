@@ -51,7 +51,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     evaluate = sub.add_parser("evaluate", help="Evalúa enrutador y variantes.")
     evaluate.add_argument("--queries", default="tests/fixtures/rag/module2_queries.jsonl")
-    evaluate.add_argument("--variants", nargs="+", choices=("chain", "agent"), default=["chain"])
+    evaluate.add_argument(
+        "--variants", nargs="+", choices=("chain", "agent"), default=["chain", "agent"]
+    )
+    evaluate.add_argument(
+        "--compare", action="store_true", help="Compara las variantes sobre el conjunto (T066)."
+    )
+    evaluate.add_argument(
+        "--judge", action="store_true", help="Juez LLM de fidelidad y relevancia (T067)."
+    )
+    evaluate.add_argument(
+        "--skip-router", action="store_true", help="No repite la evaluación del enrutador."
+    )
     evaluate.add_argument("--mode", choices=("demo", "real"), default="demo")
     evaluate.add_argument("--run-id", default="")
     evaluate.add_argument(
@@ -85,6 +96,9 @@ def _build_structured(args: argparse.Namespace, root: Path) -> int:
 
 
 def _evaluate(args: argparse.Namespace, root: Path) -> int:
+    from ..tasks import _configure_output
+
+    _configure_output()
     from .evaluate import (
         evaluate_router,
         load_router_cases,
@@ -98,25 +112,72 @@ def _evaluate(args: argparse.Namespace, root: Path) -> int:
         from ..llm import build_chat_model, load_llm_config
 
         model = build_chat_model(load_llm_config())
-    run_id = args.run_id or datetime.now(UTC).strftime(f"router-{args.mode}-%Y%m%dT%H%M%SZ")
-    report = evaluate_router(
-        load_router_cases(root / args.queries),
-        model=model,
-        min_confidence=config.router.min_confidence,
-        run_id=run_id,
-        mode=args.mode,
-    )
-    write_router_section(root / args.report, render_router_section(report))
-    if args.json_out:
-        Path(args.json_out).write_text(
-            json.dumps(report.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    payload: dict[str, object] = {}
+    if not args.skip_router:
+        run_id = args.run_id or f"router-{args.mode}-{stamp}"
+        report = evaluate_router(
+            load_router_cases(root / args.queries),
+            model=model,
+            min_confidence=config.router.min_confidence,
+            run_id=run_id,
+            mode=args.mode,
         )
-    print(
-        f"enrutador: {report.correct}/{report.cases} ({report.accuracy:.3f}) · "
-        f"sin búsqueda {report.no_search_ok}/{report.no_search_total} · "
-        f"{report.model_calls} llamadas al modelo"
-    )
+        write_router_section(root / args.report, render_router_section(report))
+        payload["router"] = report.to_dict()
+        print(
+            f"enrutador: {report.correct}/{report.cases} ({report.accuracy:.3f}) · "
+            f"sin búsqueda {report.no_search_ok}/{report.no_search_total} · "
+            f"{report.model_calls} llamadas al modelo"
+        )
+    if args.compare:
+        payload["variants"] = _compare(args, root, config, model, stamp)
+    if args.json_out:
+        data = payload.get("router") if list(payload) == ["router"] else payload
+        Path(args.json_out).write_text(
+            json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
     return 0
+
+
+def _compare(args: argparse.Namespace, root: Path, config, model, stamp: str) -> list[dict]:
+    """Cadena vs. agente con estado en memoria (no toca ``MANUELITA_STATE_DIR``)."""
+    from .compare import load_queries, render_variants_section, run_variant, write_section
+    from .memory import memory_checkpointer, memory_store
+    from .service import ChatService, build_deps
+
+    service = ChatService(
+        config,
+        memory_checkpointer(),
+        lambda mode: build_deps(mode, config, _cli_retriever(mode, root)),
+        store=memory_store(),
+    )
+    queries = load_queries(root / args.queries)
+    judge_model = model if args.judge else None
+    reports = [
+        run_variant(
+            service,
+            variant,
+            queries,
+            mode=args.mode,
+            judge_model=judge_model,
+            progress=lambda line: print(line, flush=True),
+        )
+        for variant in args.variants
+    ]
+    run_id = args.run_id or f"variants-{args.mode}-{stamp}"
+    write_section(
+        root / args.report, render_variants_section(reports, run_id=run_id, mode=args.mode)
+    )
+    summary = []
+    for report in reports:
+        metrics = report.metrics()
+        summary.append({**metrics, "results": [r.to_dict() for r in report.results]})
+        print(
+            f"{report.variant}: citas {metrics['citation_validity']} · repreguntas "
+            f"{metrics['follow_up_correct']} · p95 {metrics['latency_ms_p95']} ms"
+        )
+    return summary
 
 
 def _cli_retriever(mode: str, root: Path):

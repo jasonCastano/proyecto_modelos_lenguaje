@@ -1,58 +1,101 @@
 {
   "schemaVersion": 1,
-  "ok": false,
+  "ok": true,
   "command": "finalize",
-  "status": "fail",
+  "status": "pass",
   "type": "dataflow",
   "quality": "showcase",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "34d3e6829d31e5a4b0cf2e641447259a4322db34e3a4c1efaf019601a78e5ba2",
-    "bytes": 8169
+    "sha256": "006571f2de03fd8d7021f15255836fbf0055b4963f0f4cb6c453027c0a74e64a",
+    "bytes": 11650
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "14ee17600328c9f11cc43deac5032c30d38bf44d00a40789befbad16112fa75d",
-    "bytes": 848956
+    "sha256": "c83f8c7eacadaa6956da19fb1aae15b2e140dbd778241fd2176e5f35a5948a33",
+    "bytes": 862462
   },
   "gates": {
     "validate": "pass",
     "deliver": "pass",
     "check": "pass",
-    "browser-check": "fail"
+    "browser-check": "pass"
   },
-  "failedStage": "browser-check",
-  "diagnostics": [
-    {
-      "code": "viewer/temp-cleanup-incomplete",
-      "severity": "error",
-      "message": "Browser cleanup could not safely finish; inspect the reported retained path.",
-      "subject": {
-        "artifact": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html"
-      },
-      "evidence": {
-        "reason": "Chrome did not exit; retained temporary profile \"C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B\".",
-        "retainedDirectory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\archify-visual-check-profile-hH4y6B"
-      },
-      "supportedFixes": [
-        "resolve the reported process or filesystem failure; verify directory ownership before manual cleanup"
-      ]
-    }
-  ],
+  "diagnostics": [],
   "diagnosticSummary": {
-    "total": 1,
-    "shown": 1,
+    "total": 0,
+    "shown": 0,
     "truncated": false
   },
   "evidence": {
-    "receipt": "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1\\arquitectura.finalize.json",
-    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1\\arquitectura.finalize-summary.json",
-    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\.archify\\dataflow-manuelita-pipeline-20261110-114602\\review-1\\arquitectura.browser-check.json"
+    "receipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize.json",
+    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize-summary.json",
+    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-11T15:45:30.301Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 82587,
+  "durationMs": 4998,
   "browserCheck": {
     "requested": true,
-    "ran": false
+    "ran": true
+  },
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "resolvedCrossovers": 1,
+      "routesOverSuggestedBends": 1
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [
+        {
+          "left": {
+            "id": "answer",
+            "from": "llm",
+            "to": "app",
+            "label": "respuesta citada",
+            "collectionIndex": 6,
+            "artifactIndex": 7
+          },
+          "right": {
+            "id": "thread-state",
+            "from": "agent",
+            "to": "memory",
+            "label": "estado",
+            "collectionIndex": 13,
+            "artifactIndex": 14
+          },
+          "point": [
+            852.5,
+            385
+          ]
+        }
+      ],
+      "detours": [
+        {
+          "relationship": {
+            "id": "search-tool",
+            "from": "retrieval",
+            "to": "agent",
+            "label": "búsqueda",
+            "collectionIndex": 10,
+            "artifactIndex": 11
+          },
+          "bends": 4,
+          "stretch": 1.32
+        }
+      ],
+      "truncated": false
+    },
+    "repair": "Advisory only: this mode places or routes these relationships itself. Report them; do not remove relationships or meaning to reduce crossings."
   }
 }

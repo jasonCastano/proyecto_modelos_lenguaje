@@ -1,18 +1,56 @@
-# Evaluación del Módulo 2 — recuperación semántica
+# Evaluación del Módulo 2 — recuperación semántica e híbrida
 
-**Ejecución**: `2026-11-06-e5-small` · **Preguntas**: 40 · **Línea base**: lexical
+**Ejecución**: `m2-baseline-2026-11-10` · **Índice**: `intfloat/multilingual-e5-small` (384 d, 15211 fragmentos, troceo `unit+window` 400/60 tokens, construido 2026-11-11T00:30:25+00:00) · **Comando**: `uv run python -m proyecto_modelos_lenguaje.rag evaluate --questions <conjunto> --warmup 3`
 
-## Métricas por modo
+Línea base de la spec 014 (T026), antes del agente. Evaluación de recuperación: no se invoca al LLM. Las repreguntas elípticas (`follow_up`) y las consultas sin unidades etiquetadas (saludos, ambiguas) no puntúan aquí; se miden en la evaluación conversacional.
 
-| Modo | Recall@1 | Recall@3 | Recall@5 | Recall@8 | MRR | Cobertura | Latencia media | p95 |
-|---|---|---|---|---|---|---|---|---|
-| semantic | 0.343 | 0.514 | 0.571 | 0.629 | 0.435 | 1.000 | 77.7 ms | 41.4 ms |
-| lexical | 0.286 | 0.343 | 0.371 | 0.371 | 0.320 | 1.000 | 998.6 ms | 1455.4 ms |
-| hybrid | 0.343 | 0.514 | 0.600 | 0.629 | 0.450 | 1.000 | 1194.0 ms | 1472.8 ms |
+## Lectura de la línea base (2026-11-10)
 
-**Veredicto**: hybrid >= baseline en Recall@5 y MRR
+| Métrica | Léxico (Módulo 1) | Semántico | Híbrido |
+|---------|------------------:|----------:|--------:|
+| Recall@10 — 40 preguntas | 0,371 | 0,686 | 0,671 |
+| nDCG@10 — 40 preguntas | 0,333 | 0,493 | 0,499 |
+| Recall@10 — 30 consultas | 0,300 | 0,478 | 0,450 |
+| nDCG@10 — 30 consultas | 0,342 | 0,437 | 0,434 |
+| Abstención fuera de corpus (ambos conjuntos) | 0,000 | 0,000 | 0,000 |
+| Latencia p95 — 40 preguntas | 1.564 ms | 14 ms | 1.648 ms |
 
-## Análisis de errores
+1. **SC-001 se cumple frente a la línea base**: el semántico y el híbrido superan al léxico del Módulo 1
+   en Recall@10 y nDCG@10 en los dos conjuntos.
+2. **El híbrido no supera al semántico puro**: empata en nDCG@10 (±0,006) y queda algo por debajo en
+   Recall@10. La fusión aporta en las preguntas con nombres propios y cifras, pero cuesta ~1,3 s por
+   consulta porque la búsqueda léxica recorre las 15.211 unidades; el semántico tarda 8–14 ms.
+3. **Ningún modo se abstiene** ante preguntas fuera de corpus (0 de 5 y 0 de 4). Confirma la revisión del
+   PR #34: la abstención no puede depender del umbral de similitud y debe venir de la puerta de
+   decisión de la US2 (FR-011).
+4. La latencia ahora se mide tras 3 consultas de calentamiento y el p95 se interpola sobre la muestra
+   ordenada, por eso p95 ≥ media (en la spec 013 aparecía p95 < media).
+5. El conjunto de 30 consultas lo etiquetó Roberto José Guerrero buscando por palabras clave en el oro;
+   está pendiente la revisión de Jason Alejandro Castaño (T018).
+
+## Conjunto spec 013 — 40 preguntas
+
+**Ejecución**: `m2-baseline-2026-11-10-q40` · **Preguntas**: 40 (35 con unidades etiquetadas) · **Línea base**: lexical · **Calentamiento**: 3 consultas descartadas por modo
+
+### Métricas por modo
+
+| Modo | Recall@1 | Recall@3 | Recall@5 | Recall@10 | nDCG@10 | MRR | Cobertura | Abstención | Latencia media | p95 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| semantic | 0.343 | 0.514 | 0.571 | 0.686 | 0.493 | 0.435 | 1.000 | 0.000 | 12.2 ms | 14.2 ms |
+| lexical | 0.286 | 0.343 | 0.371 | 0.371 | 0.333 | 0.320 | 1.000 | 0.000 | 1219.6 ms | 1563.6 ms |
+| hybrid | 0.343 | 0.514 | 0.600 | 0.671 | 0.499 | 0.450 | 1.000 | 0.000 | 1351.6 ms | 1648.0 ms |
+
+**Veredicto**: hybrid >= baseline en Recall@10, nDCG@10 y MRR
+
+*Recall@k* = fracción de unidades relevantes en el top-k; *nDCG@10* con relevancia binaria; *Abstención* = preguntas fuera de corpus sin evidencia devuelta.
+
+### Consultas donde el híbrido empeora frente al léxico
+
+| Pregunta | Tipo | nDCG@10 híbrido | nDCG@10 léxico |
+|---|---|---|---|
+| n04 | proper_noun | 0.000 | 1.000 |
+
+### Análisis de errores
 
 | Pregunta | Modo | Tipo | Causa |
 |---|---|---|---|
@@ -56,89 +94,121 @@
 | o01 | lexical | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
 | o02 | lexical | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
 | o03 | lexical | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| o04 | lexical | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| o05 | lexical | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| p01 | hybrid | paraphrase | la unidad esperada no apareció en el ranking |
+| p02 | hybrid | paraphrase | la unidad esperada no apareció en el ranking |
+| p05 | hybrid | paraphrase | la unidad esperada no apareció en el ranking |
+| p06 | hybrid | paraphrase | la unidad esperada no apareció en el ranking |
+| p11 | hybrid | paraphrase | la unidad esperada no apareció en el ranking |
+| p12 | hybrid | paraphrase | la unidad esperada no apareció en el ranking |
+| e01 | hybrid | english | la unidad esperada no apareció en el ranking |
+| e04 | hybrid | english | la unidad esperada no apareció en el ranking |
+| e05 | hybrid | english | la unidad esperada no apareció en el ranking |
+| o01 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| o02 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| o03 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| o04 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| o05 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+## Conjunto spec 014 — 30 consultas con ruta
 
-## Metodología
+**Ejecución**: `m2-baseline-2026-11-10-r30` · **Preguntas**: 36 (18 con unidades etiquetadas) · **Línea base**: lexical · **Calentamiento**: 3 consultas descartadas por modo
 
-- **Conjunto**: 40 preguntas en `tests/fixtures/rag/eval_questions.jsonl`, distribuidas en 12 de
-  paráfrasis, 10 con cifras, 8 con nombres propios o siglas, 5 en inglés y 5 fuera de corpus.
-- **Modos**: `semantic` (solo similitud), `lexical` (BM25 del Módulo 1) e `hybrid` (fusión 0,65/0,35 con
-  bonus de coincidencia doble).
-- **Modelo**: `intfloat/multilingual-e5-small` (384 dimensiones, 512 tokens) sobre las 15.211 unidades de
-  oro; índice en `data/module2/index` (no versionado).
-- **Alcance**: evaluación de **recuperación**, sin invocar al LLM. La cobertura mide si cada pregunta
-  obtuvo evidencia; no mide fidelidad de la respuesta generada.
+### Métricas por modo
 
-## Lectura de los resultados
+| Modo | Recall@1 | Recall@3 | Recall@5 | Recall@10 | nDCG@10 | MRR | Cobertura | Abstención | Latencia media | p95 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| semantic | 0.243 | 0.393 | 0.431 | 0.478 | 0.437 | 0.524 | 1.000 | 0.000 | 8.1 ms | 9.7 ms |
+| lexical | 0.270 | 0.289 | 0.300 | 0.300 | 0.342 | 0.500 | 1.000 | 0.000 | 1173.4 ms | 1395.9 ms |
+| hybrid | 0.270 | 0.348 | 0.431 | 0.450 | 0.434 | 0.547 | 1.000 | 0.000 | 1380.7 ms | 1574.3 ms |
 
-| Observación | Evidencia |
-|-------------|-----------|
-| La recuperación semántica supera a la léxica en todas las métricas | Recall@5 0,571 vs 0,371; MRR 0,435 vs 0,320 |
-| La fusión híbrida mejora el Recall@5 sobre la semántica pura | 0,600 vs 0,571 |
-| El híbrido iguala el Recall@1 y el Recall@3 de la semántica, sin regresión | 0,343 y 0,514 en ambos |
-| El coste de la fusión es acotado | 1.194 ms vs 999 ms de la léxica pura (+19,6 %, dentro de SC-006) |
+**Veredicto**: hybrid >= baseline en Recall@10, nDCG@10 y MRR
 
-**Por qué gana la semántica**: las preguntas de paráfrasis usan sinónimos que no aparecen literalmente
-en el corpus («desechos líquidos» por «vertimientos», «tallo azucarero» por «caña»). La léxica falla en
-10 de 12 preguntas de paráfrasis; la semántica acierta 5 de 12 en el top-1 y 7 de 12 en el top-5.
+*Recall@k* = fracción de unidades relevantes en el top-k; *nDCG@10* con relevancia binaria; *Abstención* = preguntas fuera de corpus sin evidencia devuelta.
 
-**Por qué se mantiene la léxica**: en cifras y nombres propios la coincidencia exacta sigue siendo una
-señal fuerte. Casos como `f01` («24.000 hectáreas») o `n01` (BONSUCRO) se resuelven con términos exactos
-que el embedding diluye.
+### Consultas donde el híbrido empeora frente al léxico
 
-## Análisis de errores por tipo
+| Pregunta | Tipo | nDCG@10 híbrido | nDCG@10 léxico |
+|---|---|---|---|
+| r12 | documental | 0.469 | 0.765 |
 
-| Tipo | Aciertos híbridos (top-5) | Causa principal | Ejemplo 1 | Ejemplo 2 |
-|------|---------------------------|-----------------|-----------|-----------|
-| `paraphrase` | 7/12 | El corpus usa una formulación muy distinta y el fragmento esperado no comparte entidades | `p01`: «desechos líquidos» no activa «vertimientos» con suficiente similitud | `p06`: «conservar bosques» compite con unidades de reforestación de otro año |
-| `figure` | 7/10 | Cifras cercanas en varias unidades y truncamiento a 520 caracteres en el fixture | `f09`: el monto de inversión aparece en dos párrafos | `f10`: el déficit se cita en el informe de la Fundación con otra redacción |
-| `proper_noun` | 6/8 | Siglas con varias definiciones en el corpus | `n04`: «Laredo» aparece en varias filiales | `n05`: «RSPO» compite con «ISCC» en el mismo párrafo |
-| `english` | 2/5 | El modelo es multilingüe, pero el corpus está en español y los términos técnicos no se alinean | `e01`: «wastewater» ↔ «vertimientos» | `e03`: «hectares» ↔ «hectáreas» |
-| `out_of_corpus` | 0/5 | El umbral de 0,30 es permisivo en el modo semántico puro | `o01` («arepas») devuelve unidades de alimentos | `o04` («Mongolia») devuelve unidades de geografía |
+### Análisis de errores
 
-**Acción derivada**: en el pipeline real, el umbral se aplica junto con la señal léxica y el fallback de
-tareas; por eso el modo `hybrid` no inventa aunque `semantic` devuelva candidatos débiles. Aun así, subir
-`min_similarity` a 0,35 reduciría los falsos positivos de `out_of_corpus` a costa de Recall; queda como
-experimento de M1-09.
+| Pregunta | Modo | Tipo | Causa |
+|---|---|---|---|
+| r07 | semantic | documental | la unidad esperada no apareció en el ranking |
+| r09 | semantic | documental | la unidad esperada no apareció en el ranking |
+| r13 | semantic | documental | la unidad esperada no apareció en el ranking |
+| r14 | semantic | documental | la unidad esperada no apareció en el ranking |
+| r15 | semantic | documental | la unidad esperada no apareció en el ranking |
+| r18 | semantic | documental | la unidad esperada no apareció en el ranking |
+| r25 | semantic | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| r26 | semantic | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| r27 | semantic | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| r28 | semantic | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| r07 | lexical | documental | la unidad esperada no apareció en el ranking |
+| r09 | lexical | documental | la unidad esperada no apareció en el ranking |
+| r10 | lexical | documental | la unidad esperada no apareció en el ranking |
+| r13 | lexical | documental | la unidad esperada no apareció en el ranking |
+| r14 | lexical | documental | la unidad esperada no apareció en el ranking |
+| r15 | lexical | documental | la unidad esperada no apareció en el ranking |
+| r18 | lexical | documental | la unidad esperada no apareció en el ranking |
+| r21 | lexical | structured | la unidad esperada no apareció en el ranking |
+| r23 | lexical | structured | la unidad esperada no apareció en el ranking |
+| r25 | lexical | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| r26 | lexical | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| r27 | lexical | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| r28 | lexical | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| r07 | hybrid | documental | la unidad esperada no apareció en el ranking |
+| r09 | hybrid | documental | la unidad esperada no apareció en el ranking |
+| r13 | hybrid | documental | la unidad esperada no apareció en el ranking |
+| r14 | hybrid | documental | la unidad esperada no apareció en el ranking |
+| r15 | hybrid | documental | la unidad esperada no apareció en el ranking |
+| r18 | hybrid | documental | la unidad esperada no apareció en el ranking |
+| r25 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| r26 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| r27 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+| r28 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
 
-## Fidelidad y citas
+<!-- router:start -->
+## Enrutador (US2)
 
-- La cobertura de evidencia es 1,000 en los tres modos: toda pregunta en corpus obtiene al menos un
-  fragmento. No equivale a fidelidad.
-- La fidelidad de la respuesta se mide en dos capas: automática (toda cita `[U#]` debe existir en
-  `used_unit_ids`, lo que ya verifican las pruebas de contrato e integración) y manual (muestra de 20
-  respuestas revisadas). La revisión manual requiere generar respuestas y queda registrada como pendiente
-  en este informe.
-- El contrato `TaskResult` conserva `status`, `citations`, `fallback` y `review_required`; la traza se
-  adjunta sin alterar esas garantías.
+**Ejecución**: `router-real-2026-11-10` · **Modo**: real · **Casos**: 36 (30 consultas + 6 repreguntas con su turno previo como historial)
 
-## Modo demostración sin red
+| Métrica | Valor | Criterio |
+|---|---:|---|
+| Precisión del enrutador | 0.972 (35/36) | SC-002 ≥ 0,90 |
+| Saludos y fuera de alcance sin búsqueda | 10/10 | SC-004 100 % |
+| Llamadas al modelo | 26 | 0 en reglas |
+| Latencia media por decisión | 1335 ms | — |
 
-Validado con la prueba `tests/integration/test_rag_api.py::test_ask_demo_works_without_network`, que
-bloquea conexiones externas durante la petición: `mode="demo"` responde con el modelo guionizado y el
-índice de prueba versionado en `tests/fixtures/rag/index`, sin descargar el modelo real ni abrir red.
+Matriz de confusión (filas: esperada; columnas: predicha):
 
-## Reproducción
+| Esperada \ Predicha | direct | documental | structured | out_of_scope | clarify |
+|---|---|---|---|---|---|
+| direct | 6 | 0 | 0 | 0 | 0 |
+| documental | 0 | 17 | 1 | 0 | 0 |
+| structured | 0 | 0 | 6 | 0 | 0 |
+| out_of_scope | 0 | 0 | 0 | 4 | 0 |
+| clarify | 0 | 0 | 0 | 0 | 2 |
 
-```powershell
-uv run python -m proyecto_modelos_lenguaje.rag index verify
-uv run python -m proyecto_modelos_lenguaje.rag evaluate `
-  --questions tests/fixtures/rag/eval_questions.jsonl `
-  --embedder fastembed `
-  --out docs/evaluacion_modulo2.md `
-  --json-out data/module2/evaluation.json `
-  --run-id 2026-11-06-e5-small
-```
+Errores:
 
-## Limitaciones
+| Consulta | Esperada | Predicha | Confianza | Decidió | Motivo |
+|---|---|---|---:|---|---|
+| r32 «¿Cuánto bioetanol produce allá al año?» | documental | structured | 0.90 | llm | pregunta por una cifra puntual de producción anual de bioetanol en Brasil |
 
-- La primera consulta de cada modo incluye la carga del modelo y el calentamiento de la caché; por eso
-  la latencia media puede superar el p95.
-- El fixture de 50 unidades usa `HashEmbedder` (determinista, sin semántica) y solo sirve para probar el
-  flujo; las métricas de este informe se calcularon con el modelo real sobre las 15.211 unidades.
-- La comparación con el Módulo 1 se hace contra su recuperación léxica medida en este mismo conjunto,
-  porque la línea base de 40 preguntas de M1-08 aún no estaba registrada.
+Lectura:
 
-## Notas
+- **Cumple SC-002 y SC-004**: 0,972 de precisión con DeepSeek (≥ 0,90) y 10/10 saludos y preguntas fuera
+  de alcance resueltos por reglas, sin búsqueda ni llamadas al modelo.
+- **Resuelve la abstención**: las 4 preguntas fuera de corpus se enrutan a `out_of_scope` antes de buscar.
+  La recuperación sola no se abstenía en ningún modo (sección anterior).
+- El único error (r32) es discutible: la repregunta pide una cifra («¿cuánto bioetanol produce allá al
+  año?») y el modelo la mandó a `structured`; con la caída a documental cuando la tabla no tiene el dato,
+  la respuesta sigue siendo correcta.
+- El modo demo (heurística sin modelo) también acierta 35/36, pero esa heurística se escribió conociendo el
+  conjunto: no es una medida independiente y solo garantiza un modo demo determinista.
+- Costo: 26 llamadas al modelo (una por consulta no resuelta por reglas), 1,3 s de media por decisión.
 
-- La cobertura de citas mide la disponibilidad de evidencia por pregunta; la fidelidad requiere generación y revisión manual (ver informe).
-- Evaluación de recuperación: no se invocó al LLM.
+<!-- router:end -->

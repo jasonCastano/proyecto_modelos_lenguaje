@@ -12,6 +12,7 @@ from proyecto_modelos_lenguaje.rag.config import load_retrieval_config
 from proyecto_modelos_lenguaje.rag.embeddings import EmbeddingProfile, HashEmbedder
 from proyecto_modelos_lenguaje.rag.hybrid import (
     HybridRetriever,
+    MetadataFilter,
     RetrievalTrace,
     RetrievedFragment,
     SemanticRetriever,
@@ -337,3 +338,45 @@ def test_fixture_index_produces_evidence(retriever: HybridRetriever) -> None:
     assert trace.semantic_available is True
     assert trace.mode in {"hybrid", "semantic", "lexical"}
     assert trace.used_unit_ids
+
+
+def test_metadata_filter_keeps_only_matching_topics(retriever, units) -> None:
+    # Arrange
+    topic = units[0].topic_id
+    allowed = {unit.unit_id for unit in units if unit.topic_id == topic}
+    metadata_filter = MetadataFilter.of(topics=[topic])
+
+    # Act
+    trace = retriever.retrieve(
+        "vertimientos de agua residual", top_k=8, metadata_filter=metadata_filter
+    )
+
+    # Assert
+    assert trace.fragments
+    assert {fragment.unit_id for fragment in trace.fragments} <= allowed
+    assert any("Filtro por metadatos" in note for note in trace.notes)
+
+
+def test_metadata_filter_by_authority_and_inactive_filter(retriever) -> None:
+    # Arrange
+    nobody = MetadataFilter.of(authorities=["fuente_inexistente"])
+
+    # Act
+    filtered = retriever.retrieve("vertimientos de agua", metadata_filter=nobody)
+    unfiltered = retriever.retrieve("vertimientos de agua", metadata_filter=MetadataFilter())
+
+    # Assert
+    assert filtered.fragments == ()
+    assert unfiltered.fragments
+    assert not any("Filtro" in note for note in unfiltered.notes)
+
+
+def test_metadata_filter_accepts_and_describes() -> None:
+    # Arrange
+    unit = _unit("u1", "texto", topic="sedes")
+    metadata_filter = MetadataFilter.of(topics=["sedes"], unit_types=["passage"])
+
+    # Act / Assert
+    assert metadata_filter.accepts(unit)
+    assert not MetadataFilter.of(topics=["productos"]).accepts(unit)
+    assert metadata_filter.describe() == "tema=sedes; tipo=passage"

@@ -230,6 +230,7 @@ export interface ThreadView {
   summary: string;
   status: "idle" | "pending_approval";
   pending_action: PendingAction | null;
+  actions?: Array<PendingAction & { decided_at?: string }>;
 }
 
 export interface MemoryItem {

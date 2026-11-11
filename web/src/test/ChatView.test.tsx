@@ -99,6 +99,22 @@ describe("ChatTurnCard", () => {
   });
 });
 
+describe("ChatTurnCard con fragmentos anómalos", () => {
+  it("avisa del fragmento con instrucciones embebidas", () => {
+    const turn = makeTurn();
+    renderTurn(
+      makeTurn({
+        fragments: [
+          { ...turn.fragments[0], anomalous: true, anomaly_reasons: ["revela_prompt"] },
+        ],
+      }),
+    );
+
+    expect(screen.getByTestId("anomaly-warning")).toHaveTextContent("[U1]");
+    expect(screen.getByTestId("anomaly-warning")).toHaveTextContent("revela_prompt");
+  });
+});
+
 describe("ChatView", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -137,5 +153,52 @@ describe("ChatView", () => {
     expect(bodies[1].thread_id).toBe(first.thread_id);
     expect(screen.getAllByTestId("chat-turn")).toHaveLength(2);
     expect(window.sessionStorage.getItem("manuelita.chat.thread")).toContain(first.thread_id);
+  });
+
+  it("pausa ante una acción de escritura y la reanuda al aprobar", async () => {
+    const pending: ChatResponse = {
+      thread_id: "8f6c1e0a-0000-4000-8000-000000000002",
+      turn: makeTurn({ question: "Prefiero respuestas en viñetas", answer: "", citations: [], fragments: [] }),
+      status: "pending_approval",
+      pending_action: {
+        action_id: "act_01",
+        tool: "save_preference",
+        args: { key: "response_format", value: "viñetas" },
+        proposed_at: "2026-11-11T10:00:00Z",
+      },
+      anomalies: [],
+    };
+    const resumed: ChatResponse = {
+      ...pending,
+      turn: makeTurn({
+        question: "Prefiero respuestas en viñetas",
+        answer: "Guardé tu preferencia: response_format = viñetas.",
+        citations: [],
+        fragments: [],
+      }),
+      status: "answered",
+      pending_action: null,
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(pending), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(resumed), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    render(<ChatView mode="demo" />);
+    await user.type(screen.getByTestId("chat-input"), "Prefiero respuestas en viñetas");
+    await user.click(screen.getByTestId("chat-send"));
+    await screen.findByTestId("approval-card");
+    expect(screen.getByTestId("chat-send")).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Aprobar" }));
+    await screen.findByText(/Guardé tu preferencia/);
+
+    expect(String(fetchMock.mock.calls[1][0])).toContain(`/threads/${pending.thread_id}/resume`);
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
+      action_id: "act_01",
+      decision: "approve",
+    });
+    expect(screen.queryByTestId("approval-card")).not.toBeInTheDocument();
   });
 });

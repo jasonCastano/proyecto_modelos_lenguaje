@@ -10,11 +10,14 @@ import re
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any, Literal
 
-from langgraph.types import Checkpointer
+from langgraph.store.base import BaseStore
+from langgraph.types import Checkpointer, Command
 
 from ..rag.hybrid import HybridRetriever
+from .actions import ActionArgsError, validate_args
 from .config import AgentConfig
 from .demo import DemoChatModel
 from .graph import (
@@ -24,7 +27,7 @@ from .graph import (
     build_agent_graph,
     build_chain_graph,
 )
-from .models import Turn
+from .models import Decision, PendingAction, RouteDecision, Turn
 from .structured import StructuredError, StructuredStore
 
 Variant = Literal["chain", "agent"]
@@ -32,6 +35,23 @@ Mode = Literal["real", "demo"]
 MESSAGE_MAX_CHARS = 500
 USER_ID_PATTERN = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+
+
+INTERRUPT_CHANNEL = "__interrupt__"
+
+
+def pending_from_interrupt(item: Any, timestamp: str | None) -> dict[str, Any]:
+    """Convierte el ``interrupt`` de HITL (cadena o middleware) en ``PendingAction``."""
+    value = getattr(item, "value", item) or {}
+    request = (value.get("action_requests") or [{}])[0]
+    extra = {"proposed_at": timestamp} if timestamp else {}
+    action = PendingAction(
+        action_id=str(getattr(item, "id", "") or "act"),
+        tool=request.get("name"),
+        args=dict(request.get("args") or {}),
+        **extra,
+    )
+    return action.model_dump(mode="json")
 
 
 class ChatError(Exception):
@@ -121,16 +141,18 @@ def build_deps(mode: Mode, config: AgentConfig, retriever: HybridRetriever | Non
 
 
 class ChatService:
-    """Punto único para enviar mensajes y leer hilos."""
+    """Punto único para enviar mensajes, leer hilos y resolver acciones pendientes."""
 
     def __init__(
         self,
         config: AgentConfig,
         checkpointer: Checkpointer,
         deps_factory: Callable[[Mode], GraphDeps],
+        store: BaseStore | None = None,
     ) -> None:
         self.config = config
         self.checkpointer = checkpointer
+        self.store = store
         self._deps_factory = deps_factory
         self._graphs: dict[tuple[str, str], Any] = {}
 
@@ -139,14 +161,52 @@ class ChatService:
         if key not in self._graphs:
             deps = self._deps_factory(mode)
             builder = build_agent_graph if variant == "agent" else build_chain_graph
-            self._graphs[key] = builder(deps, self.checkpointer)
+            self._graphs[key] = builder(deps, self.checkpointer, self.store)
         return self._graphs[key]
 
-    def _values(self, thread_id: str) -> dict[str, Any] | None:
-        saved = self.checkpointer.get_tuple({"configurable": {"thread_id": thread_id}})
+    @staticmethod
+    def _config(thread_id: str, handler: TurnMetricsHandler | None = None) -> dict[str, Any]:
+        config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
+        if handler is not None:
+            config["callbacks"] = [handler]
+        return config
+
+    def _load(self, thread_id: str) -> tuple[dict[str, Any], dict[str, Any] | None]:
+        """Estado del hilo y su acción pendiente (si el grafo quedó en ``interrupt``)."""
+        saved = self.checkpointer.get_tuple(self._config(thread_id))
         if saved is None:
-            return None
-        return dict(saved.checkpoint.get("channel_values") or {})
+            raise ChatError("thread_not_found", "No existe ese hilo de conversación.", 404)
+        values = dict(saved.checkpoint.get("channel_values") or {})
+        interrupts = [
+            item
+            for _task, channel, value in (saved.pending_writes or [])
+            if channel == INTERRUPT_CHANNEL
+            for item in (value if isinstance(value, (list, tuple)) else [value])
+        ]
+        timestamp = saved.checkpoint.get("ts")
+        pending = pending_from_interrupt(interrupts[0], timestamp) if interrupts else None
+        return values, pending
+
+    def _invoke(self, variant: Variant, mode: Mode, payload: Any, thread_id: str) -> Any:
+        handler = TurnMetricsHandler()
+        try:
+            return self.graph(variant, mode).invoke(payload, self._config(thread_id, handler))
+        except ChatUnavailableError as exc:
+            raise ChatError("index_unavailable", str(exc), 503) from exc
+
+    def _outcome(self, thread_id: str, result: dict[str, Any]) -> ChatOutcome:
+        interrupts = result.get(INTERRUPT_CHANNEL) or []
+        if interrupts:
+            turns = result.get("turns") or []
+            turn = Turn(
+                turn_id=len(turns) + 1,
+                question=result["question"],
+                route=RouteDecision.model_validate(result["decision"]),
+            )
+            pending = pending_from_interrupt(interrupts[0], None)
+            return ChatOutcome(thread_id, turn, "pending_approval", pending_action=pending)
+        turn = Turn.model_validate(result["turns"][-1])
+        return ChatOutcome(thread_id, turn, turn_status(turn), anomalies=anomalies_of(turn))
 
     def send(
         self,
@@ -159,47 +219,70 @@ class ChatService:
     ) -> ChatOutcome:
         question = validate_message(message)
         validate_user_id(user_id)
-        state: dict[str, Any] = {"question": question}
+        state: dict[str, Any] = {"question": question, "mode": mode}
         if thread_id is None:
             thread_id = str(uuid.uuid4())
             state.update(
-                {
-                    "variant": variant,
-                    "user_id": user_id,
-                    "turns": [],
-                    "summary": "",
-                    "summarized": 0,
-                }
+                variant=variant, user_id=user_id, turns=[], summary="", summarized=0, actions=[]
             )
         else:
-            values = self._values(thread_id)
-            if values is None:
-                raise ChatError("thread_not_found", "No existe ese hilo de conversación.", 404)
+            values, pending = self._load(thread_id)
             if values.get("variant", variant) != variant:
                 raise ChatError(
                     "variant_mismatch",
                     f"El hilo usa la variante «{values.get('variant')}»; abre uno nuevo.",
                     409,
                 )
-            if values.get("pending_action"):
+            if pending is not None:
                 raise ChatError(
                     "thread_pending_approval", "El hilo tiene una acción por aprobar.", 409
                 )
-        handler = TurnMetricsHandler()
-        try:
-            result = self.graph(variant, mode).invoke(
-                state, {"configurable": {"thread_id": thread_id}, "callbacks": [handler]}
+        result = self._invoke(variant, mode, state, thread_id)
+        return self._outcome(thread_id, result)
+
+    def resume(
+        self,
+        thread_id: str,
+        *,
+        action_id: str,
+        decision: Decision,
+        args: dict[str, Any] | None = None,
+    ) -> ChatOutcome:
+        """Registra la decisión humana y continúa el hilo (``Command(resume=...)``)."""
+        values, pending = self._load(thread_id)
+        if pending is None:
+            raise ChatError("no_pending_action", "El hilo no tiene acciones por aprobar.", 409)
+        if action_id != pending["action_id"]:
+            raise ChatError("action_mismatch", "La acción no corresponde a la pendiente.", 409)
+        final_args = pending["args"]
+        payload: dict[str, Any] = {"type": decision}
+        if decision == "edit":
+            try:
+                final_args = validate_args(pending["tool"], args or {})
+            except ActionArgsError as exc:
+                raise ChatError("invalid_args", str(exc), 400) from exc
+            payload["edited_action"] = {"name": pending["tool"], "args": final_args}
+        elif decision == "reject":
+            payload["message"] = "La persona revisora rechazó la acción; no se ejecutó."
+        variant = values.get("variant", "chain")
+        mode = values.get("mode", "demo")
+        result = self._invoke(variant, mode, Command(resume={"decisions": [payload]}), thread_id)
+        record = {
+            **pending,
+            "args": final_args,
+            "decision": decision,
+            "decided_at": datetime.now(UTC).isoformat(),
+        }
+        if not result.get(INTERRUPT_CHANNEL):
+            self.graph(variant, mode).update_state(
+                self._config(thread_id),
+                {"actions": [*(values.get("actions") or []), record]},
+                as_node="finalize",
             )
-        except ChatUnavailableError as exc:
-            raise ChatError("index_unavailable", str(exc), 503) from exc
-        turn = Turn.model_validate(result["turns"][-1])
-        return ChatOutcome(thread_id, turn, turn_status(turn), anomalies=anomalies_of(turn))
+        return self._outcome(thread_id, result)
 
     def thread(self, thread_id: str) -> dict[str, Any]:
-        values = self._values(thread_id)
-        if values is None:
-            raise ChatError("thread_not_found", "No existe ese hilo de conversación.", 404)
-        pending = values.get("pending_action")
+        values, pending = self._load(thread_id)
         return {
             "thread_id": thread_id,
             "variant": values.get("variant", "chain"),
@@ -207,4 +290,5 @@ class ChatService:
             "summary": values.get("summary") or "",
             "status": "pending_approval" if pending else "idle",
             "pending_action": pending,
+            "actions": values.get("actions") or [],
         }

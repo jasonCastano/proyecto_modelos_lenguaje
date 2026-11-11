@@ -2,7 +2,8 @@
 
 Uso::
 
-    uv run python tests/fixtures/rag/build_fixture.py
+    uv run python tests/fixtures/rag/build_fixture.py            # índice general
+    uv run python tests/fixtures/rag/build_fixture.py malicious  # adversarial (T052)
 
 El índice resultante (``tests/fixtures/rag/index``) se versiona en Git: es pequeño y permite que la
 suite y el modo demostración funcionen sin red ni descarga del modelo real.
@@ -26,22 +27,31 @@ from proyecto_modelos_lenguaje.rag.index import build_index  # noqa: E402
 FIXTURE_DIR = Path(__file__).resolve().parent
 GOLD_SAMPLE = FIXTURE_DIR / "gold_sample.jsonl"
 INDEX_DIR = FIXTURE_DIR / "index"
+FIXTURE_SETS = {
+    "default": (GOLD_SAMPLE, INDEX_DIR),
+    "malicious": (
+        FIXTURE_DIR / "malicious" / "gold_malicious.jsonl",
+        FIXTURE_DIR / "malicious" / "index",
+    ),
+}
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    name = (argv if argv is not None else sys.argv[1:] or ["default"])[0]
+    gold, index_dir = FIXTURE_SETS[name]
     config = load_retrieval_config(project_root=ROOT)
     profile = EmbeddingProfile.from_config(config.embedding, created_at="2026-11-06T00:00:00+00:00")
     manifest = build_index(
-        GOLD_SAMPLE,
-        INDEX_DIR,
+        gold,
+        index_dir,
         HashEmbedder(profile),
         profile,
         force=True,
-        command="uv run python tests/fixtures/rag/build_fixture.py",
+        command=f"uv run python tests/fixtures/rag/build_fixture.py {name}".strip(),
     )
     print(
         f"índice de prueba: {manifest.count} fragmentos · {manifest.dimension}d · "
-        f"{manifest.model} · {INDEX_DIR}"
+        f"{manifest.model} · {index_dir}"
     )
     return 0
 

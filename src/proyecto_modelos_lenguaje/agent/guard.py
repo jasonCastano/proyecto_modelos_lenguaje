@@ -87,3 +87,24 @@ def render_documents(documents: Iterable[GuardedDocument]) -> str:
         for doc in documents
     ]
     return "\n".join(blocks)
+
+
+LEAK_MIN_CHARS = 40
+LEAK_SPLIT = re.compile(r"(?<=[.:;!?])\s+|\n+")
+
+
+def _squash(text: str) -> str:
+    return " ".join(re.sub(r"[`*_>#\-]+", " ", text).lower().split())
+
+
+def leaks_prompt(answer: str, prompt_text: str) -> bool:
+    """True si la respuesta reproduce una frase del system prompt (fuga por inyección).
+
+    Segunda línea de defensa: aunque un documento malicioso logre que el modelo «revele su
+    prompt», la respuesta se descarta antes de mostrarse.
+    """
+    squashed = _squash(answer)
+    if not squashed:
+        return False
+    sentences = (_squash(part) for part in LEAK_SPLIT.split(prompt_text))
+    return any(len(s) >= LEAK_MIN_CHARS and s in squashed for s in sentences)

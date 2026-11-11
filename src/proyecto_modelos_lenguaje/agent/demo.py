@@ -14,6 +14,7 @@ from langchain_core.outputs import ChatGeneration, ChatResult
 
 from ..config import PROJECT_ROOT
 from ..tasks import FALLBACK_ANSWER
+from .actions import detect_write_intent
 from .router import contextual_query
 
 DEMO_INDEX = PROJECT_ROOT / "tests" / "fixtures" / "rag" / "index"
@@ -94,14 +95,18 @@ class DemoChatModel(BaseChatModel):
             humans = [str(m.content) for m in messages if isinstance(m, HumanMessage)]
             current = _question(humans[-1]) if humans else ""
             previous = _question(humans[-2]) if len(humans) > 1 else None
-            query = contextual_query(current, previous)[:300]
-            message = AIMessage(
-                content="",
-                tool_calls=[
-                    {"name": "search_documents", "args": {"query": query}, "id": "demo_call_1"}
-                ],
-            )
+            intent = detect_write_intent(current)
+            if intent is not None:
+                call = {"name": intent.tool, "args": dict(intent.args), "id": "demo_write_1"}
+            else:
+                query = contextual_query(current, previous)[:300]
+                call = {"name": "search_documents", "args": {"query": query}, "id": "demo_call_1"}
+            message = AIMessage(content="", tool_calls=[call])
         else:
             evidence = "\n".join(str(m.content) for m in (tool_results or messages[-1:]))
-            message = AIMessage(content=demo_answer(evidence))
+            if tool_results and not DOCUMENT_PATTERN.search(evidence):
+                # Resultado de una acción de escritura (o su rechazo): se informa tal cual.
+                message = AIMessage(content=evidence.strip())
+            else:
+                message = AIMessage(content=demo_answer(evidence))
         return ChatResult(generations=[ChatGeneration(message=message)])

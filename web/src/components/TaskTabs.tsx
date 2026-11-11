@@ -4,6 +4,7 @@ const tabs: Array<{ id: TaskKind; label: string; hint: string }> = [
   { id: "qa", label: "Consulta", hint: "Pregunta al corpus" },
   { id: "summary", label: "Resumen", hint: "Sintetiza el paquete" },
   { id: "faq", label: "FAQ", hint: "Preguntas frecuentes" },
+  { id: "chat", label: "Conversación", hint: "Hilo con memoria y enrutador" },
 ];
 
 export function TaskTabs({
@@ -14,7 +15,7 @@ export function TaskTabs({
   onChange: (task: TaskKind) => void;
 }) {
   return (
-    <div className="task-tabs" role="tablist" aria-label="Tareas del Módulo 1">
+    <div className="task-tabs" role="tablist" aria-label="Tareas del asistente">
       {tabs.map((tab) => (
         <button
           aria-selected={task === tab.id}

@@ -16,7 +16,7 @@ import sys
 import time
 import tomllib
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -655,9 +655,15 @@ def _generate_with_citations(
         instruction = system_text if attempt == 0 else f"{system_text}\n\n{STRICT_REMINDER}"
         answer, usage = _invoke(model, instruction, user_text, task=task)
         citations, invalid = _parse_citations(answer, selection)
-        if len(citations) >= max(1, min_citations):
+        if len(citations) >= max(1, min_citations) or is_model_fallback(answer):
             break
     return answer, citations, invalid, usage
+
+
+def is_model_fallback(answer: str) -> bool:
+    """True when the model declared the canonical no-evidence answer instead of citing."""
+    normalized = answer.strip().lstrip(">").strip().strip("*_\"'«»").strip()
+    return normalized.rstrip(".") == FALLBACK_ANSWER.rstrip(".")
 
 
 def _validate_question(question: str, config: TaskConfig) -> str:
@@ -782,6 +788,22 @@ def answer_question(
     latency = round(time.perf_counter() - started, 3)
     input_tokens = usage[0] if usage else estimate_tokens(system_text) + estimate_tokens(text)
     output_tokens = usage[1] if usage else estimate_tokens(answer)
+
+    if not citations and is_model_fallback(answer):
+        declared = _fallback_result(
+            "qa",
+            template,
+            model,
+            omitted=selection.omitted_unit_ids,
+            started=started,
+            retrieval=trace,
+        )
+        return replace(
+            declared,
+            used_unit_ids=selection.used_unit_ids,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
 
     if not citations:
         return TaskResult(

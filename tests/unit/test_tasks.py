@@ -25,6 +25,7 @@ from proyecto_modelos_lenguaje.tasks import (
     build_parser,
     build_scripted_model,
     generate_faq,
+    is_model_fallback,
     load_prompt,
     load_task_config,
     main,
@@ -100,13 +101,16 @@ def test_load_task_config_rejects_unknown_pack(tmp_path: Path) -> None:
         load_task_config(path)
 
 
+PROMPT_VERSIONS = {"qa": "1.1", "summary": "1.0", "faq": "1.0"}  # qa 1.1: M1-09
+
+
 @pytest.mark.parametrize("task", ["qa", "summary", "faq"])
 def test_prompts_define_the_six_mandatory_sections(task: str) -> None:
     prompt = load_prompt(task)
     assert tuple(prompt.sections) == ("rol", "tarea", "contexto", "reglas", "formato", "fallback")
     assert all(value.strip() for value in prompt.sections.values())
     assert len(prompt.sha256) == 64
-    assert prompt.version == "1.0"
+    assert prompt.version == PROMPT_VERSIONS[task]
 
 
 def test_prompt_hash_changes_with_content(tmp_path: Path) -> None:
@@ -170,6 +174,44 @@ def test_missing_citations_after_retry_is_a_controlled_error() -> None:
     assert result.status == "error"
     assert result.error == "missing_citations"
     assert result.citations == ()
+
+
+def test_model_declared_no_evidence_is_a_fallback_not_an_error() -> None:
+    # Arrange
+    model = build_fake_model([FALLBACK_ANSWER, "No debería pedirse un reintento."])
+
+    # Act
+    result = answer_question("¿Qué productos ofrece Manuelita?", model=model, units=_units())
+
+    # Assert
+    assert result.status == "fallback"
+    assert result.fallback is True
+    assert result.error is None
+    assert result.citations == ()
+    assert result.answer == FALLBACK_ANSWER
+    assert result.used_unit_ids
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        FALLBACK_ANSWER,
+        f"> {FALLBACK_ANSWER}",
+        "No hay evidencia suficiente en el corpus para responder",
+        f"**{FALLBACK_ANSWER}**",
+    ],
+)
+def test_is_model_fallback_accepts_formatting_variants(answer: str) -> None:
+    # Arrange / Act / Assert
+    assert is_model_fallback(answer) is True
+
+
+def test_is_model_fallback_rejects_partial_answers() -> None:
+    # Arrange
+    answer = f"Manuelita produce azúcar. {FALLBACK_ANSWER}"
+
+    # Act / Assert
+    assert is_model_fallback(answer) is False
 
 
 def test_fallback_does_not_call_the_model() -> None:

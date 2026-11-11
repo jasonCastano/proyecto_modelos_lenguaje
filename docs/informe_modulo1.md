@@ -9,8 +9,9 @@ Universidad Autónoma de Occidente, 2026-2S
 
 **Fecha**: 2026-11-07
 
-**Estado**: Borrador redactado con asistencia de Claude Code; pendiente de revisión por ambos integrantes
-y de los resultados de M1-08.
+**Estado**: borrador en revisión por ambos integrantes. M1-08 ejecutada el 2026-11-10 con DeepSeek
+(métricas automáticas en la sección 5.4); la calificación humana de corrección, coherencia y alucinación sigue
+pendiente.
 
 > **Regla de este informe** (Principio I de la [constitución](../CONSTITUTION.md)): cada cifra indica el
 > archivo o el comando del que proviene. Lo que aún no se ha medido se marca como **PENDIENTE** y no se
@@ -268,11 +269,16 @@ sin citas el resultado es `status=error` con `error=missing_citations`.
 
 **Variantes exigidas por la constitución §3.6** (línea base zero-shot, formato estructurado y
 anti-alucinación): la versión 1.0 ya incorpora formato estructurado y reglas anti-alucinación. La línea base
-zero-shot y la variante final ajustada con evidencia **están pendientes** (M1-08 y M1-09, ver sección 5.4).
+zero-shot (`prompts/qa_zero_shot.md`, versión `0.1-zero-shot`) y el prompt final (`prompts/qa.md`, versión
+`1.0`) se ejecutaron en M1-08 (sección 5.4); el ajuste con evidencia queda para M1-09.
+
+Corrección derivada de M1-08: cuando el modelo respondía exactamente la frase de abstención, el código la
+registraba como `error=missing_citations` y reintentaba. Ahora `answer_question` la registra como
+`status=fallback` sin reintento (`is_model_fallback` en `src/proyecto_modelos_lenguaje/tasks.py`).
 
 ## 5. Resultados
 
-Esta sección reporta solo lo medido. La evaluación de 40 preguntas aún no existe.
+Esta sección reporta solo lo medido. La evaluación de 40 preguntas se ejecutó el 2026-11-10 (sección 5.4).
 
 ### 5.1 Corpus y cobertura
 
@@ -339,42 +345,55 @@ Hallazgos registrados en el prompt log:
 
 ### 5.4 Evaluación de 40 preguntas
 
-> **PENDIENTE — se completa con `docs/evaluacion_modulo1.md` (M1-08).**
->
-> Las 40 preguntas de [`docs/alcance.md`](alcance.md) se ejecutarán con la línea base zero-shot y con el
-> prompt final. Ninguna celda de esta tabla debe llenarse a mano ni con estimaciones.
+**Ejecución**: `m1-eval-2026-11-10-deepseek` (2026-11-10, modelo `deepseek-flash`, modo real). Fuente:
+[`docs/evaluacion_modulo1.md`](evaluacion_modulo1.md) (tabla por pregunta) y
+[`docs/evaluacion_modulo1.json`](evaluacion_modulo1.json) (registro completo). Comando:
+`uv run python -m proyecto_modelos_lenguaje.module1_eval --run-id m1-eval-2026-11-10-deepseek`.
 
-Tabla por pregunta (una fila por cada P01–P40 y por variante):
+Las 40 preguntas aprobadas de [`docs/alcance.md`](alcance.md) se respondieron con las dos variantes sobre la
+misma recuperación léxica. Códigos esperados en el banco: 19 D, 11 P, 4 C, 3 M, 1 S, 1 X y 1 «P, X».
 
-| ID | Pregunta | Variante | Respuesta | Fuente | Corrección | Coherencia | Alucinación |
-|----|----------|----------|-----------|--------|------------|------------|-------------|
-| P01 | Misión y visión | Zero-shot | PENDIENTE | PEND. | PENDIENTE | PENDIENTE | PENDIENTE |
-| P01 | Misión y visión | Final | PENDIENTE | PEND. | PENDIENTE | PENDIENTE | PENDIENTE |
-| … | … | … | … | … | … | … | … |
-| P40 | (ver alcance) | Zero-shot | PENDIENTE | PEND. | PENDIENTE | PENDIENTE | PENDIENTE |
-| P40 | (ver alcance) | Final | PENDIENTE | PEND. | PENDIENTE | PENDIENTE | PENDIENTE |
-
-Tabla agregada esperada:
+**Métricas automáticas**:
 
 | Métrica | Zero-shot | Prompt final | Diferencia |
 |---------|----------:|-------------:|-----------:|
-| Respuestas correctas (de 40) | PENDIENTE | PENDIENTE | PENDIENTE |
-| Respuestas parciales (de 40) | PENDIENTE | PENDIENTE | PENDIENTE |
-| Coherencia media | PENDIENTE | PENDIENTE | PENDIENTE |
-| Respuestas con alucinación | PENDIENTE | PENDIENTE | PENDIENTE |
-| Respuestas con cita válida | PENDIENTE | PENDIENTE | PENDIENTE |
-| *Fallback* correctos (preguntas tipo `X`) | PENDIENTE | PENDIENTE | PENDIENTE |
-| Latencia media (s) | PENDIENTE | PENDIENTE | PENDIENTE |
+| Respuestas `ok` con cita válida (de 40) | 40 | 23 | −17 |
+| Abstenciones (`fallback`) | 0 | 17 | +17 |
+| Errores | 0 | 0 | 0 |
+| Abstención correcta en la pregunta `X` (de 1) | 0 | 1 | +1 |
+| Abstenciones en preguntas con respuesta esperada (de 38) | 0 | 16 | +16 |
+| Acierto de *fallback* | 0,974 | 0,590 | −0,384 |
+| Latencia media (s) | 3,772 | 3,650 | −0,122 |
+| Tokens de entrada / salida | 34.685 / 20.715 | 49.645 / 20.242 | +14.960 / −473 |
 
-Análisis de errores y ajuste de prompts: **PENDIENTE (M1-09)**. Los candidatos de ajuste ya identificados en
-`docs/prompt_log.md` §5 son penalizar unidades de baja densidad y textos de formulario, exigir cobertura de
-varios términos de la pregunta y revisar el peso del tema frente a la coincidencia léxica.
+**Lectura** (automática, sin calificación humana):
+
+1. **El zero-shot nunca se abstiene**, ni siquiera en la pregunta sin evidencia (`X`). Responde con citas,
+   pero a menudo para decir que el contexto no contiene lo pedido (P01, P06, P08, P09): con cita y sin
+   respuesta útil.
+2. **El prompt final es demasiado conservador**: se abstiene correctamente en la pregunta `X`, pero también en 16
+   preguntas con respuesta esperada (P01, P06, P08, P09, P12, P13, P16, P17, P20, P21, P29, P31, P32, P35, P37
+   y P38). La regla «Sin evidencia» no deja responder parcialmente, que es lo que piden las preguntas `P`.
+3. En varias de esas preguntas el zero-shot declara que el contexto recuperado no trae la información. Eso apunta
+   también a la **recuperación léxica** (unidades poco pertinentes), no solo al prompt. La recuperación híbrida
+   del Módulo 2 sube Recall@5 de 0,371 a 0,600 ([`docs/evaluacion_modulo2.md`](evaluacion_modulo2.md)).
+
+**Calificación humana — PENDIENTE**: las columnas Corrección (0/1/2), Coherencia (1–5) y Alucinación de
+`docs/evaluacion_modulo1.md` las llenan ambos integrantes. Hasta entonces este informe no reporta respuestas
+correctas, coherencia media ni tasa de alucinación.
+
+**Ajuste de prompts (M1-09)**: (a) permitir una respuesta parcial con cita cuando la evidencia cubre parte de la
+pregunta y reservar la frase de abstención para la evidencia nula; (b) reejecutar solo las 16 preguntas
+afectadas con `--ids` y comparar. Siguen vigentes los candidatos de recuperación de `docs/prompt_log.md` §5:
+penalizar unidades de baja densidad y textos de formulario, exigir cobertura de varios términos de la pregunta y
+revisar el peso del tema frente a la coincidencia léxica.
 
 ## 6. Limitaciones
 
-1. **Sin evaluación sistemática todavía**: la calidad de las respuestas no está medida (M1-08/M1-09).
-2. **Línea base de DeepSeek sin ejecutar** con la clave real; las ejecuciones reales registradas usaron
-   Ollama, que ADR 0012 declara no comparable directamente.
+1. **Evaluación sin calificación humana**: M1-08 tiene métricas automáticas; falta la calificación de corrección,
+   coherencia y alucinación, y el ajuste del prompt final (M1-09), que se abstiene en exceso.
+2. **Línea base de DeepSeek** ejecutada el 2026-11-10 (M1-08); las ejecuciones anteriores usaron Ollama, que
+   ADR 0012 declara no comparable directamente.
 3. **Cobertura por reglas**: 24/24 es una medida determinista, no una validación humana; varios ítems tienen
    evidencia escasa o dudosa (sección 5.1).
 4. **Recuperación léxica**: puede perder paráfrasis y confunde plantillas de navegación con contenido.

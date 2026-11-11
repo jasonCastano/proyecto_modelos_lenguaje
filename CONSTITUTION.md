@@ -448,7 +448,10 @@ calentamiento en `rag/evaluate.py`; conjunto de 30 consultas con ruta esperada; 
 línea base en `docs/evaluacion_modulo2.md` (híbrido ≥ léxico; ningún modo se abstiene fuera de corpus).
 US2 (enrutar): tabla SQLite de solo lectura derivada del oro (`agent build-structured`) y enrutador en dos
 etapas (reglas + DeepSeek, `prompts/router.md`): 35/36 rutas correctas y abstención fuera de corpus por
-enrutamiento.
+enrutamiento. US1 (conversar, MVP): hilos con `thread_id` persistidos en `checkpoints.sqlite3`
+(`SqliteSaver`, fuera del repositorio), variantes cadena y agente (`create_agent` con límites de búsquedas y
+llamadas), resumen de memoria (`prompts/memory_summary.md`), `POST /api/chat`, `GET /api/threads/{id}`,
+`agent chat` y pestaña «Conversación» en la web; verificado en demo y con DeepSeek.
 
 **Reglas mínimas**:
 

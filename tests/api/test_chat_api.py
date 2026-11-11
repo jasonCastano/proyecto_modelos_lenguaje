@@ -112,3 +112,54 @@ def test_clarify_turn_has_no_citations(client: TestClient) -> None:
     # Assert
     assert payload["status"] == "clarify"
     assert payload["turn"]["citations"] == []
+
+
+def test_resume_approves_a_pending_action(client: TestClient) -> None:
+    # Arrange
+    paused = _chat(client, "Prefiero respuestas en viñetas").json()
+    thread_id = paused["thread_id"]
+
+    # Act
+    busy = _chat(client, "¿Qué produce Manuelita?", thread_id=thread_id)
+    view = client.get(f"/api/threads/{thread_id}").json()
+    resumed = client.post(
+        f"/api/threads/{thread_id}/resume",
+        json={"action_id": paused["pending_action"]["action_id"], "decision": "approve"},
+    )
+
+    # Assert
+    assert paused["status"] == "pending_approval"
+    assert paused["pending_action"]["tool"] == "save_preference"
+    assert busy.status_code == 409
+    assert busy.json()["error"]["code"] == "thread_pending_approval"
+    assert view["status"] == "pending_approval"
+    assert resumed.status_code == 200
+    assert resumed.json()["status"] == "answered"
+    assert client.get(f"/api/threads/{thread_id}").json()["actions"][0]["decision"] == "approve"
+
+
+def test_resume_errors(client: TestClient) -> None:
+    # Arrange
+    thread_id = _chat(client, "Hola").json()["thread_id"]
+    paused = _chat(client, "Exporta la conversación", thread_id=thread_id).json()
+
+    # Act
+    unknown = client.post(
+        f"/api/threads/{uuid.uuid4()}/resume", json={"action_id": "a", "decision": "approve"}
+    )
+    mismatch = client.post(
+        f"/api/threads/{thread_id}/resume", json={"action_id": "otra", "decision": "approve"}
+    )
+    invalid = client.post(
+        f"/api/threads/{thread_id}/resume",
+        json={
+            "action_id": paused["pending_action"]["action_id"],
+            "decision": "edit",
+            "args": {"format": "pdf"},
+        },
+    )
+
+    # Assert
+    assert unknown.status_code == 404
+    assert (mismatch.status_code, mismatch.json()["error"]["code"]) == (409, "action_mismatch")
+    assert (invalid.status_code, invalid.json()["error"]["code"]) == (400, "invalid_args")

@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent.config import AgentConfigError, load_agent_config, resolve_state_dir
-from .agent.memory import build_checkpointer
+from .agent.memory import build_checkpointer, build_store
 from .agent.service import ChatError, ChatService, build_deps
 from .api_models import (
     ApiError,
@@ -24,6 +24,7 @@ from .api_models import (
     FaqRequest,
     FaqResponse,
     HealthStatus,
+    ResumeRequest,
     RetrievalTraceModel,
     SummaryRequest,
     ThreadView,
@@ -419,6 +420,7 @@ def _chat_service() -> ChatService:
         config,
         build_checkpointer(state_dir),
         lambda mode: build_deps(mode, config, _retriever(mode)),
+        store=build_store(state_dir),
     )
 
 
@@ -451,6 +453,17 @@ def chat(payload: ChatRequest):
             user_id=payload.user_id,
             variant=payload.variant,
             mode=payload.mode,
+        )
+    except Exception as exc:
+        return _chat_error(exc)
+    return outcome.to_dict()
+
+
+@app.post("/api/threads/{thread_id}/resume", response_model=ChatResponse)
+def resume(thread_id: str, payload: ResumeRequest):
+    try:
+        outcome = _chat_service().resume(
+            thread_id, action_id=payload.action_id, decision=payload.decision, args=payload.args
         )
     except Exception as exc:
         return _chat_error(exc)

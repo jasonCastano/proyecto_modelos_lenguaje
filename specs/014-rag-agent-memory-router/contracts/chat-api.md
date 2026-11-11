@@ -73,7 +73,8 @@ Devuelve el historial visible del hilo.
 {"thread_id": "…", "variant": "chain", "turns": [ /* Turn */ ], "summary": "…", "status": "idle", "pending_action": null}
 ```
 
-`status` ∈ `idle`, `pending_approval`. 404 `thread_not_found`.
+`status` ∈ `idle`, `pending_approval`. 404 `thread_not_found`. Incluye además `actions[]`: registro de
+decisiones humanas (`action_id`, `tool`, `args` finales, `decision`, `proposed_at`, `decided_at`).
 
 ## POST `/api/threads/{thread_id}/resume`
 
@@ -91,7 +92,7 @@ Resuelve una acción pendiente (HITL) y continúa el hilo con `Command(resume=..
 | `args` | Solo con `edit`; se valida contra el esquema de la herramienta. |
 
 **Response 200**: misma forma que `POST /api/chat`. **Errores**: 404 `thread_not_found`; 409
-`no_pending_action` o `action_mismatch`. Funciona tras reiniciar el servidor (checkpointer SQLite, US4-3).
+`no_pending_action` o `action_mismatch`; 400 `invalid_args` (edición que no cumple el esquema). Funciona tras reiniciar el servidor (checkpointer SQLite, US4-3).
 
 ## GET `/api/memory/{user_id}` · DELETE `/api/memory/{user_id}`
 

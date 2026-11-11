@@ -20,11 +20,14 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.store.memory import InMemoryStore
+from langgraph.store.sqlite import SqliteStore
 
 from .config import MemoryConfig
 from .prompts import load_agent_prompt
 
 CHECKPOINT_FILE = "checkpoints.sqlite3"
+STORE_FILE = "memory.sqlite3"
 CHARS_PER_TOKEN = 4
 DEMO_SUMMARY_CHARS = 160
 
@@ -36,6 +39,22 @@ def build_checkpointer(state_dir: Path) -> SqliteSaver:
     saver = SqliteSaver(connection)
     saver.setup()
     return saver
+
+
+def build_store(state_dir: Path) -> SqliteStore:
+    """Store de memoria larga (preferencias por usuario) en ``state_dir``."""
+    state_dir.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(
+        state_dir / STORE_FILE, check_same_thread=False, isolation_level=None
+    )
+    store = SqliteStore(connection)
+    store.setup()
+    return store
+
+
+def memory_store() -> InMemoryStore:
+    """Store en memoria para pruebas."""
+    return InMemoryStore()
 
 
 def memory_checkpointer() -> InMemorySaver:

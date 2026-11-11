@@ -227,17 +227,17 @@ borrarla y verificar que ya no se aplica.
 
 **Propósito**: comparación chain vs. agent, evaluación de generación, E2E, documentación y cierre del módulo.
 
-- [ ] T066 Implementar en el subcomando `evaluate` de `src/proyecto_modelos_lenguaje/agent/__main__.py` la comparación `--variants chain agent` sobre `module2_queries.jsonl`: validez de citas, abstención, repreguntas elípticas correctas (SC-006), latencia media/p95 y llamadas al modelo y a herramientas por consulta; anexar a `docs/evaluacion_modulo2.md`.
-- [ ] T067 [P] Implementar `--ragas` en `src/proyecto_modelos_lenguaje/agent/__main__.py` (import perezoso; `faithfulness`, `answer_relevancy`, `context_precision`; DeepSeek como juez y embeddings locales) con prueba `@pytest.mark.network` en `tests/integration/agent/test_ragas.py`.
-- [ ] T068 [P] Documentar en `README.md` y `docs/memoria.md` la activación opcional de LangSmith (`LANGSMITH_TRACING=true`, `LANGSMITH_API_KEY`) sin enviar claves ni datos sensibles.
-- [ ] T069 [P] Escribir `tests/e2e/test_chat.py` (Playwright, modo demo): conversación de dos turnos con ruta, fragmentos y fuentes visibles; flujo HITL aprobar y rechazar; vista móvil de 375 px sin scroll horizontal.
-- [ ] T070 [P] Escribir la ADR `docs/decisions/0016-rag-agent-langgraph.md` (LangGraph + `create_agent`, checkpointer SQLite fuera del repo, enrutador en dos etapas, herramientas tipadas en vez de text-to-SQL, HITL) con alternativas.
-- [ ] T071 [P] Registrar en `docs/prompt_log.md` los prompts `router.md`, `agent.md` y `memory_summary.md` (versión, modelo, parámetros, resultados de la evaluación) (FR-022).
-- [ ] T072 Ejecutar la evaluación completa con DeepSeek (retrieval, enrutador, chain vs. agent y Ragas) y regenerar `docs/evaluacion_modulo2.md`; verificar SC-001 a SC-009 y documentar los que no se cumplan con su análisis de errores.
-- [ ] T073 [P] Actualizar `docs/arquitectura.json` con los nodos de enrutador, tabla estructurada, memoria y HITL, regenerar `docs/arquitectura.html` con Archify y la captura `docs/capturas/arquitectura.png`.
-- [ ] T074 Actualizar `CONSTITUTION.md` (estado de la Fase 2 y Anexo E), `README.md` (estado, diagrama, uso del chat) y `AGENTS.md` (comandos `agent`) en el mismo PR que cierra la fase.
-- [ ] T075 Redactar `docs/informe_modulo2.md` (cinco secciones: problema, solución, datos, modelado y resultados) y ampliar `docs/demo.md` con el guion 12+3 de la conversación, el enrutador y el HITL.
-- [ ] T076 Ejecutar `quickstart.md` completo (escenarios 1–8) y `make check` + `make e2e`; registrar el resultado en una bitácora fechada en `bitacora/`.
+- [X] T066 Implementar en el subcomando `evaluate` de `src/proyecto_modelos_lenguaje/agent/__main__.py` la comparación `--variants chain agent` sobre `module2_queries.jsonl`: validez de citas, abstención, repreguntas elípticas correctas (SC-006), latencia media/p95 y llamadas al modelo y a herramientas por consulta; anexar a `docs/evaluacion_modulo2.md`.
+- [X] T067 [P] *(Ragas no instala en Python 3.14: implementado como `--judge` con un juez propio con sus definiciones, `agent/judge.py`.)* Implementar `--ragas` en `src/proyecto_modelos_lenguaje/agent/__main__.py` (import perezoso; `faithfulness`, `answer_relevancy`, `context_precision`; DeepSeek como juez y embeddings locales) con prueba `@pytest.mark.network` en `tests/integration/agent/test_ragas.py`.
+- [X] T068 [P] Documentar en `README.md` y `docs/memoria.md` la activación opcional de LangSmith (`LANGSMITH_TRACING=true`, `LANGSMITH_API_KEY`) sin enviar claves ni datos sensibles.
+- [X] T069 [P] Escribir `tests/e2e/test_chat.py` (Playwright, modo demo): conversación de dos turnos con ruta, fragmentos y fuentes visibles; flujo HITL aprobar y rechazar; vista móvil de 375 px sin scroll horizontal.
+- [X] T070 [P] Escribir la ADR `docs/decisions/0016-rag-agent-langgraph.md` (LangGraph + `create_agent`, checkpointer SQLite fuera del repo, enrutador en dos etapas, herramientas tipadas en vez de text-to-SQL, HITL) con alternativas.
+- [X] T071 [P] Registrar en `docs/prompt_log.md` los prompts `router.md`, `agent.md` y `memory_summary.md` (versión, modelo, parámetros, resultados de la evaluación) (FR-022).
+- [ ] T072 Ejecutar la evaluación completa con DeepSeek (retrieval, enrutador, chain vs. agent y Ragas) y regenerar `docs/evaluacion_modulo2.md`; verificar SC-001 a SC-009 y documentar los que no se cumplan con su análisis de errores. *Parcial (2026-11-11): retrieval, enrutador y cadena vs. agente medidos; la fidelidad del juez queda pendiente de repetir (la segunda ejecución se detuvo por falta de memoria). SC-006 no se cumple con la métrica estricta; ver `docs/evaluacion_modulo2.md`.*
+- [X] T073 [P] Actualizar `docs/arquitectura.json` con los nodos de enrutador, tabla estructurada, memoria y HITL, regenerar `docs/arquitectura.html` con Archify y la captura `docs/capturas/arquitectura.png`.
+- [X] T074 Actualizar `CONSTITUTION.md` (estado de la Fase 2 y Anexo E), `README.md` (estado, diagrama, uso del chat) y `AGENTS.md` (comandos `agent`) en el mismo PR que cierra la fase.
+- [X] T075 Redactar `docs/informe_modulo2.md` (cinco secciones: problema, solución, datos, modelado y resultados) y ampliar `docs/demo.md` con el guion 12+3 de la conversación, el enrutador y el HITL.
+- [X] T076 Ejecutar `quickstart.md` completo (escenarios 1–8) y `make check` + `make e2e`; registrar el resultado en una bitácora fechada en `bitacora/`.
 - [ ] T077 Tras la aprobación y el merge del PR de cierre, crear el tag `v0.2.0-modulo2` y su release en GitHub.
 
 ---

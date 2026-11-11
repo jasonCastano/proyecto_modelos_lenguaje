@@ -462,6 +462,13 @@ datos personales redactados antes de persistir (mensajes, preferencias y entrada
 `PIIMiddleware`), preferencias aplicadas al system prompt de ambas variantes, `GET|DELETE /api/memory/{user_id}`
 (el borrado pasa por aprobación) y política en `docs/memoria.md`.
 
+**Cierre de la Fase 2 (2026-11-11, en revisión)**: comparación cadena vs. agente con DeepSeek en
+`docs/evaluacion_modulo2.md` (citas 100 %, abstención fuera de corpus 4/4, < 10 s: cadena 100 % y agente 94 %;
+repreguntas con métrica estricta 3/6 y 4/6, por debajo de SC-006); juez propio con definiciones de Ragas porque
+Ragas no instala en Python 3.14; ADR 0016, informe `docs/informe_modulo2.md`, guion actualizado, E2E de la
+conversación y arquitectura regenerada. Pendientes antes del tag `v0.2.0-modulo2`: calificación humana de las
+repreguntas, repetir la fidelidad del juez y la revisión de `module2_queries.jsonl` por Jason.
+
 **Reglas mínimas**:
 
 1. **Embeddings**: modelo multilingüe elegido con evidencia de **retrieval en español** (MTEB filtrado por
@@ -780,6 +787,10 @@ Auditoría con `jan-project-standard` sobre el repositorio:
 ---
 
 ## Anexo E — Análisis del material actualizado y ruta del Módulo 2 al 2026-11-07 (no normativo)
+
+> **Estado al 2026-11-11**: la ruta descrita en este anexo quedó implementada en la spec 014 (US1–US5, PRs
+> #44–#50 y el PR de cierre). Resultados y pendientes en `docs/informe_modulo2.md` §5–§6; la decisión de
+> arquitectura en `docs/decisions/0016-rag-agent-langgraph.md`.
 
 **Identidad verificada**: GitHub `jasonCastano` (Jason Alejandro Castaño, `jasonale3007@gmail.com`), remoto
 `jasonCastano/proyecto_modelos_lenguaje`.

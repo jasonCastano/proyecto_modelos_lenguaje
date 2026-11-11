@@ -209,6 +209,22 @@ mi correo es ana@correo.com» → acción `save_preference(response_format=viñe
 guarda); en un hilo nuevo, «¿Qué hace Manuelita en sostenibilidad?» se responde en viñetas con citas en ambas
 variantes; tras «Olvida mis preferencias» (aprobado) la memoria queda vacía.
 
+### 3.10 Juez `judge.md` 1.0 y comparación cadena vs. agente (2026-11-11, spec 014, T066–T067)
+
+Prompt nuevo `prompts/judge.md` (versión `1.0`): calcula `faithfulness` (afirmaciones respaldadas / afirmaciones)
+y `answer_relevancy` con las definiciones de Ragas, en JSON, temperatura 0, modelo `deepseek-flash`. La
+precisión de contexto se calcula sin LLM con las unidades esperadas como referencia. Ejecución
+`variants-real-2026-11-11` (36 consultas por variante, 24 respuestas juzgadas por variante):
+
+| Variante | Llamadas/consulta | Tokens/consulta | Latencia p95 | Relevancia | Fidelidad |
+|----------|------------------:|----------------:|-------------:|-----------:|----------:|
+| Cadena | 1,39 | 2.695 | 7,8 s | 0,885 | no válida |
+| Agente | 2,17 | 5.275 | 14,7 s | 0,825 | no válida |
+
+La fidelidad no es válida: el juez recibió las filas `[F#]` sin su frase de origen (corregido en
+`agent/compare.py`; la repetición se detuvo por falta de memoria del equipo y queda pendiente). Detalle y
+análisis en `docs/evaluacion_modulo2.md`.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).
@@ -217,6 +233,7 @@ variantes; tras «Olvida mis preferencias» (aprobado) la memoria queda vacía.
 - Calificar a mano corrección, coherencia y alucinación de M1-08 (§3.4) y M1-09 (§3.5); decidir si `qa.md` 1.1
   queda como final pese a la regresión en P14.
 - Registrar la variante final de prompts tras el ajuste con evidencia (M1-09).
+- Repetir la comparación cadena vs. agente con el juez corregido para obtener la fidelidad (§3.10).
 
 ## 5. Observaciones sobre el corpus real (15.211 unidades)
 

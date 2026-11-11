@@ -13,7 +13,10 @@
     "max_tokens",
     "count",
     "gold_sha256",
-    "created_at"
+    "created_at",
+    "chunk_strategy",
+    "chunk_size_tokens",
+    "chunk_overlap_tokens"
   ],
   "properties": {
     "schema_version": {
@@ -65,6 +68,23 @@
     "command": {
       "type": "string",
       "description": "Comando exacto que construyó el índice."
+    },
+    "chunk_strategy": {
+      "enum": [
+        "unit",
+        "unit+window"
+      ],
+      "description": "Spec 014 (FR-003): unidades enteras o ventanas solo para las que exceden max_tokens."
+    },
+    "chunk_size_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Tamaño de ventana en tokens; > 0 y <= max_tokens."
+    },
+    "chunk_overlap_tokens": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Solapamiento entre ventanas: 10-20 % de chunk_size_tokens."
     }
   },
   "examples": [
@@ -79,7 +99,10 @@
       "created_at": "2026-11-06T18:42:00Z",
       "library": "fastembed 0.7.1",
       "gold_path": "data/gold/knowledge_units.jsonl",
-      "command": "uv run python -m proyecto_modelos_lenguaje.rag index build"
+      "command": "uv run python -m proyecto_modelos_lenguaje.rag index build",
+      "chunk_strategy": "unit+window",
+      "chunk_size_tokens": 400,
+      "chunk_overlap_tokens": 60
     }
   ]
 }

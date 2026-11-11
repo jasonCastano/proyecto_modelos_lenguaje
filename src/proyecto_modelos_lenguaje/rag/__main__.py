@@ -32,7 +32,7 @@ from .errors import (
     IndexUnavailableError,
     RetrievalConfigError,
 )
-from .evaluate import evaluate_questions, load_questions, render_markdown
+from .evaluate import DEFAULT_WARMUP, evaluate_questions, load_questions, render_markdown
 from .hybrid import HybridRetriever, RetrievalTrace
 from .index import build_index, load_index, verify_index
 
@@ -122,6 +122,12 @@ def _build_parser() -> argparse.ArgumentParser:
     evaluate_parser.add_argument("--embedder", choices=("fastembed", "hash"), default="fastembed")
     evaluate_parser.add_argument("--top-k", type=int, default=12)
     evaluate_parser.add_argument("--run-id", default="")
+    evaluate_parser.add_argument(
+        "--warmup",
+        type=int,
+        default=DEFAULT_WARMUP,
+        help="Consultas descartadas por modo antes de medir latencia.",
+    )
     return parser
 
 
@@ -218,6 +224,7 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
         questions,
         top_k=args.top_k,
         run_id=args.run_id or "local",
+        warmup=args.warmup,
     )
     notes = [
         "La cobertura de citas mide la disponibilidad de evidencia por pregunta; la fidelidad "

@@ -18,7 +18,10 @@ from proyecto_modelos_lenguaje.rag.errors import (
     IndexUnavailableError,
 )
 from proyecto_modelos_lenguaje.rag.index import (
+    CHUNK_OVERLAP_TOKENS,
+    CHUNK_TARGET_TOKENS,
     Fragment,
+    IndexManifest,
     build_fragments,
     build_index,
     chunk_text,
@@ -246,3 +249,57 @@ def test_index_vectors_are_unit_norm(built: tuple[Path, object], profile: Embedd
     norms = np.linalg.norm(loaded.vectors, axis=1)
 
     assert np.allclose(norms, 1.0, atol=1e-5)
+
+
+def test_manifest_declares_chunking_strategy(built: tuple[Path, object]) -> None:
+    # Arrange
+    index_dir, _ = built
+
+    # Act
+    payload = json.loads((index_dir / "manifest.json").read_text(encoding="utf-8"))
+
+    # Assert
+    assert payload["chunk_strategy"] == "unit+window"
+    assert payload["chunk_size_tokens"] == CHUNK_TARGET_TOKENS == 400
+    assert payload["chunk_overlap_tokens"] == CHUNK_OVERLAP_TOKENS == 60
+
+
+def test_manifest_without_chunk_fields_asks_to_rebuild(built: tuple[Path, object]) -> None:
+    # Arrange
+    index_dir, _ = built
+    manifest_path = index_dir / "manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for key in ("chunk_strategy", "chunk_size_tokens", "chunk_overlap_tokens"):
+        payload.pop(key)
+    manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    # Act / Assert
+    with pytest.raises(IndexInvalidError, match="rebuild"):
+        load_index(index_dir)
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"chunk_strategy": "sentences"}, "chunk_strategy"),
+        ({"chunk_size_tokens": 600}, "chunk_size_tokens"),
+        ({"chunk_overlap_tokens": 10}, "chunk_overlap_tokens"),
+        ({"chunk_overlap_tokens": 100}, "chunk_overlap_tokens"),
+    ],
+)
+def test_manifest_rejects_invalid_chunking(overrides: dict[str, object], message: str) -> None:
+    # Arrange
+    values: dict[str, object] = {
+        "model": "m",
+        "dimension": 384,
+        "normalize": True,
+        "max_tokens": 512,
+        "count": 0,
+        "gold_sha256": "a" * 64,
+        "created_at": "2026-11-10T00:00:00+00:00",
+    }
+    values.update(overrides)
+
+    # Act / Assert
+    with pytest.raises(ValueError, match=message):
+        IndexManifest(**values)  # type: ignore[arg-type]

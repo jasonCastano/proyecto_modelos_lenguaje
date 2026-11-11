@@ -169,6 +169,53 @@ class SemanticRetriever:
         return fragments
 
 
+@dataclass(frozen=True, slots=True)
+class MetadataFilter:
+    """Filtro por metadatos de la unidad de oro (spec 014, FR-005).
+
+    ``topics`` corresponde a la sección temática (``topic_id``), ``authorities`` al tipo de fuente
+    (``first_party`` / ``third_party``) y ``unit_types`` a ``passage`` / ``fact``. Un campo vacío
+    no filtra.
+    """
+
+    topics: frozenset[str] = frozenset()
+    authorities: frozenset[str] = frozenset()
+    unit_types: frozenset[str] = frozenset()
+
+    @classmethod
+    def of(
+        cls,
+        *,
+        topics: Sequence[str] = (),
+        authorities: Sequence[str] = (),
+        unit_types: Sequence[str] = (),
+    ) -> MetadataFilter:
+        return cls(frozenset(topics), frozenset(authorities), frozenset(unit_types))
+
+    @property
+    def active(self) -> bool:
+        return bool(self.topics or self.authorities or self.unit_types)
+
+    def accepts(self, unit: GoldUnit) -> bool:
+        return (
+            (not self.topics or unit.topic_id in self.topics)
+            and (not self.authorities or unit.authority in self.authorities)
+            and (not self.unit_types or unit.unit_type in self.unit_types)
+        )
+
+    def describe(self) -> str:
+        parts = [
+            f"{name}={','.join(sorted(values))}"
+            for name, values in (
+                ("tema", self.topics),
+                ("fuente", self.authorities),
+                ("tipo", self.unit_types),
+            )
+            if values
+        ]
+        return "; ".join(parts)
+
+
 class HybridRetriever:
     """Combina semántica y léxica, aplica umbral, presupuesto y deduplicación."""
 
@@ -202,12 +249,34 @@ class HybridRetriever:
         top_k: int = 8,
         token_budget: int = 6000,
         min_score: float = 0.0,
+        metadata_filter: MetadataFilter | None = None,
     ) -> RetrievalTrace:
         started = time.perf_counter()
-        semantic_fragments = self.semantic.search(question) if self.semantic is not None else []
+        active_filter = metadata_filter if metadata_filter and metadata_filter.active else None
+        semantic_top_k = None
+        if active_filter is not None and self.semantic is not None:
+            # Se sobremuestrea porque el filtro se aplica después de la búsqueda vectorial.
+            semantic_top_k = self.config.hybrid.semantic_top_k * 5
+        semantic_fragments = (
+            self.semantic.search(question, top_k=semantic_top_k)
+            if self.semantic is not None
+            else []
+        )
+        if active_filter is not None:
+            semantic_fragments = [
+                fragment
+                for fragment in semantic_fragments
+                if (unit := self.units_by_id.get(fragment.unit_id)) is not None
+                and active_filter.accepts(unit)
+            ][: self.config.hybrid.semantic_top_k]
+        lexical_units = (
+            self.units
+            if active_filter is None
+            else tuple(unit for unit in self.units if active_filter.accepts(unit))
+        )
         lexical_selection = select_evidence(
             question,
-            self.units,
+            lexical_units,
             entity_index=self.entity_index,
             top_k=min(self.config.hybrid.lexical_top_k, max(top_k, 1)),
             token_budget=10**9,
@@ -319,6 +388,8 @@ class HybridRetriever:
 
         elapsed_ms = (time.perf_counter() - started) * 1000
         notes = list(self.notes)
+        if active_filter is not None:
+            notes.append(f"Filtro por metadatos: {active_filter.describe()}")
         if self.semantic is None:
             notes.append("Recuperación semántica no configurada; se usó recuperación léxica")
         elif not self.semantic.available:

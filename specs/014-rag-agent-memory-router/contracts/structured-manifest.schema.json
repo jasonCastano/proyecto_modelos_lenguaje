@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "structured-manifest.schema.json",
+  "title": "StructuredManifest",
+  "description": "Manifiesto de data/module2/structured/ (vista derivada del oro, no versionada; FR-012).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "built_at", "gold_manifest_sha256", "entity_count", "fact_count", "citation_count", "builder_version"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "built_at": {"type": "string", "format": "date-time"},
+    "gold_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "entity_count": {"type": "integer", "minimum": 1},
+    "fact_count": {"type": "integer", "minimum": 1},
+    "citation_count": {"type": "integer", "minimum": 1},
+    "builder_version": {"type": "string"}
+  }
+}

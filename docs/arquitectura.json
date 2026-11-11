@@ -2,28 +2,28 @@
   "schema_version": 1,
   "diagram_type": "dataflow",
   "meta": {
-    "title": "Pipeline de datos y RAG de Manuelita",
+    "title": "Pipeline de datos, RAG y agente conversacional de Manuelita",
     "locale": "es",
     "output": "docs/arquitectura.html",
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "45d3a3f100439f34753989ee149051b514fc3d05"
+      "revision": "e88faae844184eb5599c44cc47ce6b6dcda66ef4"
     }
   },
   "stages": [
     {
-      "label": "Fuentes"
-    },
-    {
-      "label": "Adquisición"
+      "label": "Fuentes y adquisición"
     },
     {
       "label": "Medallón"
     },
     {
       "label": "Recuperación"
+    },
+    {
+      "label": "Agente y tareas"
     },
     {
       "label": "Consumo"
@@ -37,7 +37,7 @@
       "sublabel": "sitio · YouTube",
       "tag": "público",
       "stage": 0,
-      "row": 1,
+      "row": 0,
       "sources": [
         {
           "path": "config/sources.toml",
@@ -57,7 +57,7 @@
       "label": "Adquisición",
       "sublabel": "robots · sitemap",
       "tag": "reanudable",
-      "stage": 1,
+      "stage": 0,
       "row": 1,
       "sources": [
         {
@@ -78,7 +78,7 @@
       "label": "Bronce inmutable",
       "sublabel": "bytes + SHA-256",
       "tag": "inmutable",
-      "stage": 2,
+      "stage": 1,
       "row": 0,
       "sources": [
         {
@@ -99,7 +99,7 @@
       "label": "Plata limpia",
       "sublabel": "canónicos · dedupe · chunks",
       "tag": "determinista",
-      "stage": 2,
+      "stage": 1,
       "row": 1,
       "sources": [
         {
@@ -115,7 +115,7 @@
       "label": "Oro trazable",
       "sublabel": "unidades · hechos · contexto",
       "tag": "con citas",
-      "stage": 2,
+      "stage": 1,
       "row": 2,
       "sources": [
         {
@@ -129,9 +129,9 @@
       "id": "retrieval",
       "type": "backend",
       "label": "Recuperación híbrida",
-      "sublabel": "semántica + léxica · umbral · traza",
+      "sublabel": "semántica + léxica · traza",
       "tag": "Módulo 2",
-      "stage": 3,
+      "stage": 2,
       "row": 1,
       "sources": [
         {
@@ -152,8 +152,8 @@
       "label": "Tareas LangChain",
       "sublabel": "Resumen · FAQ · Q&A",
       "tag": "DeepSeek API",
-      "stage": 4,
-      "row": 1,
+      "stage": 3,
+      "row": 2,
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/tasks.py",
@@ -171,25 +171,25 @@
       "id": "app",
       "type": "frontend",
       "label": "Experiencia web",
-      "sublabel": "React + FastAPI",
+      "sublabel": "React + FastAPI · chat",
       "tag": "citas",
       "stage": 4,
-      "row": 2,
+      "row": 1,
       "sources": [
         {
-          "path": "web/src/App.tsx",
+          "path": "web/src/components/ChatView.tsx",
           "line": 1,
-          "end_line": 94
+          "end_line": 394
+        },
+        {
+          "path": "web/src/components/ApprovalCard.tsx",
+          "line": 1,
+          "end_line": 79
         },
         {
           "path": "src/proyecto_modelos_lenguaje/api.py",
-          "line": 304,
-          "end_line": 395
-        },
-        {
-          "path": "web/src/components/RetrievedFragments.tsx",
           "line": 1,
-          "end_line": 103
+          "end_line": 525
         }
       ]
     },
@@ -199,7 +199,7 @@
       "label": "Índice semántico",
       "sublabel": "e5-small 384d · numpy + SQLite",
       "tag": "Módulo 2",
-      "stage": 3,
+      "stage": 2,
       "row": 2,
       "sources": [
         {
@@ -211,6 +211,90 @@
           "path": "src/proyecto_modelos_lenguaje/rag/embeddings.py",
           "line": 1,
           "end_line": 228
+        }
+      ]
+    },
+    {
+      "id": "router",
+      "type": "backend",
+      "label": "Enrutador",
+      "sublabel": "reglas + DeepSeek",
+      "tag": "Módulo 2",
+      "stage": 3,
+      "row": 0,
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/router.py",
+          "line": 1,
+          "end_line": 205
+        },
+        {
+          "path": "prompts/router.md",
+          "line": 1,
+          "end_line": 73
+        }
+      ]
+    },
+    {
+      "id": "structured",
+      "type": "database",
+      "label": "Tabla estructurada",
+      "sublabel": "SQLite · solo lectura",
+      "tag": "Módulo 2",
+      "stage": 1,
+      "row": 3,
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/structured.py",
+          "line": 1,
+          "end_line": 501
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "type": "backend",
+      "label": "Grafos LangGraph",
+      "sublabel": "cadena · agente · HITL",
+      "tag": "Módulo 2",
+      "stage": 3,
+      "row": 1,
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 1,
+          "end_line": 603
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/actions.py",
+          "line": 1,
+          "end_line": 181
+        },
+        {
+          "path": "prompts/agent.md",
+          "line": 1,
+          "end_line": 58
+        }
+      ]
+    },
+    {
+      "id": "memory",
+      "type": "database",
+      "label": "Memoria",
+      "sublabel": "hilos · preferencias",
+      "tag": "fuera del repo",
+      "stage": 4,
+      "row": 3,
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/memory.py",
+          "line": 1,
+          "end_line": 244
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/privacy.py",
+          "line": 1,
+          "end_line": 80
         }
       ]
     }
@@ -287,6 +371,54 @@
       "label": "top-k semántico",
       "classification": "fusión con léxica",
       "variant": "default"
+    },
+    {
+      "id": "route",
+      "from": "router",
+      "to": "agent",
+      "label": "ruta",
+      "classification": "5 rutas con confianza",
+      "variant": "emphasis"
+    },
+    {
+      "id": "search-tool",
+      "from": "retrieval",
+      "to": "agent",
+      "label": "búsqueda",
+      "classification": "<documento> aislado",
+      "variant": "default"
+    },
+    {
+      "id": "facts",
+      "from": "gold",
+      "to": "structured",
+      "label": "hechos",
+      "classification": "agent build-structured",
+      "variant": "default"
+    },
+    {
+      "id": "structured-tool",
+      "from": "structured",
+      "to": "agent",
+      "label": "datos",
+      "classification": "consulta parametrizada",
+      "variant": "default"
+    },
+    {
+      "id": "thread-state",
+      "from": "agent",
+      "to": "memory",
+      "label": "estado",
+      "classification": "escritura con aprobación",
+      "variant": "default"
+    },
+    {
+      "id": "chat-answer",
+      "from": "agent",
+      "to": "app",
+      "label": "turno citado",
+      "classification": "ruta, fragmentos, acción pendiente",
+      "variant": "emphasis"
     }
   ],
   "cards": [
@@ -306,16 +438,18 @@
         "Recuperación híbrida: e5-small semántico fusionado con BM25 léxico del Módulo 1.",
         "Sin índice válido, cae a recuperación léxica y lo declara en la traza.",
         "Resumen, FAQ y Q&A con LangChain y DeepSeek, prompts versionados y citas [U#].",
-        "Sin evidencia suficiente, la app declara fallback y muestra los fragmentos recuperados."
+        "Sin evidencia suficiente, la app declara fallback y muestra los fragmentos recuperados.",
+        "Conversación con memoria: enrutador en dos etapas, variantes cadena y agente sobre el mismo hilo.",
+        "Fragmentos con instrucciones embebidas se marcan; respuestas que copian el prompt se descartan."
       ]
     },
     {
       "dot": "slate",
       "title": "Límites declarados",
       "items": [
-        "La app es de solo lectura: no escribe en data/bronze, data/silver ni data/gold.",
-        "El índice semántico es una vista derivada del oro en data/module2: se reconstruye, no se versiona.",
-        "Memoria multi-turno, enrutador y agente RAG: Fase 2 pendiente (spec 014)."
+        "La app es de solo lectura sobre data/: memoria e índice viven en MANUELITA_STATE_DIR o data/module2.",
+        "El índice semántico es una vista derivada del oro: se reconstruye, no se versiona.",
+        "Toda escritura (preferencias, olvido, exportación) espera una decisión humana registrada."
       ]
     }
   ]

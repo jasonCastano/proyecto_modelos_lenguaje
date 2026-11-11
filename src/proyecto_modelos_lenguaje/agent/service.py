@@ -158,11 +158,18 @@ class ChatService:
         self.store = store
         self._deps_factory = deps_factory
         self._graphs: dict[tuple[str, str], Any] = {}
+        self._deps: dict[str, GraphDeps] = {}
+
+    def deps(self, mode: Mode) -> GraphDeps:
+        """Dependencias de un modo, cargadas una vez y compartidas por ambas variantes."""
+        if mode not in self._deps:
+            self._deps[mode] = self._deps_factory(mode)
+        return self._deps[mode]
 
     def graph(self, variant: Variant, mode: Mode):
         key = (variant, mode)
         if key not in self._graphs:
-            deps = self._deps_factory(mode)
+            deps = self.deps(mode)
             builder = build_agent_graph if variant == "agent" else build_chain_graph
             self._graphs[key] = builder(deps, self.checkpointer, self.store)
         return self._graphs[key]

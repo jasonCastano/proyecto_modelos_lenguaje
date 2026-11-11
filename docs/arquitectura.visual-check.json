@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "pending",
   "provenance": "current",
-  "deliveryReceiptId": "14768350-886f-45c2-a614-acb950a1c040",
+  "deliveryReceiptId": "351c933d-b327-4489-bd9f-50ef6de85d18",
   "artifact": {
-    "path": "D:\\Maestria\\modelos_lenguaje\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "6062a80c4a77d67508d0c35065981b938209a55e7cf243074db04e28b64abce9",
-    "bytes": 844561
+    "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
+    "sha256": "c83f8c7eacadaa6956da19fb1aae15b2e140dbd778241fd2176e5f35a5948a33",
+    "bytes": 862462
   },
   "state": {
     "detail": "read",
@@ -41,21 +41,21 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1376,
-        "diagramWidth": 1346,
+        "readerWidth": 1303,
+        "diagramWidth": 1273,
         "pageComposition": {
           "bodyPaddingPx": 12,
           "headerPx": 52,
           "diagramChromePx": 78,
-          "svgPx": 645,
+          "svgPx": 746,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -91,21 +91,21 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1536,
-        "diagramWidth": 1506,
+        "readerWidth": 1361,
+        "diagramWidth": 1331,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
           "diagramChromePx": 84,
-          "svgPx": 722,
+          "svgPx": 780,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -141,21 +141,21 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1856,
-        "diagramWidth": 1602,
+        "readerWidth": 1497,
+        "diagramWidth": 1467,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
-          "diagramChromePx": 176,
-          "svgPx": 768,
+          "diagramChromePx": 84,
+          "svgPx": 860,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -167,11 +167,11 @@
         "hasNavigationDock": true,
         "legendDockIntersectionArea": 0,
         "dockStageIntersectionArea": 0,
-        "dockStageGap": 29,
+        "dockStageGap": 10,
         "requiredDockStageGap": 10,
         "viewerChromeStageOk": true,
-        "viewerChromeReserve": 0,
-        "viewerChromeActive": false,
+        "viewerChromeReserve": 54,
+        "viewerChromeActive": true,
         "viewerChromeOk": true,
         "resolvedTheme": "light"
       },
@@ -196,16 +196,16 @@
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 68,
-          "diagramChromePx": 408,
-          "svgPx": 768,
+          "diagramChromePx": 237,
+          "svgPx": 939,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -217,7 +217,7 @@
         "hasNavigationDock": true,
         "legendDockIntersectionArea": 0,
         "dockStageIntersectionArea": 0,
-        "dockStageGap": 145,
+        "dockStageGap": 59.5,
         "requiredDockStageGap": 10,
         "viewerChromeStageOk": true,
         "viewerChromeReserve": 0,
@@ -294,21 +294,21 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1376,
-        "diagramWidth": 1346,
+        "readerWidth": 1303,
+        "diagramWidth": 1273,
         "pageComposition": {
           "bodyPaddingPx": 12,
           "headerPx": 52,
           "diagramChromePx": 78,
-          "svgPx": 645,
+          "svgPx": 746,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -344,21 +344,21 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1536,
-        "diagramWidth": 1506,
+        "readerWidth": 1361,
+        "diagramWidth": 1331,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
           "diagramChromePx": 84,
-          "svgPx": 722,
+          "svgPx": 780,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -394,21 +394,21 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1856,
-        "diagramWidth": 1602,
+        "readerWidth": 1497,
+        "diagramWidth": 1467,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
-          "diagramChromePx": 176,
-          "svgPx": 768,
+          "diagramChromePx": 84,
+          "svgPx": 860,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -420,11 +420,11 @@
         "hasNavigationDock": true,
         "legendDockIntersectionArea": 0,
         "dockStageIntersectionArea": 0,
-        "dockStageGap": 29,
+        "dockStageGap": 10,
         "requiredDockStageGap": 10,
         "viewerChromeStageOk": true,
-        "viewerChromeReserve": 0,
-        "viewerChromeActive": false,
+        "viewerChromeReserve": 54,
+        "viewerChromeActive": true,
         "viewerChromeOk": true,
         "resolvedTheme": "light"
       },
@@ -449,16 +449,16 @@
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 68,
-          "diagramChromePx": 408,
-          "svgPx": 768,
+          "diagramChromePx": 237,
+          "svgPx": 939,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -470,7 +470,7 @@
         "hasNavigationDock": true,
         "legendDockIntersectionArea": 0,
         "dockStageIntersectionArea": 0,
-        "dockStageGap": 145,
+        "dockStageGap": 59.5,
         "requiredDockStageGap": 10,
         "viewerChromeStageOk": true,
         "viewerChromeReserve": 0,
@@ -499,21 +499,21 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1376,
-        "diagramWidth": 1346,
+        "readerWidth": 1303,
+        "diagramWidth": 1273,
         "pageComposition": {
           "bodyPaddingPx": 12,
           "headerPx": 52,
           "diagramChromePx": 78,
-          "svgPx": 645,
+          "svgPx": 746,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -549,21 +549,21 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1536,
-        "diagramWidth": 1506,
+        "readerWidth": 1361,
+        "diagramWidth": 1331,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
           "diagramChromePx": 84,
-          "svgPx": 722,
+          "svgPx": 780,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -599,21 +599,21 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1856,
-        "diagramWidth": 1602,
+        "readerWidth": 1497,
+        "diagramWidth": 1467,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
-          "diagramChromePx": 176,
-          "svgPx": 768,
+          "diagramChromePx": 84,
+          "svgPx": 860,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -625,11 +625,11 @@
         "hasNavigationDock": true,
         "legendDockIntersectionArea": 0,
         "dockStageIntersectionArea": 0,
-        "dockStageGap": 29,
+        "dockStageGap": 10,
         "requiredDockStageGap": 10,
         "viewerChromeStageOk": true,
-        "viewerChromeReserve": 0,
-        "viewerChromeActive": false,
+        "viewerChromeReserve": 54,
+        "viewerChromeActive": true,
         "viewerChromeOk": true,
         "resolvedTheme": "light"
       },
@@ -654,16 +654,16 @@
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 68,
-          "diagramChromePx": 408,
-          "svgPx": 768,
+          "diagramChromePx": 237,
+          "svgPx": 939,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -675,7 +675,7 @@
         "hasNavigationDock": true,
         "legendDockIntersectionArea": 0,
         "dockStageIntersectionArea": 0,
-        "dockStageGap": 145,
+        "dockStageGap": 59.5,
         "requiredDockStageGap": 10,
         "viewerChromeStageOk": true,
         "viewerChromeReserve": 0,
@@ -704,21 +704,21 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1376,
-        "diagramWidth": 1346,
+        "readerWidth": 1303,
+        "diagramWidth": 1273,
         "pageComposition": {
           "bodyPaddingPx": 12,
           "headerPx": 52,
           "diagramChromePx": 78,
-          "svgPx": 645,
+          "svgPx": 746,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -755,21 +755,21 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1376,
-        "diagramWidth": 1346,
+        "readerWidth": 1303,
+        "diagramWidth": 1273,
         "pageComposition": {
           "bodyPaddingPx": 12,
           "headerPx": 52,
           "diagramChromePx": 78,
-          "svgPx": 645,
+          "svgPx": 746,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -811,16 +811,16 @@
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 68,
-          "diagramChromePx": 408,
-          "svgPx": 768,
+          "diagramChromePx": 237,
+          "svgPx": 939,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -832,7 +832,7 @@
         "hasNavigationDock": true,
         "legendDockIntersectionArea": 0,
         "dockStageIntersectionArea": 0,
-        "dockStageGap": 145,
+        "dockStageGap": 59.5,
         "requiredDockStageGap": 10,
         "viewerChromeStageOk": true,
         "viewerChromeReserve": 0,
@@ -862,16 +862,16 @@
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 68,
-          "diagramChromePx": 408,
-          "svgPx": 768,
+          "diagramChromePx": 237,
+          "svgPx": 939,
           "cardsPx": 0,
-          "viewBoxHeight": 512
+          "viewBoxHeight": 626
         },
         "viewBoxWidth": 1068,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "sitio ? YouTube",
+        "minimumProjectedNodeText": "sitio · YouTube",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
@@ -883,7 +883,7 @@
         "hasNavigationDock": true,
         "legendDockIntersectionArea": 0,
         "dockStageIntersectionArea": 0,
-        "dockStageGap": 145,
+        "dockStageGap": 59.5,
         "requiredDockStageGap": 10,
         "viewerChromeStageOk": true,
         "viewerChromeReserve": 0,
@@ -905,23 +905,23 @@
         "file": "arquitectura.visual-check.html"
       },
       {
-        "sha256": "207ca7bff53041d8d05d65782e9bc9b9a933182d362f5e5220b6b2a6cbfbba0f",
-        "bytes": 123385,
+        "sha256": "67d1c0364ef15fcd4fef1742dca2b41de7b8fad49b966d69994a9b4e1d856632",
+        "bytes": 136560,
         "file": "arquitectura.visual-check.1440x900.light.png"
       },
       {
-        "sha256": "ff44aa2e01b09990aeaeb1c1fd0ff5027fac18aaf79584dde8e8ebaf5da3dd25",
-        "bytes": 131927,
+        "sha256": "aeb7270134e61360db912a84e619bf64fd85f29acd04db7761294ddc5cd58534",
+        "bytes": 151868,
         "file": "arquitectura.visual-check.1440x900.dark.png"
       },
       {
-        "sha256": "d468d2b33dad69d80c3b0498babe7a8e02fd9e45cf7efe182a3dc5bc20f97e53",
-        "bytes": 123835,
+        "sha256": "aa7cb2d3a8256026278a7087d2e22daeb03bc4d446bf108b16351b0c020886bd",
+        "bytes": 167911,
         "file": "arquitectura.visual-check.2048x1320.light.png"
       },
       {
-        "sha256": "7a0253b27de54751becfbaa670362203c664e016cd579b6f6c09b5db0d54bf99",
-        "bytes": 134623,
+        "sha256": "7ae7691f125ac23d1b4b7dc58ac123c1c47f02d585da6e0db24377d9e4f97da5",
+        "bytes": 184967,
         "file": "arquitectura.visual-check.2048x1320.dark.png"
       }
     ]

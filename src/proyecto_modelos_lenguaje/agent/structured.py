@@ -483,6 +483,12 @@ class StructuredStore:
         ).fetchall()
         return self._facts(rows)
 
+    def get_fact(self, fact_id: str) -> StructuredFact | None:
+        """Un hecho por su identificador (para trazas y evaluación)."""
+        rows = self._connection.execute("SELECT * FROM facts WHERE fact_id = ?", (fact_id,))
+        facts = self._facts(rows.fetchall())
+        return facts[0] if facts else None
+
     def search_facts(self, text: str, *, limit: int = 8) -> list[StructuredFact]:
         """Hechos cuyo sujeto, atributo o frase comparten términos con la consulta."""
         query_tokens = _tokens(text)

@@ -51,6 +51,19 @@ make app
 make e2e
 ```
 
+Agente conversacional (Módulo 2, spec 014; estado en `MANUELITA_STATE_DIR`, fuera del repo):
+
+```bash
+uv run python -m proyecto_modelos_lenguaje.agent build-structured            # tabla SQLite desde el oro
+uv run python -m proyecto_modelos_lenguaje.agent chat --mode demo "¿Qué produce Manuelita?"
+uv run python -m proyecto_modelos_lenguaje.agent chat --mode real --variant agent --thread <UUID> "¿Y dónde?"
+uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real                    # enrutador
+uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare --judge --skip-router
+```
+
+Regla del agente: lectura automática, escritura con aprobación (`save_preference`, `forget_memory`,
+`export_conversation` esperan `POST /api/threads/{id}/resume`).
+
 ## Reglas duras
 
 - Toda gestión de entornos y dependencias pasa por `uv`. Prohibido `pip` y `requirements.txt`.

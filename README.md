@@ -143,9 +143,8 @@ node ~/.agents/skills/archify/bin/archify.mjs finalize dataflow \
 Si la copia global de la skill está incompleta, clona
 [`tt-a1i/archify`](https://github.com/tt-a1i/archify) y usa `archify/bin/archify.mjs`.
 
-El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → índice semántico y
-recuperación híbrida → tareas LangChain → experiencia web**. La memoria, el enrutador y el agente de la Fase 2
-siguen pendientes (spec 014) y no se muestran como implementados.
+El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → índice semántico, recuperación
+híbrida y tabla estructurada → enrutador y grafos LangGraph (cadena, agente, HITL) → experiencia web y memoria**.
 
 ## Capturas
 
@@ -178,8 +177,10 @@ versionan capturas temporales de la auditoría.
 | Informe del Módulo 1 | 🟡 | Borrador en `docs/informe_modulo1.md`; resultados pendientes de M1-08 |
 | Tag `v0.1.0-modulo1` | 🟡 | Pendiente de cerrar la puerta de la Fase 1 |
 | Módulo 2 — recuperación semántica (spec 013) | ✅ | PR #34 fusionado; `docs/evaluacion_modulo2.md` (ver hallazgos en `docs/revision_pr34.md`) |
-| Módulo 2 — memoria, enrutador y agente (spec 014) | 🟡 | Especificado; `specs/014-rag-agent-memory-router/` |
-| Módulo 2 — Recall@10, nDCG@10 y abstención fuera de corpus | 🟡 | Pendiente según `docs/revision_pr34.md` (spec 014, FR-011 y FR-020) |
+| Módulo 2 — memoria, enrutador y agente (spec 014) | ✅ | Cadena y agente con memoria por hilo, enrutador 35/36, HITL y preferencias; PRs #44–#50; `docs/informe_modulo2.md` |
+| Módulo 2 — Recall@10, nDCG@10 y abstención fuera de corpus | ✅ | Semántico/híbrido > léxico; abstención 4/4 por el enrutador; `docs/evaluacion_modulo2.md` |
+| Módulo 2 — repreguntas (SC-006) y fidelidad del juez | 🟡 | Métrica estricta 3/6 (cadena) y 4/6 (agente); fidelidad pendiente de repetir con el juez corregido |
+| Tag `v0.2.0-modulo2` | 🟡 | Tras la aprobación del PR de cierre |
 | CI y Pull Requests | ✅ | 38 PRs fusionados; CI verde |
 | Protección de `main` | ✅ | PR con 1 aprobación y checks `test` y `web`; sin push directo ni force-push |
 | Gobernanza del repositorio | ✅ | PR/issue templates, labels, Dependabot, pre-commit y Makefile |
@@ -529,6 +530,41 @@ reutiliza este generador).
 Genera un archivo fechado en `bitacora/` con el estado de Git local/remoto, el avance, los pendientes y los
 próximos pasos.
 
+### Conversación con memoria y enrutador (Módulo 2)
+
+El asistente conversa por hilos (`thread_id`) y decide la ruta de cada mensaje antes de buscar: saludo o fuera
+de alcance sin búsqueda, documentos (RAG híbrido) o datos puntuales (tabla SQLite derivada del oro). Hay dos
+variantes sobre el mismo estado: **cadena** (una búsqueda por turno) y **agente** (`create_agent` decide las
+búsquedas). Toda escritura (preferencias, olvido, exportación) espera aprobación humana.
+
+```bash
+# Una vez: tabla estructurada (15 entidades, 381 hechos, 477 citas)
+uv run python -m proyecto_modelos_lenguaje.agent build-structured
+
+# Conversar (sin --thread crea un hilo y muestra su UUID)
+uv run python -m proyecto_modelos_lenguaje.agent chat --mode real "¿Qué produce Manuelita?"
+uv run python -m proyecto_modelos_lenguaje.agent chat --mode real --thread <UUID> "¿Y dónde lo produce?"
+uv run python -m proyecto_modelos_lenguaje.agent chat --mode demo --variant agent --json "Hola"
+
+# Evaluar el enrutador y comparar cadena vs. agente (con juez LLM)
+uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real
+uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare --judge --skip-router
+```
+
+- Estado fuera del repositorio en `MANUELITA_STATE_DIR` (por defecto `%LOCALAPPDATA%\manuelita-rag`):
+  hilos en `checkpoints.sqlite3`, preferencias en `memory.sqlite3`. Política en
+  [`docs/memoria.md`](docs/memoria.md).
+- API: `POST /api/chat`, `GET /api/threads/{id}`, `POST /api/threads/{id}/resume`,
+  `GET|DELETE /api/memory/{user_id}` ([contrato](specs/014-rag-agent-memory-router/contracts/chat-api.md)).
+- Web: pestaña **Conversación** con chip de ruta, fragmentos, fuentes, métricas por turno y tarjeta de
+  aprobación.
+- Trazas opcionales con LangSmith: define `LANGSMITH_TRACING=true` y `LANGSMITH_API_KEY` en `.env` (no se
+  versiona). Los mensajes llegan ya sin datos personales; no la actives con usuarios reales sin revisar
+  `docs/memoria.md` §6.
+- Resultados: [`docs/evaluacion_modulo2.md`](docs/evaluacion_modulo2.md) · Informe:
+  [`docs/informe_modulo2.md`](docs/informe_modulo2.md) · Decisión:
+  [`docs/decisions/0016-rag-agent-langgraph.md`](docs/decisions/0016-rag-agent-langgraph.md).
+
 ### Experiencia web y API
 
 La entrada actual es una página React servida por FastAPI:
@@ -550,7 +586,9 @@ La página incluye:
 - **Consola RAG** con Consulta, Resumen y FAQ, citas `[U#]`, metadatos y fallback.
 - **Showcase del Módulo 1** con problema, datos, medallion, prompts, tareas, app, métricas y límites.
 - **Modo demostración** explícito, sin clave ni red.
-- **API** en `/api/health`, `/api/ask`, `/api/summary`, `/api/faq` y `/api/showcase`.
+- **Conversación** con memoria, enrutador, fragmentos, fuentes y aprobación de escrituras (Módulo 2).
+- **API** en `/api/health`, `/api/ask`, `/api/summary`, `/api/faq`, `/api/showcase`, `/api/chat`,
+  `/api/threads/{id}` y `/api/memory/{user_id}`.
 
 La clave DeepSeek permanece en el servidor. La guía completa está en
 [`specs/012-manuelita-rag-showcase/quickstart.md`](specs/012-manuelita-rag-showcase/quickstart.md) y la
@@ -562,7 +600,8 @@ decisión en [`docs/decisions/0013-web-frontend.md`](docs/decisions/0013-web-fro
 make e2e
 ```
 
-Playwright recorre el flujo demo, el showcase, la matriz 360–1920 px y `prefers-reduced-motion`. Los tests
+Playwright recorre el flujo demo, el showcase, la matriz 360–1920 px, `prefers-reduced-motion` y la
+conversación (dos turnos, aprobar y rechazar, 375 px). Los tests
 de API y componentes se ejecutan con `make check`.
 
 #### Identidad visual
@@ -803,12 +842,14 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 
 - [x] Embeddings multilingües (`multilingual-e5-small`) e índice reconstruible con manifiesto (spec 013).
 - [x] Recuperación híbrida semántica + léxica con traza en API e interfaz.
-- [ ] Conjunto de 20–30 consultas etiquetadas con Recall@10, nDCG@10 y MRR frente al BM25 del Módulo 1.
-- [ ] Memoria multi-turno por `thread_id` con checkpointer persistente.
-- [ ] Enrutador directo / documental / estructurado (SQL/CSV) / fuera de alcance con ≥90 % de acierto.
-- [ ] RAG Chain vs. RAG Agent comparados en calidad, latencia y llamadas.
-- [ ] Blindaje contra inyección indirecta y Human-in-the-Loop.
-- [ ] Evaluación con Ragas y trazas con LangSmith; informe, demo y tag `v0.2.0-modulo2`.
+- [x] Conjunto de 36 consultas etiquetadas con Recall@10, nDCG@10 y MRR frente al BM25 del Módulo 1.
+- [x] Memoria multi-turno por `thread_id` con checkpointer persistente.
+- [x] Enrutador directo / documental / estructurado / fuera de alcance con 97 % de acierto (35/36).
+- [x] RAG Chain vs. RAG Agent comparados en calidad, latencia y llamadas.
+- [x] Blindaje contra inyección indirecta y Human-in-the-Loop.
+- [x] Juez con definiciones de Ragas (Ragas no instala en Python 3.14), LangSmith opcional, informe y demo.
+- [ ] Repreguntas ≥ 80 % (SC-006) con calificación humana y fidelidad del juez repetida.
+- [ ] Tag `v0.2.0-modulo2`.
 
 ### Fase 3 — Módulo 3: productización y despliegue (40 %)
 

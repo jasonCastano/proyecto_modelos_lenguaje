@@ -30,13 +30,15 @@ checkpointer temporal, HITL y la prueba adversarial con documento malicioso.
 ## Escenario 2 — Memoria multi-turno (US1, SC-006)
 
 ```bash
-uv run python -m proyecto_modelos_lenguaje.agent chat --mode demo --thread t1 "¿Qué produce Manuelita?"
-uv run python -m proyecto_modelos_lenguaje.agent chat --mode demo --thread t1 "¿Y dónde lo produce?"
-uv run python -m proyecto_modelos_lenguaje.agent chat --mode demo --thread t2 "¿Y lo anterior?"
+# Sin --thread se crea un hilo nuevo; la primera línea de la salida muestra su UUID
+uv run python -m proyecto_modelos_lenguaje.agent chat --mode demo "¿Qué produce Manuelita?"
+uv run python -m proyecto_modelos_lenguaje.agent chat --mode demo --thread <UUID> "¿Y dónde lo produce?"
+uv run python -m proyecto_modelos_lenguaje.agent chat --mode demo "¿Y lo anterior?"
 ```
 
-**Esperado**: el segundo turno usa el contexto del primero y cita ≥ 1 fuente; el hilo `t2` no hereda `t1`
-(pide aclaración). Repetir con `--mode real` y comprobar latencia < 10 s (SC-007).
+**Esperado**: el segundo turno usa el contexto del primero y cita ≥ 1 fuente; el tercer mensaje, en un hilo
+nuevo, no hereda el primero (pide aclaración). Un `--thread` desconocido termina con `thread_not_found`
+(código de salida 2). Repetir con `--mode real` y comprobar latencia < 10 s (SC-007).
 
 ## Escenario 3 — Enrutador (US2, SC-002, SC-004)
 
@@ -60,7 +62,7 @@ uv run python -m proyecto_modelos_lenguaje.agent chat --mode demo --json "¿En q
 uv run python -m proyecto_modelos_lenguaje.rag evaluate \
   --questions tests/fixtures/rag/eval_questions.jsonl --top-k 12 --warmup 3
 uv run python -m proyecto_modelos_lenguaje.agent evaluate \
-  --queries tests/fixtures/rag/module2_queries.jsonl --variants chain agent --mode real
+  --queries tests/fixtures/rag/module2_queries.jsonl --variants chain agent --compare --mode real
 ```
 
 **Esperado**: `docs/evaluacion_modulo2.md` regenerado con Recall@10, nDCG@10 y MRR por modo (léxico, semántico,
@@ -98,9 +100,12 @@ puntaje, respuesta, fuentes e historial; el flujo HITL se completa sin red.
 ## Escenario 8 — Generación y observabilidad (opcional, F2-11)
 
 ```bash
-uv sync --extra eval
-uv run python -m proyecto_modelos_lenguaje.agent evaluate --ragas --mode real
+uv run python -m proyecto_modelos_lenguaje.agent evaluate --compare --judge --skip-router --mode real
+uv run pytest -m network tests/integration/agent/test_ragas.py
 ```
+
+Ragas no instala en Python 3.14 (`research.md` §12); `--judge` aplica sus definiciones con un juez propio
+(`agent/judge.py`, `prompts/judge.md`).
 
 **Esperado**: fidelidad, relevancia de respuesta y precisión de contexto anexadas a
 `docs/evaluacion_modulo2.md` con fecha y modelo juez; si `LANGSMITH_TRACING=true`, las trazas aparecen en el

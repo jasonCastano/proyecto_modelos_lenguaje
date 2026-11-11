@@ -204,6 +204,11 @@ importa `langchain_community.chat_models.vertexai`, eliminado en `langchain-comm
 provisional: diferir el extra `eval` a T067 y, si sigue bloqueado, implementar fidelidad y relevancia como
 juez LLM propio con las mismas definiciones de Ragas, documentando la desviación.
 
+**Actualización 2026-11-11 (T067)**: `ragas` 0.4.3 sigue siendo la última versión y sigue exigiendo
+`scikit-network`. Se aplicó la decisión provisional: `agent/judge.py` con `prompts/judge.md` calcula fidelidad y
+relevancia con un juez LLM y la precisión de contexto con referencia, sin LLM. Se activa con
+`agent evaluate --compare --judge`.
+
 ## 13. Interfaz y API
 
 - **Decision**: cuatro endpoints nuevos (`POST /api/chat`, `GET /api/threads/{thread_id}`,

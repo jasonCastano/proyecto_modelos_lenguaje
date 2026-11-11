@@ -6,6 +6,7 @@ import os
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 from collections.abc import Iterator
 from pathlib import Path
@@ -33,6 +34,7 @@ def base_url() -> Iterator[str]:
         **os.environ,
         "DEEPSEEK_API_KEY": "",
         "PYTHONIOENCODING": "utf-8",
+        "MANUELITA_STATE_DIR": tempfile.mkdtemp(prefix="manuelita-e2e-"),
     }
     process = subprocess.Popen(
         [

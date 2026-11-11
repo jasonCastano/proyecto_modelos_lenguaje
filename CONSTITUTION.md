@@ -446,6 +446,9 @@ nuevas: `langgraph` y `langgraph-checkpoint-sqlite`. Ragas queda diferido: no in
 (`specs/014-rag-agent-memory-router/research.md` §12). US3 (medir): Recall@10, nDCG@10, abstención y
 calentamiento en `rag/evaluate.py`; conjunto de 30 consultas con ruta esperada; troceo 400/60 en el manifiesto;
 línea base en `docs/evaluacion_modulo2.md` (híbrido ≥ léxico; ningún modo se abstiene fuera de corpus).
+US2 (enrutar): tabla SQLite de solo lectura derivada del oro (`agent build-structured`) y enrutador en dos
+etapas (reglas + DeepSeek, `prompts/router.md`): 35/36 rutas correctas y abstención fuera de corpus por
+enrutamiento.
 
 **Reglas mínimas**:
 

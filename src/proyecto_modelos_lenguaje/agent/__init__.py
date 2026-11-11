@@ -8,6 +8,8 @@ sus historias.
 from .config import AgentConfig, AgentConfigError, load_agent_config, resolve_state_dir
 from .guard import GuardedDocument, detect_instructions, render_documents
 from .models import PendingAction, RouteDecision, Turn, TurnMetrics
+from .router import RouterResult, route_message
+from .structured import StructuredStore, build_structured_store
 
 __all__ = [
     "AgentConfig",
@@ -15,10 +17,14 @@ __all__ = [
     "GuardedDocument",
     "PendingAction",
     "RouteDecision",
+    "RouterResult",
+    "StructuredStore",
     "Turn",
     "TurnMetrics",
+    "build_structured_store",
     "detect_instructions",
     "load_agent_config",
     "render_documents",
     "resolve_state_dir",
+    "route_message",
 ]

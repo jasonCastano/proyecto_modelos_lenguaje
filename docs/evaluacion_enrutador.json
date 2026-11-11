@@ -1,0 +1,42 @@
+{
+  "run_id": "router-real-2026-11-10",
+  "mode": "real",
+  "cases": 36,
+  "correct": 35,
+  "accuracy": 0.9722,
+  "model_calls": 26,
+  "latency_ms_mean": 1334.6,
+  "no_search": {
+    "ok": 10,
+    "total": 10
+  },
+  "confusion": {
+    "direct": {
+      "direct": 6
+    },
+    "documental": {
+      "documental": 17,
+      "structured": 1
+    },
+    "structured": {
+      "structured": 6
+    },
+    "out_of_scope": {
+      "out_of_scope": 4
+    },
+    "clarify": {
+      "clarify": 2
+    }
+  },
+  "misses": [
+    {
+      "query_id": "r32",
+      "question": "¿Cuánto bioetanol produce allá al año?",
+      "expected": "documental",
+      "predicted": "structured",
+      "confidence": 0.9,
+      "decided_by": "llm",
+      "reason": "pregunta por una cifra puntual de producción anual de bioetanol en Brasil"
+    }
+  ]
+}

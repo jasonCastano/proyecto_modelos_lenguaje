@@ -169,3 +169,46 @@ Línea base de la spec 014 (T026), antes del agente. Evaluación de recuperació
 | r26 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
 | r27 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
 | r28 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
+
+<!-- router:start -->
+## Enrutador (US2)
+
+**Ejecución**: `router-real-2026-11-10` · **Modo**: real · **Casos**: 36 (30 consultas + 6 repreguntas con su turno previo como historial)
+
+| Métrica | Valor | Criterio |
+|---|---:|---|
+| Precisión del enrutador | 0.972 (35/36) | SC-002 ≥ 0,90 |
+| Saludos y fuera de alcance sin búsqueda | 10/10 | SC-004 100 % |
+| Llamadas al modelo | 26 | 0 en reglas |
+| Latencia media por decisión | 1335 ms | — |
+
+Matriz de confusión (filas: esperada; columnas: predicha):
+
+| Esperada \ Predicha | direct | documental | structured | out_of_scope | clarify |
+|---|---|---|---|---|---|
+| direct | 6 | 0 | 0 | 0 | 0 |
+| documental | 0 | 17 | 1 | 0 | 0 |
+| structured | 0 | 0 | 6 | 0 | 0 |
+| out_of_scope | 0 | 0 | 0 | 4 | 0 |
+| clarify | 0 | 0 | 0 | 0 | 2 |
+
+Errores:
+
+| Consulta | Esperada | Predicha | Confianza | Decidió | Motivo |
+|---|---|---|---:|---|---|
+| r32 «¿Cuánto bioetanol produce allá al año?» | documental | structured | 0.90 | llm | pregunta por una cifra puntual de producción anual de bioetanol en Brasil |
+
+Lectura:
+
+- **Cumple SC-002 y SC-004**: 0,972 de precisión con DeepSeek (≥ 0,90) y 10/10 saludos y preguntas fuera
+  de alcance resueltos por reglas, sin búsqueda ni llamadas al modelo.
+- **Resuelve la abstención**: las 4 preguntas fuera de corpus se enrutan a `out_of_scope` antes de buscar.
+  La recuperación sola no se abstenía en ningún modo (sección anterior).
+- El único error (r32) es discutible: la repregunta pide una cifra («¿cuánto bioetanol produce allá al
+  año?») y el modelo la mandó a `structured`; con la caída a documental cuando la tabla no tiene el dato,
+  la respuesta sigue siendo correcta.
+- El modo demo (heurística sin modelo) también acierta 35/36, pero esa heurística se escribió conociendo el
+  conjunto: no es una medida independiente y solo garantiza un modo demo determinista.
+- Costo: 26 llamadas al modelo (una por consulta no resuelta por reglas), 1,3 s de media por decisión.
+
+<!-- router:end -->

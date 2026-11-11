@@ -79,6 +79,10 @@ Cada decisión resuelve una incógnita del contexto técnico del [plan](./plan.m
 - **Alternatives considered**: solo similitud (descartado por los datos); solo LLM (más llamadas y latencia);
   Jev/System One (opcional según la Clase 9; se deja como extensión).
 
+**Actualización 2026-11-10 (T034)**: la etapa 2 pide JSON y lo valida contra `RouteDecision` en lugar de
+`with_structured_output`, que exige *tool calling* y no lo soportan los modelos guionados de la suite. Con
+DeepSeek el enrutador acertó 35/36 rutas sin ninguna salida inválida.
+
 ## 7. Origen estructurado
 
 - **Decision**: CLI `agent build-structured` que lee `data/gold/entities.jsonl` (15) y `data/gold/facts.jsonl`

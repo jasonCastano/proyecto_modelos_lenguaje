@@ -51,7 +51,7 @@ function normalizeAnswer(payload: CitedAnswer): CitedAnswer {
   return { ...payload, retrieval: normalizeTrace(payload.retrieval) };
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {

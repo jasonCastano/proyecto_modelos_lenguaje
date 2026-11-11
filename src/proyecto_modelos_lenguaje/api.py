@@ -11,9 +11,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from .agent.config import AgentConfigError, load_agent_config, resolve_state_dir
+from .agent.memory import build_checkpointer
+from .agent.service import ChatError, ChatService, build_deps
 from .api_models import (
     ApiError,
     AskRequest,
+    ChatRequest,
+    ChatResponse,
     CitedAnswer,
     FaqItem,
     FaqRequest,
@@ -21,6 +26,7 @@ from .api_models import (
     HealthStatus,
     RetrievalTraceModel,
     SummaryRequest,
+    ThreadView,
 )
 from .api_models import (
     Citation as CitationModel,
@@ -402,6 +408,61 @@ def _faq_item(item: FAQItem) -> FaqItem:
         model=item.model,
         prompt_version=item.prompt_version,
     )
+
+
+@lru_cache(maxsize=1)
+def _chat_service() -> ChatService:
+    """Servicio de conversación: checkpointer en ``MANUELITA_STATE_DIR`` y grafos perezosos."""
+    config = load_agent_config()
+    state_dir = resolve_state_dir(config.state_env_var)
+    return ChatService(
+        config,
+        build_checkpointer(state_dir),
+        lambda mode: build_deps(mode, config, _retriever(mode)),
+    )
+
+
+def _chat_error(exc: Exception) -> JSONResponse:
+    if isinstance(exc, ChatError):
+        return _api_error(
+            exc.code,
+            exc.message,
+            retryable=exc.status_code >= 500,
+            action="reconstruir" if exc.code == "index_unavailable" else "revisar",
+            status_code=exc.status_code,
+        )
+    if isinstance(exc, AgentConfigError):
+        return _api_error(
+            "invalid_config",
+            str(exc),
+            retryable=False,
+            action="revisar configuración",
+            status_code=503,
+        )
+    return _exception_response(exc)
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+def chat(payload: ChatRequest):
+    try:
+        outcome = _chat_service().send(
+            payload.message,
+            thread_id=payload.thread_id,
+            user_id=payload.user_id,
+            variant=payload.variant,
+            mode=payload.mode,
+        )
+    except Exception as exc:
+        return _chat_error(exc)
+    return outcome.to_dict()
+
+
+@app.get("/api/threads/{thread_id}", response_model=ThreadView)
+def thread(thread_id: str):
+    try:
+        return _chat_service().thread(thread_id)
+    except Exception as exc:
+        return _chat_error(exc)
 
 
 if WEB_DIST.is_dir():

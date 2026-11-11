@@ -190,3 +190,127 @@ class ShowcaseResponse(BaseModel):
     data_status: DataStatus
     sections: list[ShowcaseSection]
     metrics: list[CorpusMetric]
+
+
+# ---------------------------------------------------------------- conversación (spec 014, US1)
+
+Route = Literal["direct", "documental", "structured", "out_of_scope", "clarify"]
+ChatStatus = Literal["answered", "fallback", "clarify", "pending_approval"]
+
+
+class ChatRequest(RequestModel):
+    """``POST /api/chat``. El mensaje se valida en el servicio para responder 400 con su código."""
+
+    thread_id: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+    )
+    user_id: str = Field(default="anon", pattern=r"^[A-Za-z0-9-]{1,64}$")
+    message: str = Field(max_length=2000)
+    variant: Literal["chain", "agent"] = "chain"
+    mode: Mode = "real"
+
+
+class RouteModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    route: Route
+    confidence: float = Field(ge=0.0, le=1.0)
+    reason: str
+    decided_by: Literal["rules", "llm", "demo"]
+    alternative: Route | None = None
+    fallback_route: Literal["documental"] | None = None
+
+
+class TurnMetricsModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    latency_ms: int = 0
+    model_calls: int = 0
+    tool_calls: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+
+class ChatFragmentModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str
+    unit_id: str
+    title: str
+    url: str
+    score: float
+    semantic_score: float | None = None
+    lexical_score: float | None = None
+    origin: FragmentOrigin
+    status: FragmentStatus = "used"
+    reason: str | None = None
+    anomalous: bool = False
+    anomaly_reasons: list[str] = Field(default_factory=list)
+
+
+class StructuredRowModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str
+    fact_id: str
+    subject_label: str
+    attribute: str
+    value: str
+    year: int | None = None
+    unit_id: str
+    citations: list[dict[str, str]] = Field(default_factory=list)
+
+
+class ChatCitationModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str
+    unit_id: str
+    url: str
+    title: str = ""
+    fact_id: str | None = None
+
+
+class TurnModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    turn_id: int = Field(ge=1)
+    question: str
+    route: RouteModel
+    fragments: list[ChatFragmentModel] = Field(default_factory=list)
+    structured_rows: list[StructuredRowModel] = Field(default_factory=list)
+    answer: str = ""
+    citations: list[ChatCitationModel] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
+    fallback: bool = False
+    metrics: TurnMetricsModel = Field(default_factory=TurnMetricsModel)
+
+
+class AnomalyModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str | None = None
+    unit_id: str | None = None
+    reasons: list[str] = Field(default_factory=list)
+
+
+class ChatResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    thread_id: str
+    turn: TurnModel
+    status: ChatStatus
+    pending_action: dict[str, object] | None = None
+    anomalies: list[AnomalyModel] = Field(default_factory=list)
+
+
+class ThreadView(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    thread_id: str
+    variant: Literal["chain", "agent"]
+    turns: list[TurnModel] = Field(default_factory=list)
+    summary: str = ""
+    status: Literal["idle", "pending_approval"] = "idle"
+    pending_action: dict[str, object] | None = None

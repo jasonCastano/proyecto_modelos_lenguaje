@@ -8,11 +8,14 @@ describe("ShowcaseStory", () => {
   it("renderiza la secuencia narrativa completa", () => {
     render(<ShowcaseStory sections={fallbackSections} />);
     expect(screen.getByRole("heading", { name: /Del cañaveral/i })).toBeInTheDocument();
-    expect(screen.getAllByRole("article")).toHaveLength(8);
+    expect(screen.getAllByRole("article")).toHaveLength(11);
     expect(
       screen.getByRole("heading", { name: "La información estaba dispersa" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Lo que todavía falta" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Una conversación que recuerda y decide" }),
+    ).toBeInTheDocument();
   });
 
   it("incluye enlaces de evidencia y estados", () => {
@@ -23,12 +26,12 @@ describe("ShowcaseStory", () => {
 
   it("ofrece un rail de recorrido accesible", () => {
     render(<ShowcaseStory sections={fallbackSections} />);
-    const rail = screen.getByRole("navigation", { name: "Recorrido del Módulo 1" });
+    const rail = screen.getByRole("navigation", { name: "Recorrido del proyecto" });
     expect(rail).toBeInTheDocument();
     const links = within(rail).getAllByRole("link");
-    expect(links).toHaveLength(8);
+    expect(links).toHaveLength(11);
     expect(links[0]).toHaveAttribute("aria-current", "true");
     expect(links[0]).toHaveAttribute("href", "#modulo-problem");
-    expect(links[7]).toHaveAttribute("href", "#modulo-limits");
+    expect(links[10]).toHaveAttribute("href", "#modulo-limits");
   });
 });

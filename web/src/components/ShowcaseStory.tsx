@@ -37,13 +37,13 @@ export function ShowcaseStory({ sections }: ShowcaseStoryProps) {
   return (
     <section
       className="story"
-      id="modulo-1"
+      id="recorrido"
       data-testid="showcase-story"
       aria-labelledby="story-title"
     >
       <div className="story-head">
         <div>
-          <p className="section-label">Módulo 1 · lo que se construyó</p>
+          <p className="section-label">Módulos 1 y 2 · lo que se construyó</p>
           <h2 id="story-title">Del cañaveral a una respuesta que se puede verificar.</h2>
         </div>
         <p className="story-intro">
@@ -52,7 +52,7 @@ export function ShowcaseStory({ sections }: ShowcaseStoryProps) {
         </p>
       </div>
       <div className="story-layout">
-        <nav className="story-rail" aria-label="Recorrido del Módulo 1">
+        <nav className="story-rail" aria-label="Recorrido del proyecto">
           <p className="story-rail-title">Recorrido</p>
           <ol className="story-rail-list">
             {sections.map((section, index) => (

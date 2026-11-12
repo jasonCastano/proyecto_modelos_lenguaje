@@ -7,22 +7,24 @@ export function Hero() {
         <p className="hero-kicker">Ingenio Manuelita · Valle del Cauca</p>
         <h1 id="hero-title">La memoria del campo, lista para responder.</h1>
         <p className="hero-lede">
-          Un RAG académico sobre información pública de Manuelita. Pregunta en lenguaje natural y
-          recibe una respuesta con fuentes verificables, o la certeza de que el corpus no alcanza.
+          Un RAG académico sobre información pública de Manuelita. Pregunta en lenguaje natural o
+          conversa con memoria, y recibe una respuesta con fuentes verificables, o la certeza de que
+          el corpus no alcanza.
         </p>
         <div className="hero-actions">
           <a className="btn btn-primary" href="#consola">
             Preguntar al corpus
             <span aria-hidden="true">↘</span>
           </a>
-          <a className="btn btn-secondary" href="#modulo-1">
-            Recorrer el Módulo 1
+          <a className="btn btn-secondary" href="#recorrido">
+            Recorrer el proyecto
           </a>
         </div>
         <div className="hero-trust" aria-label="Principios del sistema">
           <span className="chip">Cita o fallback</span>
           <span className="chip">Datos públicos</span>
-          <span className="chip">DeepSeek + LangChain</span>
+          <span className="chip">Memoria y enrutador</span>
+          <span className="chip">DeepSeek + LangGraph</span>
         </div>
       </div>
       <div className="hero-art">

@@ -174,7 +174,19 @@ class EvidenceLink(BaseModel):
 class ShowcaseSection(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    id: Literal["problem", "data", "medallion", "prompts", "tasks", "app", "metrics", "limits"]
+    id: Literal[
+        "problem",
+        "data",
+        "medallion",
+        "prompts",
+        "tasks",
+        "retrieval",
+        "agent",
+        "safety",
+        "app",
+        "metrics",
+        "limits",
+    ]
     order: int
     title: str
     body: str

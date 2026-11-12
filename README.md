@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-643%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-653%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/M%C3%B3dulo%202-v0.2.0-brightgreen)](CONSTITUTION.md)
 
@@ -26,13 +26,15 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual (2026-11-11)**: el **Módulo 2 está entregado** con el tag
+> **Estado actual (2026-11-12, constitución v1.4.0)**: el **Módulo 2 está entregado** con el tag
 > [`v0.2.0-modulo2`](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2):
 > recuperación semántica e híbrida (spec 013), conversación con memoria por hilo, enrutador, tabla estructurada,
 > variantes cadena y agente con LangGraph, blindaje contra inyección, aprobación humana de escrituras y
 > preferencias del usuario (spec 014, PRs #44–#51). Quedan abiertos la calificación humana de las repreguntas
 > (SC-006) y repetir la fidelidad del juez. De la Fase 1 faltan la ejecución real de la evaluación de
-> 40 preguntas, los resultados del informe, el ensayo de la demo y el tag `v0.1.0-modulo1`.
+> 40 preguntas, los resultados del informe, el ensayo de la demo y el tag `v0.1.0-modulo1`. Desde la v1.4.0
+> los commits solo pueden ser de los integrantes o de bots autorizados (PR #54, ADR 0017); el historial se
+> reescribió el 2026-11-12 para quitar los coautores de IA.
 
 ---
 
@@ -182,7 +184,7 @@ versionan capturas temporales de la auditoría.
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 643 pruebas offline (616 Python + 27 web) y E2E de la conversación |
+| Pruebas | ✅ | 653 pruebas offline (626 Python + 27 web) y E2E de la conversación |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
 | App web + LangChain | ✅ | Frontend React + API FastAPI; hero, consola RAG y showcase del Módulo 1 |
@@ -195,10 +197,12 @@ versionan capturas temporales de la auditoría.
 | Módulo 2 — cadena vs. agente | ✅ | Citas 100 % en ambas; < 10 s: cadena 100 %, agente 94 %; `docs/evaluacion_modulo2.md` |
 | Módulo 2 — Recall@10, nDCG@10 y abstención fuera de corpus | ✅ | Semántico/híbrido > léxico; abstención 4/4 por el enrutador; `docs/evaluacion_modulo2.md` |
 | Módulo 2 — repreguntas (SC-006) y fidelidad del juez | 🟡 | Métrica estricta 3/6 (cadena) y 4/6 (agente); fidelidad pendiente de repetir con el juez corregido |
-| Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 |
-| CI y Pull Requests | ✅ | 50 PRs fusionados; CI verde |
+| Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
+| CI y Pull Requests | ✅ | 52 PRs fusionados; CI verde (`test`, `web` y `autoria`) |
 | Protección de `main` | ✅ | PR con 1 aprobación y checks `test` y `web`; sin push directo ni force-push |
 | Gobernanza del repositorio | ✅ | PR/issue templates, labels, Dependabot, pre-commit y Makefile |
+| Autoría de commits | ✅ | Solo `jasonCastano`, `Robertto48` y `dependabot[bot]`; hook `commit-msg` y job `autoria`; historial sin coautores de IA (ADR 0017) |
+| Panel «Contributors» de GitHub | 🟡 | La API y la gráfica ya muestran solo a los autorizados; la portada espera el recálculo de la caché de GitHub |
 | Cobertura de los 24 ítems | ✅ | 24/24 evaluados por la capa oro con evidencia |
 
 ### Cifras actuales
@@ -220,7 +224,7 @@ versionan capturas temporales de la auditoría.
 | Oro | 0,20 GB |
 | Cuarentena | 8,93 GB |
 | Datos totales | 9,52 GB (límite: 10 GB) |
-| Pruebas offline | 643 |
+| Pruebas offline | 653 |
 | Consultas etiquetadas (Módulo 2) | 36 |
 | Acierto del enrutador | 97 % (35/36) |
 | Hechos en la tabla estructurada | 381 (15 entidades, 477 citas) |
@@ -716,7 +720,7 @@ referencian por manifiesto y hash.
 ├── tests/                         # Unitarias, integración, contrato y E2E
 ├── .github/                       # PR/issue templates, CI, labels y Dependabot
 ├── .opencode/                     # Comandos y skill de bitácora (generador compartido)
-├── .claude/skills/                # Skills de Claude Code (speckit-*, bitacora)
+├── .claude/                       # Skills de Claude Code y settings.json (sin coautoría)
 ├── AGENTS.md                      # Contexto para asistentes LLM
 ├── CONSTITUTION.md                # Fuente única de verdad
 ├── CONTRIBUTING.md                # Guía de contribución
@@ -730,8 +734,9 @@ referencian por manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 643 pruebas unitarias, de integración y de contrato (616 Python + 27 web).
-- **Verificación completa**: `make check` ejecuta Ruff, pytest, Vitest y build web; CI separa Python y web.
+- **Pruebas offline**: 653 pruebas unitarias, de integración y de contrato (626 Python + 27 web).
+- **Verificación completa**: `make check` ejecuta Ruff, pytest, Vitest y build web; CI separa Python y web y
+  revisa la autoría de los commits de cada PR (job `autoria`).
 - **Auditoría visual**: `make audit` recorre 7 perfiles y 3 estados de datos con Playwright.
 - **Lint**: `uv run ruff check .` sin hallazgos.
 - **Integridad**: SHA-256 por artefacto; verificación de muestras del corpus activo.
@@ -861,6 +866,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Contrato de la API de conversación](specs/014-rag-agent-memory-router/contracts/chat-api.md)
 - [Decisión de alcance del Módulo 2](docs/decisions/0015-module2-scope.md)
 - [Decisión de arquitectura del agente RAG con LangGraph](docs/decisions/0016-rag-agent-langgraph.md)
+- [Decisión de autoría de commits](docs/decisions/0017-autoria-commits.md)
 - [Política de memoria y privacidad](docs/memoria.md)
 - [Informe del Módulo 2](docs/informe_modulo2.md)
 - [Informe del Módulo 1 (borrador)](docs/informe_modulo1.md)

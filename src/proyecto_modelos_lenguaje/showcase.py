@@ -1,4 +1,4 @@
-"""Build the Module 1 showcase payload from real corpus metrics."""
+"""Build the Module 1 and Module 2 showcase payload from real corpus metrics."""
 
 from __future__ import annotations
 
@@ -238,12 +238,75 @@ def build_showcase(metrics: AppMetrics | None = None) -> ShowcaseResponse:
             ],
         ),
         ShowcaseSection(
-            id="app",
+            id="retrieval",
             order=6,
+            title="Buscar por significado, no solo por palabras",
+            body=(
+                "El Módulo 2 suma un índice semántico local (fastembed) y una recuperación híbrida "
+                "con BM25. Se mide con Recall@10, nDCG@10 y MRR frente a la línea base léxica del "
+                "Módulo 1."
+            ),
+            status="done",
+            metrics=[],
+            evidence=[
+                EvidenceLink(
+                    label="Recuperación semántica",
+                    href=f"{REPO}/specs/013-semantic-rag-chatbot/spec.md",
+                    kind="spec",
+                )
+            ],
+        ),
+        ShowcaseSection(
+            id="agent",
+            order=7,
+            title="Una conversación que recuerda y decide",
+            body=(
+                "Cada hilo guarda su memoria. Un enrutador elige entre respuesta directa, documentos, "  # noqa: E501
+                "tabla estructurada o fuera de alcance (35 de 36 aciertos). La misma conversación "
+                "corre como cadena (una búsqueda por turno) o como agente con LangGraph."
+            ),
+            status="done",
+            metrics=[],
+            evidence=[
+                EvidenceLink(
+                    label="Memoria, enrutador y agente",
+                    href=f"{REPO}/specs/014-rag-agent-memory-router/spec.md",
+                    kind="spec",
+                ),
+                EvidenceLink(
+                    label="ADR del agente",
+                    href=f"{REPO}/docs/decisions/0016-rag-agent-langgraph.md",
+                    kind="adr",
+                ),
+            ],
+        ),
+        ShowcaseSection(
+            id="safety",
+            order=8,
+            title="Leer solo, escribir con permiso",
+            body=(
+                "El texto recuperado no puede dar órdenes: hay blindaje contra inyección y se redactan "  # noqa: E501
+                "datos personales. Guardar una preferencia, olvidar la memoria o exportar una "
+                "conversación espera la aprobación de una persona."
+            ),
+            status="done",
+            metrics=[],
+            evidence=[
+                EvidenceLink(
+                    label="Política de memoria",
+                    href=f"{REPO}/docs/memoria.md",
+                    kind="report",
+                )
+            ],
+        ),
+        ShowcaseSection(
+            id="app",
+            order=9,
             title="Una interfaz para preguntar y entender",
             body=(
-                "Esta página reemplaza el prototipo: hero editorial, consola RAG, fuentes visibles, "  # noqa: E501
-                "modo demo y un recorrido que explica el sistema sin diapositivas."
+                "Esta página reemplaza el prototipo: hero editorial, consola RAG con pestaña de "
+                "conversación, fuentes visibles, modo demo y un recorrido que explica el sistema "
+                "sin diapositivas."
             ),
             status="done",
             metrics=[],
@@ -257,11 +320,12 @@ def build_showcase(metrics: AppMetrics | None = None) -> ShowcaseResponse:
         ),
         ShowcaseSection(
             id="metrics",
-            order=7,
+            order=10,
             title="Medir antes de afirmar",
             body=(
-                "Las cifras del corpus, la cobertura y los tokens provienen de reportes reales. La "
-                "evaluación de 40 preguntas medirá calidad, citas y alucinaciones con una línea base."  # noqa: E501
+                "Las cifras del corpus, la cobertura y los tokens provienen de reportes reales. En el "  # noqa: E501
+                "Módulo 2, cadena y agente citan bien el 100 % de las veces; la cadena responde en "
+                "menos de 10 s siempre y el agente en el 94 % de las consultas."
             ),
             status="partial",
             metrics=[by_key["tokens_silver"], by_key["tokens_gold"], by_key["coverage"]],
@@ -270,16 +334,22 @@ def build_showcase(metrics: AppMetrics | None = None) -> ShowcaseResponse:
                     label="Cobertura",
                     href=f"{REPO}/data/gold/coverage.json",
                     kind="report",
-                )
+                ),
+                EvidenceLink(
+                    label="Evaluación del Módulo 2",
+                    href=f"{REPO}/docs/evaluacion_modulo2.md",
+                    kind="report",
+                ),
             ],
         ),
         ShowcaseSection(
             id="limits",
-            order=8,
+            order=11,
             title="Lo que todavía falta",
             body=(
-                "La evaluación de 40 preguntas, el informe y el guion de demo están en curso. El "
-                "sistema declara sus vacíos y no sustituye la información oficial de Manuelita."
+                "Falta correr la evaluación de 40 preguntas del Módulo 1 y ensayar la demo. En el "
+                "Módulo 2 quedan la calificación humana de las repreguntas y repetir la fidelidad "
+                "del juez. El sistema declara sus vacíos y no sustituye la información oficial."
             ),
             status="pending",
             metrics=[],

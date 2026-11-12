@@ -9,8 +9,10 @@ export function LimitsNote() {
         <div>
           <p>
             El corpus cubre información pública y el sistema cita o declara vacíos; no es asesoría
-            oficial de Manuelita. La evaluación de las 40 preguntas, el informe y el guion de la
-            demo del Módulo 1 siguen en curso.
+            oficial de Manuelita. Del Módulo 1 faltan la evaluación real de las 40 preguntas y el
+            ensayo de la demo. Del Módulo 2 faltan la calificación humana de las repreguntas y
+            repetir la fidelidad del juez; además, el agente supera los 10 s en el 6 % de las
+            consultas.
           </p>
           <p>
             El contenido de terceros pertenece a sus fuentes. El proyecto es académico y no

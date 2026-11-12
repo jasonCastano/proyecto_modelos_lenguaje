@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.3.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-07
+**Versión**: 1.4.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-12
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -50,6 +50,9 @@ decisión técnica sin depender de diapositivas ni de la memoria de una sola per
 
 - Todo entregable DEBE ser producido por Jason Alejandro Castaño y Roberto José Guerrero, o declarar
   explícitamente la herramienta de IA utilizada como asistencia.
+- La autoría en Git y GitHub (autor, coautor y firma de commits y PRs) DEBE corresponder solo a los integrantes
+  del equipo o a bots autorizados (§4.3). Un asistente de IA NO DEBE figurar como autor ni contribuidor; su uso
+  se declara en la documentación (principio IX).
 - NO SE DEBE inventar información, citas, métricas, resultados, fuentes ni retroalimentación.
 - Toda idea, dataset, imagen o fragmento externo DEBE citarse con su fuente y licencia.
 - Los resultados reportados DEBEN provenir de ejecuciones reales del sistema, no de ejemplos escritos a mano.
@@ -312,6 +315,19 @@ uv.lock
 - Commits atómicos, con cuerpo cuando la decisión no sea obvia.
 - NO se versionan binarios, datos, `.env`, capturas temporales ni artefactos de build.
 - El historial DEBE permitir reconstruir la evolución del pipeline, los prompts y la app.
+- **Autoría permitida**: todo commit DEBE tener como autor (y, si aplica, coautor `Co-authored-by`) a una de
+  estas identidades:
+  - `jasonCastano` — Jason Alejandro Castaño;
+  - `Robertto48` — Roberto José Guerrero Criollo;
+  - un bot autorizado: `dependabot[bot]`. Añadir otro bot exige enmienda de esta constitución.
+- GitHub (`noreply@github.com`) solo se acepta como *committer* de los merges hechos desde la web.
+- NO SE DEBEN incluir trailers `Co-authored-by` de asistentes de IA ni firmas del tipo «Generated with …» en
+  commits, PRs, tags o releases. Los asistentes se configuran para no añadirlos (`.claude/settings.json` con
+  `"includeCoAuthoredBy": false`).
+- Verificación: el hook `commit-msg` de pre-commit y el job `autoria` del CI ejecutan
+  `scripts/check_commit_authors.py`; la lista de identidades vive en `src/proyecto_modelos_lenguaje/authorship.py`
+  y debe coincidir con esta sección. Decisión y procedimiento de limpieza del historial en
+  `docs/decisions/0017-autoria-commits.md`.
 
 ### 4.4 Integración continua
 
@@ -331,7 +347,8 @@ uv.lock
 
 - **Makefile**: interfaz única para `install`, `dev`, `lint`, `format`, `test`, `check`, `app`, `audit`,
   `build` y `clean`.
-- **Pre-commit**: higiene de archivos, Ruff y sincronización de `uv.lock`; se instala con `make dev`.
+- **Pre-commit**: higiene de archivos, Ruff, sincronización de `uv.lock` y autoría de commits (`commit-msg`);
+  se instala con `make dev`.
 - **GitHub**: plantilla de PR, formularios de issue, labels declarativas, Dependabot y workflow de labels.
 - **Contribución**: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` y `AGENTS.md` describen el flujo y el contexto.
 - **Arquitectura**: `docs/arquitectura.json` es la fuente; `docs/arquitectura.html` se regenera con
@@ -661,7 +678,7 @@ La rúbrica detallada del Módulo 2 no se ha publicado; mientras tanto se asume 
 - El contenido de terceros se atribuye; se atienden solicitudes de retiro.
 - Las respuestas del sistema no deben presentarse como asesoría oficial de Manuelita.
 - El uso de asistentes de IA se declara y se verifica; el equipo asume la responsabilidad del código y de las
-  afirmaciones.
+  afirmaciones. Los asistentes no figuran como autores ni coautores en Git ni en GitHub (§4.3).
 - Los prompts y resultados no se inventan ni se editan para simular éxito.
 
 ---
@@ -873,4 +890,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.3.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-07
+**Versión**: 1.4.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-12

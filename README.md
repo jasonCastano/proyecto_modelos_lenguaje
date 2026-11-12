@@ -714,6 +714,9 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - **Rama estable**: `main`, protegida: todo cambio entra por Pull Request con al menos una aprobación del otro
   integrante y los checks `test` y `web` en verde; el autor no aprueba su propio PR.
 - **Ramas**: `feat/...`, `fix/...`, `docs/...` o `chore/...`; commits con Conventional Commits.
+- **Autoría**: los commits son de `jasonCastano` o `Robertto48`, o de un bot autorizado
+  (`dependabot[bot]`); los asistentes de IA no figuran como coautores. Lo verifican el hook `commit-msg` y
+  el job `autoria` del CI ([`CONSTITUTION.md`](CONSTITUTION.md) §4.3).
 - **Especificaciones**: cada fase tiene especificación, plan y tareas en [`specs/`](specs/), gestionados con
   Spec Kit (`/speckit-specify`, `/speckit-plan`, `/speckit-tasks`, …).
 - **Entregas**: cada módulo se etiqueta (`v0.1.0-modulo1`, `v0.2.0-modulo2`) sobre un commit con CI verde.

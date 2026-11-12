@@ -114,6 +114,9 @@ export interface ShowcaseSection {
     | "medallion"
     | "prompts"
     | "tasks"
+    | "retrieval"
+    | "agent"
+    | "safety"
     | "app"
     | "metrics"
     | "limits";

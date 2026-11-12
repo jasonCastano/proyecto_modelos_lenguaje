@@ -2,12 +2,14 @@
 #
 # Instalar (una vez por clon):   uv run pre-commit install
 # Ejecutar sobre todo el repo:   uv run pre-commit run --all-files
-# Herramientas: higiene de archivos + Ruff + uv-lock.
+# Herramientas: higiene de archivos + Ruff + uv-lock + autoría de commits (commit-msg).
 
 default_language_version:
   python: python3.14
 
 minimum_pre_commit_version: "3.7.0"
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
 fail_fast: false
 exclude: ^(data/|artifacts/|\.agents/|dist/|docs/arquitectura\.)
 
@@ -43,3 +45,12 @@ repos:
     rev: 0.13.1
     hooks:
       - id: uv-lock
+
+  # --- Autoría: solo integrantes del equipo y bots autorizados (CONSTITUTION.md §4.3) ---
+  - repo: local
+    hooks:
+      - id: autoria-commit
+        name: autoría de commits permitida
+        entry: uv run python scripts/check_commit_authors.py --message-file
+        language: system
+        stages: [commit-msg]

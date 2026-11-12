@@ -3,9 +3,9 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-408%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-643%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
-[![Status](https://img.shields.io/badge/status-M%C3%B3dulo%202%20en%20progreso-yellow)](CONSTITUTION.md)
+[![Status](https://img.shields.io/badge/M%C3%B3dulo%202-v0.2.0-brightgreen)](CONSTITUTION.md)
 
 Sistema de preguntas y respuestas (Q&A) construido sobre información pública de **Ingenio Manuelita S.A.**,
 empresa agroindustrial del Valle del Cauca, Colombia. El proyecto evoluciona desde una base de conocimiento
@@ -26,11 +26,13 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual (constitución v1.3.0, 2026-11-07)**: las capas bronce, plata y oro, la experiencia web
-> (React + FastAPI) y las tareas LangChain están operativas. La recuperación semántica e híbrida del Módulo 2
-> (spec 013, PR #34) está fusionada. Para cerrar la Fase 1 faltan la ejecución real de la evaluación de
-> 40 preguntas, los resultados del informe, el ensayo de la demo y el tag `v0.1.0-modulo1`. La memoria, el
-> enrutador y el agente (spec 014) están especificados y pendientes de implementación.
+> **Estado actual (2026-11-11)**: el **Módulo 2 está entregado** con el tag
+> [`v0.2.0-modulo2`](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2):
+> recuperación semántica e híbrida (spec 013), conversación con memoria por hilo, enrutador, tabla estructurada,
+> variantes cadena y agente con LangGraph, blindaje contra inyección, aprobación humana de escrituras y
+> preferencias del usuario (spec 014, PRs #44–#51). Quedan abiertos la calificación humana de las repreguntas
+> (SC-006) y repetir la fidelidad del juez. De la Fase 1 faltan la ejecución real de la evaluación de
+> 40 preguntas, los resultados del informe, el ensayo de la demo y el tag `v0.1.0-modulo1`.
 
 ---
 
@@ -83,8 +85,11 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
   no tiene evidencia.
 - **Recuperación semántica e híbrida** (Módulo 2): embeddings `multilingual-e5-small` en local, índice
   `numpy` + SQLite reconstruible y fusión con la búsqueda léxica BM25, con traza visible en la API y la interfaz.
+- **Agente conversacional** (Módulo 2): memoria por hilo con LangGraph, enrutador directo / documental /
+  estructurado / fuera de alcance, variantes cadena y agente, blindaje contra inyección indirecta y aprobación
+  humana de toda escritura (preferencias, olvido, exportación).
 - **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores;
-  en el Módulo 2, Recall@k/MRR sobre consultas etiquetadas.
+  en el Módulo 2, Recall@10/nDCG@10/MRR, acierto del enrutador y comparación cadena vs. agente con juez LLM.
 - **Interfaz web propia** con hero editorial, consola RAG, fuentes citadas y modo demostración.
 - **Página del Módulo 1** que explica datos, arquitectura, prompts, app, métricas y límites.
 - **Verificación E2E** con Playwright y matriz responsive.
@@ -103,7 +108,9 @@ flowchart LR
     H[Recuperación híbrida<br/>semántica + BM25 · traza]
     L[LangChain + DeepSeek<br/>Resumen · FAQ · Q&A]
     UI[Web React + FastAPI<br/>citas · fragmentos]
-    M[Memoria · enrutador · agente<br/>spec 014]
+    T[(Tabla estructurada<br/>SQLite · hechos del oro)]
+    R[Enrutador<br/>directo · documental · estructurado]
+    M[LangGraph · cadena / agente<br/>memoria por hilo · HITL]
     D[Despliegue y canales<br/>WhatsApp / Telegram]
 
     S --> P --> B
@@ -111,7 +118,14 @@ flowchart LR
     B --> V --> G
     G --> I --> H
     G --> H --> L --> UI
-    H -. Fase 2 pendiente .-> M -. Fase 3 .-> D
+    G --> T
+    UI --> R
+    R --> H
+    R --> T
+    H --> M
+    T --> M
+    M --> UI
+    M -. Fase 3 .-> D
 ```
 
 **Decisiones clave**:
@@ -168,7 +182,7 @@ versionan capturas temporales de la auditoría.
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 408 pruebas offline (391 Python + 17 web) |
+| Pruebas | ✅ | 643 pruebas offline (616 Python + 27 web) y E2E de la conversación |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
 | App web + LangChain | ✅ | Frontend React + API FastAPI; hero, consola RAG y showcase del Módulo 1 |
@@ -177,11 +191,12 @@ versionan capturas temporales de la auditoría.
 | Informe del Módulo 1 | 🟡 | Borrador en `docs/informe_modulo1.md`; resultados pendientes de M1-08 |
 | Tag `v0.1.0-modulo1` | 🟡 | Pendiente de cerrar la puerta de la Fase 1 |
 | Módulo 2 — recuperación semántica (spec 013) | ✅ | PR #34 fusionado; `docs/evaluacion_modulo2.md` (ver hallazgos en `docs/revision_pr34.md`) |
-| Módulo 2 — memoria, enrutador y agente (spec 014) | ✅ | Cadena y agente con memoria por hilo, enrutador 35/36, HITL y preferencias; PRs #44–#50; `docs/informe_modulo2.md` |
+| Módulo 2 — memoria, enrutador y agente (spec 014) | ✅ | Cadena y agente con memoria por hilo, enrutador 35/36, HITL y preferencias; PRs #44–#51; `docs/informe_modulo2.md` |
+| Módulo 2 — cadena vs. agente | ✅ | Citas 100 % en ambas; < 10 s: cadena 100 %, agente 94 %; `docs/evaluacion_modulo2.md` |
 | Módulo 2 — Recall@10, nDCG@10 y abstención fuera de corpus | ✅ | Semántico/híbrido > léxico; abstención 4/4 por el enrutador; `docs/evaluacion_modulo2.md` |
 | Módulo 2 — repreguntas (SC-006) y fidelidad del juez | 🟡 | Métrica estricta 3/6 (cadena) y 4/6 (agente); fidelidad pendiente de repetir con el juez corregido |
-| Tag `v0.2.0-modulo2` | 🟡 | Tras la aprobación del PR de cierre |
-| CI y Pull Requests | ✅ | 38 PRs fusionados; CI verde |
+| Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 |
+| CI y Pull Requests | ✅ | 50 PRs fusionados; CI verde |
 | Protección de `main` | ✅ | PR con 1 aprobación y checks `test` y `web`; sin push directo ni force-push |
 | Gobernanza del repositorio | ✅ | PR/issue templates, labels, Dependabot, pre-commit y Makefile |
 | Cobertura de los 24 ítems | ✅ | 24/24 evaluados por la capa oro con evidencia |
@@ -205,7 +220,10 @@ versionan capturas temporales de la auditoría.
 | Oro | 0,20 GB |
 | Cuarentena | 8,93 GB |
 | Datos totales | 9,52 GB (límite: 10 GB) |
-| Pruebas offline | 408 |
+| Pruebas offline | 643 |
+| Consultas etiquetadas (Módulo 2) | 36 |
+| Acierto del enrutador | 97 % (35/36) |
+| Hechos en la tabla estructurada | 381 (15 entidades, 477 citas) |
 
 ## Fuentes de datos
 
@@ -244,6 +262,8 @@ versionan capturas temporales de la auditoría.
 | Interfaz (Módulo 1) | React 19 + Vite + TypeScript; FastAPI + Uvicorn |
 | Arquitectura viva | Archify (`docs/arquitectura.html`) |
 | RAG (Módulo 2) | `fastembed` (ONNX) + `numpy`; índice `.npy` + SQLite |
+| Agente (Módulo 2) | LangChain 1.x + LangGraph (`create_agent`, middleware HITL/PII/resumen); SqliteSaver y SqliteStore |
+| Evaluación (Módulo 2) | Juez LLM propio con definiciones de Ragas; LangSmith opcional |
 | Desarrollo guiado por specs | Spec Kit (`.specify/`), con comandos para OpenCode y Claude Code |
 
 ## Requisitos e instalación
@@ -565,6 +585,25 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
   [`docs/informe_modulo2.md`](docs/informe_modulo2.md) · Decisión:
   [`docs/decisions/0016-rag-agent-langgraph.md`](docs/decisions/0016-rag-agent-langgraph.md).
 
+#### Resultados del Módulo 2
+
+Ejecución `variants-real-2026-11-11` con DeepSeek, 36 consultas por variante:
+
+| Métrica | Cadena | Agente | Criterio |
+|---|---:|---:|---|
+| Validez de citas | 100 % | 100 % | SC-003 ✅ |
+| Abstención fuera de corpus | 4/4 | 4/4 | ✅ |
+| Repreguntas, métrica estricta | 3/6 | 4/6 | SC-006 ≥ 80 % ❌ (pendiente de calificación humana) |
+| Respuestas < 10 s | 100 % | 94 % | SC-007 ✅ cadena · ❌ agente |
+| Latencia p95 | 7,8 s | 14,7 s | — |
+| Llamadas al modelo / tokens por consulta | 1,39 / 2.695 | 2,17 / 5.275 | — |
+| Relevancia (juez) | 0,885 | 0,825 | — |
+| Precisión de contexto | 0,391 | 0,448 | — |
+
+La **cadena** es la variante por defecto: más rápida y barata. El **agente** recupera mejor la evidencia esperada
+a costa de duplicar llamadas y tokens. La fidelidad del juez se repetirá con la corrección de los contextos
+estructurados.
+
 ### Experiencia web y API
 
 La entrada actual es una página React servida por FastAPI:
@@ -659,6 +698,8 @@ referencian por manifiesto y hash.
 │   ├── src/components/            # Hero, consola RAG, showcase y motivos
 │   └── src/styles/                # Tokens y composición editorial
 ├── src/proyecto_modelos_lenguaje/ # API FastAPI, RAG, pipeline y branding
+│   ├── rag/                       # Índice semántico y recuperación híbrida
+│   └── agent/                     # Grafos LangGraph, enrutador, memoria, HITL y juez
 ├── bitacora/                      # Bitácoras fechadas del proyecto
 ├── config/                        # Fuentes, cobertura, LLM, prompts y reglas
 ├── data/                          # Capas medallion versionadas por Git LFS
@@ -689,7 +730,7 @@ referencian por manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 408 pruebas unitarias, de integración y de contrato.
+- **Pruebas offline**: 643 pruebas unitarias, de integración y de contrato (616 Python + 27 web).
 - **Verificación completa**: `make check` ejecuta Ruff, pytest, Vitest y build web; CI separa Python y web.
 - **Auditoría visual**: `make audit` recorre 7 perfiles y 3 estados de datos con Playwright.
 - **Lint**: `uv run ruff check .` sin hallazgos.
@@ -753,8 +794,12 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - La evaluación de 40 preguntas tiene la herramienta lista (`module1_eval`), pero falta la ejecución real con
   DeepSeek y la calificación humana; el informe y el guion de demo son borradores y faltan las capturas de
   Consulta/Resumen/FAQ.
-- La recuperación semántica aún no reporta Recall@10/nDCG@10 y su umbral (0,30) no abstiene fuera de corpus
-  (similitudes de 0,80–0,87); ver [`docs/revision_pr34.md`](docs/revision_pr34.md).
+- El umbral semántico (0,30) no abstiene fuera de corpus por sí solo; en el Módulo 2 la abstención la resuelve
+  el enrutador (4/4). El híbrido no supera al semántico en Recall@10 y añade ~1,6 s de BM25.
+- Las repreguntas no cumplen SC-006 con la métrica estricta (3/6 y 4/6) y la fidelidad del juez está pendiente de
+  repetir; las 36 consultas etiquetadas esperan revisión del mantenedor.
+- El agente supera los 10 s en el 6 % de las consultas (p95 14,7 s).
+- Ragas no instala en Python 3.14; se usa un juez propio con sus definiciones.
 - Los PRs fusionados antes del 2026-11-07 no tienen aprobaciones formales en GitHub; desde entonces `main` exige
   revisión cruzada.
 - No existe aún una rúbrica oficial de la Entrega 2; cuando se publique se enmiendan la constitución y las
@@ -808,10 +853,16 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Guía de validación de la recuperación semántica](specs/013-semantic-rag-chatbot/quickstart.md)
 - [Decisión de arquitectura del RAG semántico](docs/decisions/0014-semantic-rag.md)
 - [Especificación de memoria, enrutador y agente (Módulo 2)](specs/014-rag-agent-memory-router/spec.md)
+- [Plan de memoria, enrutador y agente](specs/014-rag-agent-memory-router/plan.md)
+- [Tareas de memoria, enrutador y agente](specs/014-rag-agent-memory-router/tasks.md)
+- [Contrato de la API de conversación](specs/014-rag-agent-memory-router/contracts/chat-api.md)
 - [Decisión de alcance del Módulo 2](docs/decisions/0015-module2-scope.md)
+- [Decisión de arquitectura del agente RAG con LangGraph](docs/decisions/0016-rag-agent-langgraph.md)
+- [Política de memoria y privacidad](docs/memoria.md)
+- [Informe del Módulo 2](docs/informe_modulo2.md)
 - [Informe del Módulo 1 (borrador)](docs/informe_modulo1.md)
 - [Guion de demo 12+3](docs/demo.md)
-- [Evaluación de recuperación del Módulo 2](docs/evaluacion_modulo2.md)
+- [Evaluación del Módulo 2 (recuperación, enrutador, cadena vs. agente)](docs/evaluacion_modulo2.md)
 - [Revisión del PR #34](docs/revision_pr34.md)
 - [Prompt log](docs/prompt_log.md)
 - [Arquitectura interactiva (Archify)](docs/arquitectura.html)
@@ -849,7 +900,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [x] Blindaje contra inyección indirecta y Human-in-the-Loop.
 - [x] Juez con definiciones de Ragas (Ragas no instala en Python 3.14), LangSmith opcional, informe y demo.
 - [ ] Repreguntas ≥ 80 % (SC-006) con calificación humana y fidelidad del juez repetida.
-- [ ] Tag `v0.2.0-modulo2`.
+- [x] Tag `v0.2.0-modulo2`.
 
 ### Fase 3 — Módulo 3: productización y despliegue (40 %)
 

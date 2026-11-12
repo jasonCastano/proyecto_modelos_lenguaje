@@ -12,7 +12,7 @@ export function Footer() {
         </div>
         <div className="footer-links">
           <a href="#consola">Preguntar al corpus</a>
-          <a href="#modulo-1">Recorrer el Módulo 1</a>
+          <a href="#recorrido">Recorrer el proyecto</a>
           <a href="https://github.com/jasonCastano/proyecto_modelos_lenguaje">Repositorio</a>
           <a href="https://github.com/jasonCastano/proyecto_modelos_lenguaje/blob/main/docs/arquitectura.html">Arquitectura</a>
           <a href="https://www.manuelita.com/">Sitio oficial de Manuelita</a>

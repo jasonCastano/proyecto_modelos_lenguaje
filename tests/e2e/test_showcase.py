@@ -1,4 +1,4 @@
-"""E2E: the Module 1 story is complete and traceable."""
+"""E2E: the Module 1 and Module 2 story is complete and traceable."""
 
 from __future__ import annotations
 
@@ -13,12 +13,13 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def test_module_story_has_eight_sections_and_evidence(page: Page) -> None:
+def test_module_story_has_eleven_sections_and_evidence(page: Page) -> None:
     story = page.get_by_test_id("showcase-story")
     story.wait_for()
-    assert story.locator("article").count() == 8
+    assert story.locator("article").count() == 11
     assert "La información estaba dispersa" in story.inner_text()
     assert "Lo que todavía falta" in story.inner_text()
+    assert "Una conversación que recuerda y decide" in story.inner_text()
     assert page.locator('[data-testid="showcase-story"] a[href*="github"]').count() >= 4
 
 

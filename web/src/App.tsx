@@ -61,12 +61,12 @@ export default function App() {
             </span>
             <span>
               Manuelita
-              <small>RAG · Módulo 1</small>
+              <small>RAG · Módulos 1 y 2</small>
             </span>
           </a>
           <nav className="nav" aria-label="Navegación principal">
             <a href="#consola">Consultar</a>
-            <a href="#modulo-1">Módulo 1</a>
+            <a href="#recorrido">Recorrido</a>
             <a href="#productos">Productos</a>
             <a href="#limites">Límites</a>
           </nav>

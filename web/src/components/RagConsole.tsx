@@ -65,8 +65,8 @@ export function RagConsole({ health }: { health: HealthStatus | null }) {
               Pregunta como se pregunta en el campo.
             </h2>
             <p className="console-subtitle">
-              Tres tareas, una misma regla: responder solo con evidencia y citar la fuente. Si el
-              corpus no alcanza, la interfaz lo dice.
+              Tres tareas y una conversación, una misma regla: responder solo con evidencia y citar
+              la fuente. Si el corpus no alcanza, la interfaz lo dice.
             </p>
           </div>
           <span className="console-status" data-state={statusState}>

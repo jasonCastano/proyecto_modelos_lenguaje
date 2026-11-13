@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.4.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-12
+**Versión**: 1.5.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-13
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -486,26 +486,39 @@ Ragas no instala en Python 3.14; ADR 0016, informe `docs/informe_modulo2.md`, gu
 conversación y arquitectura regenerada. Pendientes antes del tag `v0.2.0-modulo2`: calificación humana de las
 repreguntas, repetir la fidelidad del juez y la revisión de `module2_queries.jsonl` por Jason.
 
+**Rúbrica oficial (2026-11-13)**: el Anuncio 006 publica la rúbrica de sustentación (13 ítems; ver §8.3).
+La ADR `0018-qdrant-y-rubrica-modulo2.md` cierra sus brechas: Qdrant como base vectorial, perfil en el Store,
+ruta mixta, streaming SSE, observabilidad por turno y herramienta estructurada con esquema Pydantic y conteo
+exacto. El mapa de evidencias y el guion están en `docs/rubrica_modulo2.md`.
+
 **Reglas mínimas**:
 
 1. **Embeddings**: modelo multilingüe elegido con evidencia de **retrieval en español** (MTEB filtrado por
    Retrieval/español; un promedio general alto no basta), costo y latencia. Registrar modelo, versión, dimensión,
    normalización, prefijos de consulta/documento y límite de tokens. El embedding **no es intercambiable**: cambiar
    de modelo obliga a reindexar.
-2. **Base vectorial**: embebida y persistente, con filtro por metadatos. La cátedra recomienda Chroma o FAISS;
-   el índice propio `numpy` + SQLite del PR #34 se acepta por decisión registrada (ADR 0014) siempre que se
-   exponga al agente como retriever/herramienta de LangChain. El índice es una **vista derivada** del
-   oro: se reconstruye con un comando y no se versiona como fuente; su manifiesto (modelo, fragmentación, fecha,
-   hash del oro) sí.
+2. **Base vectorial**: **Qdrant** (ADR 0018), con colección coseno, índice HNSW y filtro por *payload* en una
+   sola etapa.
+   - Con `QDRANT_URL` usa el servidor (ANN); sin ella, el modo local embebido en `data/module2/qdrant`, fuera
+     de Git.
+   - La colección se carga desde el índice versionado de la spec 013 (`rag qdrant build`). Si falta, la
+     recuperación vuelve a la matriz `numpy` y lo anota.
+   - El índice y la colección son **vistas derivadas** del oro: se reconstruyen con un comando y no se
+     versionan como fuente; su manifiesto (modelo, fragmentación, fecha, hash del oro) sí.
 3. **Chunking**: tamaño, solapamiento (10–20 %) y metadatos definidos y medidos; parámetros ANN (`ef_search`,
    `nprobe`) calibrados con datos del proyecto y documentados en la arquitectura.
 4. **Recuperación híbrida**: comparar denso, léxico (BM25 del Módulo 1) e híbrido con pesos calibrados.
 5. **Memoria a corto plazo**: estado por `thread_id` con checkpointer persistente (SQLite en local);
    recorte/resumen de hilos largos.
-6. **Memoria a largo plazo** (opcional, P3): Store entre hilos con namespace por usuario; declarar qué se guarda,
-   retención y borrado; nunca datos sensibles.
-7. **Enrutador**: puerta de decisión que clasifica cada mensaje en directo, documental, estructurado o fuera de
-   alcance, con confianza; con confianza baja pide aclaración. El origen estructurado (tabla SQL/CSV) se deriva
+6. **Memoria a largo plazo** (obligatoria desde la rúbrica, ítem 1.3): Store entre hilos con namespace por
+   usuario.
+   - Se guardan el perfil (`("users", id, "profile")`: nombre, trabajo, cargo y ciudad) y las preferencias
+     (`("users", id, "preferences")`).
+   - Solo se escribe con aprobación humana y se recupera con `search()` desde cualquier hilo.
+   - Se declaran qué se guarda, la retención y el borrado (`docs/memoria.md`); nunca datos sensibles.
+7. **Enrutador**: puerta de decisión que clasifica cada mensaje en directo, documental, estructurado, **mixto**
+   (tabla y documentos en el mismo turno) o fuera de alcance, con confianza; con confianza baja pide aclaración.
+   Las herramientas exponen esquemas Pydantic y la aritmética (conteos) la hace la herramienta, nunca el modelo. El origen estructurado (tabla SQL/CSV) se deriva
    de hechos y entidades del oro con cita por fila; acceso **solo lectura**.
 8. **RAG Chain vs. RAG Agent**: implementar ambas variantes (recuperar siempre vs. retriever como `@tool` con
    `create_agent`) y compararlas en calidad, latencia y número de llamadas.
@@ -515,10 +528,14 @@ repreguntas, repetir la fidelidad del juez y la revisión de `module2_queries.js
 10. **Evaluación de retrieval**: 20–30 consultas reales con documento correcto y ruta esperada etiquetados; comparar
     al menos dos configuraciones con **Recall@10, nDCG@10** y MRR, más precisión del enrutador, fidelidad de citas,
     latencia y llamadas. Línea base: BM25 del Módulo 1.
-11. **Evaluación de generación y observabilidad**: fidelidad y relevancia con Ragas y trazas con LangSmith (Clase
-    10), sin enviar claves ni datos sensibles; las pruebas offline siguen pasando sin red.
+11. **Evaluación de generación y observabilidad**: fidelidad y relevancia con Ragas (o un juez con sus
+    definiciones) y trazas con LangSmith (`run_name`, etiquetas y metadatos por turno), sin enviar claves ni
+    datos sensibles. Sin LangSmith, un log estructurado por turno en `$MANUELITA_STATE_DIR/logs/turns.jsonl`.
+    Las pruebas offline siguen pasando sin red.
 12. **Integración**: la app muestra por turno pregunta, ruta, fragmentos con puntaje, respuesta, fuentes e
-    historial; el modo demostración cubre todo sin red ni clave.
+    historial, con la respuesta en **streaming** (`POST /api/chat/stream`, SSE). El modo demostración cubre
+    todo sin red ni clave, incluido un corpus adversarial (`MANUELITA_DEMO_CORPUS=malicious`) para mostrar el
+    blindaje.
 13. **Prompts** nuevos (enrutador, agente, resumen de memoria) versionados en `prompts/` y `docs/prompt_log.md`.
 14. **Informe y demo** actualizados; tag `v0.2.0-modulo2`.
 
@@ -536,8 +553,8 @@ bundle Open Knowledge Format (LLM Wiki).
 - [ ] App con fragmentos, ruta y fuentes; modo demo completo; `make check` y CI verdes.
 - [ ] Informe, prompt log, ADRs y demo actualizados; tag `v0.2.0-modulo2`.
 
-**Nota**: a 2026-11-07 no hay especificación ni rúbrica oficial de la Entrega 2. Cuando se publiquen, se enmienda
-esta constitución y las specs 013/014 antes de continuar; no se improvisa sobre la marcha.
+**Nota**: la rúbrica oficial se publicó el 2026-11-13 y esta constitución se enmendó el mismo día (1.5.0). Una
+rúbrica nueva vuelve a exigir enmienda antes de continuar; no se improvisa sobre la marcha.
 
 ---
 
@@ -647,8 +664,18 @@ se puntúa de 1.0 a 5.0 y la nota es `1.0 + 4 × (puntos / 100)`.
 | Fase 2 — Agente con memoria y enrutador | 30 % | Puerta de la Fase 2; specs 013 y 014; reporte de retrieval |
 | Fase 3 — Productización y despliegue | 40 % | Canal real, despliegue, evaluación y observabilidad |
 
-La rúbrica detallada del Módulo 2 no se ha publicado; mientras tanto se asume la misma estructura del Módulo 1
-(repositorio, PRs, README, demo en vivo sin diapositivas) más las evidencias de la puerta de la Fase 2.
+**Rúbrica del Módulo 2** (Anuncio 006, 2026-11-13). La nota es Σ (peso × puntaje), en escala de 1,0 a 5,0:
+
+| Criterio | Ítems y pesos |
+|----------|---------------|
+| 1. Memoria (25 %) | 1.1 checkpointer y `thread_id` 10 % · 1.2 contexto multi-turno 8 % · 1.3 Store y namespace 7 % |
+| 2. Herramientas, router y blindaje (30 %) | 2.1 herramienta CSV/JSON con `@tool` 8 % · 2.2 RAG con Qdrant y ANN 8 % · 2.3 router 10 % · 2.4 blindaje 4 % |
+| 3. Aplicación y código (20 %) | 3.1 frontend propio desacoplado 10 % · 3.2 calidad y gobernanza 10 % |
+| 4. Documentación (15 %) | 4.1 diagramas 8 % · 4.2 diseño y evaluación del retrieval 7 % |
+| 5. Sustentación (10 %) | 5.1 los cuatro casos en vivo 6 % · 5.2 dominio individual 4 % |
+
+Streamlit, Gradio y los notebooks no se aceptan como interfaz. La evidencia de cada ítem está en
+`docs/rubrica_modulo2.md`.
 
 ---
 
@@ -890,4 +917,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.4.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-12
+**Versión**: 1.5.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-13

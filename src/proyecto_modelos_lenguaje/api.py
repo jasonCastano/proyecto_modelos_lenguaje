@@ -52,6 +52,7 @@ from .rag.embeddings import EmbeddingProfile, build_embedder
 from .rag.errors import IndexInvalidError, IndexUnavailableError
 from .rag.hybrid import HybridRetriever
 from .rag.index import load_index
+from .rag.vectorstore import attach_vector_store
 from .retrieval import (
     RetrievalError,
     load_entity_index,
@@ -119,13 +120,18 @@ def _retriever(mode: str) -> HybridRetriever | None:
             index = None
             notes.append(f"Índice no utilizable: {exc}")
         kind = "hash" if mode == "demo" else "fastembed"
+        units = _units()
+        vector_store, note = attach_vector_store(index, config.source, units, demo=mode == "demo")
+        if note:
+            notes.append(note)
         return HybridRetriever(
-            _units(),
+            units,
             index=index,
             embedder=build_embedder(profile, kind=kind),
             entity_index=_entity_index(),
             config=config,
             notes=tuple(notes),
+            vector_store=vector_store,
         )
     except Exception:
         return None

@@ -2,9 +2,9 @@
 
 Dos variantes comparables sobre el mismo estado de hilo (``ChatState``) y el mismo checkpointer:
 
-- **Cadena** (``build_chain_graph``): ``route → retrieve → answer → finalize``. Siempre recupera una
-  vez (documentos o tabla estructurada según la ruta) y responde con una sola llamada (más un
-  reintento si faltan citas).
+- **Cadena** (``build_chain_graph``): ``route → retrieve → answer → finalize``. Recupera según la
+  ruta (documentos, tabla estructurada o ambas en la ruta ``mixed``) y responde con una sola
+  llamada (más un reintento si faltan citas).
 - **Agente** (``build_agent_graph``): ``route → agent → finalize``. El agente de
   ``langchain.agents.create_agent`` decide cuándo y cuántas veces buscar, con
   ``ToolCallLimitMiddleware`` y ``ModelCallLimitMiddleware``.
@@ -55,14 +55,20 @@ from .actions import (
     build_write_tools,
     detect_write_intent,
     execute_action,
+    extract_profile,
+    is_profile_question,
 )
 from .config import AgentConfig
 from .guard import GuardedDocument, leaks_prompt, render_documents
 from .memory import (
+    PROFILE_KEYS,
+    PROFILE_LABELS,
     UserMemory,
+    UserProfile,
     build_summarization_middleware,
     compact_history,
     render_preferences,
+    render_profile,
     render_turn,
     turns_to_keep,
 )
@@ -92,6 +98,10 @@ CLARIFY_ANSWER = (
 NO_RETRIEVAL_ROUTES = frozenset({"direct", "out_of_scope", "clarify"})
 REVIEW_DECISIONS = ["approve", "edit", "reject"]
 REJECTED_ANSWER = "Entendido: no realicé la acción porque fue rechazada en la revisión."
+PROFILE_UNKNOWN_ANSWER = (
+    "Todavía no sé eso de ti: no me lo has contado en esta conversación ni está guardado en tu "
+    "perfil. Puedes decírmelo, por ejemplo «Me llamo Ana y trabajo en Carvajal»."
+)
 
 
 class ChatUnavailableError(RuntimeError):
@@ -120,6 +130,7 @@ class ChatState(TypedDict, total=False):
     retrievals: int
     intent: dict[str, Any] | None
     actions: list[dict[str, Any]]
+    profile_query: bool
 
 
 @dataclass(slots=True)
@@ -272,11 +283,19 @@ def hitl_request(tool: str, args: dict[str, Any]) -> dict[str, Any]:
 def _route_node(deps: GraphDeps):
     def route(state: ChatState) -> dict[str, Any]:
         intent = detect_write_intent(state["question"])
+        profile_query = intent is None and is_profile_question(state["question"])
         if intent is not None:
             decision = RouteDecision(
                 route="direct",
                 confidence=1.0,
                 reason=f"pedido de escritura: {intent.tool} (requiere aprobación)",
+                decided_by="rules",
+            )
+        elif profile_query:
+            decision = RouteDecision(
+                route="direct",
+                confidence=0.95,
+                reason="pregunta sobre el propio usuario: se responde con la memoria, sin buscar",
                 decided_by="rules",
             )
         else:
@@ -290,6 +309,7 @@ def _route_node(deps: GraphDeps):
             ).decision
         return {
             "intent": intent.to_dict() if intent else None,
+            "profile_query": profile_query,
             "decision": decision.model_dump(mode="json"),
             "fragments": [],
             "structured_rows": [],
@@ -311,15 +331,38 @@ def _after_route(state: ChatState) -> str:
 
 
 def system_with_preferences(system: str, deps: GraphDeps, state: ChatState) -> str:
-    """System prompt más las preferencias vigentes del usuario (memoria larga, US5)."""
+    """System prompt más preferencias y perfil del usuario (memoria larga, Store)."""
     store = get_store()
     if store is None:
         return system
-    items = UserMemory(store, deps.config.memory.preference_ttl_days).list(
-        state.get("user_id", "anon")
-    )
-    block = render_preferences(items)
-    return f"{system}\n\n{block}" if block else system
+    user_id = state.get("user_id", "anon")
+    items = UserMemory(store, deps.config.memory.preference_ttl_days).list(user_id)
+    blocks = [render_preferences(items), render_profile(UserProfile(store).list(user_id))]
+    extra = "\n\n".join(block for block in blocks if block)
+    return f"{system}\n\n{extra}" if extra else system
+
+
+def profile_from_turns(turns: Sequence[dict[str, Any]]) -> dict[str, str]:
+    """Datos de perfil que el usuario dijo en este hilo (memoria de corto plazo)."""
+    facts: dict[str, str] = {}
+    for turn in turns:
+        facts.update(extract_profile(str(turn.get("question", ""))))
+    return facts
+
+
+def profile_answer(stored: dict[str, str], in_thread: dict[str, str]) -> str:
+    """Respuesta a «¿Dónde trabajo?» que dice de qué memoria sale cada dato."""
+    if not stored and not in_thread:
+        return PROFILE_UNKNOWN_ANSWER
+    parts: list[str] = []
+    if stored:
+        listed = "; ".join(f"{PROFILE_LABELS[k]}: {stored[k]}" for k in PROFILE_KEYS if k in stored)
+        parts.append(f"Según tu perfil guardado (memoria de largo plazo): {listed}.")
+    extra = {k: v for k, v in in_thread.items() if stored.get(k) != v}
+    if extra:
+        listed = "; ".join(f"{PROFILE_LABELS[k]}: {extra[k]}" for k in PROFILE_KEYS if k in extra)
+        parts.append(f"En esta conversación me dijiste (memoria de corto plazo): {listed}.")
+    return " ".join(parts)
 
 
 def _run_action(deps: GraphDeps, state: ChatState, tool: str, args: dict[str, Any]) -> str:
@@ -352,9 +395,17 @@ def _action_node(deps: GraphDeps):
 
 
 def reply_node(state: ChatState) -> dict[str, Any]:
-    """Respuestas sin búsqueda: saludo o despedida, fuera de alcance y aclaración."""
+    """Respuestas sin búsqueda: perfil, saludo o despedida, fuera de alcance y aclaración."""
     route = state["decision"]["route"]
-    if route == "direct":
+    if state.get("profile_query"):
+        store = get_store()
+        stored = (
+            {item.key: item.value for item in UserProfile(store).list(state.get("user_id", "anon"))}
+            if store is not None
+            else {}
+        )
+        answer = profile_answer(stored, profile_from_turns(state.get("turns") or []))
+    elif route == "direct":
         farewell = FAREWELL.search(normalize(state["question"]))
         answer = FAREWELL_ANSWER if farewell else GREETING_ANSWER
     elif route == "out_of_scope":
@@ -408,15 +459,18 @@ def _retrieve_node(deps: GraphDeps):
         facts: list[StructuredFact] = []
         fragments: list[RetrievedFragment] = []
         documents: list[GuardedDocument] = []
-        if decision.route == "structured" and deps.store is not None:
+        if decision.route in {"structured", "mixed"} and deps.store is not None:
             facts, documents, _ = query_structured_impl(deps.store, query=query, limit=top_k)
             retrievals += 1
         if decision.route == "structured" and not facts:
             decision = apply_structured_fallback(decision, rows_found=0)
-        if decision.route == "documental":
+        if decision.route in {"documental", "mixed"}:
             if deps.retriever is None:
                 raise ChatUnavailableError("El índice de recuperación no está disponible.")
-            fragments, documents = search_documents_impl(deps.retriever, query, top_k=top_k)
+            found, guarded = search_documents_impl(deps.retriever, query, top_k=top_k)
+            fragments = found
+            # Los hechos llevan F#; los fragmentos, U#: en la ruta mixta conviven ambos.
+            documents = [*documents, *guarded]
             retrievals += 1
         fragment_rows, fact_rows, evidence = collect_evidence(fragments, facts)
         return {

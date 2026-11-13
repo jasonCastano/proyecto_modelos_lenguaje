@@ -131,6 +131,7 @@ def test_invalid_llm_output_falls_back_to_heuristic() -> None:
         ("¿En qué año inició operaciones Manuelita en Colombia?", "structured"),
         ("¿Qué porcentaje accionario tiene Manuelita en Vale do Paraná?", "structured"),
         ("¿Qué cultiva Manuelita en Perú?", "documental"),
+        ("Compara la meta del informe con cuántas toneladas produce Manuelita", "mixed"),
         ("¿Y eso cuánto es?", "clarify"),
         ("¿Cuál es mejor?", "clarify"),
     ],

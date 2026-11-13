@@ -1,16 +1,27 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
-import { deleteMemory, getMemory, getThread, resumeThread, sendChat } from "../lib/chat";
+import {
+  deleteMemory,
+  getMemory,
+  getThread,
+  resumeThread,
+  sendChat,
+  streamChat,
+} from "../lib/chat";
 import {
   ApiClientError,
   type ApiError,
+  type ChatResponse,
+  type ChatRoute,
   type ChatRouteName,
+  type ChatStreamEvent,
   type ChatTurn,
   type ChatVariant,
   type Citation,
   type MemoryItem,
   type Mode,
   type PendingAction,
+  type ProfileItem,
   type RetrievalTrace,
 } from "../lib/types";
 import { ApprovalCard } from "./ApprovalCard";
@@ -26,10 +37,18 @@ const PREFERENCE_LABEL: Record<string, string> = {
   language: "idioma",
 };
 
+const PROFILE_LABEL: Record<ProfileItem["key"], string> = {
+  name: "nombre",
+  workplace: "trabajo",
+  role: "cargo",
+  city: "ciudad",
+};
+
 const ROUTE_LABEL: Record<ChatRouteName, string> = {
   direct: "Directa",
   documental: "Documentos",
   structured: "Datos estructurados",
+  mixed: "Documentos + datos",
   out_of_scope: "Fuera de alcance",
   clarify: "Aclaración",
 };
@@ -59,15 +78,32 @@ function writeSession(key: string, value: string | null): void {
   }
 }
 
+function readLocal(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return readSession(key);
+  }
+}
+
+function writeLocal(key: string, value: string): void {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    writeSession(key, value);
+  }
+}
+
+/** Usuario anónimo estable en este navegador: la memoria de largo plazo lo usa como namespace. */
 function anonymousUser(): string {
-  const saved = readSession(USER_KEY);
+  const saved = readLocal(USER_KEY);
   if (saved) return saved;
   const random =
     typeof crypto !== "undefined" && "randomUUID" in crypto
       ? crypto.randomUUID().slice(0, 12)
       : Math.random().toString(36).slice(2, 14);
   const user = `anon-${random}`;
-  writeSession(USER_KEY, user);
+  writeLocal(USER_KEY, user);
   return user;
 }
 
@@ -160,6 +196,60 @@ export function ChatTurnCard({ turn }: { turn: ChatTurn }) {
   );
 }
 
+interface LiveTurn {
+  question: string;
+  route: ChatRoute | null;
+  stage: string;
+  text: string;
+}
+
+function liveStage(event: ChatStreamEvent, current: LiveTurn): LiveTurn {
+  switch (event.event) {
+    case "route":
+      return {
+        ...current,
+        route: event.route,
+        stage: ["direct", "out_of_scope", "clarify"].includes(event.route.route)
+          ? "Respondiendo sin buscar…"
+          : "Recuperando evidencia…",
+      };
+    case "tool":
+      return { ...current, stage: `Herramienta: ${event.tools.join(", ")}` };
+    case "retrieval":
+      return {
+        ...current,
+        stage: `${event.fragments} fragmentos · ${event.structured_rows} filas · generando…`,
+      };
+    case "token":
+      return { ...current, stage: "Escribiendo…", text: current.text + event.text };
+    default:
+      return current;
+  }
+}
+
+function LiveTurnCard({ live }: { live: LiveTurn }) {
+  return (
+    <li className="chat-turn" data-testid="chat-live" data-kind="streaming" aria-busy="true">
+      <p className="chat-question">{live.question}</p>
+      <div className="chat-route">
+        {live.route ? (
+          <span className="fragments-badge">
+            Ruta: {ROUTE_LABEL[live.route.route]} · {Math.round(live.route.confidence * 100)} %
+          </span>
+        ) : null}
+        <span className="fragments-meta">{live.stage}</span>
+      </div>
+      {live.text ? (
+        <div className="answer">
+          <p className="answer-body" aria-live="polite">
+            {live.text}
+          </p>
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
 export function ChatView({ mode }: { mode: Mode }) {
   const stored = useRef(readThread());
   const [variant, setVariant] = useState<ChatVariant>(stored.current?.variant ?? "chain");
@@ -171,15 +261,24 @@ export function ChatView({ mode }: { mode: Mode }) {
   const [actionQuestion, setActionQuestion] = useState("");
   const [error, setError] = useState<ApiError | null>(null);
   const [preferences, setPreferences] = useState<MemoryItem[]>([]);
+  const [profile, setProfile] = useState<ProfileItem[]>([]);
+  const [live, setLive] = useState<LiveTurn | null>(null);
   const userId = useRef(anonymousUser());
 
   function refreshPreferences() {
     void getMemory(userId.current)
-      .then((view) => setPreferences(view.items))
-      .catch(() => setPreferences([]));
+      .then((view) => {
+        setPreferences(view.items ?? []);
+        setProfile(view.profile ?? []);
+      })
+      .catch(() => {
+        setPreferences([]);
+        setProfile([]);
+      });
   }
 
   useEffect(() => {
+    refreshPreferences();
     const saved = stored.current;
     if (!saved) return;
     let active = true;
@@ -267,14 +366,23 @@ export function ChatView({ mode }: { mode: Mode }) {
     }
     setBusy(true);
     setError(null);
+    const input = { message: clean, threadId, userId: userId.current, variant, mode };
+    let current: LiveTurn = { question: clean, route: null, stage: "Enrutando…", text: "" };
+    setLive(current);
     try {
-      const response = await sendChat({
-        message: clean,
-        threadId,
-        userId: userId.current,
-        variant,
-        mode,
-      });
+      let response: ChatResponse;
+      try {
+        response = await streamChat(input, (event) => {
+          current = liveStage(event, current);
+          setLive(current);
+        });
+      } catch (caught) {
+        // Un servidor sin streaming (404) responde igual por la ruta clásica.
+        const notFound =
+          caught instanceof ApiClientError && caught.apiError.code === "http_error";
+        if (!notFound) throw caught;
+        response = await sendChat(input);
+      }
       setThreadId(response.thread_id);
       writeSession(THREAD_KEY, JSON.stringify({ id: response.thread_id, variant }));
       if (response.status === "pending_approval") {
@@ -284,9 +392,11 @@ export function ChatView({ mode }: { mode: Mode }) {
         setTurns((previous) => [...previous, response.turn]);
       }
       setMessage("");
+      refreshPreferences();
     } catch (caught) {
       report(caught);
     } finally {
+      setLive(null);
       setBusy(false);
     }
   }
@@ -312,14 +422,22 @@ export function ChatView({ mode }: { mode: Mode }) {
         </button>
       </div>
 
-      {preferences.length > 0 ? (
+      {preferences.length > 0 || profile.length > 0 ? (
         <div className="console-options" data-testid="preferences">
-          <span>
-            Tus preferencias:{" "}
-            {preferences
-              .map((item) => `${PREFERENCE_LABEL[item.key] ?? item.key}: ${item.value}`)
-              .join(" · ")}
-          </span>
+          {profile.length > 0 ? (
+            <span data-testid="profile">
+              Tu perfil (memoria de largo plazo):{" "}
+              {profile.map((item) => `${PROFILE_LABEL[item.key]}: ${item.value}`).join(" · ")}
+            </span>
+          ) : null}
+          {preferences.length > 0 ? (
+            <span>
+              Tus preferencias:{" "}
+              {preferences
+                .map((item) => `${PREFERENCE_LABEL[item.key] ?? item.key}: ${item.value}`)
+                .join(" · ")}
+            </span>
+          ) : null}
           <button
             className="btn btn-link"
             disabled={busy || action !== null || !threadId}
@@ -331,11 +449,12 @@ export function ChatView({ mode }: { mode: Mode }) {
         </div>
       ) : null}
 
-      {turns.length > 0 ? (
+      {turns.length > 0 || live ? (
         <ol className="chat-turns" aria-label="Historial de la conversación">
           {turns.map((turn) => (
             <ChatTurnCard key={turn.turn_id} turn={turn} />
           ))}
+          {live ? <LiveTurnCard live={live} /> : null}
         </ol>
       ) : (
         <p className="console-subtitle">

@@ -12,6 +12,8 @@ from proyecto_modelos_lenguaje.agent.tools import (
     ToolTrace,
     build_read_tools,
     count_entities,
+    count_fact,
+    count_intent,
     mark_anomalies,
     render_count,
 )
@@ -148,3 +150,27 @@ def test_entity_count_is_exact_and_not_left_to_the_model(store) -> None:
     assert render_count("subsidiary", total, names).startswith(
         f"Conteo exacto calculado por la herramienta: {total} filiales"
     )
+
+
+@pytest.mark.parametrize(
+    ("question", "entity_type"),
+    [
+        ("¿Cuántas filiales tiene Manuelita?", "subsidiary"),
+        ("¿Qué marcas tiene Manuelita?", "brand"),
+        ("¿Cuántas certificaciones tiene?", "certification"),
+        ("¿Qué produce Manuelita?", None),
+    ],
+)
+def test_count_intent_detects_count_and_list_questions(question: str, entity_type) -> None:
+    # Act / Assert
+    assert count_intent(question) == entity_type
+
+
+def test_count_fact_carries_the_exact_total_and_a_citation(store) -> None:
+    # Act
+    fact = count_fact(store, "subsidiary")
+    total, _ = count_entities(store, "subsidiary")
+
+    # Assert
+    assert fact is not None and fact.value == str(total)
+    assert fact.snippet.startswith("Conteo exacto calculado por la herramienta")

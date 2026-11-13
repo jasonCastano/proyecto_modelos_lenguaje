@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import uuid
 from functools import lru_cache
 
@@ -57,6 +58,7 @@ from .rag.hybrid import HybridRetriever
 from .rag.index import load_index
 from .rag.vectorstore import attach_vector_store
 from .retrieval import (
+    GoldUnit,
     RetrievalError,
     load_entity_index,
     load_faq_seeds,
@@ -76,6 +78,8 @@ from .tasks import (
 
 GOLD_DIR = PROJECT_ROOT / "data" / "gold"
 DEMO_INDEX = PROJECT_ROOT / "tests" / "fixtures" / "rag" / "index"
+MALICIOUS_DIR = PROJECT_ROOT / "tests" / "fixtures" / "rag" / "malicious"
+DEMO_CORPUS_ENV = "MANUELITA_DEMO_CORPUS"
 WEB_DIST = PROJECT_ROOT / "web" / "dist"
 APP_TITLE = "RAG Ingenio Manuelita"
 
@@ -112,6 +116,12 @@ def _model(task: str, mode: str):
     return build_chat_model(load_llm_config())
 
 
+def _malicious_units() -> tuple[GoldUnit, ...]:
+    """Unidades del corpus adversarial de prueba (``tests/fixtures/rag/malicious``)."""
+    lines = (MALICIOUS_DIR / "gold_malicious.jsonl").read_text(encoding="utf-8").splitlines()
+    return tuple(GoldUnit.from_dict(json.loads(line)) for line in lines if line.strip())
+
+
 @lru_cache(maxsize=2)
 def _retriever(mode: str) -> HybridRetriever | None:
     """Build (once per mode) the hybrid retriever; never fail the request."""
@@ -119,14 +129,20 @@ def _retriever(mode: str) -> HybridRetriever | None:
         config = load_retrieval_config()
         profile = EmbeddingProfile.from_config(config.embedding)
         notes: list[str] = []
+        adversarial = mode == "demo" and os.environ.get(DEMO_CORPUS_ENV) == "malicious"
         index_dir = DEMO_INDEX if mode == "demo" else config.index_dir
+        if adversarial:
+            # Caso 5 de la rúbrica en vivo: corpus de prueba con un documento que intenta
+            # «ignorar las instrucciones anteriores»; la interfaz lo muestra marcado como dato.
+            index_dir = MALICIOUS_DIR / "index"
+            notes.append("Corpus demo adversarial (MANUELITA_DEMO_CORPUS=malicious)")
         try:
             index = load_index(index_dir, profile)
         except (IndexUnavailableError, IndexInvalidError) as exc:
             index = None
             notes.append(f"Índice no utilizable: {exc}")
         kind = "hash" if mode == "demo" else "fastembed"
-        units = _units()
+        units = _malicious_units() if adversarial else _units()
         vector_store, note = attach_vector_store(index, config.source, units, demo=mode == "demo")
         if note:
             notes.append(note)

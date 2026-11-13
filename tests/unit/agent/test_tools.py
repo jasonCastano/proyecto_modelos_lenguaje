@@ -8,7 +8,13 @@ from pathlib import Path
 import pytest
 
 from proyecto_modelos_lenguaje.agent.structured import StructuredStore, build_structured_store
-from proyecto_modelos_lenguaje.agent.tools import ToolTrace, build_read_tools, mark_anomalies
+from proyecto_modelos_lenguaje.agent.tools import (
+    ToolTrace,
+    build_read_tools,
+    count_entities,
+    mark_anomalies,
+    render_count,
+)
 from proyecto_modelos_lenguaje.config import PROJECT_ROOT
 from proyecto_modelos_lenguaje.rag.config import load_retrieval_config
 from proyecto_modelos_lenguaje.rag.embeddings import EmbeddingProfile, HashEmbedder
@@ -79,7 +85,7 @@ def test_query_structured_by_subject_and_by_free_text(retriever, store) -> None:
     # Assert
     assert '<documento id="F1"' in by_subject and "35.000" in by_subject
     assert '<documento id="F2"' in by_text and "41.000" in by_text
-    assert "Océanos (subsidiary)" in entities
+    assert "Conteo exacto calculado por la herramienta" in entities and "Océanos" in entities
     assert [fact.fact_id for fact in trace.facts][:2] == ["fact_3", "fact_4"]
     assert trace.calls == 3
 
@@ -112,3 +118,33 @@ def test_mark_anomalies_flags_embedded_instructions() -> None:
     assert flagged.anomalous is True
     assert "ignora_instrucciones" in flagged.anomaly_reasons
     assert clean is fragment
+
+
+def test_query_structured_schema_is_pydantic_and_rejects_empty_calls(retriever, store) -> None:
+    # Arrange
+    _, query = build_read_tools(retriever, store, ToolTrace())
+
+    # Act
+    schema = query.args_schema.model_json_schema()
+
+    # Assert
+    assert schema["properties"]["entity_type"]["anyOf"][0]["enum"] == [
+        "subsidiary",
+        "brand",
+        "certification",
+        "company",
+    ]
+    assert schema["properties"]["limit"]["maximum"] == 20
+    with pytest.raises(ValueError):
+        query.invoke({})
+
+
+def test_entity_count_is_exact_and_not_left_to_the_model(store) -> None:
+    # Act
+    total, names = count_entities(store, "subsidiary")
+
+    # Assert
+    assert total == len(names) == len(store.list_entities("subsidiary"))
+    assert render_count("subsidiary", total, names).startswith(
+        f"Conteo exacto calculado por la herramienta: {total} filiales"
+    )

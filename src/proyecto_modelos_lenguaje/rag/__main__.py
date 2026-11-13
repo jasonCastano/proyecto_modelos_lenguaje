@@ -35,6 +35,13 @@ from .errors import (
 from .evaluate import DEFAULT_WARMUP, evaluate_questions, load_questions, render_markdown
 from .hybrid import HybridRetriever, RetrievalTrace
 from .index import build_index, load_index, verify_index
+from .vectorstore import (
+    attach_vector_store,
+    build_collection,
+    collection_matches,
+    load_qdrant_settings,
+    open_client,
+)
 
 GOLD_RELATIVE = Path("data") / "gold" / "knowledge_units.jsonl"
 
@@ -52,12 +59,17 @@ def _retriever(args, root: Path) -> HybridRetriever:
         entity_index = load_entity_index(gold_dir)
     except RetrievalError:
         entity_index = None
+    notes: list[str] = []
     try:
         index = load_index(config.index_dir, profile)
-        notes: tuple[str, ...] = ()
     except (IndexUnavailableError, IndexInvalidError) as exc:
         index = None
-        notes = (f"Índice no utilizable: {exc}",)
+        notes.append(f"Índice no utilizable: {exc}")
+    vector_store = None
+    if getattr(args, "vector_store", "qdrant") == "qdrant" and args.embedder == "fastembed":
+        vector_store, note = attach_vector_store(index, config.source, units)
+        if note:
+            notes.append(note)
     embedder = build_embedder(profile, kind=args.embedder)
     return HybridRetriever(
         units,
@@ -65,7 +77,8 @@ def _retriever(args, root: Path) -> HybridRetriever:
         embedder=embedder,
         entity_index=entity_index,
         config=config,
-        notes=notes,
+        notes=tuple(notes),
+        vector_store=vector_store,
     )
 
 
@@ -106,6 +119,14 @@ def _build_parser() -> argparse.ArgumentParser:
         command.add_argument("--embedder", choices=("fastembed", "hash"), default="fastembed")
         command.add_argument("--json", action="store_true")
 
+    qdrant_parser = subparsers.add_parser(
+        "qdrant", help="Carga el índice en Qdrant (HNSW + payload) o muestra su estado"
+    )
+    qdrant_sub = qdrant_parser.add_subparsers(dest="qdrant_command", required=True)
+    qdrant_build = qdrant_sub.add_parser("build")
+    qdrant_build.add_argument("--force", action="store_true")
+    qdrant_sub.add_parser("status")
+
     search_parser = subparsers.add_parser("search", help="Muestra la traza de recuperación")
     search_parser.add_argument("question")
     search_parser.add_argument(
@@ -113,6 +134,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     search_parser.add_argument("--k", type=int, default=8)
     search_parser.add_argument("--embedder", choices=("fastembed", "hash"), default="fastembed")
+    search_parser.add_argument(
+        "--vector-store",
+        choices=("qdrant", "numpy"),
+        default="qdrant",
+        help="Qdrant si la colección existe; numpy fuerza la matriz en memoria.",
+    )
     search_parser.add_argument("--json", action="store_true")
 
     evaluate_parser = subparsers.add_parser("evaluate", help="Compara modos y escribe el informe")
@@ -120,6 +147,12 @@ def _build_parser() -> argparse.ArgumentParser:
     evaluate_parser.add_argument("--out", default=None)
     evaluate_parser.add_argument("--json-out", default=None)
     evaluate_parser.add_argument("--embedder", choices=("fastembed", "hash"), default="fastembed")
+    evaluate_parser.add_argument(
+        "--vector-store",
+        choices=("qdrant", "numpy"),
+        default="qdrant",
+        help="Qdrant si la colección existe; numpy fuerza la matriz en memoria.",
+    )
     evaluate_parser.add_argument("--top-k", type=int, default=12)
     evaluate_parser.add_argument("--run-id", default="")
     evaluate_parser.add_argument(
@@ -146,6 +179,50 @@ def _print_trace(trace: RetrievalTrace, *, as_json: bool) -> None:
         status = fragment.status
         reason = f" ({fragment.reason})" if fragment.reason else ""
         print(f"- {fragment.unit_id} [{status}] {score:.3f} {origin}{reason} · {fragment.title}")
+
+
+def _qdrant_command(args, config, root: Path) -> int:
+    """``rag qdrant build|status``: la colección de Qdrant a partir del índice versionado."""
+    settings = load_qdrant_settings(config.source)
+    try:
+        index = load_index(config.index_dir, _profile(config))
+    except (IndexUnavailableError, IndexInvalidError) as exc:
+        print(f"índice no utilizable: {exc}")
+        return 5
+    try:
+        client = open_client(settings)
+    except Exception as exc:
+        print(f"Qdrant no disponible en {settings.location}: {exc}")
+        return 6
+    try:
+        if args.qdrant_command == "status":
+            ready = collection_matches(client, settings, index)
+            state = "lista" if ready else "ausente o desactualizada"
+            print(f"colección {settings.collection} en {settings.location}: {state}")
+            if ready:
+                info = client.get_collection(settings.collection)
+                hnsw = info.config.hnsw_config
+                print(
+                    f"puntos: {index.manifest.count} · dimensión {index.manifest.dimension} · "
+                    f"coseno · HNSW m={hnsw.m} ef_construct={hnsw.ef_construct}"
+                )
+            return 0 if ready else 2
+        units = {unit.unit_id: unit for unit in load_gold_units(root / "data" / "gold")}
+
+        def progress(done: int, total: int) -> None:
+            print(f"\r  {done}/{total} fragmentos", end="", flush=True)
+
+        written = build_collection(
+            client, settings, index, units, force=args.force, progress=progress
+        )
+        if written:
+            print()
+            print(f"colección {settings.collection} lista en {settings.location}: {written} puntos")
+        else:
+            print(f"colección {settings.collection} ya estaba al día ({settings.location})")
+        return 0
+    finally:
+        client.close()
 
 
 def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None) -> int:
@@ -199,6 +276,9 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
                 f"{manifest.dimension}d · {manifest.count} fragmentos"
             )
         return 0
+
+    if args.command == "qdrant":
+        return _qdrant_command(args, config, root)
 
     try:
         retriever = _retriever(args, root)

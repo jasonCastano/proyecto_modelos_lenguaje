@@ -22,3 +22,13 @@ weight_semantic = 0.65
 weight_lexical = 0.35
 both_bonus = 0.05
 dedup_similarity = 0.98
+
+[qdrant]
+# Base vectorial del Módulo 2 (ADR 0018). Con QDRANT_URL se usa el servidor (índice HNSW, ANN);
+# sin ella, el modo local embebido en `path` (fuera de Git). Se carga con `rag qdrant build`.
+enabled = true
+path = "data/module2/qdrant"
+collection = "manuelita_fragments"
+hnsw_m = 16
+hnsw_ef_construct = 128
+hnsw_ef = 128

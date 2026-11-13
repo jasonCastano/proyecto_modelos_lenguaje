@@ -404,17 +404,20 @@ def _action_node(deps: GraphDeps):
 def reply_node(state: ChatState) -> dict[str, Any]:
     """Respuestas sin búsqueda: perfil, saludo o despedida, fuera de alcance y aclaración."""
     route = state["decision"]["route"]
+    store = get_store()
+    stored = (
+        {item.key: item.value for item in UserProfile(store).list(state.get("user_id", "anon"))}
+        if store is not None
+        else {}
+    )
     if state.get("profile_query"):
-        store = get_store()
-        stored = (
-            {item.key: item.value for item in UserProfile(store).list(state.get("user_id", "anon"))}
-            if store is not None
-            else {}
-        )
         answer = profile_answer(stored, profile_from_turns(state.get("turns") or []))
     elif route == "direct":
         farewell = FAREWELL.search(normalize(state["question"]))
         answer = FAREWELL_ANSWER if farewell else GREETING_ANSWER
+        if not farewell and stored.get("name"):
+            # Memoria de largo plazo: el saludo usa el nombre guardado en el Store.
+            answer = answer.replace("¡Hola!", f"¡Hola, {stored['name']}!", 1)
     elif route == "out_of_scope":
         answer = OUT_OF_SCOPE_ANSWER
     else:

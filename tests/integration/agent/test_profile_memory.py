@@ -106,3 +106,19 @@ def test_mixed_route_retrieves_documents_in_the_chain() -> None:
     # Assert
     assert outcome.turn.route.route == "mixed"
     assert outcome.turn.metrics.tool_calls >= 1
+
+
+def test_greeting_uses_the_stored_name() -> None:
+    # Arrange
+    service = make_service()
+    paused = service.send(INTRO, user_id=USER)
+    service.resume(
+        paused.thread_id, action_id=paused.pending_action["action_id"], decision="approve"
+    )
+
+    # Act
+    greeting = service.send("Hola, buenas tardes", user_id=USER)
+
+    # Assert
+    assert greeting.turn.answer.startswith("¡Hola, Ana!")
+    assert greeting.turn.metrics.tool_calls == 0

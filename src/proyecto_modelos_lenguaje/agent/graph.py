@@ -28,7 +28,9 @@ from langchain.agents import create_agent
 from langchain.agents.middleware import (
     HumanInTheLoopMiddleware,
     ModelCallLimitMiddleware,
+    ModelRequest,
     ToolCallLimitMiddleware,
+    dynamic_prompt,
 )
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.language_models import BaseChatModel
@@ -36,11 +38,12 @@ from langchain_core.messages import (
     AIMessage,
     BaseMessage,
     HumanMessage,
-    SystemMessage,
     ToolMessage,
 )
+from langchain_core.messages.utils import count_tokens_approximately, trim_messages
 from langchain_core.outputs import LLMResult
-from langchain_core.runnables import RunnableConfig
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import Runnable, RunnableConfig, RunnablePassthrough
 from langgraph.config import get_store
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
@@ -522,21 +525,37 @@ def _chain_user_message(state: ChatState, deps: GraphDeps) -> str:
     return "\n\n".join(parts)
 
 
+# Plantilla de la cadena RAG (LCEL): el system prompt y el mensaje del turno entran como
+# variables, así que las llaves del contenido recuperado nunca se interpretan como plantilla.
+CHAIN_PROMPT = ChatPromptTemplate.from_messages([("system", "{system}"), ("human", "{user}")])
+
+
+def build_answer_chain(deps: GraphDeps) -> Runnable:
+    """``RunnablePassthrough.assign(user=…) | ChatPromptTemplate | modelo``.
+
+    Recibe ``{"state": ChatState, "system": str}`` y arma el mensaje del turno (resumen, historial,
+    evidencia delimitada y pregunta) antes de llamar al modelo.
+    """
+    return (
+        RunnablePassthrough.assign(user=lambda data: _chain_user_message(data["state"], deps))
+        | CHAIN_PROMPT
+        | deps.model
+    )
+
+
 def _answer_node(deps: GraphDeps):
     system = load_agent_prompt("agent").render()
+    chain = build_answer_chain(deps)
 
     def answer(state: ChatState, config: RunnableConfig) -> dict[str, Any]:
         evidence = state.get("evidence") or {}
         if not evidence:
             return {"answer": FALLBACK_ANSWER, "citations": [], "fallback": True}
-        user = _chain_user_message(state, deps)
         personalized = system_with_preferences(system, deps, state)
         text, citations, fallback = FALLBACK_ANSWER, [], True
         for attempt in range(2):
             instruction = personalized if attempt == 0 else f"{personalized}\n\n{STRICT_REMINDER}"
-            response = deps.model.invoke(
-                [SystemMessage(content=instruction), HumanMessage(content=user)], config
-            )
+            response = chain.invoke({"state": state, "system": instruction}, config)
             raw = message_text(response)
             text, citations, fallback = validate_answer(raw, evidence, system)
             if not fallback or is_model_fallback(raw):
@@ -573,11 +592,20 @@ def build_chain_graph(
 
 
 def _agent_messages(state: ChatState, deps: GraphDeps) -> list[BaseMessage]:
-    messages: list[BaseMessage] = []
+    history: list[BaseMessage] = []
     summary = state.get("summary", "")
     for turn in _recent_turns(state, deps):
-        messages.append(HumanMessage(content=turn["question"]))
-        messages.append(AIMessage(content=turn["answer"]))
+        history.append(HumanMessage(content=turn["question"]))
+        history.append(AIMessage(content=turn["answer"]))
+    # Recorte por tokens: los turnos recientes nunca desbordan la ventana; lo anterior ya está
+    # en el resumen (``compact_history``).
+    messages: list[BaseMessage] = trim_messages(
+        history,
+        max_tokens=deps.config.memory.summarize_after_tokens,
+        token_counter=count_tokens_approximately,
+        strategy="last",
+        start_on="human",
+    )
     question = f"<pregunta>{state['question']}</pregunta>"
     if summary:
         question = f"<resumen>\n{summary}\n</resumen>\n\n{question}"
@@ -617,11 +645,17 @@ def _agent_node(deps: GraphDeps):
             *build_read_tools(deps.retriever, deps.store, trace, top_k=limits.chain_top_k),
             *build_write_tools(run),
         ]
+
+        @dynamic_prompt
+        def personalized_prompt(_request: ModelRequest) -> str:
+            """System prompt con preferencias y perfil del Store, leído en cada llamada."""
+            return system_with_preferences(system, deps, state)
+
         runnable = create_agent(
             deps.model,
             tools=tools,
-            system_prompt=system_with_preferences(system, deps, state),
             middleware=[
+                personalized_prompt,
                 *build_pii_middleware(),
                 HumanInTheLoopMiddleware(
                     interrupt_on={

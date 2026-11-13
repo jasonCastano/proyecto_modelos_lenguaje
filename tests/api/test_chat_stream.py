@@ -101,6 +101,12 @@ def test_adversarial_demo_corpus_shows_the_injection_as_data(
     # Arrange: el caso 5 de la rúbrica, en vivo desde la interfaz
     monkeypatch.setenv("MANUELITA_STATE_DIR", str(tmp_path / "state"))
     monkeypatch.setenv("MANUELITA_DEMO_CORPUS", "malicious")
+
+    def no_gold():  # en CI el oro no se descarga (LFS): el corpus adversarial no lo necesita
+        raise RuntimeError("sin oro")
+
+    monkeypatch.setattr(api, "_entity_index", no_gold)
+    monkeypatch.setattr(api, "_units", no_gold)
     api._retriever.cache_clear()
     api._chat_service.cache_clear()
     client = TestClient(api.app)
@@ -112,6 +118,7 @@ def test_adversarial_demo_corpus_shows_the_injection_as_data(
     ).json()
 
     # Assert
+    assert "anomalies" in payload, payload
     reasons = {reason for anomaly in payload["anomalies"] for reason in anomaly["reasons"]}
     assert "ignora_instrucciones" in reasons
     assert "HACKEADO" not in payload["turn"]["answer"]

@@ -58,6 +58,7 @@ from .rag.hybrid import HybridRetriever
 from .rag.index import load_index
 from .rag.vectorstore import attach_vector_store
 from .retrieval import (
+    EntityIndex,
     GoldUnit,
     RetrievalError,
     load_entity_index,
@@ -150,7 +151,7 @@ def _retriever(mode: str) -> HybridRetriever | None:
             units,
             index=index,
             embedder=build_embedder(profile, kind=kind),
-            entity_index=_entity_index(),
+            entity_index=EntityIndex() if adversarial else _entity_index(),
             config=config,
             notes=tuple(notes),
             vector_store=vector_store,

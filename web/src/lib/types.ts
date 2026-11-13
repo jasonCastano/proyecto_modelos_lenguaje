@@ -148,7 +148,13 @@ export class ApiClientError extends Error {
 // ---------------------------------------------------------------- conversación (spec 014, US1)
 
 export type ChatVariant = "chain" | "agent";
-export type ChatRouteName = "direct" | "documental" | "structured" | "out_of_scope" | "clarify";
+export type ChatRouteName =
+  | "direct"
+  | "documental"
+  | "structured"
+  | "mixed"
+  | "out_of_scope"
+  | "clarify";
 export type ChatStatus = "answered" | "fallback" | "clarify" | "pending_approval";
 
 export interface ChatRoute {
@@ -206,7 +212,7 @@ export interface ChatTurn {
 
 export interface PendingAction {
   action_id: string;
-  tool: "forget_memory" | "save_preference" | "export_conversation";
+  tool: "forget_memory" | "save_preference" | "save_profile" | "export_conversation";
   args: Record<string, unknown>;
   proposed_at: string;
   decision?: "approve" | "edit" | "reject" | null;
@@ -243,7 +249,24 @@ export interface MemoryItem {
   expires_at: string;
 }
 
+export interface ProfileItem {
+  key: "name" | "workplace" | "role" | "city";
+  value: string;
+  created_at: string;
+}
+
 export interface MemoryView {
   user_id: string;
   items: MemoryItem[];
+  profile?: ProfileItem[];
 }
+
+/** Eventos de `POST /api/chat/stream` (Server-Sent Events). */
+export type ChatStreamEvent =
+  | { event: "start"; thread_id: string }
+  | { event: "route"; route: ChatRoute }
+  | { event: "retrieval"; fragments: number; structured_rows: number; tool_calls: number }
+  | { event: "tool"; tools: string[] }
+  | { event: "token"; text: string }
+  | { event: "done"; response: ChatResponse }
+  | { event: "error"; error: { code: string; message: string } };

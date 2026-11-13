@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
+import json
+import os
 import uuid
 from functools import lru_cache
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent.config import AgentConfigError, load_agent_config, resolve_state_dir
 from .agent.memory import build_checkpointer, build_store
+from .agent.observability import configure_tracing
 from .agent.service import ChatError, ChatService, build_deps
 from .api_models import (
     ApiError,
@@ -52,7 +56,10 @@ from .rag.embeddings import EmbeddingProfile, build_embedder
 from .rag.errors import IndexInvalidError, IndexUnavailableError
 from .rag.hybrid import HybridRetriever
 from .rag.index import load_index
+from .rag.vectorstore import attach_vector_store
 from .retrieval import (
+    EntityIndex,
+    GoldUnit,
     RetrievalError,
     load_entity_index,
     load_faq_seeds,
@@ -72,8 +79,13 @@ from .tasks import (
 
 GOLD_DIR = PROJECT_ROOT / "data" / "gold"
 DEMO_INDEX = PROJECT_ROOT / "tests" / "fixtures" / "rag" / "index"
+MALICIOUS_DIR = PROJECT_ROOT / "tests" / "fixtures" / "rag" / "malicious"
+DEMO_CORPUS_ENV = "MANUELITA_DEMO_CORPUS"
 WEB_DIST = PROJECT_ROOT / "web" / "dist"
 APP_TITLE = "RAG Ingenio Manuelita"
+
+load_dotenv(PROJECT_ROOT / ".env", override=False)
+configure_tracing()
 
 app = FastAPI(title=APP_TITLE, version="0.1.0")
 app.add_middleware(
@@ -105,6 +117,12 @@ def _model(task: str, mode: str):
     return build_chat_model(load_llm_config())
 
 
+def _malicious_units() -> tuple[GoldUnit, ...]:
+    """Unidades del corpus adversarial de prueba (``tests/fixtures/rag/malicious``)."""
+    lines = (MALICIOUS_DIR / "gold_malicious.jsonl").read_text(encoding="utf-8").splitlines()
+    return tuple(GoldUnit.from_dict(json.loads(line)) for line in lines if line.strip())
+
+
 @lru_cache(maxsize=2)
 def _retriever(mode: str) -> HybridRetriever | None:
     """Build (once per mode) the hybrid retriever; never fail the request."""
@@ -112,20 +130,31 @@ def _retriever(mode: str) -> HybridRetriever | None:
         config = load_retrieval_config()
         profile = EmbeddingProfile.from_config(config.embedding)
         notes: list[str] = []
+        adversarial = mode == "demo" and os.environ.get(DEMO_CORPUS_ENV) == "malicious"
         index_dir = DEMO_INDEX if mode == "demo" else config.index_dir
+        if adversarial:
+            # Caso 5 de la rúbrica en vivo: corpus de prueba con un documento que intenta
+            # «ignorar las instrucciones anteriores»; la interfaz lo muestra marcado como dato.
+            index_dir = MALICIOUS_DIR / "index"
+            notes.append("Corpus demo adversarial (MANUELITA_DEMO_CORPUS=malicious)")
         try:
             index = load_index(index_dir, profile)
         except (IndexUnavailableError, IndexInvalidError) as exc:
             index = None
             notes.append(f"Índice no utilizable: {exc}")
         kind = "hash" if mode == "demo" else "fastembed"
+        units = _malicious_units() if adversarial else _units()
+        vector_store, note = attach_vector_store(index, config.source, units, demo=mode == "demo")
+        if note:
+            notes.append(note)
         return HybridRetriever(
-            _units(),
+            units,
             index=index,
             embedder=build_embedder(profile, kind=kind),
-            entity_index=_entity_index(),
+            entity_index=EntityIndex() if adversarial else _entity_index(),
             config=config,
             notes=tuple(notes),
+            vector_store=vector_store,
         )
     except Exception:
         return None
@@ -422,7 +451,20 @@ def _chat_service() -> ChatService:
         build_checkpointer(state_dir),
         lambda mode: build_deps(mode, config, _retriever(mode)),
         store=build_store(state_dir),
+        log_dir=state_dir / "logs",
     )
+
+
+@app.get("/api/observability")
+def observability():
+    """Estado de las trazas (LangSmith) y del log estructurado, sin secretos."""
+    status = configure_tracing()
+    try:
+        state_dir = resolve_state_dir(load_agent_config().state_env_var)
+        log_path: str | None = str(state_dir / "logs" / "turns.jsonl")
+    except Exception:
+        log_path = None
+    return {**status, "structured_log": log_path}
 
 
 def _chat_error(exc: Exception) -> JSONResponse:
@@ -458,6 +500,33 @@ def chat(payload: ChatRequest):
     except Exception as exc:
         return _chat_error(exc)
     return outcome.to_dict()
+
+
+def _sse(event: dict[str, object]) -> str:
+    """Un evento Server-Sent Events: ``event: <tipo>`` y ``data: <json>``."""
+    kind = str(event.get("event", "message"))
+    return f"event: {kind}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+
+@app.post("/api/chat/stream")
+def chat_stream(payload: ChatRequest):
+    """Misma conversación que ``/api/chat`` pero en streaming (SSE): ruta, recuperación,
+    tokens de la respuesta y, al final, el turno validado con sus citas."""
+    try:
+        _thread_id, events = _chat_service().open_stream(
+            payload.message,
+            thread_id=payload.thread_id,
+            user_id=payload.user_id,
+            variant=payload.variant,
+            mode=payload.mode,
+        )
+    except Exception as exc:
+        return _chat_error(exc)
+    return StreamingResponse(
+        (_sse(event) for event in events),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.post("/api/threads/{thread_id}/resume", response_model=ChatResponse)

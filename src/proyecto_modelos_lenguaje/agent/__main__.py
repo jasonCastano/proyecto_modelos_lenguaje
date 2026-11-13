@@ -22,6 +22,7 @@ from .structured import (
     StructuredExistsError,
     StructuredGoldError,
     StructuredInvalidError,
+    StructuredStore,
     build_structured_store,
 )
 
@@ -92,6 +93,9 @@ def _build_structured(args: argparse.Namespace, root: Path) -> int:
         f"tabla estructurada lista en {config.structured_path} · {manifest.entity_count} "
         f"entidades · {manifest.fact_count} hechos · {manifest.citation_count} citas"
     )
+    with StructuredStore(config.structured_path, gold_dir=root / GOLD_DIR) as store:
+        facts_csv, entities_json = store.export_tables(config.structured_path)
+    print(f"exportada como {facts_csv.name} y {entities_json.name} (misma tabla, solo lectura)")
     return 0
 
 
@@ -198,9 +202,15 @@ def _cli_retriever(mode: str, root: Path):
     except (IndexUnavailableError, IndexInvalidError) as exc:
         index = None
         notes.append(f"Índice no utilizable: {exc}")
+    from ..rag.vectorstore import attach_vector_store
+
     gold = root / GOLD_DIR
+    units = load_gold_units(gold)
+    vector_store, note = attach_vector_store(index, config.source, units, demo=mode == "demo")
+    if note:
+        notes.append(note)
     return HybridRetriever(
-        load_gold_units(gold),
+        units,
         index=index,
         embedder=build_embedder(
             profile, kind=DEMO_EMBEDDER_KIND if mode == "demo" else "fastembed"
@@ -208,6 +218,7 @@ def _cli_retriever(mode: str, root: Path):
         entity_index=load_entity_index(gold),
         config=config,
         notes=tuple(notes),
+        vector_store=vector_store,
     )
 
 

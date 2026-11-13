@@ -61,6 +61,9 @@ describe("ChatTurnCard", () => {
     renderTurn(makeTurn());
 
     expect(screen.getByTestId("route-chip")).toHaveTextContent("Ruta: Documentos · 86 %");
+    expect(screen.getByTestId("turn-trace")).toHaveTextContent(
+      "Decidió: LLM (alternativa: Datos estructurados)",
+    );
     expect(screen.getByTestId("retrieved-fragments")).toHaveTextContent("Productos de Manuelita");
     expect(screen.getByText(/produce azúcar/)).toBeInTheDocument();
     expect(within(screen.getByTestId("source-list")).getByText("[U1]")).toBeInTheDocument();
@@ -115,13 +118,43 @@ describe("ChatTurnCard con fragmentos anómalos", () => {
   });
 });
 
+const EMPTY_MEMORY = { user_id: "anon-x", items: [], profile: [] };
+
+/** Respuesta SSE como la de `POST /api/chat/stream`: ruta, tokens y turno final. */
+function sse(response: ChatResponse): Response {
+  const events: Array<Record<string, unknown>> = [
+    { event: "start", thread_id: response.thread_id },
+    { event: "route", route: response.turn.route },
+    ...response.turn.answer.split(/(?<= )/).map((text) => ({ event: "token", text })),
+    { event: "done", response },
+  ];
+  const body = events.map((event) => `event: ${event.event}\ndata: ${JSON.stringify(event)}\n\n`).join("");
+  return new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+}
+
+type Handler = (url: string, init?: RequestInit) => Response | undefined;
+
+/** `fetch` simulado por ruta; la memoria responde vacía salvo que un handler diga otra cosa. */
+function routedFetch(handler: Handler) {
+  return vi.fn((url: string, init?: RequestInit) => {
+    const response =
+      handler(url, init) ?? new Response(JSON.stringify(EMPTY_MEMORY), { status: 200 });
+    return Promise.resolve(response);
+  });
+}
+
+function chatCalls(fetchMock: ReturnType<typeof routedFetch>) {
+  return fetchMock.mock.calls.filter((call) => String(call[0]).includes("/chat"));
+}
+
 describe("ChatView", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     window.sessionStorage.clear();
+    window.localStorage.clear();
   });
 
-  it("envía el mensaje, conserva el hilo y lo reutiliza en la repregunta", async () => {
+  it("envía el mensaje en streaming, conserva el hilo y lo reutiliza en la repregunta", async () => {
     const first: ChatResponse = {
       thread_id: "8f6c1e0a-0000-4000-8000-000000000001",
       turn: makeTurn(),
@@ -133,10 +166,10 @@ describe("ChatView", () => {
       ...first,
       turn: makeTurn({ turn_id: 2, question: "¿Y dónde lo produce?" }),
     };
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify(first), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(second), { status: 200 }));
+    const queue = [first, second];
+    const fetchMock = routedFetch((url) =>
+      url.endsWith("/chat/stream") ? sse(queue.shift() as ChatResponse) : undefined,
+    );
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
 
@@ -148,11 +181,40 @@ describe("ChatView", () => {
     await user.click(screen.getByTestId("chat-send"));
     await screen.findByText("¿Y dónde lo produce?");
 
-    const bodies = fetchMock.mock.calls.map((call) => JSON.parse(String(call[1]?.body)));
+    const bodies = chatCalls(fetchMock).map((call) => JSON.parse(String(call[1]?.body)));
+    expect(String(chatCalls(fetchMock)[0][0])).toContain("/api/chat/stream");
     expect(bodies[0]).toMatchObject({ thread_id: null, variant: "chain", mode: "demo" });
     expect(bodies[1].thread_id).toBe(first.thread_id);
     expect(screen.getAllByTestId("chat-turn")).toHaveLength(2);
+    expect(screen.queryByTestId("chat-live")).not.toBeInTheDocument();
     expect(window.sessionStorage.getItem("manuelita.chat.thread")).toContain(first.thread_id);
+  });
+
+  it("si el servidor no tiene streaming usa la ruta clásica", async () => {
+    const answered: ChatResponse = {
+      thread_id: "8f6c1e0a-0000-4000-8000-000000000009",
+      turn: makeTurn(),
+      status: "answered",
+      pending_action: null,
+      anomalies: [],
+    };
+    const fetchMock = routedFetch((url) => {
+      if (url.endsWith("/chat/stream")) return new Response("{}", { status: 404 });
+      if (url.endsWith("/chat")) return new Response(JSON.stringify(answered), { status: 200 });
+      return undefined;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    render(<ChatView mode="demo" />);
+    await user.type(screen.getByTestId("chat-input"), "¿Qué produce Manuelita?");
+    await user.click(screen.getByTestId("chat-send"));
+
+    expect(await screen.findByText(/produce azúcar/)).toBeInTheDocument();
+    expect(chatCalls(fetchMock).map((call) => String(call[0]))).toEqual([
+      "/api/chat/stream",
+      "/api/chat",
+    ]);
   });
 
   it("pausa ante una acción de escritura y la reanuda al aprobar", async () => {
@@ -179,10 +241,11 @@ describe("ChatView", () => {
       status: "answered",
       pending_action: null,
     };
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify(pending), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify(resumed), { status: 200 }));
+    const fetchMock = routedFetch((url) => {
+      if (url.endsWith("/chat/stream")) return sse(pending);
+      if (url.endsWith("/resume")) return new Response(JSON.stringify(resumed), { status: 200 });
+      return undefined;
+    });
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
 
@@ -194,77 +257,134 @@ describe("ChatView", () => {
     await user.click(screen.getByRole("button", { name: "Aprobar" }));
     await screen.findByText(/Guardé tu preferencia/);
 
-    expect(String(fetchMock.mock.calls[1][0])).toContain(`/threads/${pending.thread_id}/resume`);
-    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
+    const resumeCall = fetchMock.mock.calls.find((call) => String(call[0]).endsWith("/resume"));
+    expect(String(resumeCall?.[0])).toContain(`/threads/${pending.thread_id}/resume`);
+    expect(JSON.parse(String(resumeCall?.[1]?.body))).toEqual({
       action_id: "act_01",
       decision: "approve",
     });
     expect(screen.queryByTestId("approval-card")).not.toBeInTheDocument();
   });
 
-  it("muestra las preferencias guardadas y pide aprobación para olvidarlas", async () => {
+  it("muestra el perfil y las preferencias guardadas y pide aprobación para olvidarlas", async () => {
     const threadId = "8f6c1e0a-0000-4000-8000-000000000003";
     const pending: ChatResponse = {
       thread_id: threadId,
-      turn: makeTurn({ question: "Prefiero respuestas en viñetas", answer: "", citations: [], fragments: [] }),
+      turn: makeTurn({ question: "Me llamo Ana y trabajo en Carvajal", answer: "", citations: [], fragments: [] }),
       status: "pending_approval",
       pending_action: {
         action_id: "act_01",
-        tool: "save_preference",
-        args: { key: "response_format", value: "viñetas" },
+        tool: "save_profile",
+        args: { name: "Ana", workplace: "Carvajal" },
         proposed_at: "2026-11-11T10:00:00Z",
       },
       anomalies: [],
     };
     const saved: ChatResponse = {
       ...pending,
-      turn: makeTurn({ answer: "Guardé tu preferencia.", citations: [], fragments: [] }),
+      turn: makeTurn({ answer: "Guardé en tu perfil.", citations: [], fragments: [] }),
       status: "answered",
       pending_action: null,
     };
-    const memory = {
+    let approved = false;
+    const memory = () => ({
       user_id: "anon-x",
-      items: [
-        {
-          key: "response_format",
-          value: "viñetas",
-          created_at: "2026-11-11T10:00:00Z",
-          expires_at: "2026-12-11T10:00:00Z",
-        },
-      ],
-    };
+      items: approved
+        ? [
+            {
+              key: "response_format",
+              value: "viñetas",
+              created_at: "2026-11-11T10:00:00Z",
+              expires_at: "2026-12-11T10:00:00Z",
+            },
+          ]
+        : [],
+      profile: approved
+        ? [
+            { key: "name", value: "Ana", created_at: "2026-11-11T10:00:00Z" },
+            { key: "workplace", value: "Carvajal", created_at: "2026-11-11T10:00:00Z" },
+          ]
+        : [],
+    });
     const forget = {
       status: "pending_approval",
       thread_id: threadId,
       pending_action: { action_id: "act_02", tool: "forget_memory", args: {}, proposed_at: "x" },
     };
-    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
-      const body =
-        url.endsWith("/chat")
-          ? pending
-          : url.endsWith("/resume")
-            ? saved
-            : init?.method === "DELETE"
-              ? forget
-              : memory;
-      return Promise.resolve(
-        new Response(JSON.stringify(body), { status: init?.method === "DELETE" ? 202 : 200 }),
-      );
+    const fetchMock = routedFetch((url, init) => {
+      if (url.endsWith("/chat/stream")) return sse(pending);
+      if (url.endsWith("/resume")) {
+        approved = true;
+        return new Response(JSON.stringify(saved), { status: 200 });
+      }
+      if (init?.method === "DELETE") return new Response(JSON.stringify(forget), { status: 202 });
+      return new Response(JSON.stringify(memory()), { status: 200 });
     });
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
 
     render(<ChatView mode="demo" />);
-    await user.type(screen.getByTestId("chat-input"), "Prefiero respuestas en viñetas");
+    await user.type(screen.getByTestId("chat-input"), "Me llamo Ana y trabajo en Carvajal");
     await user.click(screen.getByTestId("chat-send"));
-    await user.click(await screen.findByRole("button", { name: "Aprobar" }));
-    const strip = await screen.findByTestId("preferences");
-    expect(strip).toHaveTextContent("formato: viñetas");
+    const card = await screen.findByTestId("approval-card");
+    expect(card).toHaveTextContent("Guardar datos de tu perfil");
+    expect(within(card).getByLabelText("Lugar de trabajo")).toHaveValue("Carvajal");
+    await user.click(within(card).getByRole("button", { name: "Aprobar" }));
+    expect(await screen.findByTestId("profile")).toHaveTextContent("nombre: Ana · trabajo: Carvajal");
+    expect(screen.getByTestId("preferences")).toHaveTextContent("formato: viñetas");
     await user.click(screen.getByRole("button", { name: "Olvidar" }));
 
     expect(await screen.findByTestId("approval-card")).toHaveTextContent("Olvidar tus preferencias");
     const deleteCall = fetchMock.mock.calls.find((call) => call[1]?.method === "DELETE");
     expect(String(deleteCall?.[0])).toContain(`/memory/anon-`);
     expect(String(deleteCall?.[0])).toContain(`thread_id=${threadId}`);
+    expect(window.localStorage.getItem("manuelita.chat.user")).toMatch(/^anon-/);
+  });
+
+  it("ofrece los casos de la rúbrica y retoma una conversación reciente", async () => {
+    const answered: ChatResponse = {
+      thread_id: "8f6c1e0a-0000-4000-8000-000000000010",
+      turn: makeTurn({ question: "¿Cuántas filiales tiene Manuelita?" }),
+      status: "answered",
+      pending_action: null,
+      anomalies: [],
+    };
+    const thread = {
+      thread_id: answered.thread_id,
+      variant: "chain",
+      turns: [answered.turn],
+      summary: "",
+      status: "idle",
+      pending_action: null,
+    };
+    const fetchMock = routedFetch((url) => {
+      if (url.endsWith("/chat/stream")) return sse(answered);
+      if (url.includes("/threads/")) return new Response(JSON.stringify(thread), { status: 200 });
+      if (url.endsWith("/observability")) {
+        return new Response(
+          JSON.stringify({ langsmith: false, project: null, structured_log: "turns.jsonl" }),
+          { status: 200 },
+        );
+      }
+      return undefined;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    render(<ChatView mode="demo" />);
+    expect(await screen.findByTestId("observability")).toHaveTextContent("log JSON por turno");
+    await user.click(screen.getByRole("button", { name: "Dato estructurado" }));
+    expect(screen.getByTestId("chat-input")).toHaveValue("¿Cuántas filiales tiene Manuelita?");
+    await user.click(screen.getByTestId("chat-send"));
+    const recent = await screen.findByTestId("recent-threads");
+    expect(recent).toHaveTextContent("¿Cuántas filiales tiene Manuelita? · Cadena");
+    await user.click(screen.getByRole("button", { name: "Nueva conversación" }));
+    expect(screen.queryByTestId("chat-turn")).not.toBeInTheDocument();
+    await user.click(within(recent).getByRole("button", { name: /Cuántas filiales/ }));
+
+    expect(await screen.findByTestId("chat-turn")).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some((call) => String(call[0]).endsWith(`/threads/${answered.thread_id}`)),
+    ).toBe(true);
   });
 });

@@ -10,9 +10,9 @@ export function LimitsNote() {
           <p>
             El corpus cubre información pública y el sistema cita o declara vacíos; no es asesoría
             oficial de Manuelita. Del Módulo 1 faltan la evaluación real de las 40 preguntas y el
-            ensayo de la demo. Del Módulo 2 faltan la calificación humana de las repreguntas y
-            repetir la fidelidad del juez; además, el agente supera los 10 s en el 6 % de las
-            consultas.
+            ensayo de la demo. Del Módulo 2 faltan la calificación humana de las repreguntas, Qdrant
+            con servidor dedicado (hoy corre embebido), el gatekeeper Jev y el despliegue; además,
+            el agente supera los 10 s en el 6 % de las consultas.
           </p>
           <p>
             El contenido de terceros pertenece a sus fuentes. El proyecto es académico y no

@@ -7,11 +7,13 @@
   "additionalProperties": false,
   "required": ["route", "confidence", "reason", "decided_by"],
   "properties": {
-    "route": {"enum": ["direct", "documental", "structured", "out_of_scope", "clarify"]},
+    "route": {"enum": ["direct", "documental", "structured", "mixed", "out_of_scope", "clarify"]},
     "confidence": {"type": "number", "minimum": 0, "maximum": 1},
     "reason": {"type": "string", "maxLength": 200},
     "decided_by": {"enum": ["rules", "llm", "demo"]},
-    "alternative": {"enum": ["direct", "documental", "structured", "out_of_scope", "clarify", null]},
+    "alternative": {
+      "enum": ["direct", "documental", "structured", "mixed", "out_of_scope", "clarify", null]
+    },
     "fallback_route": {"enum": ["documental", null]}
   }
 }

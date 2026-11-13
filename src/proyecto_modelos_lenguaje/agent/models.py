@@ -7,9 +7,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-Route = Literal["direct", "documental", "structured", "out_of_scope", "clarify"]
+Route = Literal["direct", "documental", "structured", "mixed", "out_of_scope", "clarify"]
 DecidedBy = Literal["rules", "llm", "demo"]
-WriteTool = Literal["forget_memory", "save_preference", "export_conversation"]
+WriteTool = Literal["forget_memory", "save_preference", "save_profile", "export_conversation"]
 Decision = Literal["approve", "edit", "reject"]
 
 

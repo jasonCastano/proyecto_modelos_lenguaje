@@ -22,6 +22,7 @@ from ..silver.cleaning import estimate_tokens
 from .config import RetrievalConfig, load_retrieval_config
 from .embeddings import Embedder
 from .index import LoadedIndex
+from .vectorstore import QdrantVectorStore
 
 VALID_ORIGINS = ("semantic", "lexical", "both")
 VALID_STATUSES = ("used", "omitted_threshold", "omitted_budget", "omitted_duplicate")
@@ -119,7 +120,7 @@ def _clamp(value: float) -> float:
 
 
 class SemanticRetriever:
-    """Búsqueda por similitud coseno sobre la matriz normalizada."""
+    """Búsqueda vectorial: Qdrant si hay colección; si no, coseno sobre la matriz normalizada."""
 
     def __init__(
         self,
@@ -128,33 +129,64 @@ class SemanticRetriever:
         config: RetrievalConfig,
         *,
         notes: Sequence[str] = (),
+        vector_store: QdrantVectorStore | None = None,
     ) -> None:
         self.index = index
         self.embedder = embedder
         self.config = config
         self.notes = tuple(notes)
+        self.vector_store = vector_store
 
     @property
     def available(self) -> bool:
         return self.index is not None
 
-    def search(self, question: str, *, top_k: int | None = None) -> list[RetrievedFragment]:
+    @property
+    def filters_in_store(self) -> bool:
+        """Qdrant aplica el filtro por *payload* durante la búsqueda (una sola etapa)."""
+        return self.vector_store is not None
+
+    def _ranked(
+        self, query: np.ndarray, limit: int, metadata_filter: MetadataFilter | None
+    ) -> list[tuple[int, float]]:
+        if self.vector_store is not None:
+            active = metadata_filter if metadata_filter and metadata_filter.active else None
+            hits = self.vector_store.search(
+                query,
+                limit=limit,
+                topics=sorted(active.topics) if active else (),
+                authorities=sorted(active.authorities) if active else (),
+                unit_types=sorted(active.unit_types) if active else (),
+            )
+            return [(hit.position, hit.score) for hit in hits]
+        assert self.index is not None
+        scores = self.index.vectors @ query
+        order = np.argsort(-scores, kind="stable")[:limit]
+        return [(int(position), float(scores[int(position)])) for position in order]
+
+    def search(
+        self,
+        question: str,
+        *,
+        top_k: int | None = None,
+        metadata_filter: MetadataFilter | None = None,
+    ) -> list[RetrievedFragment]:
         if self.index is None or not question.strip():
             return []
         query = np.asarray(self.embedder.embed_query(question), dtype=np.float32)
         if query.ndim != 1 or query.shape[0] != self.index.manifest.dimension:
             return []
-        scores = self.index.vectors @ query
         limit = top_k or self.config.hybrid.semantic_top_k
-        order = np.argsort(-scores, kind="stable")[:limit]
         fragments: list[RetrievedFragment] = []
         seen: set[str] = set()
-        for position in order:
-            fragment = self.index.fragments[int(position)]
+        for position, raw_score in self._ranked(query, limit, metadata_filter):
+            if not 0 <= position < len(self.index.fragments):
+                continue
+            fragment = self.index.fragments[position]
             if fragment.unit_id in seen:
                 continue
             seen.add(fragment.unit_id)
-            score = _clamp(float(scores[int(position)]))
+            score = _clamp(raw_score)
             fragments.append(
                 RetrievedFragment(
                     unit_id=fragment.unit_id,
@@ -228,13 +260,16 @@ class HybridRetriever:
         entity_index: EntityIndex | None = None,
         config: RetrievalConfig | None = None,
         notes: Sequence[str] = (),
+        vector_store: QdrantVectorStore | None = None,
     ) -> None:
         self.units = tuple(units)
         self.units_by_id = {unit.unit_id: unit for unit in self.units}
         self.config = config or load_retrieval_config()
         self.entity_index = entity_index or EntityIndex()
         self.semantic = (
-            SemanticRetriever(index, embedder, self.config, notes=notes) if embedder else None
+            SemanticRetriever(index, embedder, self.config, notes=notes, vector_store=vector_store)
+            if embedder
+            else None
         )
         self.notes = tuple(notes)
 
@@ -254,15 +289,19 @@ class HybridRetriever:
         started = time.perf_counter()
         active_filter = metadata_filter if metadata_filter and metadata_filter.active else None
         semantic_top_k = None
-        if active_filter is not None and self.semantic is not None:
-            # Se sobremuestrea porque el filtro se aplica después de la búsqueda vectorial.
+        in_store = self.semantic is not None and self.semantic.filters_in_store
+        if active_filter is not None and self.semantic is not None and not in_store:
+            # Sin Qdrant se sobremuestrea porque el filtro se aplica después de la búsqueda.
             semantic_top_k = self.config.hybrid.semantic_top_k * 5
-        semantic_fragments = (
-            self.semantic.search(question, top_k=semantic_top_k)
-            if self.semantic is not None
-            else []
-        )
-        if active_filter is not None:
+        if self.semantic is None:
+            semantic_fragments: list[RetrievedFragment] = []
+        elif in_store and active_filter is not None:
+            semantic_fragments = self.semantic.search(
+                question, top_k=semantic_top_k, metadata_filter=active_filter
+            )
+        else:
+            semantic_fragments = self.semantic.search(question, top_k=semantic_top_k)
+        if active_filter is not None and not in_store:
             semantic_fragments = [
                 fragment
                 for fragment in semantic_fragments

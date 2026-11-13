@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-653%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-681%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/M%C3%B3dulo%202-v0.2.0-brightgreen)](CONSTITUTION.md)
 
@@ -26,7 +26,20 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual (2026-11-12, constitución v1.4.0)**: el **Módulo 2 está entregado** con el tag
+> **Estado actual (2026-11-13, constitución v1.5.0)**: el proyecto cumple la **rúbrica de sustentación del
+> Módulo 2** (Anuncio 006, sustentación el 14 de noviembre). Desde el PR #57:
+> - **Qdrant** es la base vectorial (HNSW y filtro por *payload*).
+> - La **memoria de largo plazo** guarda el perfil en el Store: «Me llamo Ana…» y, en otro hilo, «¿Dónde trabajo?».
+> - El enrutador tiene una **ruta mixta** (tabla y documentos en un turno).
+> - La herramienta estructurada usa **esquemas Pydantic** y cuenta de forma exacta.
+> - La web responde **en streaming (SSE)**, con conversaciones recientes, atajos de los casos de la demo y
+>   traza por turno.
+> - Cada turno queda trazado para **LangSmith** o en un log JSON.
+>
+> Evidencia ítem por ítem y guion de 15 minutos en [`docs/rubrica_modulo2.md`](docs/rubrica_modulo2.md);
+> decisión en [ADR 0018](docs/decisions/0018-qdrant-y-rubrica-modulo2.md).
+>
+> **Estado al 2026-11-12 (constitución v1.4.0)**: el **Módulo 2 está entregado** con el tag
 > [`v0.2.0-modulo2`](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2):
 > recuperación semántica e híbrida (spec 013), conversación con memoria por hilo, enrutador, tabla estructurada,
 > variantes cadena y agente con LangGraph, blindaje contra inyección, aprobación humana de escrituras y
@@ -85,15 +98,22 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
 - **Procedencia completa**: URL, título, fecha UTC, hash SHA-256, fuente, tipo, idioma y categoría.
 - **Q&A anclado al contexto**: el modelo responde solo con el contexto recuperado, cita fuentes y declara cuando
   no tiene evidencia.
-- **Recuperación semántica e híbrida** (Módulo 2): embeddings `multilingual-e5-small` en local, índice
-  `numpy` + SQLite reconstruible y fusión con la búsqueda léxica BM25, con traza visible en la API y la interfaz.
-- **Agente conversacional** (Módulo 2): memoria por hilo con LangGraph, enrutador directo / documental /
-  estructurado / fuera de alcance, variantes cadena y agente, blindaje contra inyección indirecta y aprobación
-  humana de toda escritura (preferencias, olvido, exportación).
+- **Recuperación semántica e híbrida** (Módulo 2): embeddings `multilingual-e5-small` en local, colección
+  **Qdrant** (coseno, HNSW, *payload* filtrable) cargada desde un índice reconstruible y fusión con la búsqueda
+  léxica BM25, con traza visible en la API y la interfaz.
+- **Agente conversacional** (Módulo 2):
+  - Memoria de corto plazo por hilo (`SqliteSaver`, sobrevive al reinicio) y de largo plazo por usuario
+    (`SqliteStore`: perfil y preferencias).
+  - Enrutador directo / documental / estructurado / mixto / fuera de alcance.
+  - Variantes cadena (LCEL) y agente (`create_agent`).
+  - Blindaje contra inyección indirecta y aprobación humana de toda escritura (perfil, preferencias,
+    olvido, exportación).
 - **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores;
   en el Módulo 2, Recall@10/nDCG@10/MRR, acierto del enrutador y comparación cadena vs. agente con juez LLM.
-- **Interfaz web propia** con hero editorial, consola RAG, fuentes citadas y modo demostración.
-- **Página del Módulo 1** que explica datos, arquitectura, prompts, app, métricas y límites.
+- **Interfaz web propia** (React + FastAPI, sin Streamlit) con hero editorial, consola RAG, conversación en
+  streaming, fuentes citadas, conversaciones recientes y modo demostración.
+- **Recorrido de los Módulos 1 y 2** que explica datos, arquitectura, prompts, Qdrant, memoria, enrutador,
+  blindaje, app, métricas y límites.
 - **Verificación E2E** con Playwright y matriz responsive.
 
 ## Arquitectura
@@ -106,12 +126,12 @@ flowchart LR
     C[Catálogo SQLite<br/>procedencia · dedupe · auditoría]
     V[Plata<br/>data/silver<br/>limpieza + chunks]
     G[Oro<br/>data/gold<br/>base de conocimiento]
-    I[(Índice semántico<br/>e5-small 384d<br/>numpy + SQLite)]
+    I[(Qdrant<br/>e5-small 384d · HNSW<br/>payload filtrable)]
     H[Recuperación híbrida<br/>semántica + BM25 · traza]
     L[LangChain + DeepSeek<br/>Resumen · FAQ · Q&A]
     UI[Web React + FastAPI<br/>citas · fragmentos]
     T[(Tabla estructurada<br/>SQLite · hechos del oro)]
-    R[Enrutador<br/>directo · documental · estructurado]
+    R[Enrutador<br/>directo · documental · estructurado · mixto]
     M[LangGraph · cadena / agente<br/>memoria por hilo · HITL]
     D[Despliegue y canales<br/>WhatsApp / Telegram]
 
@@ -128,6 +148,88 @@ flowchart LR
     T --> M
     M --> UI
     M -. Fase 3 .-> D
+```
+
+### Agente del Módulo 2
+
+Cumplimiento de la rúbrica de sustentación, ítem por ítem, y guion de la demo:
+[`docs/rubrica_modulo2.md`](docs/rubrica_modulo2.md). Decisión:
+[ADR 0018](docs/decisions/0018-qdrant-y-rubrica-modulo2.md).
+
+**Grafo del agente (LangGraph)**. Las dos variantes comparten el estado del hilo, la puerta de decisión y el
+cierre del turno:
+
+```mermaid
+flowchart LR
+    START((inicio)) --> route{route<br/>reglas → LLM}
+    route -- "saludo · fuera de alcance · aclaración · perfil" --> reply[reply<br/>sin buscar]
+    route -- "escritura (perfil, preferencia, olvido, exportar)" --> action[action<br/>interrupt → aprobación humana]
+    route -- "documental · estructurada · mixta" --> work
+    subgraph cadena [Variante cadena]
+        work --> retrieve[retrieve<br/>Qdrant + BM25 y/o tabla]
+        retrieve --> answer[answer<br/>RunnablePassthrough → ChatPromptTemplate → DeepSeek]
+    end
+    subgraph agente [Variante agente]
+        work -.-> ag[create_agent<br/>@tool + middleware<br/>HITL · PII · resumen · límites]
+    end
+    reply --> finalize
+    action --> finalize
+    answer --> finalize
+    ag --> finalize
+    finalize[finalize<br/>turno · métricas · resumen] --> END((fin))
+```
+
+**Memoria: checkpointer frente a Store**:
+
+```mermaid
+flowchart TB
+    subgraph corto [Corto plazo · por hilo]
+        CK[(SqliteSaver<br/>checkpoints.sqlite3)]
+        T1[thread_id A<br/>turnos · resumen · acciones]
+        T2[thread_id B]
+        CK --- T1
+        CK --- T2
+    end
+    subgraph largo [Largo plazo · por usuario]
+        ST[(SqliteStore<br/>memory.sqlite3)]
+        NP["(users, id, profile)<br/>nombre · trabajo · cargo · ciudad"]
+        NF["(users, id, preferences)<br/>formato · temas · idioma · TTL 30 días"]
+        ST --- NP
+        ST --- NF
+    end
+    T1 -- "save_profile (con aprobación)" --> NP
+    NP -- "store.search() en otro hilo" --> T2
+    T1 -. "trim_messages · SummarizationMiddleware" .-> T1
+```
+
+**Herramientas y router**:
+
+```mermaid
+flowchart LR
+    M[Mensaje] --> RG{Reglas<br/>0 llamadas}
+    RG -- saludo / fuera de alcance --> D[Respuesta directa]
+    RG -- pregunta sobre el usuario --> P[Perfil del Store]
+    RG -- ambiguo --> LLM{Router LLM<br/>JSON + Pydantic}
+    LLM -- documental --> SD["@tool search_documents<br/>Qdrant top-k + BM25"]
+    LLM -- estructurada --> QS["@tool query_structured<br/>SQLite / CSV · conteo exacto"]
+    LLM -- mixta --> SD
+    LLM -- mixta --> QS
+    LLM -- "confianza < 0,6" --> C[Aclaración]
+    SD --> G[Contexto en documento<br/>como datos pasivos]
+    QS --> G
+    G --> A[Respuesta con citas U# / F#<br/>validadas]
+```
+
+**Trazas**: cada turno lleva `run_name`, etiquetas y metadatos para LangSmith (`LANGSMITH_TRACING`,
+`LANGSMITH_API_KEY` y `LANGSMITH_PROJECT`). También se registra como JSON en
+`$MANUELITA_STATE_DIR/logs/turns.jsonl` (ruta, quién decidió, herramientas, latencia y tokens).
+
+```mermaid
+flowchart LR
+    UI[React<br/>POST /api/chat/stream] -- SSE: route · tool · token · done --> UI
+    UI --> API[FastAPI] --> GR[LangGraph]
+    GR -- callbacks --> LS[(LangSmith<br/>proyecto manuelita-modulo2)]
+    GR --> LOG[(turns.jsonl<br/>log estructurado)]
 ```
 
 **Decisiones clave**:
@@ -184,7 +286,7 @@ versionan capturas temporales de la auditoría.
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
-| Pruebas | ✅ | 653 pruebas offline (626 Python + 27 web) y E2E de la conversación |
+| Pruebas | ✅ | 681 pruebas offline (652 Python + 29 web) y E2E de la conversación |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
 | App web + LangChain | ✅ | Frontend React + API FastAPI; hero, consola RAG y showcase del Módulo 1 |
@@ -197,8 +299,12 @@ versionan capturas temporales de la auditoría.
 | Módulo 2 — cadena vs. agente | ✅ | Citas 100 % en ambas; < 10 s: cadena 100 %, agente 94 %; `docs/evaluacion_modulo2.md` |
 | Módulo 2 — Recall@10, nDCG@10 y abstención fuera de corpus | ✅ | Semántico/híbrido > léxico; abstención 4/4 por el enrutador; `docs/evaluacion_modulo2.md` |
 | Módulo 2 — repreguntas (SC-006) y fidelidad del juez | 🟡 | Métrica estricta 3/6 (cadena) y 4/6 (agente); fidelidad pendiente de repetir con el juez corregido |
+| Módulo 2 — rúbrica de sustentación | ✅ | 13 ítems con evidencia en `docs/rubrica_modulo2.md`; los cinco casos verificados con DeepSeek (PR #57) |
+| Módulo 2 — Qdrant | ✅ | Colección `manuelita_fragments` (15.211 puntos, coseno, HNSW `m=16`); modo local embebido, servidor con `QDRANT_URL` (sin probar en vivo) |
+| Módulo 2 — memoria de largo plazo | ✅ | Perfil y preferencias en el Store, con aprobación humana; recuperados en otro hilo con `search()` |
+| Módulo 2 — streaming y trazas | ✅ | `POST /api/chat/stream` (SSE); `turns.jsonl` por turno; LangSmith al definir la clave |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
-| CI y Pull Requests | ✅ | 52 PRs fusionados; CI verde (`test`, `web` y `autoria`) |
+| CI y Pull Requests | ✅ | 54 PRs fusionados al 2026-11-13 (PR #57 en revisión); CI con `test`, `web` y `autoria` |
 | Protección de `main` | ✅ | PR con 1 aprobación y checks `test` y `web`; sin push directo ni force-push |
 | Gobernanza del repositorio | ✅ | PR/issue templates, labels, Dependabot, pre-commit y Makefile |
 | Autoría de commits | ✅ | Solo `jasonCastano`, `Robertto48` y `dependabot[bot]`; hook `commit-msg` y job `autoria`; historial sin coautores de IA (ADR 0017) |
@@ -224,10 +330,11 @@ versionan capturas temporales de la auditoría.
 | Oro | 0,20 GB |
 | Cuarentena | 8,93 GB |
 | Datos totales | 9,52 GB (límite: 10 GB) |
-| Pruebas offline | 653 |
+| Pruebas offline | 681 |
 | Consultas etiquetadas (Módulo 2) | 36 |
 | Acierto del enrutador | 97 % (35/36) |
-| Hechos en la tabla estructurada | 381 (15 entidades, 477 citas) |
+| Hechos en la tabla estructurada | 381 (15 entidades, 477 citas; exportada a CSV/JSON) |
+| Puntos en Qdrant | 15.211 (384 d, coseno) |
 
 ## Fuentes de datos
 
@@ -265,9 +372,10 @@ versionan capturas temporales de la auditoría.
 | LLM (Módulo 1) | LangChain + DeepSeek API (`deepseek-flash`) |
 | Interfaz (Módulo 1) | React 19 + Vite + TypeScript; FastAPI + Uvicorn |
 | Arquitectura viva | Archify (`docs/arquitectura.html`) |
-| RAG (Módulo 2) | `fastembed` (ONNX) + `numpy`; índice `.npy` + SQLite |
-| Agente (Módulo 2) | LangChain 1.x + LangGraph (`create_agent`, middleware HITL/PII/resumen); SqliteSaver y SqliteStore |
-| Evaluación (Módulo 2) | Juez LLM propio con definiciones de Ragas; LangSmith opcional |
+| RAG (Módulo 2) | `fastembed` (ONNX) + **Qdrant** (`qdrant-client`, HNSW, *payload*); índice fuente `.npy` + SQLite |
+| Agente (Módulo 2) | LangChain 1.x + LangGraph (`StateGraph`, `create_agent`, LCEL, `@tool` con Pydantic, middleware HITL/PII/resumen/`dynamic_prompt`, `trim_messages`); SqliteSaver y SqliteStore |
+| Streaming (Módulo 2) | Server-Sent Events en FastAPI (`StreamingResponse`) y `fetch` + `ReadableStream` en React |
+| Evaluación y trazas (Módulo 2) | Juez LLM propio con definiciones de Ragas; LangSmith (`LANGSMITH_*`) o log JSON por turno |
 | Desarrollo guiado por specs | Spec Kit (`.specify/`), con comandos para OpenCode y Claude Code |
 
 ## Requisitos e instalación
@@ -562,8 +670,12 @@ variantes sobre el mismo estado: **cadena** (una búsqueda por turno) y **agente
 búsquedas). Toda escritura (preferencias, olvido, exportación) espera aprobación humana.
 
 ```bash
-# Una vez: tabla estructurada (15 entidades, 381 hechos, 477 citas)
+# Una vez: tabla estructurada (15 entidades, 381 hechos, 477 citas) y su exportación CSV/JSON
 uv run python -m proyecto_modelos_lenguaje.agent build-structured
+
+# Una vez: colección Qdrant desde el índice (≈2 min en modo local; con QDRANT_URL usa el servidor)
+uv run python -m proyecto_modelos_lenguaje.rag qdrant build
+uv run python -m proyecto_modelos_lenguaje.rag qdrant status
 
 # Conversar (sin --thread crea un hilo y muestra su UUID)
 uv run python -m proyecto_modelos_lenguaje.agent chat --mode real "¿Qué produce Manuelita?"
@@ -578,10 +690,15 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
 - Estado fuera del repositorio en `MANUELITA_STATE_DIR` (por defecto `%LOCALAPPDATA%\manuelita-rag`):
   hilos en `checkpoints.sqlite3`, preferencias en `memory.sqlite3`. Política en
   [`docs/memoria.md`](docs/memoria.md).
-- API: `POST /api/chat`, `GET /api/threads/{id}`, `POST /api/threads/{id}/resume`,
-  `GET|DELETE /api/memory/{user_id}` ([contrato](specs/014-rag-agent-memory-router/contracts/chat-api.md)).
-- Web: pestaña **Conversación** con chip de ruta, fragmentos, fuentes, métricas por turno y tarjeta de
-  aprobación.
+- API: `POST /api/chat`, `POST /api/chat/stream` (SSE), `GET /api/threads/{id}`,
+  `POST /api/threads/{id}/resume`, `GET|DELETE /api/memory/{user_id}` (preferencias y perfil) y
+  `GET /api/observability` ([contrato](specs/014-rag-agent-memory-router/contracts/chat-api.md)).
+- Web: pestaña **Conversación** con respuesta en streaming, chip de ruta, fragmentos, fuentes, métricas por
+  turno, perfil guardado y tarjeta de aprobación.
+- Memoria de largo plazo: «Me llamo Ana y trabajo en Carvajal» propone `save_profile`; tras aprobarla, un
+  hilo nuevo responde «¿Dónde trabajo?» desde el Store sin buscar.
+- Blindaje en vivo: con `MANUELITA_DEMO_CORPUS=malicious`, el modo demo usa un corpus con un documento que
+  intenta dar órdenes; la interfaz lo marca y la respuesta no lo obedece.
 - Trazas opcionales con LangSmith: define `LANGSMITH_TRACING=true` y `LANGSMITH_API_KEY` en `.env` (no se
   versiona). Los mensajes llegan ya sin datos personales; no la actives con usuarios reales sin revisar
   `docs/memoria.md` §6.
@@ -627,11 +744,20 @@ La página incluye:
 
 - **Hero editorial** con la identidad “Cañaveral editorial”.
 - **Consola RAG** con Consulta, Resumen y FAQ, citas `[U#]`, metadatos y fallback.
-- **Showcase del Módulo 1** con problema, datos, medallion, prompts, tareas, app, métricas y límites.
-- **Modo demostración** explícito, sin clave ni red.
-- **Conversación** con memoria, enrutador, fragmentos, fuentes y aprobación de escrituras (Módulo 2).
+- **Recorrido de los Módulos 1 y 2** (11 bloques): problema, datos, medallion, prompts, tareas, Qdrant,
+  memoria y enrutador, blindaje, interfaz en streaming, métricas y límites.
+- **Modo demostración** explícito, sin clave ni red (con `MANUELITA_DEMO_CORPUS=malicious`, corpus adversarial
+  para mostrar el blindaje).
+- **Conversación** (Módulo 2):
+  - respuesta en streaming con la ruta y la etapa (enrutando, recuperando, escribiendo);
+  - fragmentos con puntaje, filas estructuradas y fuentes;
+  - traza por turno: quién decidió, alternativa, latencia, llamadas, búsquedas y tokens;
+  - perfil y preferencias guardados, aprobación de escrituras y conversaciones recientes que se retoman
+    desde el servidor;
+  - atajos con los casos de la rúbrica y estado de las trazas (LangSmith o log JSON).
 - **API** en `/api/health`, `/api/ask`, `/api/summary`, `/api/faq`, `/api/showcase`, `/api/chat`,
-  `/api/threads/{id}` y `/api/memory/{user_id}`.
+  `/api/chat/stream`, `/api/threads/{id}`, `/api/threads/{id}/resume`, `/api/memory/{user_id}` y
+  `/api/observability`.
 
 La clave DeepSeek permanece en el servidor. La guía completa está en
 [`specs/012-manuelita-rag-showcase/quickstart.md`](specs/012-manuelita-rag-showcase/quickstart.md) y la
@@ -702,8 +828,8 @@ referencian por manifiesto y hash.
 │   ├── src/components/            # Hero, consola RAG, showcase y motivos
 │   └── src/styles/                # Tokens y composición editorial
 ├── src/proyecto_modelos_lenguaje/ # API FastAPI, RAG, pipeline y branding
-│   ├── rag/                       # Índice semántico y recuperación híbrida
-│   └── agent/                     # Grafos LangGraph, enrutador, memoria, HITL y juez
+│   ├── rag/                       # Índice semántico, Qdrant y recuperación híbrida
+│   └── agent/                     # Grafos LangGraph, enrutador, memoria, HITL, trazas y juez
 ├── bitacora/                      # Bitácoras fechadas del proyecto
 ├── config/                        # Fuentes, cobertura, LLM, prompts y reglas
 ├── data/                          # Capas medallion versionadas por Git LFS
@@ -734,7 +860,7 @@ referencian por manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 653 pruebas unitarias, de integración y de contrato (626 Python + 27 web).
+- **Pruebas offline**: 681 pruebas unitarias, de integración y de contrato (652 Python + 29 web).
 - **Verificación completa**: `make check` ejecuta Ruff, pytest, Vitest y build web; CI separa Python y web y
   revisa la autoría de los commits de cada PR (job `autoria`).
 - **Auditoría visual**: `make audit` recorre 7 perfiles y 3 estados de datos con Playwright.
@@ -810,8 +936,10 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - Ragas no instala en Python 3.14; se usa un juez propio con sus definiciones.
 - Los PRs fusionados antes del 2026-11-07 no tienen aprobaciones formales en GitHub; desde entonces `main` exige
   revisión cruzada.
-- No existe aún una rúbrica oficial de la Entrega 2; cuando se publique se enmiendan la constitución y las
-  specs 013/014.
+- Qdrant corre en modo local embebido (búsqueda exacta, una sola instancia por carpeta); el índice HNSW
+  real requiere un servidor (`QDRANT_URL`), que no se ha probado en vivo.
+- LangSmith requiere definir la clave en `.env`; sin ella, las trazas quedan en `turns.jsonl`.
+- No están implementados el gatekeeper Jev (System One), el *time travel* de hilos ni el despliegue.
 
 ## Documentación
 
@@ -867,6 +995,8 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Decisión de alcance del Módulo 2](docs/decisions/0015-module2-scope.md)
 - [Decisión de arquitectura del agente RAG con LangGraph](docs/decisions/0016-rag-agent-langgraph.md)
 - [Decisión de autoría de commits](docs/decisions/0017-autoria-commits.md)
+- [Decisión: Qdrant, memoria de perfil, ruta mixta y streaming](docs/decisions/0018-qdrant-y-rubrica-modulo2.md)
+- [Rúbrica de sustentación del Módulo 2: cumplimiento y guion](docs/rubrica_modulo2.md)
 - [Política de memoria y privacidad](docs/memoria.md)
 - [Informe del Módulo 2](docs/informe_modulo2.md)
 - [Informe del Módulo 1 (borrador)](docs/informe_modulo1.md)
@@ -910,6 +1040,9 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [x] Juez con definiciones de Ragas (Ragas no instala en Python 3.14), LangSmith opcional, informe y demo.
 - [ ] Repreguntas ≥ 80 % (SC-006) con calificación humana y fidelidad del juez repetida.
 - [x] Tag `v0.2.0-modulo2`.
+- [x] Rúbrica de sustentación: Qdrant, perfil en el Store, ruta mixta, streaming SSE y trazas (PR #57).
+- [ ] Ensayo de la sustentación del 14 de noviembre con los cinco casos en vivo.
+- [ ] Opcionales: Qdrant con servidor HNSW, gatekeeper Jev y *time travel* de hilos.
 
 ### Fase 3 — Módulo 3: productización y despliegue (40 %)
 

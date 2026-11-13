@@ -483,6 +483,32 @@ class StructuredStore:
         ).fetchall()
         return self._facts(rows)
 
+    def export_tables(self, directory: str | Path) -> tuple[Path, Path]:
+        """Exporta la tabla a ``facts.csv`` y ``entities.json`` (vista legible, mismo contenido)."""
+        import csv
+
+        target = Path(directory)
+        target.mkdir(parents=True, exist_ok=True)
+        facts_path, entities_path = target / "facts.csv", target / "entities.json"
+        rows = self._connection.execute("SELECT * FROM facts ORDER BY fact_id").fetchall()
+        facts = self._facts(rows)
+        with facts_path.open("w", encoding="utf-8", newline="") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(["fact_id", "subject", "attribute", "value", "year", "url"])
+            for fact in facts:
+                url = fact.citations[0].url if fact.citations else ""
+                writer.writerow(
+                    [fact.fact_id, fact.subject_label, fact.attribute, fact.value, fact.year, url]
+                )
+        entities_path.write_text(
+            json.dumps(
+                [entity.to_dict() for entity in self.list_entities()], ensure_ascii=False, indent=2
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        return facts_path, entities_path
+
     def get_fact(self, fact_id: str) -> StructuredFact | None:
         """Un hecho por su identificador (para trazas y evaluación)."""
         rows = self._connection.execute("SELECT * FROM facts WHERE fact_id = ?", (fact_id,))

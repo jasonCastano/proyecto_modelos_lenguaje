@@ -3,20 +3,22 @@
 from __future__ import annotations
 
 import html
+import json
 import re
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
 from langchain_core.messages import (
     AIMessage,
+    AIMessageChunk,
     BaseMessage,
     HumanMessage,
     SystemMessage,
     ToolMessage,
 )
-from langchain_core.outputs import ChatGeneration, ChatResult
+from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResult
 
 from ..config import PROJECT_ROOT
 from ..tasks import FALLBACK_ANSWER
@@ -31,6 +33,7 @@ DOCUMENT_PATTERN = re.compile(r'<documento id="([UF]\d+)"[^>]*>(.*?)</documento>
 SENTENCE_END = re.compile(r"(?<=[.!?])\s")
 QUESTION_PATTERN = re.compile(r"<pregunta>(.*?)</pregunta>", re.DOTALL)
 SNIPPET_CHARS = 220
+STREAM_PIECE = re.compile(r"\S+\s*|\s+")
 BULLETS_HINT = "formato de respuesta: viñetas"
 
 
@@ -120,3 +123,35 @@ class DemoChatModel(BaseChatModel):
                 system = " ".join(str(m.content) for m in messages if isinstance(m, SystemMessage))
                 message = AIMessage(content=demo_answer(evidence, bullets=BULLETS_HINT in system))
         return ChatResult(generations=[ChatGeneration(message=message)])
+
+    def _stream(
+        self,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: Any = None,
+        **kwargs: Any,
+    ) -> Iterator[ChatGenerationChunk]:
+        """Streaming palabra por palabra para que el modo demo muestre la respuesta en vivo."""
+        message = self._generate(messages, stop, run_manager, **kwargs).generations[0].message
+        assert isinstance(message, AIMessage)
+        if message.tool_calls:
+            yield ChatGenerationChunk(
+                message=AIMessageChunk(
+                    content="",
+                    tool_call_chunks=[
+                        {
+                            "name": call["name"],
+                            "args": json.dumps(call["args"], ensure_ascii=False),
+                            "id": call["id"],
+                            "index": index,
+                        }
+                        for index, call in enumerate(message.tool_calls)
+                    ],
+                )
+            )
+            return
+        for piece in STREAM_PIECE.findall(str(message.content)):
+            chunk = ChatGenerationChunk(message=AIMessageChunk(content=piece))
+            if run_manager is not None:
+                run_manager.on_llm_new_token(piece, chunk=chunk)
+            yield chunk

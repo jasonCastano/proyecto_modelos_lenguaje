@@ -6,7 +6,8 @@ type Decision = "approve" | "edit" | "reject";
 
 const TOOL_LABEL: Record<PendingAction["tool"], string> = {
   save_preference: "Guardar una preferencia",
-  forget_memory: "Olvidar tus preferencias guardadas",
+  save_profile: "Guardar datos de tu perfil",
+  forget_memory: "Olvidar tus preferencias y tu perfil",
   export_conversation: "Exportar la conversación",
 };
 
@@ -14,6 +15,10 @@ const ARG_LABEL: Record<string, string> = {
   key: "Preferencia",
   value: "Valor",
   format: "Formato",
+  name: "Nombre",
+  workplace: "Lugar de trabajo",
+  role: "Cargo",
+  city: "Ciudad",
 };
 
 interface ApprovalCardProps {

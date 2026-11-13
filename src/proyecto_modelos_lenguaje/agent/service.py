@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import re
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Literal
 
+from langchain_core.messages import AIMessageChunk
 from langgraph.store.base import BaseStore
 from langgraph.types import Checkpointer, Command
 
@@ -29,6 +31,7 @@ from .graph import (
 )
 from .memory import UserMemory, UserProfile
 from .models import Decision, PendingAction, RouteDecision, Turn
+from .observability import log_turn, run_config
 from .privacy import redact_pii
 from .structured import StructuredError, StructuredStore
 
@@ -41,6 +44,48 @@ CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 INTERRUPT_CHANNEL = "__interrupt__"
 FORGET_MESSAGE = "Olvida mis preferencias guardadas"
+
+
+STREAMED_NODES = frozenset({"answer", "model"})
+
+
+def stream_event(item: Any) -> dict[str, Any] | None:
+    """Traduce un elemento de ``graph.stream(..., subgraphs=True)`` a un evento del cliente."""
+    if not isinstance(item, tuple) or len(item) != 3:
+        return None
+    namespace, kind, data = item
+    if kind == "updates" and namespace and isinstance(data, dict) and "tools" in data:
+        # Dentro del agente (subgrafo): una herramienta terminó; se anuncia antes de responder.
+        messages = (data["tools"] or {}).get("messages") or []
+        names = [getattr(message, "name", "") for message in messages]
+        return {"event": "tool", "tools": [name for name in names if name]}
+    if kind == "updates" and not namespace and isinstance(data, dict):
+        for node, update in data.items():
+            if not isinstance(update, dict):
+                continue
+            if node == "route" and update.get("decision"):
+                return {"event": "route", "route": update["decision"]}
+            if node in {"retrieve", "agent"}:
+                return {
+                    "event": "retrieval",
+                    "fragments": len(update.get("fragments") or []),
+                    "structured_rows": len(update.get("structured_rows") or []),
+                    "tool_calls": int(update.get("retrievals") or 0),
+                }
+        return None
+    if kind == "messages" and isinstance(data, tuple) and len(data) == 2:
+        chunk, metadata = data
+        node = (metadata or {}).get("langgraph_node")
+        text = getattr(chunk, "content", "")
+        if (
+            node in STREAMED_NODES
+            and isinstance(chunk, AIMessageChunk)
+            and isinstance(text, str)
+            and text
+            and not chunk.tool_call_chunks
+        ):
+            return {"event": "token", "text": text}
+    return None
 
 
 def pending_from_interrupt(item: Any, timestamp: str | None) -> dict[str, Any]:
@@ -152,10 +197,12 @@ class ChatService:
         checkpointer: Checkpointer,
         deps_factory: Callable[[Mode], GraphDeps],
         store: BaseStore | None = None,
+        log_dir: Path | None = None,
     ) -> None:
         self.config = config
         self.checkpointer = checkpointer
         self.store = store
+        self.log_dir = log_dir
         self._deps_factory = deps_factory
         self._graphs: dict[tuple[str, str], Any] = {}
         self._deps: dict[str, GraphDeps] = {}
@@ -175,11 +222,23 @@ class ChatService:
         return self._graphs[key]
 
     @staticmethod
-    def _config(thread_id: str, handler: TurnMetricsHandler | None = None) -> dict[str, Any]:
+    def _config(
+        thread_id: str,
+        handler: TurnMetricsHandler | None = None,
+        *,
+        variant: str | None = None,
+        mode: str | None = None,
+    ) -> dict[str, Any]:
         config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
+        if variant and mode:
+            config.update(run_config(thread_id, variant, mode))
         if handler is not None:
             config["callbacks"] = [handler]
         return config
+
+    def _log(self, outcome: ChatOutcome, variant: str, mode: str) -> ChatOutcome:
+        log_turn(outcome.to_dict(), variant=variant, mode=mode, log_dir=self.log_dir)
+        return outcome
 
     def _load(self, thread_id: str) -> tuple[dict[str, Any], dict[str, Any] | None]:
         """Estado del hilo y su acción pendiente (si el grafo quedó en ``interrupt``)."""
@@ -200,7 +259,8 @@ class ChatService:
     def _invoke(self, variant: Variant, mode: Mode, payload: Any, thread_id: str) -> Any:
         handler = TurnMetricsHandler()
         try:
-            return self.graph(variant, mode).invoke(payload, self._config(thread_id, handler))
+            config = self._config(thread_id, handler, variant=variant, mode=mode)
+            return self.graph(variant, mode).invoke(payload, config)
         except ChatUnavailableError as exc:
             raise ChatError("index_unavailable", str(exc), 503) from exc
 
@@ -227,9 +287,76 @@ class ChatService:
         variant: Variant = "chain",
         mode: Mode = "demo",
     ) -> ChatOutcome:
+        thread_id, state = self._prepare(message, thread_id, user_id, variant)
+        state["mode"] = mode
+        result = self._invoke(variant, mode, state, thread_id)
+        return self._log(self._outcome(thread_id, result), variant, mode)
+
+    def open_stream(
+        self,
+        message: str,
+        *,
+        thread_id: str | None = None,
+        user_id: str = "anon",
+        variant: Variant = "chain",
+        mode: Mode = "demo",
+    ) -> tuple[str, Iterator[dict[str, Any]]]:
+        """Valida antes de abrir el flujo (los errores salen como HTTP) y devuelve los eventos.
+
+        Eventos: ``route`` (decisión del enrutador), ``retrieval`` (cuántos fragmentos y filas),
+        ``token`` (texto de la respuesta a medida que el modelo lo genera) y ``done`` (la misma
+        respuesta validada de ``POST /api/chat``). Un fallo a mitad del flujo emite ``error``.
+        """
+        thread_id, state = self._prepare(message, thread_id, user_id, variant)
+        state["mode"] = mode
+        return thread_id, self._events(variant, mode, state, thread_id)
+
+    def _events(
+        self, variant: Variant, mode: Mode, state: dict[str, Any], thread_id: str
+    ) -> Iterator[dict[str, Any]]:
+        handler = TurnMetricsHandler()
+        config = self._config(thread_id, handler, variant=variant, mode=mode)
+        yield {"event": "start", "thread_id": thread_id}
+        try:
+            stream = self.graph(variant, mode).stream(
+                state, config, stream_mode=["updates", "messages"], subgraphs=True
+            )
+            for item in stream:
+                event = stream_event(item)
+                if event is not None:
+                    yield event
+            outcome = self._log(self._current(thread_id), variant, mode)
+            yield {"event": "done", "response": outcome.to_dict()}
+        except ChatUnavailableError as exc:
+            yield {"event": "error", "error": {"code": "index_unavailable", "message": str(exc)}}
+        except ChatError as exc:
+            yield {"event": "error", "error": {"code": exc.code, "message": exc.message}}
+        except Exception as exc:  # el flujo ya empezó: el error viaja como evento
+            yield {
+                "event": "error",
+                "error": {"code": "model_error", "message": f"Falló la respuesta: {exc}"[:300]},
+            }
+
+    def _current(self, thread_id: str) -> ChatOutcome:
+        """Resultado del último turno leído del checkpointer (tras un flujo)."""
+        values, pending = self._load(thread_id)
+        if pending is not None:
+            turns = values.get("turns") or []
+            turn = Turn(
+                turn_id=len(turns) + 1,
+                question=values["question"],
+                route=RouteDecision.model_validate(values["decision"]),
+            )
+            return ChatOutcome(thread_id, turn, "pending_approval", pending_action=pending)
+        turn = Turn.model_validate(values["turns"][-1])
+        return ChatOutcome(thread_id, turn, turn_status(turn), anomalies=anomalies_of(turn))
+
+    def _prepare(
+        self, message: str, thread_id: str | None, user_id: str, variant: Variant
+    ) -> tuple[str, dict[str, Any]]:
         question = redact_pii(validate_message(message))
         validate_user_id(user_id)
-        state: dict[str, Any] = {"question": question, "mode": mode}
+        state: dict[str, Any] = {"question": question}
         if thread_id is None:
             thread_id = str(uuid.uuid4())
             state.update(
@@ -247,8 +374,7 @@ class ChatService:
                 raise ChatError(
                     "thread_pending_approval", "El hilo tiene una acción por aprobar.", 409
                 )
-        result = self._invoke(variant, mode, state, thread_id)
-        return self._outcome(thread_id, result)
+        return thread_id, state
 
     def resume(
         self,
@@ -289,7 +415,7 @@ class ChatService:
                 {"actions": [*(values.get("actions") or []), record]},
                 as_node="finalize",
             )
-        return self._outcome(thread_id, result)
+        return self._log(self._outcome(thread_id, result), variant, mode)
 
     def preferences(self, user_id: str) -> dict[str, Any]:
         """``GET /api/memory/{user_id}``: preferencias vigentes y perfil (Store, ``search``)."""

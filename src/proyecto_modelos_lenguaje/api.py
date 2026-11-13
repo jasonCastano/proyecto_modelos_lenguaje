@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+import json
 import uuid
 from functools import lru_cache
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from .agent.config import AgentConfigError, load_agent_config, resolve_state_dir
 from .agent.memory import build_checkpointer, build_store
+from .agent.observability import configure_tracing
 from .agent.service import ChatError, ChatService, build_deps
 from .api_models import (
     ApiError,
@@ -75,6 +78,9 @@ GOLD_DIR = PROJECT_ROOT / "data" / "gold"
 DEMO_INDEX = PROJECT_ROOT / "tests" / "fixtures" / "rag" / "index"
 WEB_DIST = PROJECT_ROOT / "web" / "dist"
 APP_TITLE = "RAG Ingenio Manuelita"
+
+load_dotenv(PROJECT_ROOT / ".env", override=False)
+configure_tracing()
 
 app = FastAPI(title=APP_TITLE, version="0.1.0")
 app.add_middleware(
@@ -428,7 +434,20 @@ def _chat_service() -> ChatService:
         build_checkpointer(state_dir),
         lambda mode: build_deps(mode, config, _retriever(mode)),
         store=build_store(state_dir),
+        log_dir=state_dir / "logs",
     )
+
+
+@app.get("/api/observability")
+def observability():
+    """Estado de las trazas (LangSmith) y del log estructurado, sin secretos."""
+    status = configure_tracing()
+    try:
+        state_dir = resolve_state_dir(load_agent_config().state_env_var)
+        log_path: str | None = str(state_dir / "logs" / "turns.jsonl")
+    except Exception:
+        log_path = None
+    return {**status, "structured_log": log_path}
 
 
 def _chat_error(exc: Exception) -> JSONResponse:
@@ -464,6 +483,33 @@ def chat(payload: ChatRequest):
     except Exception as exc:
         return _chat_error(exc)
     return outcome.to_dict()
+
+
+def _sse(event: dict[str, object]) -> str:
+    """Un evento Server-Sent Events: ``event: <tipo>`` y ``data: <json>``."""
+    kind = str(event.get("event", "message"))
+    return f"event: {kind}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
+
+
+@app.post("/api/chat/stream")
+def chat_stream(payload: ChatRequest):
+    """Misma conversación que ``/api/chat`` pero en streaming (SSE): ruta, recuperación,
+    tokens de la respuesta y, al final, el turno validado con sus citas."""
+    try:
+        _thread_id, events = _chat_service().open_stream(
+            payload.message,
+            thread_id=payload.thread_id,
+            user_id=payload.user_id,
+            variant=payload.variant,
+            mode=payload.mode,
+        )
+    except Exception as exc:
+        return _chat_error(exc)
+    return StreamingResponse(
+        (_sse(event) for event in events),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.post("/api/threads/{thread_id}/resume", response_model=ChatResponse)

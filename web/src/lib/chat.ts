@@ -157,3 +157,13 @@ export async function streamChat(
   }
   return final;
 }
+
+export interface ObservabilityStatus {
+  langsmith: boolean;
+  project: string | null;
+  structured_log: string | null;
+}
+
+export function getObservability(): Promise<ObservabilityStatus> {
+  return request<ObservabilityStatus>("/observability");
+}

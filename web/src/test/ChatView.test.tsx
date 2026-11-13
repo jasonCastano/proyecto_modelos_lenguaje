@@ -61,6 +61,9 @@ describe("ChatTurnCard", () => {
     renderTurn(makeTurn());
 
     expect(screen.getByTestId("route-chip")).toHaveTextContent("Ruta: Documentos · 86 %");
+    expect(screen.getByTestId("turn-trace")).toHaveTextContent(
+      "Decidió: LLM (alternativa: Datos estructurados)",
+    );
     expect(screen.getByTestId("retrieved-fragments")).toHaveTextContent("Productos de Manuelita");
     expect(screen.getByText(/produce azúcar/)).toBeInTheDocument();
     expect(within(screen.getByTestId("source-list")).getByText("[U1]")).toBeInTheDocument();
@@ -336,5 +339,52 @@ describe("ChatView", () => {
     expect(String(deleteCall?.[0])).toContain(`/memory/anon-`);
     expect(String(deleteCall?.[0])).toContain(`thread_id=${threadId}`);
     expect(window.localStorage.getItem("manuelita.chat.user")).toMatch(/^anon-/);
+  });
+
+  it("ofrece los casos de la rúbrica y retoma una conversación reciente", async () => {
+    const answered: ChatResponse = {
+      thread_id: "8f6c1e0a-0000-4000-8000-000000000010",
+      turn: makeTurn({ question: "¿Cuántas filiales tiene Manuelita?" }),
+      status: "answered",
+      pending_action: null,
+      anomalies: [],
+    };
+    const thread = {
+      thread_id: answered.thread_id,
+      variant: "chain",
+      turns: [answered.turn],
+      summary: "",
+      status: "idle",
+      pending_action: null,
+    };
+    const fetchMock = routedFetch((url) => {
+      if (url.endsWith("/chat/stream")) return sse(answered);
+      if (url.includes("/threads/")) return new Response(JSON.stringify(thread), { status: 200 });
+      if (url.endsWith("/observability")) {
+        return new Response(
+          JSON.stringify({ langsmith: false, project: null, structured_log: "turns.jsonl" }),
+          { status: 200 },
+        );
+      }
+      return undefined;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    render(<ChatView mode="demo" />);
+    expect(await screen.findByTestId("observability")).toHaveTextContent("log JSON por turno");
+    await user.click(screen.getByRole("button", { name: "Dato estructurado" }));
+    expect(screen.getByTestId("chat-input")).toHaveValue("¿Cuántas filiales tiene Manuelita?");
+    await user.click(screen.getByTestId("chat-send"));
+    const recent = await screen.findByTestId("recent-threads");
+    expect(recent).toHaveTextContent("¿Cuántas filiales tiene Manuelita? · Cadena");
+    await user.click(screen.getByRole("button", { name: "Nueva conversación" }));
+    expect(screen.queryByTestId("chat-turn")).not.toBeInTheDocument();
+    await user.click(within(recent).getByRole("button", { name: /Cuántas filiales/ }));
+
+    expect(await screen.findByTestId("chat-turn")).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.some((call) => String(call[0]).endsWith(`/threads/${answered.thread_id}`)),
+    ).toBe(true);
   });
 });

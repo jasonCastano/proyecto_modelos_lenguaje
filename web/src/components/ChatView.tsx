@@ -3,7 +3,9 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   deleteMemory,
   getMemory,
+  getObservability,
   getThread,
+  type ObservabilityStatus,
   resumeThread,
   sendChat,
   streamChat,
@@ -52,6 +54,52 @@ const ROUTE_LABEL: Record<ChatRouteName, string> = {
   out_of_scope: "Fuera de alcance",
   clarify: "Aclaración",
 };
+
+const DECIDED_LABEL: Record<ChatRoute["decided_by"], string> = {
+  rules: "reglas",
+  llm: "LLM",
+  demo: "heurística demo",
+};
+
+/** Mensajes de los casos de la rúbrica del Módulo 2 (docs/rubrica_modulo2.md). */
+export const DEMO_CASES: Array<{ label: string; message: string }> = [
+  { label: "RAG documental", message: "¿Qué dice el corpus sobre la política de calidad?" },
+  { label: "Memoria: presentarse", message: "Me llamo Ana y trabajo en Carvajal" },
+  { label: "Memoria: recordar", message: "¿Dónde trabajo?" },
+  { label: "Dato estructurado", message: "¿Cuántas filiales tiene Manuelita?" },
+  {
+    label: "Ruta mixta",
+    message:
+      "Compara la meta de sostenibilidad del informe con cuántas toneladas de caña procesa Manuelita",
+  },
+  { label: "Saludo sin buscar", message: "Hola, buenas tardes" },
+];
+
+const RECENT_KEY = "manuelita.chat.recent";
+const RECENT_MAX = 6;
+
+interface RecentThread {
+  id: string;
+  variant: ChatVariant;
+  title: string;
+}
+
+function readRecent(): RecentThread[] {
+  try {
+    const parsed = JSON.parse(readLocal(RECENT_KEY) ?? "[]") as RecentThread[];
+    return Array.isArray(parsed) ? parsed.filter((item) => item && item.id) : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberThread(entry: RecentThread): RecentThread[] {
+  const others = readRecent().filter((item) => item.id !== entry.id);
+  const existing = readRecent().find((item) => item.id === entry.id);
+  const next = [existing ?? entry, ...others].slice(0, RECENT_MAX);
+  writeLocal(RECENT_KEY, JSON.stringify(next));
+  return next;
+}
 
 const VARIANT_LABEL: Record<ChatVariant, string> = {
   chain: "Cadena",
@@ -187,9 +235,12 @@ export function ChatTurnCard({ turn }: { turn: ChatTurn }) {
       <div className={`answer ${turn.fallback ? "answer-fallback" : ""}`}>
         <p className="answer-body">{turn.answer}</p>
         <SourceList citations={turnCitations(turn)} />
-        <p className="answer-meta">
+        <p className="answer-meta" data-testid="turn-trace">
+          Decidió: {DECIDED_LABEL[route.decided_by] ?? route.decided_by}
+          {route.alternative ? ` (alternativa: ${ROUTE_LABEL[route.alternative]})` : ""} ·{" "}
           {turn.metrics.latency_ms} ms · {turn.metrics.model_calls} llamadas al modelo ·{" "}
-          {turn.metrics.tool_calls} búsquedas
+          {turn.metrics.tool_calls} búsquedas · {turn.metrics.input_tokens + turn.metrics.output_tokens}{" "}
+          tokens
         </p>
       </div>
     </li>
@@ -263,6 +314,8 @@ export function ChatView({ mode }: { mode: Mode }) {
   const [preferences, setPreferences] = useState<MemoryItem[]>([]);
   const [profile, setProfile] = useState<ProfileItem[]>([]);
   const [live, setLive] = useState<LiveTurn | null>(null);
+  const [recent, setRecent] = useState<RecentThread[]>(() => readRecent());
+  const [observability, setObservability] = useState<ObservabilityStatus | null>(null);
   const userId = useRef(anonymousUser());
 
   function refreshPreferences() {
@@ -279,6 +332,9 @@ export function ChatView({ mode }: { mode: Mode }) {
 
   useEffect(() => {
     refreshPreferences();
+    void getObservability()
+      .then(setObservability)
+      .catch(() => setObservability(null));
     const saved = stored.current;
     if (!saved) return;
     let active = true;
@@ -298,6 +354,30 @@ export function ChatView({ mode }: { mode: Mode }) {
       active = false;
     };
   }, []);
+
+  /** Retoma un hilo guardado: el estado vive en el checkpointer del servidor, no en el navegador. */
+  async function openThread(entry: RecentThread) {
+    setBusy(true);
+    setError(null);
+    try {
+      const view = await getThread(entry.id);
+      setVariant(view.variant);
+      setThreadId(entry.id);
+      setTurns(view.turns);
+      setAction(view.pending_action);
+      setActionQuestion("");
+      writeSession(THREAD_KEY, JSON.stringify({ id: entry.id, variant: view.variant }));
+    } catch (caught) {
+      setRecent(() => {
+        const next = readRecent().filter((item) => item.id !== entry.id);
+        writeLocal(RECENT_KEY, JSON.stringify(next));
+        return next;
+      });
+      report(caught);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   function startOver(nextVariant: ChatVariant = variant) {
     writeSession(THREAD_KEY, null);
@@ -385,6 +465,7 @@ export function ChatView({ mode }: { mode: Mode }) {
       }
       setThreadId(response.thread_id);
       writeSession(THREAD_KEY, JSON.stringify({ id: response.thread_id, variant }));
+      setRecent(rememberThread({ id: response.thread_id, variant, title: clean.slice(0, 60) }));
       if (response.status === "pending_approval") {
         setAction(response.pending_action);
         setActionQuestion(response.turn.question);
@@ -420,6 +501,48 @@ export function ChatView({ mode }: { mode: Mode }) {
         <button className="btn btn-link" type="button" onClick={() => startOver()}>
           Nueva conversación
         </button>
+        {observability ? (
+          <span className="fragments-badge" data-testid="observability">
+            Trazas:{" "}
+            {observability.langsmith
+              ? `LangSmith (${observability.project ?? "proyecto"})`
+              : "log JSON por turno"}
+          </span>
+        ) : null}
+      </div>
+
+      {recent.length > 0 ? (
+        <nav className="console-options" aria-label="Conversaciones recientes" data-testid="recent-threads">
+          <span>Conversaciones recientes:</span>
+          {recent.map((entry) => (
+            <button
+              aria-current={entry.id === threadId ? "true" : undefined}
+              className="btn btn-link"
+              disabled={busy}
+              key={entry.id}
+              onClick={() => void openThread(entry)}
+              title={entry.id}
+              type="button"
+            >
+              {entry.title || entry.id.slice(0, 8)} · {VARIANT_LABEL[entry.variant]}
+            </button>
+          ))}
+        </nav>
+      ) : null}
+
+      <div className="console-options" aria-label="Casos de la demo" data-testid="demo-cases">
+        <span>Casos de la demo:</span>
+        {DEMO_CASES.map((item) => (
+          <button
+            className="chip"
+            disabled={busy || action !== null}
+            key={item.label}
+            onClick={() => setMessage(item.message)}
+            type="button"
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
 
       {preferences.length > 0 || profile.length > 0 ? (

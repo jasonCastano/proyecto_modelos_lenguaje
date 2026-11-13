@@ -23,8 +23,9 @@ export function Hero() {
         <div className="hero-trust" aria-label="Principios del sistema">
           <span className="chip">Cita o fallback</span>
           <span className="chip">Datos públicos</span>
-          <span className="chip">Memoria y enrutador</span>
-          <span className="chip">DeepSeek + LangGraph</span>
+          <span className="chip">Memoria corta y larga</span>
+          <span className="chip">Qdrant + LangGraph</span>
+          <span className="chip">Respuesta en streaming</span>
         </div>
       </div>
       <div className="hero-art">

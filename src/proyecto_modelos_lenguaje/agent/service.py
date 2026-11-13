@@ -27,7 +27,7 @@ from .graph import (
     build_agent_graph,
     build_chain_graph,
 )
-from .memory import UserMemory
+from .memory import UserMemory, UserProfile
 from .models import Decision, PendingAction, RouteDecision, Turn
 from .privacy import redact_pii
 from .structured import StructuredError, StructuredStore
@@ -292,12 +292,16 @@ class ChatService:
         return self._outcome(thread_id, result)
 
     def preferences(self, user_id: str) -> dict[str, Any]:
-        """``GET /api/memory/{user_id}``: preferencias vigentes (las expiradas se borran)."""
+        """``GET /api/memory/{user_id}``: preferencias vigentes y perfil (Store, ``search``)."""
         validate_user_id(user_id)
         if self.store is None:
-            return {"user_id": user_id, "items": []}
+            return {"user_id": user_id, "items": [], "profile": []}
         memory = UserMemory(self.store, self.config.memory.preference_ttl_days)
-        return {"user_id": user_id, "items": [item.to_dict() for item in memory.list(user_id)]}
+        return {
+            "user_id": user_id,
+            "items": [item.to_dict() for item in memory.list(user_id)],
+            "profile": [item.to_dict() for item in UserProfile(self.store).list(user_id)],
+        }
 
     def request_forget(self, user_id: str, thread_id: str) -> ChatOutcome:
         """``DELETE /api/memory/{user_id}``: propone ``forget_memory`` en el hilo; no borra aún."""

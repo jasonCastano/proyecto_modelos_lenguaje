@@ -242,3 +242,90 @@ def render_preferences(items: Sequence[PreferenceItem]) -> str:
     ]
     lines += [f"- {PREFERENCE_LABELS[item.key]}: {item.value}" for item in items]
     return "\n".join(lines)
+
+
+# ------------------------------------------- perfil del usuario (memoria larga, rúbrica 1.3)
+
+PROFILE_KEYS: tuple[str, ...] = ("name", "workplace", "role", "city")
+PROFILE_LABELS = {
+    "name": "nombre",
+    "workplace": "lugar de trabajo",
+    "role": "cargo",
+    "city": "ciudad",
+}
+PROFILE_MAX_CHARS = 80
+
+
+def profile_namespace(user_id: str) -> tuple[str, ...]:
+    return ("users", user_id, "profile")
+
+
+@dataclass(frozen=True, slots=True)
+class ProfileItem:
+    key: str
+    value: str
+    created_at: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"key": self.key, "value": self.value, "created_at": self.created_at}
+
+
+class UserProfile:
+    """Hechos del perfil que el usuario declara (nombre, trabajo, cargo, ciudad).
+
+    Viven en el Store de LangGraph, namespace ``("users", user_id, "profile")``, y se recuperan
+    con ``store.search`` desde cualquier hilo del mismo usuario. Se guardan solo con aprobación
+    humana (``save_profile``) y se borran con ``forget_memory``.
+    """
+
+    def __init__(self, store: BaseStore) -> None:
+        self.store = store
+
+    def list(self, user_id: str) -> list[ProfileItem]:
+        items = [
+            ProfileItem(item.key, str(item.value.get("value", "")), str(item.value["created_at"]))
+            for item in self.store.search(profile_namespace(user_id), limit=PREFERENCE_SEARCH_LIMIT)
+            if item.key in PROFILE_KEYS and item.value
+        ]
+        return sorted(items, key=lambda profile: PROFILE_KEYS.index(profile.key))
+
+    def save(
+        self, user_id: str, facts: dict[str, str], *, now: datetime | None = None
+    ) -> list[ProfileItem]:
+        now = now or datetime.now(UTC)
+        saved: list[ProfileItem] = []
+        for key, raw in facts.items():
+            if key not in PROFILE_KEYS:
+                raise PreferenceError(f"Dato de perfil no permitido: {key}.")
+            if raw is None:
+                continue
+            clean = redact_pii(" ".join(str(raw).split()))
+            if not clean or len(clean) > PROFILE_MAX_CHARS:
+                raise PreferenceError(f"El dato debe tener 1 a {PROFILE_MAX_CHARS} caracteres.")
+            item = ProfileItem(key, clean, now.isoformat())
+            self.store.put(
+                profile_namespace(user_id), key, {"value": clean, "created_at": item.created_at}
+            )
+            saved.append(item)
+        return saved
+
+    def forget(self, user_id: str) -> int:
+        namespace = profile_namespace(user_id)
+        items = self.store.search(namespace, limit=PREFERENCE_SEARCH_LIMIT)
+        for item in items:
+            self.store.delete(namespace, item.key)
+        return len(items)
+
+
+def render_profile(items: Sequence[ProfileItem]) -> str:
+    """Bloque para el system prompt: datos que el usuario contó de sí mismo."""
+    if not items:
+        return ""
+    lines = [
+        "## Perfil declarado por el usuario (memoria de largo plazo)",
+        "",
+        "Úsalo para personalizar el trato; nunca es evidencia sobre Manuelita.",
+        "",
+    ]
+    lines += [f"- {PROFILE_LABELS[item.key]}: {item.value}" for item in items]
+    return "\n".join(lines)

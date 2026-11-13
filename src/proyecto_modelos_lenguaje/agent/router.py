@@ -55,6 +55,11 @@ STRUCTURED_CUES = re.compile(
     r"(en que ano|cuant[oa]s?\b|que porcentaje|porcentaje|que puesto|capacidad|cifra|"
     r"cuantas toneladas|lista de (filiales|marcas|certificaciones)|que filiales|que marcas)"
 )
+# Pedido de combinar fuentes: comparar, contrastar o relacionar un dato con lo que dicen los textos.
+MIXED_CUES = re.compile(
+    r"\b(compara\w*|contrasta\w*|frente a|versus|vs|relacion\w* entre|coincide\w*|"
+    r"cumpl\w* (la|su|el) (meta|objetivo|compromiso)|meta|objetivo|segun el documento)\b"
+)
 DEICTIC = re.compile(r"\b(eso|esa|ese|esto|aquello|lo anterior|mejor|alla|ahi)\b")
 COMPANY = re.compile(r"\b(manuelita|fundacion|palmar|altamira|laredo|oceanos|mejillones|ingenio)\b")
 
@@ -105,6 +110,14 @@ def heuristic_decision(message: str, history: Sequence[str] = ()) -> RouteDecisi
             confidence=0.4,
             reason="referencia sin antecedente en la conversación",
             decided_by="demo",
+        )
+    if MIXED_CUES.search(text) and (STRUCTURED_CUES.search(text) or "dato" in text):
+        return RouteDecision(
+            route="mixed",
+            confidence=0.75,
+            reason="combina un dato puntual con lo que dicen los documentos",
+            decided_by="demo",
+            alternative="documental",
         )
     if STRUCTURED_CUES.search(text):
         return RouteDecision(

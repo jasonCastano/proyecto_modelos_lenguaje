@@ -206,7 +206,7 @@ class ShowcaseResponse(BaseModel):
 
 # ---------------------------------------------------------------- conversación (spec 014, US1)
 
-Route = Literal["direct", "documental", "structured", "out_of_scope", "clarify"]
+Route = Literal["direct", "documental", "structured", "mixed", "out_of_scope", "clarify"]
 ChatStatus = Literal["answered", "fallback", "clarify", "pending_approval"]
 
 
@@ -338,11 +338,22 @@ class MemoryItemModel(BaseModel):
     expires_at: str
 
 
+class ProfileItemModel(BaseModel):
+    """Dato del perfil del usuario en el Store (memoria de largo plazo)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    key: Literal["name", "workplace", "role", "city"]
+    value: str = Field(max_length=80)
+    created_at: str
+
+
 class MemoryView(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     user_id: str
     items: list[MemoryItemModel] = Field(default_factory=list)
+    profile: list[ProfileItemModel] = Field(default_factory=list)
 
 
 class ResumeRequest(RequestModel):

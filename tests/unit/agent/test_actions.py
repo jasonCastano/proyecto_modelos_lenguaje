@@ -91,7 +91,7 @@ def test_preferences_are_saved_with_expiry_and_forgotten() -> None:
     # Assert
     assert "language = inglés" in saved
     assert item.value["value"] == "inglés" and item.value["expires_at"] > item.value["created_at"]
-    assert forgot == "Olvidé 1 preferencias guardadas."
+    assert forgot == "Olvidé 1 preferencias y 0 datos de tu perfil."
     assert store.search(("users", "anon-1", "preferences")) == []
 
 

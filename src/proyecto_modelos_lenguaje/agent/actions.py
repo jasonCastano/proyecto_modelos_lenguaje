@@ -1,11 +1,12 @@
 """Acciones de escritura del agente con aprobación humana (spec 014, US4, FR-017, SC-009).
 
-Regla de oro de la constitución: **lectura automática, escritura con aprobación**. Las tres acciones
-(``forget_memory``, ``save_preference`` y ``export_conversation``) solo se ejecutan después de una
-decisión humana registrada: en la variante agente las detiene ``HumanInTheLoopMiddleware``; en la
-cadena, un ``interrupt()`` explícito.
+Regla de oro de la constitución: **lectura automática, escritura con aprobación**. Las cuatro
+acciones (``forget_memory``, ``save_preference``, ``save_profile`` y ``export_conversation``)
+solo se ejecutan después de una decisión humana registrada: en la variante agente las detiene
+``HumanInTheLoopMiddleware``; en la cadena, un ``interrupt()`` explícito.
 
-La memoria larga vive en el Store de LangGraph, namespace ``("users", user_id, "preferences")``.
+La memoria larga vive en el Store de LangGraph: preferencias en
+``("users", user_id, "preferences")`` y perfil en ``("users", user_id, "profile")``.
 """
 
 from __future__ import annotations
@@ -17,18 +18,24 @@ from typing import Any, Literal
 
 from langchain_core.tools import BaseTool, StructuredTool
 from langgraph.store.base import BaseStore
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
-from .memory import PreferenceError, UserMemory
+from .memory import PreferenceError, UserMemory, UserProfile
 from .structured import normalize
 
-WRITE_TOOLS: tuple[str, ...] = ("forget_memory", "save_preference", "export_conversation")
+WRITE_TOOLS: tuple[str, ...] = (
+    "forget_memory",
+    "save_preference",
+    "save_profile",
+    "export_conversation",
+)
 PreferenceKey = Literal["response_format", "topics_of_interest", "language"]
 EXPORT_PREVIEW_TURNS = 20
 
 TOOL_DESCRIPTIONS = {
-    "forget_memory": "Olvidar las preferencias guardadas del usuario",
+    "forget_memory": "Olvidar las preferencias y el perfil guardados del usuario",
     "save_preference": "Guardar una preferencia del usuario para próximas conversaciones",
+    "save_profile": "Guardar datos del perfil del usuario (nombre, trabajo, cargo o ciudad)",
     "export_conversation": "Exportar la conversación actual en Markdown",
 }
 
@@ -44,6 +51,23 @@ class SavePreferenceArgs(BaseModel):
     value: str = Field(min_length=1, max_length=200, description="Valor de la preferencia.")
 
 
+class SaveProfileArgs(BaseModel):
+    """Datos que el usuario cuenta de sí mismo; al menos uno es obligatorio."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, max_length=80, description="Nombre del usuario.")
+    workplace: str | None = Field(default=None, max_length=80, description="Dónde trabaja.")
+    role: str | None = Field(default=None, max_length=80, description="Cargo u ocupación.")
+    city: str | None = Field(default=None, max_length=80, description="Ciudad donde vive.")
+
+    @model_validator(mode="after")
+    def at_least_one(self) -> SaveProfileArgs:
+        if not any((self.name, self.workplace, self.role, self.city)):
+            raise ValueError("indica al menos un dato del perfil")
+        return self
+
+
 class ExportConversationArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -53,6 +77,7 @@ class ExportConversationArgs(BaseModel):
 ARG_SCHEMAS: dict[str, type[BaseModel]] = {
     "forget_memory": ForgetMemoryArgs,
     "save_preference": SavePreferenceArgs,
+    "save_profile": SaveProfileArgs,
     "export_conversation": ExportConversationArgs,
 }
 
@@ -88,6 +113,53 @@ FORMAT_VALUES = (
     ("detallad", "detallada"),
 )
 LANGUAGE_VALUES = (("ingles", "inglés"), ("espanol", "español"))
+# Perfil: se busca sobre el texto original para conservar mayúsculas y tildes.
+_NAME_WORD = r"[A-ZÁÉÍÓÚÑ][a-záéíóúñü]+"
+PROFILE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        "name",
+        # Solo la frase disparadora ignora mayúsculas; el nombre debe ir capitalizado.
+        re.compile(rf"\b(?i:me llamo|mi nombre es)\s+({_NAME_WORD}(?:\s+{_NAME_WORD})?)"),
+    ),
+    (
+        "workplace",
+        re.compile(
+            r"\btrabajo (?:en|para|con)\s+(.{2,60}?)(?=\s+(?:y|como|desde)\b|[,.;!?]|$)", re.I
+        ),
+    ),
+    (
+        "role",
+        re.compile(
+            r"\b(?:trabajo como|mi cargo es|soy (?:el|la) )\s*(.{3,60}?)"
+            r"(?=\s+(?:y|en)\b|[,.;!?]|$)",
+            re.I,
+        ),
+    ),
+    ("city", re.compile(r"\bvivo en\s+(.{2,60}?)(?=\s+(?:y|desde)\b|[,.;!?]|$)", re.I)),
+)
+PROFILE_QUESTION = re.compile(
+    r"\b(donde trabajo|como me llamo|cual es mi nombre|quien soy|que sabes de mi|donde vivo|"
+    r"cual es mi cargo|en que trabajo|recuerdas mi nombre|sabes como me llamo|mi perfil)\b"
+)
+
+
+def extract_profile(message: str) -> dict[str, str]:
+    """Datos de perfil declarados en un mensaje («Me llamo Ana y trabajo en Carvajal»)."""
+    found: dict[str, str] = {}
+    for key, pattern in PROFILE_PATTERNS:
+        match = pattern.search(message)
+        if match:
+            value = match.group(1).strip(" .,;!?¿¡")
+            if value:
+                found[key] = value
+    return found
+
+
+def is_profile_question(message: str) -> bool:
+    """Pregunta del usuario sobre sí mismo («¿Dónde trabajo?»): se responde desde la memoria."""
+    return PROFILE_QUESTION.search(normalize(message)) is not None
+
+
 TOPICS = re.compile(r"\bme interesa(?:n)?\s+(?:mucho\s+)?(?:el|la|los|las)?\s*(.{3,80}?)[.?!]*$")
 
 
@@ -107,6 +179,9 @@ def detect_write_intent(message: str) -> WriteIntent | None:
         return WriteIntent("forget_memory", {})
     if EXPORT.search(text):
         return WriteIntent("export_conversation", {"format": "markdown"})
+    profile = extract_profile(message)
+    if profile:
+        return WriteIntent("save_profile", profile)
     topics = TOPICS.search(text)
     if topics:
         value = message.strip(" ¿?¡!.")[-len(topics.group(1)) :].strip()
@@ -151,10 +226,21 @@ def execute_action(
             return "La conversación todavía no tiene turnos para exportar."
         return f"Exporté la conversación ({len(turns)} turnos):\n\n{export_markdown(turns)}"
     if store is None:
-        return "La memoria de preferencias no está disponible en este servidor."
+        return "La memoria de largo plazo no está disponible en este servidor."
     memory = UserMemory(store, ttl_days)
+    profile = UserProfile(store)
     if tool == "forget_memory":
-        return f"Olvidé {memory.forget(user_id)} preferencias guardadas."
+        preferences = memory.forget(user_id)
+        facts = profile.forget(user_id)
+        return f"Olvidé {preferences} preferencias y {facts} datos de tu perfil."
+    if tool == "save_profile":
+        facts = {key: value for key, value in clean.items() if value}
+        try:
+            saved = profile.save(user_id, facts)
+        except PreferenceError as exc:
+            raise ActionArgsError(str(exc)) from exc
+        listed = "; ".join(f"{item.key} = {item.value}" for item in saved)
+        return f"Guardé en tu perfil: {listed}. Lo recordaré también en conversaciones nuevas."
     try:
         item = memory.save(user_id, clean["key"], clean["value"])
     except PreferenceError as exc:

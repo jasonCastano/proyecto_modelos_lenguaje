@@ -225,6 +225,23 @@ La fidelidad no es válida: el juez recibió las filas `[F#]` sin su frase de or
 `agent/compare.py`; la repetición se detuvo por falta de memoria del equipo y queda pendiente). Detalle y
 análisis en `docs/evaluacion_modulo2.md`.
 
+### 3.11 `router.md` 1.1: ruta mixta (2026-11-13, ADR 0018)
+
+La rúbrica de sustentación pide un caso de **enrutamiento mixto** («compara la meta del documento con las
+ventas del CSV»). Se añade la ruta `mixed` con dos ejemplos y una regla: usarla solo cuando la pregunta pide
+combinar o comparar un dato con un texto. La heurística demo la elige cuando hay una palabra de comparación
+(«compara», «frente a», «meta», «objetivo») junto a una pista numérica.
+
+| Prueba (DeepSeek, 2026-11-13) | Ruta | Resultado |
+|-------------------------------|------|-----------|
+| «Compara la meta de sostenibilidad del informe con cuántas toneladas de caña procesa Manuelita» | `mixed` (0,90) | Filas [F#] y fragmentos [U#] en la misma respuesta |
+| «¿Cuántas filiales tiene Manuelita?» | `structured` (0,90) | «6 filiales» con el conteo de la herramienta [F1] |
+| «¿Qué dice el corpus sobre la política de calidad?» | `documental` (0,90) | Política de Calidad de Agroindustrial Laredo [U7] |
+| «Hola, buenas tardes» | `direct` (reglas) | 0 llamadas al modelo |
+
+Las preguntas sobre el propio usuario («¿Dónde trabajo?») y las declaraciones de perfil («Me llamo Ana…») se
+resuelven por reglas antes del enrutador, sin llamadas al modelo.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

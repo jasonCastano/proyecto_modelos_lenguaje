@@ -26,7 +26,11 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual (2026-11-12, constitución v1.4.0)**: el **Módulo 2 está entregado** con el tag
+> **Rúbrica de sustentación del Módulo 2 (2026-11-13, constitución v1.5.0)**: Qdrant como base vectorial,
+> memoria de largo plazo de perfil en el Store, ruta mixta, streaming SSE en la web y trazas por turno
+> (ADR 0018). Evidencia ítem por ítem y guion de 15 minutos en [`docs/rubrica_modulo2.md`](docs/rubrica_modulo2.md).
+>
+> **Estado al 2026-11-12 (constitución v1.4.0)**: el **Módulo 2 está entregado** con el tag
 > [`v0.2.0-modulo2`](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2):
 > recuperación semántica e híbrida (spec 013), conversación con memoria por hilo, enrutador, tabla estructurada,
 > variantes cadena y agente con LangGraph, blindaje contra inyección, aprobación humana de escrituras y
@@ -106,12 +110,12 @@ flowchart LR
     C[Catálogo SQLite<br/>procedencia · dedupe · auditoría]
     V[Plata<br/>data/silver<br/>limpieza + chunks]
     G[Oro<br/>data/gold<br/>base de conocimiento]
-    I[(Índice semántico<br/>e5-small 384d<br/>numpy + SQLite)]
+    I[(Qdrant<br/>e5-small 384d · HNSW<br/>payload filtrable)]
     H[Recuperación híbrida<br/>semántica + BM25 · traza]
     L[LangChain + DeepSeek<br/>Resumen · FAQ · Q&A]
     UI[Web React + FastAPI<br/>citas · fragmentos]
     T[(Tabla estructurada<br/>SQLite · hechos del oro)]
-    R[Enrutador<br/>directo · documental · estructurado]
+    R[Enrutador<br/>directo · documental · estructurado · mixto]
     M[LangGraph · cadena / agente<br/>memoria por hilo · HITL]
     D[Despliegue y canales<br/>WhatsApp / Telegram]
 
@@ -128,6 +132,88 @@ flowchart LR
     T --> M
     M --> UI
     M -. Fase 3 .-> D
+```
+
+### Agente del Módulo 2
+
+Cumplimiento de la rúbrica de sustentación, ítem por ítem, y guion de la demo:
+[`docs/rubrica_modulo2.md`](docs/rubrica_modulo2.md). Decisión:
+[ADR 0018](docs/decisions/0018-qdrant-y-rubrica-modulo2.md).
+
+**Grafo del agente (LangGraph)**. Las dos variantes comparten el estado del hilo, la puerta de decisión y el
+cierre del turno:
+
+```mermaid
+flowchart LR
+    START((inicio)) --> route{route<br/>reglas → LLM}
+    route -- "saludo · fuera de alcance · aclaración · perfil" --> reply[reply<br/>sin buscar]
+    route -- "escritura (perfil, preferencia, olvido, exportar)" --> action[action<br/>interrupt → aprobación humana]
+    route -- "documental · estructurada · mixta" --> work
+    subgraph cadena [Variante cadena]
+        work --> retrieve[retrieve<br/>Qdrant + BM25 y/o tabla]
+        retrieve --> answer[answer<br/>RunnablePassthrough → ChatPromptTemplate → DeepSeek]
+    end
+    subgraph agente [Variante agente]
+        work -.-> ag[create_agent<br/>@tool + middleware<br/>HITL · PII · resumen · límites]
+    end
+    reply --> finalize
+    action --> finalize
+    answer --> finalize
+    ag --> finalize
+    finalize[finalize<br/>turno · métricas · resumen] --> END((fin))
+```
+
+**Memoria: checkpointer frente a Store**:
+
+```mermaid
+flowchart TB
+    subgraph corto [Corto plazo · por hilo]
+        CK[(SqliteSaver<br/>checkpoints.sqlite3)]
+        T1[thread_id A<br/>turnos · resumen · acciones]
+        T2[thread_id B]
+        CK --- T1
+        CK --- T2
+    end
+    subgraph largo [Largo plazo · por usuario]
+        ST[(SqliteStore<br/>memory.sqlite3)]
+        NP["(users, id, profile)<br/>nombre · trabajo · cargo · ciudad"]
+        NF["(users, id, preferences)<br/>formato · temas · idioma · TTL 30 días"]
+        ST --- NP
+        ST --- NF
+    end
+    T1 -- "save_profile (con aprobación)" --> NP
+    NP -- "store.search() en otro hilo" --> T2
+    T1 -. "trim_messages · SummarizationMiddleware" .-> T1
+```
+
+**Herramientas y router**:
+
+```mermaid
+flowchart LR
+    M[Mensaje] --> RG{Reglas<br/>0 llamadas}
+    RG -- saludo / fuera de alcance --> D[Respuesta directa]
+    RG -- pregunta sobre el usuario --> P[Perfil del Store]
+    RG -- ambiguo --> LLM{Router LLM<br/>JSON + Pydantic}
+    LLM -- documental --> SD["@tool search_documents<br/>Qdrant top-k + BM25"]
+    LLM -- estructurada --> QS["@tool query_structured<br/>SQLite / CSV · conteo exacto"]
+    LLM -- mixta --> SD
+    LLM -- mixta --> QS
+    LLM -- "confianza < 0,6" --> C[Aclaración]
+    SD --> G[Contexto en documento<br/>como datos pasivos]
+    QS --> G
+    G --> A[Respuesta con citas U# / F#<br/>validadas]
+```
+
+**Trazas**: cada turno lleva `run_name`, etiquetas y metadatos para LangSmith (`LANGSMITH_TRACING`,
+`LANGSMITH_API_KEY` y `LANGSMITH_PROJECT`). También se registra como JSON en
+`$MANUELITA_STATE_DIR/logs/turns.jsonl` (ruta, quién decidió, herramientas, latencia y tokens).
+
+```mermaid
+flowchart LR
+    UI[React<br/>POST /api/chat/stream] -- SSE: route · tool · token · done --> UI
+    UI --> API[FastAPI] --> GR[LangGraph]
+    GR -- callbacks --> LS[(LangSmith<br/>proyecto manuelita-modulo2)]
+    GR --> LOG[(turns.jsonl<br/>log estructurado)]
 ```
 
 **Decisiones clave**:
@@ -562,8 +648,12 @@ variantes sobre el mismo estado: **cadena** (una búsqueda por turno) y **agente
 búsquedas). Toda escritura (preferencias, olvido, exportación) espera aprobación humana.
 
 ```bash
-# Una vez: tabla estructurada (15 entidades, 381 hechos, 477 citas)
+# Una vez: tabla estructurada (15 entidades, 381 hechos, 477 citas) y su exportación CSV/JSON
 uv run python -m proyecto_modelos_lenguaje.agent build-structured
+
+# Una vez: colección Qdrant desde el índice (≈2 min en modo local; con QDRANT_URL usa el servidor)
+uv run python -m proyecto_modelos_lenguaje.rag qdrant build
+uv run python -m proyecto_modelos_lenguaje.rag qdrant status
 
 # Conversar (sin --thread crea un hilo y muestra su UUID)
 uv run python -m proyecto_modelos_lenguaje.agent chat --mode real "¿Qué produce Manuelita?"
@@ -578,10 +668,15 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
 - Estado fuera del repositorio en `MANUELITA_STATE_DIR` (por defecto `%LOCALAPPDATA%\manuelita-rag`):
   hilos en `checkpoints.sqlite3`, preferencias en `memory.sqlite3`. Política en
   [`docs/memoria.md`](docs/memoria.md).
-- API: `POST /api/chat`, `GET /api/threads/{id}`, `POST /api/threads/{id}/resume`,
-  `GET|DELETE /api/memory/{user_id}` ([contrato](specs/014-rag-agent-memory-router/contracts/chat-api.md)).
-- Web: pestaña **Conversación** con chip de ruta, fragmentos, fuentes, métricas por turno y tarjeta de
-  aprobación.
+- API: `POST /api/chat`, `POST /api/chat/stream` (SSE), `GET /api/threads/{id}`,
+  `POST /api/threads/{id}/resume`, `GET|DELETE /api/memory/{user_id}` (preferencias y perfil) y
+  `GET /api/observability` ([contrato](specs/014-rag-agent-memory-router/contracts/chat-api.md)).
+- Web: pestaña **Conversación** con respuesta en streaming, chip de ruta, fragmentos, fuentes, métricas por
+  turno, perfil guardado y tarjeta de aprobación.
+- Memoria de largo plazo: «Me llamo Ana y trabajo en Carvajal» propone `save_profile`; tras aprobarla, un
+  hilo nuevo responde «¿Dónde trabajo?» desde el Store sin buscar.
+- Blindaje en vivo: con `MANUELITA_DEMO_CORPUS=malicious`, el modo demo usa un corpus con un documento que
+  intenta dar órdenes; la interfaz lo marca y la respuesta no lo obedece.
 - Trazas opcionales con LangSmith: define `LANGSMITH_TRACING=true` y `LANGSMITH_API_KEY` en `.env` (no se
   versiona). Los mensajes llegan ya sin datos personales; no la actives con usuarios reales sin revisar
   `docs/memoria.md` §6.

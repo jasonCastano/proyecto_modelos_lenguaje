@@ -17,7 +17,7 @@
 | 2.2 RAG con Qdrant e índice ANN | 8 % | ✅ | Colección `manuelita_fragments` en Qdrant (coseno, HNSW `m=16`), top-k con filtro por *payload* en una etapa. Recuperación híbrida densa + BM25 y cita `[U#]` validada (`rag/vectorstore.py`, `rag/hybrid.py`). |
 | 2.3 Router Agent | 10 % | ✅ | Reglas (0 llamadas al modelo) más LLM con salida JSON validada por Pydantic. Rutas: directa, documental, estructurada, mixta, fuera de alcance y aclaración. Los saludos no buscan (`tool_calls = 0`). Acierto: 35/36 (97 %). |
 | 2.4 Blindaje del RAG | 4 % | ✅ | El contexto va delimitado como `<documento>` de datos pasivos. Las instrucciones embebidas se marcan como `anomalous` y se avisan en la interfaz; se descartan las respuestas que copian el prompt (`agent/guard.py`, `tests/integration/agent/test_injection.py`). |
-| 3.1 Frontend propio | 10 % | ✅ | React + Vite + TypeScript desacoplado de FastAPI. Streaming SSE (`/api/chat/stream`), hilos y sesiones, errores controlados, tarjeta de aprobación y traza por turno (ruta, fragmentos, fuentes y métricas). |
+| 3.1 Frontend propio | 10 % | ✅ | React + Vite + TypeScript desacoplado de FastAPI. Streaming SSE (`/api/chat/stream`), conversaciones recientes que se retoman desde el checkpointer, errores controlados, tarjeta de aprobación, atajos con los casos de la demo y traza por turno (ruta, quién decidió, fragmentos, fuentes, tokens y latencia). |
 | 3.2 Código y gobernanza | 10 % | ✅ | `uv`, Ruff, type hints y docstrings; API tipada con Pydantic. 54 PRs fusionados con revisión al 2026-11-13, Conventional Commits, CI (`test`, `web`, `autoria`) y LICENSE MIT. |
 | 4.1 Diagramas de arquitectura | 8 % | ✅ | README, sección «Agente del Módulo 2»: grafo del agente, checkpointer vs. Store, herramientas y router, y trazas. Además `docs/arquitectura.html`. |
 | 4.2 Diseño y evaluación del retrieval | 7 % | ✅ | 36 consultas etiquetadas; Recall@10, nDCG@10 y MRR (léxico, semántico e híbrido); juez con definiciones de Ragas (`docs/evaluacion_modulo2.md`). |
@@ -83,7 +83,7 @@ y LLM Wiki/OKF.
 ## 5. Guion de 15 minutos
 
 **Antes de las 8:00**: `make app` abierto en el navegador (pestaña «Conversación», variante Cadena, modo
-real), el repositorio en otra pestaña y el IDE en `agent/graph.py`. Una terminal con la API para mostrar
+real; los botones «Casos de la demo» rellenan cada mensaje), el repositorio en otra pestaña y el IDE en `agent/graph.py`. Una terminal con la API para mostrar
 `turns.jsonl`.
 
 | Minuto | Bloque | Quién | Qué hacer |

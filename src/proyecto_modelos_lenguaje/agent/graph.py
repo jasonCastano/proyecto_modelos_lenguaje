@@ -77,7 +77,14 @@ from .privacy import build_pii_middleware
 from .prompts import load_agent_prompt
 from .router import apply_structured_fallback, contextual_query, route_message
 from .structured import StructuredFact, StructuredStore, normalize
-from .tools import ToolTrace, build_read_tools, query_structured_impl, search_documents_impl
+from .tools import (
+    ToolTrace,
+    build_read_tools,
+    count_fact,
+    count_intent,
+    query_structured_impl,
+    search_documents_impl,
+)
 
 LABEL_PATTERN = re.compile(r"\[([UF]\d+)\]")
 ROUTER_HISTORY_TURNS = 3
@@ -461,6 +468,19 @@ def _retrieve_node(deps: GraphDeps):
         documents: list[GuardedDocument] = []
         if decision.route in {"structured", "mixed"} and deps.store is not None:
             facts, documents, _ = query_structured_impl(deps.store, query=query, limit=top_k)
+            entity_type = count_intent(state["question"])
+            counted = count_fact(deps.store, entity_type) if entity_type else None
+            if counted is not None:
+                # El conteo exacto va primero: el modelo lo cita, no lo calcula.
+                facts = [counted, *facts][:top_k]
+                documents = [
+                    GuardedDocument(
+                        f"F{index}",
+                        fact.citations[0].url if fact.citations else "",
+                        f"{fact.subject_label} · {fact.attribute} = {fact.value}. {fact.snippet}",
+                    )
+                    for index, fact in enumerate(facts, start=1)
+                ]
             retrievals += 1
         if decision.route == "structured" and not facts:
             decision = apply_structured_fallback(decision, rows_found=0)

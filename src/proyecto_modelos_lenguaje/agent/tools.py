@@ -10,6 +10,7 @@ estructurada ya cargados (una sola carga del índice por proceso).
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -19,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..rag.hybrid import HybridRetriever, MetadataFilter, RetrievedFragment
 from .guard import GuardedDocument, detect_instructions, render_documents
-from .structured import StructuredFact, StructuredStore
+from .structured import StructuredFact, StructuredStore, normalize
 
 EntityType = Literal["subsidiary", "brand", "certification", "company"]
 ENTITY_LABELS = {
@@ -63,6 +64,54 @@ class QueryStructuredArgs(BaseModel):
         if not any((self.query, self.subject, self.attribute, self.entity_type)):
             raise ValueError("indica query, subject, attribute o entity_type")
         return self
+
+
+COUNT_QUESTION = re.compile(
+    r"\b(?:cuant[oa]s|numero de|cantidad de|lista de|que|cuales son (?:las|los))\s+"
+    r"(filiales|subsidiarias|marcas|certificaciones|empresas)\b"
+)
+COUNT_TYPES = {
+    "filiales": "subsidiary",
+    "subsidiarias": "subsidiary",
+    "marcas": "brand",
+    "certificaciones": "certification",
+    "empresas": "subsidiary",
+}
+
+
+def count_intent(question: str) -> str | None:
+    """Tipo de entidad cuando la pregunta pide contar o listar («¿Cuántas filiales…?»)."""
+    match = COUNT_QUESTION.search(normalize(question))
+    return COUNT_TYPES[match.group(1)] if match else None
+
+
+def count_fact(store: StructuredStore, entity_type: str) -> StructuredFact | None:
+    """Hecho sintético con el conteo exacto y la cita de una de las entidades contadas.
+
+    La aritmética la hace la herramienta; el modelo solo redacta y cita ``F#``.
+    """
+    total, names = count_entities(store, entity_type)
+    if not total:
+        return None
+    citations = ()
+    unit_id = ""
+    for name in names:
+        facts = store.get_facts(subject=name, limit=1)
+        if facts and facts[0].citations:
+            citations, unit_id = facts[0].citations, facts[0].unit_id
+            break
+    label = ENTITY_LABELS.get(entity_type, entity_type)
+    return StructuredFact(
+        fact_id=f"count_{entity_type}",
+        subject_id="manuelita",
+        subject_label="Grupo Manuelita",
+        attribute=f"número de {label} en la tabla estructurada",
+        value=str(total),
+        year=None,
+        unit_id=unit_id,
+        snippet=render_count(entity_type, total, names),
+        citations=tuple(citations),
+    )
 
 
 def count_entities(store: StructuredStore, entity_type: str) -> tuple[int, list[str]]:

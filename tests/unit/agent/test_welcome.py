@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import re
 
+import pytest
+
 from proyecto_modelos_lenguaje.agent.prompts import CONDUCT_SECTIONS, load_conduct, load_sections
 from proyecto_modelos_lenguaje.agent.welcome import gold_units_path, load_welcome, parse_citations
 
@@ -25,20 +27,30 @@ def test_welcome_text_and_citations() -> None:
     )
 
 
+def _gold_available() -> bool:
+    path = gold_units_path()
+    if not path.is_file():
+        return False
+    with path.open(encoding="utf-8") as handle:
+        return not handle.readline().startswith("version https://git-lfs")
+
+
+@pytest.mark.skipif(not _gold_available(), reason="corpus oro no descargado (Git LFS)")
 def test_cited_units_contain_the_attributed_facts() -> None:
     _version, sections = load_sections("welcome")
     declared = parse_citations(sections["citations"])
+    wanted = {row["unit_id"] for row in declared}
     units = {}
     with gold_units_path().open(encoding="utf-8") as handle:
-        wanted = {row["unit_id"] for row in declared}
         for line in handle:
             unit = json.loads(line)
             if unit["unit_id"] in wanted:
-                units[unit["unit_id"]] = unit["text"]
+                units[unit["unit_id"]] = unit
     for row in declared:
-        assert row["unit_id"] in units
+        unit = units[row["unit_id"]]
+        assert unit["url"] == row["url"], row["unit_id"]
         for fact in row["facts"]:
-            assert fact in units[row["unit_id"]], (row["unit_id"], fact)
+            assert fact in unit["text"], (row["unit_id"], fact)
 
 
 def test_conduct_sections_are_complete_and_in_persona() -> None:

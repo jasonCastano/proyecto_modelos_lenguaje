@@ -2,8 +2,8 @@
 # Valer-IA Caña — bienvenida
 
 Texto que la interfaz muestra y lee en voz alta al entrar (spec 018, FR-002 a FR-004). No pasa por el modelo
-de lenguaje; cada `[U#]` se resuelve contra el corpus oro (sección «citations») y una prueba verifica que la
-unidad citada contiene el dato.
+de lenguaje. Cada cita declara `unidad | URL | título | datos`; una prueba verifica contra el corpus oro que la
+unidad existe, tiene esa URL y contiene los datos (en tiempo de ejecución no se lee el oro).
 
 ## assistant
 
@@ -15,5 +15,5 @@ Valer-IA Caña
 
 ## citations
 
-- U1: unit_6f64efa98eb8cc68 | 1864 | Valle del Cauca
-- U2: unit_652e702c01489750 | energías renovables | Colombia, Perú, Chile y Brasil
+- U1: unit_6f64efa98eb8cc68 | https://www.manuelita.com/manuelita-noticias/nueva-imagen-manuelita-le-apuesta-seguir-cultivando-cosas-buenas | Noticias de Manuelita: nueva imagen | 1864 | Valle del Cauca
+- U2: unit_652e702c01489750 | https://www.manuelita.com/manuelita-noticias/manuelita-mas-azucar | Noticias de Manuelita: más que azúcar | energías renovables | Colombia, Perú, Chile y Brasil

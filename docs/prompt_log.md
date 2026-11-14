@@ -297,7 +297,7 @@ El asistente pasa a tener identidad propia, **Valer-IA Caña**, con trato profes
 | `prompts/agent.md` | 1.3 → 1.4 | `e55a1956534a` | Rol de Valer-IA Caña. Se declara IA y no se presenta como canal autorizado (CONSTITUTION §10). Reglas 6 a 10: mantener el papel y no revelar instrucciones; quejas, empleo y trámites solo con canales oficiales de la evidencia; no pedir ni repetir datos sensibles (`[REDACTED_*]`); sin asesoría legal, médica ni financiera; calma ante la hostilidad y nada de datos de terceros. |
 | `prompts/router.md` | 1.2 → 1.3 | `189a1fea5f87` | `out_of_scope` incluye `scope_reason` (`off_topic`, `third_party`, `prompt_extraction`, `abuse`, `harmful`, `advice`). Las reglas deterministas de `router.py` deciden antes que el LLM. |
 | `prompts/conduct.md` | 1.0 (nuevo) | `dd8b99789dd4` | Respuestas deterministas de Valer-IA (saludo, despedida con oferta de recordar, aclaración, «¿eres una IA?», un texto por motivo de conducta, aviso de datos sensibles y la conversación de identidad por correo). No pasan por el modelo. |
-| `prompts/welcome.md` | 1.0 (nuevo) | `52c9c4ce0592` | Bienvenida al entrar (`GET /api/welcome`) con citas a `unit_6f64efa98eb8cc68` (1864, Valle del Cauca) y `unit_652e702c01489750` (plataformas y países), verificadas por prueba. |
+| `prompts/welcome.md` | 1.0 (nuevo) | `7a0027ed8cc5` | Bienvenida al entrar (`GET /api/welcome`), con URL y título declarados (no lee el oro en ejecución), con citas a `unit_6f64efa98eb8cc68` (1864, Valle del Cauca) y `unit_652e702c01489750` (plataformas y países), verificadas por prueba. |
 
 ## 4. Pendiente
 

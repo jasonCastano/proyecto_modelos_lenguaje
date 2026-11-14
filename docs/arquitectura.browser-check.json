@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "351c933d-b327-4489-bd9f-50ef6de85d18",
+  "deliveryReceiptId": "7b512fde-2c5f-456c-8340-dfcb5fbd09ed",
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "c83f8c7eacadaa6956da19fb1aae15b2e140dbd778241fd2176e5f35a5948a33",
-    "bytes": 862462
+    "sha256": "8f92e693b43c9f0d52bad041bce4cb83f7af46f9d0828607879b05754583e43f",
+    "bytes": 862750
   },
   "state": {
     "detail": "read",

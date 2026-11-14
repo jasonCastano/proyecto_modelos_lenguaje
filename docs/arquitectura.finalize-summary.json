@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "006571f2de03fd8d7021f15255836fbf0055b4963f0f4cb6c453027c0a74e64a",
-    "bytes": 11650
+    "sha256": "65e80cd800c8509024ff2932af26771f98cd1afed3f321e1d516e83ac8e4ef25",
+    "bytes": 11807
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "c83f8c7eacadaa6956da19fb1aae15b2e140dbd778241fd2176e5f35a5948a33",
-    "bytes": 862462
+    "sha256": "8f92e693b43c9f0d52bad041bce4cb83f7af46f9d0828607879b05754583e43f",
+    "bytes": 862750
   },
   "gates": {
     "validate": "pass",
@@ -32,18 +32,8 @@
     "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize-summary.json",
     "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
   },
-  "update": {
-    "status": "current",
-    "installedVersion": "3.2.0",
-    "availableVersion": "3.2.0",
-    "releaseNotes": null,
-    "checkedAt": "2026-11-11T15:45:30.301Z",
-    "source": "cache",
-    "noticeRequired": false,
-    "noticeText": null
-  },
   "visualReview": "not-requested",
-  "durationMs": 4998,
+  "durationMs": 48885,
   "browserCheck": {
     "requested": true,
     "ran": true
@@ -75,7 +65,7 @@
             "artifactIndex": 14
           },
           "point": [
-            852.5,
+            848,
             385
           ]
         }

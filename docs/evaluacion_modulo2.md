@@ -171,6 +171,50 @@ Línea base de la spec 014 (T026), antes del agente. Evaluación de recuperació
 | r27 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
 | r28 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
 
+<!-- qdrant:start -->
+## Recuperación sobre Qdrant y barrido de top-k y α (2026-11-14)
+
+A pedido de la evaluación docente (ítem 4.2), las métricas se repitieron sobre la colección Qdrant
+`manuelita_fragments` (modo local embebido, búsqueda exacta), que es lo que usa la demo. Ejecución
+`qdrant-base-2026-11-14`, 40 preguntas (35 puntuables);
+JSON en `docs/evaluacion_qdrant.json`.
+
+| Modo | Recall@1 | Recall@5 | Recall@10 | nDCG@10 | MRR | Latencia media |
+|---|---:|---:|---:|---:|---:|---:|
+| lexical | 0,286 | 0,371 | 0,371 | 0,333 | 0,320 | 724 ms |
+| semantic | 0,343 | 0,571 | 0,686 | 0,492 | 0,434 | 35 ms |
+| hybrid | 0,343 | 0,600 | 0,671 | 0,499 | 0,450 | 941 ms |
+
+Las cifras coinciden con las del índice numpy del 2026-11-10 (la búsqueda local de Qdrant es exacta):
+el cambio de base vectorial no alteró la calidad, y la consulta semántica tarda ~35 ms.
+
+**Barrido** (`scripts/sweep_retrieval.py`, modo híbrido, `lexical_top_k = 8`): top-k semántico
+∈ {5, 8, 12} y peso semántico α ∈ {0,5; 0,65; 0,8} (léxico = 1 − α). JSON en
+`docs/barrido_retrieval.json`.
+
+| top-k semántico | α | Recall@10 | nDCG@10 | MRR |
+|---:|---:|---:|---:|---:|
+| 5 | 0,5 | 0,629 | 0,460 | 0,406 |
+| 5 | 0,65 | 0,629 | 0,507 | 0,468 ← |
+| 5 | 0,8 | 0,629 | 0,507 | 0,468 |
+| 8 | 0,5 | 0,643 | 0,471 | 0,416 |
+| 8 | 0,65 | 0,643 | 0,505 | 0,461 |
+| 8 | 0,8 | 0,643 | 0,505 | 0,461 |
+| 12 | 0,5 | 0,643 | 0,468 | 0,420 |
+| 12 | 0,65 | 0,671 | 0,499 | 0,450 |
+| 12 | 0,8 | 0,671 | 0,499 | 0,450 |
+
+Lectura: la configuración vigente (k = 12, α = 0,65) tiene el **mejor Recall@10**
+(0,671) con nDCG@10 0,499. El mejor nDCG@10 es
+k = 5, α = 0,65 (0,507), pero pierde 0,043 de
+Recall@10; como el contexto del modelo necesita cubrir la evidencia, se mantiene k = 12. α = 0,5
+empeora en todos los k (el BM25 pesa demasiado) y α = 0,8 empata con 0,65: el peso léxico solo
+desempata, por eso se conserva 0,65.
+Con 35 preguntas puntuables, diferencias de ±0,03 equivalen a una pregunta, así que el barrido sirve para
+justificar el rango de los parámetros más que para afinarlos. El troceo 400/60 no se barrió: exige
+reindexar las 15.211 unidades por cada valor.
+<!-- qdrant:end -->
+
 <!-- router:start -->
 ## Enrutador (US2)
 

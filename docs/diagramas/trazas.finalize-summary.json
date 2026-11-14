@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "sequence",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\trazas.json",
+    "sha256": "60bd535feac2fe546f977a59523968958df3e3e3f7cadb24b05c426134e64cc6",
+    "bytes": 4423
+  },
+  "artifact": {
+    "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\trazas.html",
+    "sha256": "36668f8597aca0c931258dfef48836e9914d06520491a0e36e5a9f6623b5ad57",
+    "bytes": 840240
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\trazas.finalize.json",
+    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\trazas.finalize-summary.json",
+    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\trazas.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-14T04:14:03.185Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 18827,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

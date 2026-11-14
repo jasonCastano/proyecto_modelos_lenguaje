@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\memoria.json",
+    "sha256": "1885a7896b8df85a8d402e7717fe0b9a95d11ca901174d52be993cd932b08df4",
+    "bytes": 5293
+  },
+  "artifact": {
+    "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\memoria.html",
+    "sha256": "dd1d9669d0cdcead62260a10fa78a1488142baff76ab13af3934ef4c154fd405",
+    "bytes": 851454
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\memoria.finalize.json",
+    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\memoria.finalize-summary.json",
+    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\memoria.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-14T04:14:03.185Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 19600,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

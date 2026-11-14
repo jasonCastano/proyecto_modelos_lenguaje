@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "c2f66bbe-3c9b-49b0-bf38-4601cd65630d",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.json",
+  "output": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.html",
+  "specification": {
+    "sha256": "0f7f1a789dc1938118c826c8cac4cca2025e46326501f5fc229074e4bfe82ae9",
+    "bytes": 7690
+  },
+  "artifact": {
+    "sha256": "a4fef6a630d25e81a75145047ffe233cfc9c18d35a8a8530511387fd783db7a4",
+    "bytes": 854154
+  }
+}

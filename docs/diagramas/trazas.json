@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Trazas de un turno: streaming SSE, LangSmith y turns.jsonl",
+    "locale": "es",
+    "output": "docs/diagramas/trazas.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
+      "provider": "github",
+      "revision": "a0611c326087e92943bb9fb22cb0d240feee6c4e"
+    }
+  },
+  "participants": [
+    {
+      "id": "ui",
+      "type": "frontend",
+      "label": "React",
+      "sublabel": "ChatView · streamChat",
+      "sources": [
+        { "path": "web/src/lib/chat.ts", "line": 100, "end_line": 160 }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI",
+      "sublabel": "POST /api/chat/stream",
+      "sources": [
+        { "path": "src/proyecto_modelos_lenguaje/api.py", "line": 525, "end_line": 542 }
+      ]
+    },
+    {
+      "id": "graph",
+      "type": "backend",
+      "label": "ChatService + LangGraph",
+      "sublabel": "graph.stream",
+      "sources": [
+        { "path": "src/proyecto_modelos_lenguaje/agent/service.py", "line": 325, "end_line": 349 },
+        { "path": "src/proyecto_modelos_lenguaje/agent/service.py", "line": 54, "end_line": 91 }
+      ]
+    },
+    {
+      "id": "langsmith",
+      "type": "cloud",
+      "label": "LangSmith",
+      "sublabel": "manuelita-modulo2",
+      "sources": [
+        { "path": "src/proyecto_modelos_lenguaje/agent/observability.py", "line": 29, "end_line": 64 }
+      ]
+    },
+    {
+      "id": "log",
+      "type": "database",
+      "label": "turns.jsonl",
+      "sublabel": "log estructurado",
+      "sources": [
+        { "path": "src/proyecto_modelos_lenguaje/agent/observability.py", "line": 99, "end_line": 118 }
+      ]
+    }
+  ],
+  "segments": [
+    { "from": 150, "to": 262, "label": "Petición y trazas" },
+    { "from": 268, "to": 380, "label": "Eventos SSE" },
+    { "from": 386, "to": 480, "label": "Cierre del turno" }
+  ],
+  "messages": [
+    { "id": "post", "from": "ui", "to": "api", "y": 160, "label": "POST /api/chat/stream", "variant": "emphasis" },
+    { "id": "stream", "from": "api", "to": "graph", "y": 188, "label": "stream(updates, messages)", "variant": "emphasis" },
+    {
+      "id": "callbacks",
+      "from": "graph",
+      "to": "langsmith",
+      "y": 216,
+      "label": "callbacks: run_name · tags",
+      "variant": "dashed",
+      "note": "Solo con LANGSMITH_TRACING y LANGSMITH_API_KEY definidos"
+    },
+    { "id": "route-ev", "from": "graph", "to": "api", "y": 280, "label": "route · tool · retrieval", "variant": "return" },
+    { "id": "sse-route", "from": "api", "to": "ui", "y": 308, "label": "SSE: route · tool", "variant": "return" },
+    { "id": "token-ev", "from": "graph", "to": "api", "y": 336, "label": "token", "variant": "return" },
+    { "id": "sse-token", "from": "api", "to": "ui", "y": 364, "label": "SSE: token", "variant": "return" },
+    {
+      "id": "log-turn",
+      "from": "graph",
+      "to": "log",
+      "y": 396,
+      "label": "log_turn",
+      "variant": "dashed",
+      "note": "Ruta, quién decidió, herramientas, latencia y tokens"
+    },
+    { "id": "sse-done", "from": "api", "to": "ui", "y": 460, "label": "SSE: done", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "ui", "from": 155, "to": 466, "type": "frontend" },
+    { "participant": "api", "from": 160, "to": 462, "type": "backend" },
+    { "participant": "graph", "from": 188, "to": 402, "type": "backend" },
+    { "participant": "langsmith", "from": 211, "to": 236, "type": "cloud" },
+    { "participant": "log", "from": 391, "to": 416, "type": "database" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Streaming",
+      "items": [
+        "El cliente recibe start, route, tool, retrieval, token y done por SSE",
+        "Un fallo a mitad del flujo viaja como evento error; el cliente puede cancelar o vencer a los 90 s"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "LangSmith observa",
+      "items": [
+        "Cada turno lleva run_name turno-{variante}, etiquetas de modo y variante y el thread_id en los metadatos",
+        "Sin clave, la trazabilidad queda en el log local"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Log local",
+      "items": [
+        "turns.jsonl vive en $MANUELITA_STATE_DIR/logs, fuera del repositorio"
+      ]
+    }
+  ]
+}

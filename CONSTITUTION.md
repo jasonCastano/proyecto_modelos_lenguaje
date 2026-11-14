@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.7.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
+**Versión**: 1.8.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -295,6 +295,9 @@ uv.lock
   estructura, capturas de la app, fuentes de datos, limitaciones, licencia y créditos.
 - `README.md` DEBE enlazar el diagrama interactivo `docs/arquitectura.html` y su fuente
   `docs/arquitectura.json`, regenerados con Archify.
+- Todo diagrama de arquitectura o de flujo del README DEBE generarse con Archify (fuente JSON en
+  `docs/diagramas/`, HTML validado con `finalize --quality showcase` y captura en
+  `docs/capturas/diagramas/`); no se usan bloques Mermaid.
 - La gobernanza visible (PR/issue templates, labels, pre-commit y Makefile) DEBE estar
   versionada y enlazada desde el README.
 - Los créditos DEBEN nombrar a ambos integrantes y al curso.
@@ -359,7 +362,8 @@ uv.lock
   de versiones, §4.3).
 - **Contribución**: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` y `AGENTS.md` describen el flujo y el contexto.
 - **Arquitectura**: `docs/arquitectura.json` es la fuente; `docs/arquitectura.html` se regenera con
-  Archify y se enlaza desde el README. El HTML no se edita a mano.
+  Archify y se enlaza desde el README. Los diagramas del agente (grafo, nodo, memoria, router y
+  trazas) viven en `docs/diagramas/*.json` con su HTML. El HTML no se edita a mano.
 - **Identidad**: el mantenedor y la cuenta de GitHub se declaran en README y constitución; no se usan
   credenciales ni rutas absolutas en la documentación.
 
@@ -930,4 +934,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.7.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
+**Versión**: 1.8.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14

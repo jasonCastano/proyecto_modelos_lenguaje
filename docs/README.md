@@ -14,6 +14,7 @@ README o la constitución.
 | [`prompt_log.md`](prompt_log.md) | Versiones de prompts, modelos, parámetros y resultados. |
 | [`arquitectura.html`](arquitectura.html) | Diagrama interactivo del pipeline (Archify). |
 | [`arquitectura.json`](arquitectura.json) | Fuente tipada del diagrama. |
+| [`diagramas/`](diagramas/) | Diagramas Archify del agente: grafo, nodo, memoria, router y trazas (JSON + HTML). |
 | [`decisions/`](decisions/) | ADRs de arquitectura, modelo, datos y app. |
 
 ## Especificaciones

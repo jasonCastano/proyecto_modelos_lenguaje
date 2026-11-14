@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "24e9fe6d-f897-4892-b5e6-e8541f3e0308",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\nodo-agente.json",
+  "output": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\nodo-agente.html",
+  "specification": {
+    "sha256": "247cbda90c1e1897e304290eb13daa3f34398ae09f6330ab84efb41dade97340",
+    "bytes": 7506
+  },
+  "artifact": {
+    "sha256": "9a0223f858727692bc156e0c9295164786561712d80bcee608a8f83cc813fc7b",
+    "bytes": 851314
+  }
+}

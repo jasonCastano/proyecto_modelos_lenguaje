@@ -1,0 +1,288 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Grafo del agente (LangGraph): cadena y agente",
+    "locale": "es",
+    "output": "docs/diagramas/grafo-agente.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
+      "provider": "github",
+      "revision": "a0611c326087e92943bb9fb22cb0d240feee6c4e"
+    }
+  },
+  "lanes": [
+    {
+      "id": "noretr",
+      "label": "Sin búsqueda"
+    },
+    {
+      "id": "gate",
+      "label": "Puerta de decisión y cierre"
+    },
+    {
+      "id": "chain",
+      "label": "Variante cadena"
+    },
+    {
+      "id": "agentlane",
+      "label": "Variante agente"
+    }
+  ],
+  "groups": [
+    {
+      "id": "chain_work",
+      "label": "Recuperar siempre",
+      "lane": "chain",
+      "fromCol": 1,
+      "toCol": 4,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "start",
+    "route",
+    "retrieve",
+    "answer",
+    "finalize"
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "gate",
+      "col": 0,
+      "type": "external",
+      "label": "Mensaje",
+      "sublabel": "pregunta del hilo",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/service.py",
+          "line": 325,
+          "end_line": 335
+        }
+      ]
+    },
+    {
+      "id": "route",
+      "lane": "gate",
+      "col": 1,
+      "type": "security",
+      "label": "route",
+      "sublabel": "reglas → LLM",
+      "tag": "RouteDecision",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 299,
+          "end_line": 346
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/router.py",
+          "line": 183,
+          "end_line": 204
+        }
+      ]
+    },
+    {
+      "id": "reply",
+      "lane": "noretr",
+      "col": 3,
+      "type": "backend",
+      "label": "reply",
+      "sublabel": "saludo · perfil · aclaración",
+      "tag": "0 búsquedas",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 413,
+          "end_line": 435
+        }
+      ]
+    },
+    {
+      "id": "action",
+      "lane": "gate",
+      "col": 3,
+      "type": "security",
+      "label": "action",
+      "sublabel": "interrupt() → aprobación",
+      "tag": "solo cadena · HITL",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 395,
+          "end_line": 411
+        }
+      ]
+    },
+    {
+      "id": "retrieve",
+      "lane": "chain",
+      "col": 1,
+      "type": "database",
+      "label": "retrieve",
+      "sublabel": "Qdrant + BM25 · tabla · series",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 472,
+          "end_line": 519
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "lane": "chain",
+      "col": 4,
+      "type": "backend",
+      "label": "answer",
+      "sublabel": "ChatPromptTemplate → DeepSeek",
+      "tag": "citas validadas",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 543,
+          "end_line": 576
+        }
+      ]
+    },
+    {
+      "id": "agent",
+      "lane": "agentlane",
+      "col": 2,
+      "type": "backend",
+      "label": "agent",
+      "sublabel": "create_agent + middleware",
+      "tag": "HITL · PII · límites",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 661,
+          "end_line": 737
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 739,
+          "end_line": 755
+        }
+      ]
+    },
+    {
+      "id": "finalize",
+      "lane": "gate",
+      "col": 5,
+      "type": "database",
+      "label": "finalize",
+      "sublabel": "turno · métricas · resumen",
+      "tag": "checkpointer",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 437,
+          "end_line": 470
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 578,
+          "end_line": 598
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-route",
+      "from": "start",
+      "to": "route",
+      "variant": "emphasis"
+    },
+    {
+      "id": "route-reply",
+      "from": "route",
+      "to": "reply",
+      "label": "directa · fuera de alcance"
+    },
+    {
+      "id": "route-action",
+      "from": "route",
+      "to": "action",
+      "label": "escritura",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "route-retrieve",
+      "from": "route",
+      "to": "retrieve",
+      "label": "documental · estructurada · mixta",
+      "variant": "emphasis"
+    },
+    {
+      "id": "route-agent",
+      "from": "route",
+      "to": "agent",
+      "label": "consulta o escritura",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "retrieve-answer",
+      "from": "retrieve",
+      "to": "answer",
+      "label": "<documento> U# / F#",
+      "variant": "emphasis"
+    },
+    {
+      "id": "answer-finalize",
+      "from": "answer",
+      "to": "finalize",
+      "variant": "emphasis"
+    },
+    {
+      "id": "reply-finalize",
+      "from": "reply",
+      "to": "finalize"
+    },
+    {
+      "id": "action-finalize",
+      "from": "action",
+      "to": "finalize",
+      "label": "resultado aprobado",
+      "variant": "security",
+      "role": "branch"
+    },
+    {
+      "id": "agent-finalize",
+      "from": "agent",
+      "to": "finalize",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Dos grafos, una puerta",
+      "items": [
+        "build_chain_graph y build_agent_graph comparten route, reply y finalize",
+        "La ruta mixta reúne filas [F#] y fragmentos [U#] en el mismo turno"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Escritura con aprobación",
+      "items": [
+        "Cadena: el nodo action llama interrupt() antes de escribir",
+        "Agente: HumanInTheLoopMiddleware interrumpe save_profile, save_preference, forget_memory y export_conversation"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Estado del hilo",
+      "items": [
+        "finalize agrega el turno y compacta el historial con compact_history",
+        "El grafo compila con el checkpointer SqliteSaver y el Store"
+      ]
+    }
+  ]
+}

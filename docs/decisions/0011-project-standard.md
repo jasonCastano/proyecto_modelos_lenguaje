@@ -55,3 +55,12 @@ Alejandro Castaño, correo `jasonale3007@gmail.com` y remoto
 - `make check`: 346 pruebas pasan, 9 omitidas.
 - `archify finalize ... --quality showcase`: validate, deliver, check y browser-check en verde.
 - `docs/arquitectura.visual-check.2048x1320.dark.png` generado y enlazado desde el README.
+
+## Actualización 2026-11-14: todos los diagramas con Archify
+
+Los cinco diagramas Mermaid que quedaban en el README (grafo del agente, nodo del agente desplegado,
+memoria, herramientas y router, y trazas) se reemplazaron por diagramas Archify con fuente en
+`docs/diagramas/*.json`, nodos enlazados al código en la revisión fijada y `finalize --quality showcase`
+en verde. El diagrama general del README pasó a ser la captura de `docs/arquitectura.html`, que ya
+cubría el mismo recorrido. El README muestra capturas de `visual-check` (2048×1320, tema claro) que
+enlazan al HTML interactivo. Constitución 1.8.0.

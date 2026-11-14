@@ -40,6 +40,7 @@ VALID_TYPES = (
     "structured",
     "ambiguous",
     "follow_up",
+    "mixed",
 )
 DEFAULT_WARMUP = 3
 

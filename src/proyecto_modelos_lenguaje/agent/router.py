@@ -59,7 +59,9 @@ STRUCTURED_CUES = re.compile(
 # Pedido de combinar fuentes: comparar, contrastar o relacionar un dato con lo que dicen los textos.
 MIXED_CUES = re.compile(
     r"\b(compara\w*|contrasta\w*|frente a|versus|vs|relacion\w* entre|coincide\w*|"
-    r"cumpl\w* (la|su|el) (meta|objetivo|compromiso)|meta|objetivo|segun el documento)\b"
+    r"cumpl\w* (la|su|el) (meta|objetivo|compromiso)|meta|objetivo|segun el documento|"
+    r"(que|lo que) (dice|explica|describe|cuenta|senala) (el|la|los|las) "
+    r"(informe|informes|documento|documentos|fundacion))\b"
 )
 # Cifra anual con año, cálculo o comparación: «ventas de 2021», «promedio de producción de azúcar».
 SERIES_CUES = re.compile(
@@ -120,7 +122,9 @@ def heuristic_decision(message: str, history: Sequence[str] = ()) -> RouteDecisi
     asks_series = series_intent(message) is not None and bool(
         STRUCTURED_CUES.search(text) or SERIES_CUES.search(text)
     )
-    if MIXED_CUES.search(text) and (asks_series or STRUCTURED_CUES.search(text) or "dato" in text):
+    # Comparar o relacionar explícitamente una cifra anual con un texto ⇒ ruta mixta.
+    names_series = series_intent(message) is not None
+    if MIXED_CUES.search(text) and (names_series or STRUCTURED_CUES.search(text) or "dato" in text):
         return RouteDecision(
             route="mixed",
             confidence=0.75,

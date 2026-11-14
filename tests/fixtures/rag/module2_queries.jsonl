@@ -34,3 +34,11 @@
 {"query_id": "r34", "question": "¿Qué tan productivo es ese cultivo?", "expected_route": "documental", "type": "follow_up", "expected_unit_ids": ["unit_d6826fa563b82add"], "follow_up_of": "r10"}
 {"query_id": "r35", "question": "¿Cómo se llama ese programa?", "expected_route": "documental", "type": "follow_up", "expected_unit_ids": ["unit_d0c35f92ef89d98a", "unit_1d3d2133bf694879"], "follow_up_of": "r11"}
 {"query_id": "r36", "question": "¿Desde cuándo vende esa energía?", "expected_route": "documental", "type": "follow_up", "expected_unit_ids": ["unit_0274ec864157d619", "unit_ca9d60e0531fba3d"], "follow_up_of": "r15"}
+{"query_id": "r37", "question": "Compara el crecimiento de la producción de biodiésel con lo que dice el informe sobre sostenibilidad", "expected_route": "mixed", "type": "mixed"}
+{"query_id": "r38", "question": "¿Cuánto vendió Manuelita en 2022 y qué explica el informe sobre ese resultado?", "expected_route": "mixed", "type": "mixed"}
+{"query_id": "r39", "question": "Contrasta la meta de energía renovable del informe con la producción de bioetanol", "expected_route": "mixed", "type": "mixed"}
+{"query_id": "r40", "question": "¿Coincide lo que dice el informe sobre la palma con las toneladas de aceite producidas?", "expected_route": "mixed", "type": "mixed"}
+{"query_id": "r41", "question": "Relación entre la inversión social de 2024 y los programas que describe la Fundación", "expected_route": "mixed", "type": "mixed"}
+{"query_id": "r42", "question": "¿Cuánto vendió Manuelita en total entre 2019 y 2022?", "expected_route": "structured", "type": "structured"}
+{"query_id": "r43", "question": "¿Cuál fue el año de mayor EBITDA?", "expected_route": "structured", "type": "structured"}
+{"query_id": "r44", "question": "¿Cuántas toneladas de azúcar se produjeron en el tercer trimestre de 2022?", "expected_route": "structured", "type": "structured"}

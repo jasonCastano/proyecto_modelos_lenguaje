@@ -6,6 +6,7 @@ import json
 import os
 import uuid
 from functools import lru_cache
+from typing import Any, Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
@@ -456,15 +457,23 @@ def _chat_service() -> ChatService:
 
 
 @app.get("/api/observability")
-def observability():
-    """Estado de las trazas (LangSmith) y del log estructurado, sin secretos."""
+def observability(mode: Literal["demo", "real"] | None = None) -> dict[str, Any]:
+    """Estado de las trazas (LangSmith), del log estructurado y de la búsqueda vectorial."""
     status = configure_tracing()
+    vector_store: dict[str, str] = {}
+    if mode is not None:
+        retriever = _retriever(mode)
+        vector_store[mode] = (
+            retriever.vector_search_status()
+            if retriever is not None
+            else "Recuperación no disponible."
+        )
     try:
         state_dir = resolve_state_dir(load_agent_config().state_env_var)
         log_path: str | None = str(state_dir / "logs" / "turns.jsonl")
     except Exception:
         log_path = None
-    return {**status, "structured_log": log_path}
+    return {**status, "structured_log": log_path, "vector_store": vector_store}
 
 
 def _chat_error(exc: Exception) -> JSONResponse:

@@ -53,7 +53,7 @@ METRIC_CUES: dict[str, re.Pattern[str]] = {
     "azucar": re.compile(r"\bazucar\b"),
     "bioetanol_carburante": re.compile(r"\b(bioetanol|etanol|alcohol carburante)\b"),
     "biodiesel": re.compile(r"\bbiodiesel\b"),
-    "aceite_palma": re.compile(r"\baceite de palma\b"),
+    "aceite_palma": re.compile(r"\b(aceite de palma|toneladas de aceite|aceite crudo)\b"),
     "camaron": re.compile(r"\bcamar(o|on|ones)\b"),
     "mejillon": re.compile(r"\bmejillo(n|nes)\b"),
     "inversion_social": re.compile(r"\binversion social\b"),

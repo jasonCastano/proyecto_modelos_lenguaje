@@ -15,7 +15,14 @@ from langchain_core.language_models import BaseChatModel
 from .models import Route
 from .router import route_message
 
-ROUTES: tuple[Route, ...] = ("direct", "documental", "structured", "out_of_scope", "clarify")
+ROUTES: tuple[Route, ...] = (
+    "direct",
+    "documental",
+    "structured",
+    "mixed",
+    "out_of_scope",
+    "clarify",
+)
 SECTION_START = "<!-- router:start -->"
 SECTION_END = "<!-- router:end -->"
 
@@ -125,7 +132,7 @@ def render_router_section(report: RouterReport) -> str:
         "## Enrutador (US2)",
         "",
         f"**Ejecución**: `{report.run_id}` · **Modo**: {report.mode} · **Casos**: {report.cases} "
-        "(30 consultas + 6 repreguntas con su turno previo como historial)",
+        "(las repreguntas llevan su turno previo como historial; incluye 5 casos `mixed`)",
         "",
         "| Métrica | Valor | Criterio |",
         "|---|---:|---|",

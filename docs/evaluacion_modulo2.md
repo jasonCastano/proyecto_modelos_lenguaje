@@ -173,45 +173,49 @@ Línea base de la spec 014 (T026), antes del agente. Evaluación de recuperació
 <!-- router:start -->
 ## Enrutador (US2)
 
-**Ejecución**: `router-real-2026-11-10` · **Modo**: real · **Casos**: 36 (30 consultas + 6 repreguntas con su turno previo como historial)
+**Ejecución**: `router-real-2026-11-14` · **Modo**: real · **Casos**: 44 (las repreguntas llevan su turno previo como historial; incluye 5 casos `mixed`)
 
 | Métrica | Valor | Criterio |
 |---|---:|---|
-| Precisión del enrutador | 0.972 (35/36) | SC-002 ≥ 0,90 |
+| Precisión del enrutador | 0.977 (43/44) | SC-002 ≥ 0,90 |
 | Saludos y fuera de alcance sin búsqueda | 10/10 | SC-004 100 % |
-| Llamadas al modelo | 26 | 0 en reglas |
-| Latencia media por decisión | 1335 ms | — |
+| Llamadas al modelo | 34 | 0 en reglas |
+| Latencia media por decisión | 1205 ms | — |
 
 Matriz de confusión (filas: esperada; columnas: predicha):
 
-| Esperada \ Predicha | direct | documental | structured | out_of_scope | clarify |
-|---|---|---|---|---|---|
-| direct | 6 | 0 | 0 | 0 | 0 |
-| documental | 0 | 17 | 1 | 0 | 0 |
-| structured | 0 | 0 | 6 | 0 | 0 |
-| out_of_scope | 0 | 0 | 0 | 4 | 0 |
-| clarify | 0 | 0 | 0 | 0 | 2 |
+| Esperada \ Predicha | direct | documental | structured | mixed | out_of_scope | clarify |
+|---|---|---|---|---|---|---|
+| direct | 6 | 0 | 0 | 0 | 0 | 0 |
+| documental | 0 | 17 | 1 | 0 | 0 | 0 |
+| structured | 0 | 0 | 9 | 0 | 0 | 0 |
+| mixed | 0 | 0 | 0 | 5 | 0 | 0 |
+| out_of_scope | 0 | 0 | 0 | 0 | 4 | 0 |
+| clarify | 0 | 0 | 0 | 0 | 0 | 2 |
 
 Errores:
 
 | Consulta | Esperada | Predicha | Confianza | Decidió | Motivo |
 |---|---|---|---:|---|---|
-| r32 «¿Cuánto bioetanol produce allá al año?» | documental | structured | 0.90 | llm | pregunta por una cifra puntual de producción anual de bioetanol en Brasil |
-
-Lectura:
-
-- **Cumple SC-002 y SC-004**: 0,972 de precisión con DeepSeek (≥ 0,90) y 10/10 saludos y preguntas fuera
-  de alcance resueltos por reglas, sin búsqueda ni llamadas al modelo.
-- **Resuelve la abstención**: las 4 preguntas fuera de corpus se enrutan a `out_of_scope` antes de buscar.
-  La recuperación sola no se abstenía en ningún modo (sección anterior).
-- El único error (r32) es discutible: la repregunta pide una cifra («¿cuánto bioetanol produce allá al
-  año?») y el modelo la mandó a `structured`; con la caída a documental cuando la tabla no tiene el dato,
-  la respuesta sigue siendo correcta.
-- El modo demo (heurística sin modelo) también acierta 35/36, pero esa heurística se escribió conociendo el
-  conjunto: no es una medida independiente y solo garantiza un modo demo determinista.
-- Costo: 26 llamadas al modelo (una por consulta no resuelta por reglas), 1,3 s de media por decisión.
+| r32 «¿Cuánto bioetanol produce allá al año?» | documental | structured | 0.92 | llm | Pregunta por una cifra anual de producción de bioetanol en Brasil, dato puntual tabulable. |
 
 <!-- router:end -->
+
+Lectura (2026-11-14; se escribe fuera de los marcadores para que la regeneración no la borre):
+
+- **Cumple SC-002 y SC-004**: 0,977 de precisión con DeepSeek (≥ 0,90) y 10/10 saludos y preguntas fuera
+  de alcance resueltos por reglas, sin búsqueda ni llamadas al modelo.
+- **Ruta mixta evaluada**: a pedido de la evaluación docente se agregaron 5 casos `mixed` (r37–r41) y
+  3 de cifras anuales (r42–r44, incluida una pregunta por trimestre). Los 8 se enrutan bien con el modelo
+  real. La prueba `tests/integration/agent/test_series_routes.py` verifica, en ambas variantes, que la
+  respuesta mixta cita al menos un `[F#]` y un `[U#]`.
+- **Abstención**: las 4 preguntas fuera de corpus las detiene el **enrutador** (`out_of_scope`) antes de
+  buscar; la recuperación sola no se abstiene en ningún modo (sección anterior).
+- El único error (r32) es discutible: la repregunta pide una cifra anual («¿cuánto bioetanol produce allá
+  al año?») y el modelo la manda a `structured`; si la serie no distingue el país, la respuesta lo dice.
+- El modo demo (heurística sin modelo) acierta 43/44, pero esa heurística se escribió conociendo el
+  conjunto: no es una medida independiente y solo garantiza un modo demo determinista.
+- Costo: 34 llamadas al modelo (una por consulta no resuelta por reglas), 1,2 s de media por decisión.
 
 <!-- variants:start -->
 ## Cadena vs. agente (T066)

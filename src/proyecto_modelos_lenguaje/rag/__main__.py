@@ -181,6 +181,27 @@ def _print_trace(trace: RetrievalTrace, *, as_json: bool) -> None:
         print(f"- {fragment.unit_id} [{status}] {score:.3f} {origin}{reason} · {fragment.title}")
 
 
+def _probe_latency(client, settings, index) -> str:
+    """Tiempo de una consulta top-10 y si el índice ANN (HNSW) está en juego."""
+    import time
+
+    from .vectorstore import QdrantVectorStore
+
+    store = QdrantVectorStore(client, settings)
+    store.search(index.vectors[0], limit=10)  # calentamiento
+    runs = 5
+    start = time.perf_counter()
+    for row in range(runs):
+        store.search(index.vectors[row], limit=10)
+    elapsed = (time.perf_counter() - start) * 1000 / runs
+    search = (
+        f"HNSW (ANN) con hnsw_ef={settings.hnsw_ef}"
+        if settings.url
+        else "búsqueda exacta (modo local embebido; HNSW solo con QDRANT_URL)"
+    )
+    return f"consulta: {search} · {elapsed:.1f} ms por consulta top-10"
+
+
 def _qdrant_command(args, config, root: Path) -> int:
     """``rag qdrant build|status``: la colección de Qdrant a partir del índice versionado."""
     settings = load_qdrant_settings(config.source)
@@ -206,6 +227,7 @@ def _qdrant_command(args, config, root: Path) -> int:
                     f"puntos: {index.manifest.count} · dimensión {index.manifest.dimension} · "
                     f"coseno · HNSW m={hnsw.m} ef_construct={hnsw.ef_construct}"
                 )
+                print(_probe_latency(client, settings, index))
             return 0 if ready else 2
         units = {unit.unit_id: unit for unit in load_gold_units(root / "data" / "gold")}
 

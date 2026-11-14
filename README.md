@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-681%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-687%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/M%C3%B3dulo%202-v0.2.0-brightgreen)](CONSTITUTION.md)
 
@@ -26,8 +26,27 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual (2026-11-13, constitución v1.5.0)**: el proyecto cumple la **rúbrica de sustentación del
-> Módulo 2** (Anuncio 006, sustentación el 14 de noviembre). Desde el PR #57:
+> **Correcciones de la evaluación docente (2026-11-14, constitución v1.7.0)**: respuesta a
+> `evaluación/evaluacion_modulo2_docente.md` (nota parcial 4,18/5,0):
+> - **2.1**: CSV curado y versionado `data/curated/series_anuales.csv` (74 cifras anuales con fuente y
+>   página) y `@tool aggregate_series` con suma, promedio, máximo, mínimo y variación exactos; el modo demo
+>   también llama las herramientas estructuradas.
+> - **2.3**: 5 casos `mixed` en la evaluación del router (43/44 con DeepSeek, mixed 5/5) y prueba de que la
+>   respuesta mixta cita `[F#]` y `[U#]`; la ruta se pasa al agente como pista de herramientas.
+> - **2.2**: aviso visible del respaldo numpy, `docker-compose.yml` con Qdrant servidor, `make demo-prep` y
+>   `rag qdrant status` con `hnsw_ef` y latencia; métricas reevaluadas sobre Qdrant y barrido de top-k × α.
+> - **2.4** (spec 015): las oraciones inyectadas se neutralizan antes del modelo en cadena y agente;
+>   `agent shield` mide 6 ataques con y sin neutralización; con DeepSeek 0 obedecen y 0 filtran el
+>   prompt (`docs/evaluacion_blindaje.md`).
+> - **1.2 y 1.3**: recorte por tokens también en la cadena, tope al resumen, prueba de 50 turnos y extracción
+>   del perfil con LLM + Pydantic.
+> - **3.1 y 3.2**: cancelación y tiempo límite en el chat, hilo en la URL, caída a `/api/chat` solo ante 404;
+>   endpoints tipados con `response_model`; cifras de PRs corregidas.
+>
+> Autoevaluación corregida y guion único en [`docs/rubrica_modulo2.md`](docs/rubrica_modulo2.md).
+>
+> **Estado al 2026-11-13 (constitución v1.6.0)**: el proyecto cumple la **rúbrica de sustentación del
+> Módulo 2** (Anuncio 006, sustentación el 14 de noviembre). Desde el PR #57, fusionado el 13 de noviembre:
 > - **Qdrant** es la base vectorial (HNSW y filtro por *payload*).
 > - La **memoria de largo plazo** guarda el perfil en el Store: «Me llamo Ana…» y, en otro hilo, «¿Dónde trabajo?».
 > - El enrutador tiene una **ruta mixta** (tabla y documentos en un turno).
@@ -36,8 +55,13 @@ Universidad Autónoma de Occidente, 2026-2S.
 >   traza por turno.
 > - Cada turno queda trazado para **LangSmith** o en un log JSON.
 >
-> Evidencia ítem por ítem y guion de 15 minutos en [`docs/rubrica_modulo2.md`](docs/rubrica_modulo2.md);
+> Evidencia ítem por ítem y guion en [`docs/rubrica_modulo2.md`](docs/rubrica_modulo2.md);
 > decisión en [ADR 0018](docs/decisions/0018-qdrant-y-rubrica-modulo2.md).
+>
+> Después de la rúbrica se fusionaron:
+> - **PR #58**: commits solo de los dos integrantes, sin bots ni asistentes (constitución v1.6.0, ADR 0017).
+> - **PR #59**: purga de la cuarentena de la curación `2026-10-curation-01` (8,93 GB liberados).
+> - **PR #60**: `CLAUDE.md` del proyecto y bitácora del 13 de noviembre.
 >
 > **Estado al 2026-11-12 (constitución v1.4.0)**: el **Módulo 2 está entregado** con el tag
 > [`v0.2.0-modulo2`](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2):
@@ -156,27 +180,47 @@ Cumplimiento de la rúbrica de sustentación, ítem por ítem, y guion de la dem
 [`docs/rubrica_modulo2.md`](docs/rubrica_modulo2.md). Decisión:
 [ADR 0018](docs/decisions/0018-qdrant-y-rubrica-modulo2.md).
 
-**Grafo del agente (LangGraph)**. Las dos variantes comparten el estado del hilo, la puerta de decisión y el
-cierre del turno:
+**Grafo del agente (LangGraph)**. Las dos variantes comparten el estado del hilo, la puerta de decisión y el cierre del turno:
 
 ```mermaid
-flowchart LR
-    START((inicio)) --> route{route<br/>reglas → LLM}
-    route -- "saludo · fuera de alcance · aclaración · perfil" --> reply[reply<br/>sin buscar]
-    route -- "escritura (perfil, preferencia, olvido, exportar)" --> action[action<br/>interrupt → aprobación humana]
+flowchart TD
+    START(("inicio")) --> route{"route: reglas → LLM"}
+
+    route -- "saludo · fuera de alcance · aclaración · perfil" --> reply["reply: sin buscar"]
+    route -- "escritura (perfil, preferencia, olvido, exportar)" --> action["action: interrupt → aprobación humana"]
     route -- "documental · estructurada · mixta" --> work
-    subgraph cadena [Variante cadena]
-        work --> retrieve[retrieve<br/>Qdrant + BM25 y/o tabla]
-        retrieve --> answer[answer<br/>RunnablePassthrough → ChatPromptTemplate → DeepSeek]
+
+    subgraph cadena ["Variante cadena"]
+        work --> retrieve["retrieve: Qdrant + BM25 y/o tabla"]
+        retrieve --> answer["answer: RunnablePassthrough → ChatPromptTemplate → DeepSeek"]
     end
-    subgraph agente [Variante agente]
-        work -.-> ag[create_agent<br/>@tool + middleware<br/>HITL · PII · resumen · límites]
+
+    subgraph agente ["Variante agente"]
+        work -.-> ag["create_agent: @tool + middleware · HITL · PII · resumen · límites"]
     end
+
     reply --> finalize
     action --> finalize
     answer --> finalize
     ag --> finalize
-    finalize[finalize<br/>turno · métricas · resumen] --> END((fin))
+
+    finalize["finalize: turno · métricas · resumen"] --> END(("fin"))
+```
+
+**Nodo del agente desplegado (`create_agent`)**: el bucle modelo ↔ herramientas, la pista de ruta y el punto
+de interrupción Human-in-the-Loop:
+
+```mermaid
+flowchart TB
+    IN[Mensajes del hilo<br/>trim_messages + resumen] --> MW[Middleware antes del modelo<br/>dynamic_prompt: perfil, preferencias y ruta<br/>PII · resumen · límites de llamadas]
+    MW --> LLM{DeepSeek<br/>¿llama una herramienta?}
+    LLM -- "lectura" --> RT["search_documents · query_structured · aggregate_series<br/>(sin aprobación)"]
+    RT -- "documentos U# / F# como datos" --> MW
+    LLM -- "escritura" --> HITL[[interrupt: save_profile · save_preference ·<br/>forget_memory · export_conversation]]
+    HITL -- "aprobar / editar" --> WR[Store o exportación] --> MW
+    HITL -- "rechazar" --> MW
+    LLM -- "respuesta final" --> VAL[validate_answer<br/>citas U#/F# válidas · sin fuga del prompt]
+    VAL --> OUT((turno))
 ```
 
 **Memoria: checkpointer frente a Store**:
@@ -239,7 +283,8 @@ flowchart LR
 - El contenido retirado se mueve a `data/quarantine/` con auditoría y ventana de reversibilidad.
 - El dominio oficial `manuelita.com` nunca se elimina del corpus activo.
 - El índice semántico es una **vista derivada** del oro: se reconstruye con un comando y no se versiona; su
-  manifiesto (modelo, fragmentación, fecha y hash del oro) sí. Cambiar el modelo de embeddings obliga a reindexar.
+  manifiesto (modelo, fragmentación, fecha y hash del oro) vive junto al índice en `data/module2/index/`, también
+  fuera de Git; cada evaluación registra su `run_id`. Cambiar el modelo de embeddings obliga a reindexar.
 - La app es de **solo lectura**: no escribe en `data/` ni en el repositorio.
 
 ### Arquitectura interactiva (Archify)
@@ -261,15 +306,31 @@ node ~/.agents/skills/archify/bin/archify.mjs finalize dataflow \
 Si la copia global de la skill está incompleta, clona
 [`tt-a1i/archify`](https://github.com/tt-a1i/archify) y usa `archify/bin/archify.mjs`.
 
-El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → índice semántico, recuperación
-híbrida y tabla estructurada → enrutador y grafos LangGraph (cadena, agente, HITL) → experiencia web y memoria**.
+El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → Qdrant, recuperación híbrida y
+tabla estructurada → enrutador (con ruta mixta) y grafos LangGraph (cadena, agente, HITL) → experiencia web y
+memoria (hilos, perfil y preferencias)**. En GitHub, el enlace abre el código del HTML; para verlo interactivo,
+clona el repositorio y abre `docs/arquitectura.html` en el navegador.
 
 ## Capturas
 
-![Experiencia web de Manuelita](docs/capturas/web/escritorio.png)
+**Portada** (escritorio, 1440×900):
 
-La captura corresponde a la página real en 1440×900. La validación E2E se ejecuta con `make e2e` y no se
-versionan capturas temporales de la auditoría.
+![Portada de la experiencia web de Manuelita en escritorio](docs/capturas/web/escritorio.png)
+
+**Conversación del Módulo 2** (modo demostración). El perfil se guarda tras la aprobación humana y la
+pregunta documental muestra la ruta, los fragmentos recuperados, las fuentes y la traza del turno:
+
+![Conversación con memoria de perfil, ruta documental, fragmentos y traza por turno](docs/capturas/web/conversacion.png)
+
+<details>
+<summary><strong>Vista móvil</strong> (375×812)</summary>
+
+<img src="docs/capturas/web/movil.png" alt="Portada de la experiencia web de Manuelita en móvil" width="320">
+
+</details>
+
+Las capturas corresponden a la página real del 13 de noviembre de 2026 en modo demostración. La validación
+E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la auditoría.
 
 ## Estado del proyecto
 
@@ -286,7 +347,7 @@ versionan capturas temporales de la auditoría.
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados y purgados (2026-11-13), 26.347 auditorías |
-| Pruebas | ✅ | 681 pruebas offline (652 Python + 29 web) y E2E de la conversación |
+| Pruebas | ✅ | 687 pruebas offline (658 Python + 29 web) y E2E de la conversación |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
 | App web + LangChain | ✅ | Frontend React + API FastAPI; hero, consola RAG y showcase del Módulo 1 |
@@ -297,14 +358,14 @@ versionan capturas temporales de la auditoría.
 | Módulo 2 — recuperación semántica (spec 013) | ✅ | PR #34 fusionado; `docs/evaluacion_modulo2.md` (ver hallazgos en `docs/revision_pr34.md`) |
 | Módulo 2 — memoria, enrutador y agente (spec 014) | ✅ | Cadena y agente con memoria por hilo, enrutador 35/36, HITL y preferencias; PRs #44–#51; `docs/informe_modulo2.md` |
 | Módulo 2 — cadena vs. agente | ✅ | Citas 100 % en ambas; < 10 s: cadena 100 %, agente 94 %; `docs/evaluacion_modulo2.md` |
-| Módulo 2 — Recall@10, nDCG@10 y abstención fuera de corpus | ✅ | Semántico/híbrido > léxico; abstención 4/4 por el enrutador; `docs/evaluacion_modulo2.md` |
+| Módulo 2 — Recall@10, nDCG@10 y abstención fuera de corpus | ✅ | Semántico/híbrido > léxico (también sobre Qdrant); la abstención 4/4 la logra el **enrutador**, la recuperación sola no se abstiene (0/4); `docs/evaluacion_modulo2.md` |
 | Módulo 2 — repreguntas (SC-006) y fidelidad del juez | 🟡 | Métrica estricta 3/6 (cadena) y 4/6 (agente); fidelidad pendiente de repetir con el juez corregido |
 | Módulo 2 — rúbrica de sustentación | ✅ | 13 ítems con evidencia en `docs/rubrica_modulo2.md`; los cinco casos verificados con DeepSeek (PR #57) |
 | Módulo 2 — Qdrant | ✅ | Colección `manuelita_fragments` (15.211 puntos, coseno, HNSW `m=16`); modo local embebido, servidor con `QDRANT_URL` (sin probar en vivo) |
 | Módulo 2 — memoria de largo plazo | ✅ | Perfil y preferencias en el Store, con aprobación humana; recuperados en otro hilo con `search()` |
 | Módulo 2 — streaming y trazas | ✅ | `POST /api/chat/stream` (SSE); `turns.jsonl` por turno; LangSmith al definir la clave |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
-| CI y Pull Requests | ✅ | 54 PRs fusionados al 2026-11-13 (PR #57 en revisión); CI con `test`, `web` y `autoria` |
+| CI y Pull Requests | 🟡 | 60 PRs fusionados al 2026-11-14 (51 del equipo y 9 de Dependabot, anteriores a la v1.6.0); solo 12 PRs del equipo tienen aprobación formal y 16 alguna revisión. CI con `test`, `web` y `autoria` |
 | Protección de `main` | ✅ | PR con 1 aprobación y checks `test` y `web`; sin push directo ni force-push |
 | Gobernanza del repositorio | ✅ | PR/issue templates, labels, pre-commit y Makefile |
 | Autoría de commits | ✅ | Solo `jasonCastano` y `Robertto48`, sin bots ni asistentes; hook `commit-msg` y job `autoria`; historial sin coautores de IA ni commits de bots (ADR 0017) |
@@ -330,8 +391,8 @@ versionan capturas temporales de la auditoría.
 | Oro | 0,20 GB |
 | Cuarentena | 0 GB (purgada el 2026-11-13; 8,93 GB liberados) |
 | Datos totales | 0,59 GB (límite: 10 GB) |
-| Pruebas offline | 681 |
-| Consultas etiquetadas (Módulo 2) | 36 |
+| Pruebas offline | 687 |
+| Consultas etiquetadas (Módulo 2) | 44 por ruta (18 con etiqueta de recuperación puntuable) |
 | Acierto del enrutador | 97 % (35/36) |
 | Hechos en la tabla estructurada | 381 (15 entidades, 477 citas; exportada a CSV/JSON) |
 | Puntos en Qdrant | 15.211 (384 d, coseno) |
@@ -406,7 +467,9 @@ descarga.
 make help      # lista los objetivos
 make dev       # uv sync + npm ci + hooks
 make check     # Python + tests/build web
-make app       # build web + API local
+make app       # build web + tabla estructurada (si falta) + API local
+make demo-prep # índice, colección Qdrant y tabla estructurada listos para la demo
+make qdrant-up # Qdrant servidor con HNSW real (docker compose); luego QDRANT_URL=http://localhost:6333
 make e2e       # Playwright: flujo, responsive y demo
 make build     # web + sdist + wheel
 ```
@@ -862,7 +925,7 @@ referencian por manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 681 pruebas unitarias, de integración y de contrato (652 Python + 29 web).
+- **Pruebas offline**: 687 pruebas unitarias, de integración y de contrato (658 Python + 29 web).
 - **Verificación completa**: `make check` ejecuta Ruff, pytest, Vitest y build web; CI separa Python y web y
   revisa la autoría de los commits de cada PR (job `autoria`).
 - **Auditoría visual**: `make audit` recorre 7 perfiles y 3 estados de datos con Playwright.
@@ -932,9 +995,10 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   DeepSeek y la calificación humana; el informe y el guion de demo son borradores y faltan las capturas de
   Consulta/Resumen/FAQ.
 - El umbral semántico (0,30) no abstiene fuera de corpus por sí solo; en el Módulo 2 la abstención la resuelve
-  el enrutador (4/4). El híbrido no supera al semántico en Recall@10 y añade ~1,6 s de BM25.
+  el enrutador (4/4). El híbrido no supera al semántico en Recall@10 y añade ~0,9 s de BM25 por consulta (medido el 2026-11-14 sobre Qdrant: híbrido 941 ms frente a 35 ms del semántico).
 - Las repreguntas no cumplen SC-006 con la métrica estricta (3/6 y 4/6) y la fidelidad del juez está pendiente de
-  repetir; las 36 consultas etiquetadas esperan revisión del mantenedor.
+  repetir; las etiquetas de recuperación (18 consultas) las hizo un integrante y esperan la revisión
+  cruzada del otro (T018).
 - El agente supera los 10 s en el 6 % de las consultas (p95 14,7 s).
 - Ragas no instala en Python 3.14; se usa un juez propio con sus definiciones.
 - Los PRs fusionados antes del 2026-11-07 no tienen aprobaciones formales en GitHub; desde entonces `main` exige
@@ -1035,7 +1099,8 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 
 - [x] Embeddings multilingües (`multilingual-e5-small`) e índice reconstruible con manifiesto (spec 013).
 - [x] Recuperación híbrida semántica + léxica con traza en API e interfaz.
-- [x] Conjunto de 36 consultas etiquetadas con Recall@10, nDCG@10 y MRR frente al BM25 del Módulo 1.
+- [x] Conjunto de 44 consultas etiquetadas por ruta (18 con etiqueta de recuperación) y Recall@10,
+  nDCG@10 y MRR frente al BM25 del Módulo 1, también sobre Qdrant.
 - [x] Memoria multi-turno por `thread_id` con checkpointer persistente.
 - [x] Enrutador directo / documental / estructurado / fuera de alcance con 97 % de acierto (35/36).
 - [x] RAG Chain vs. RAG Agent comparados en calidad, latencia y llamadas.

@@ -283,6 +283,16 @@ class HybridRetriever:
     def semantic_available(self) -> bool:
         return bool(self.semantic and self.semantic.available)
 
+    def vector_search_status(self) -> str:
+        """Qué búsqueda vectorial está en juego, para la UI y los logs (nunca en silencio)."""
+        semantic = self.semantic
+        if semantic is not None and semantic.vector_store is not None:
+            return f"Búsqueda vectorial en {semantic.vector_store.describe()}"
+        if semantic is not None and semantic.index is not None:
+            reason = next((n for n in self.notes if n.startswith("Respaldo numpy")), "")
+            return reason or "Respaldo numpy: Qdrant desactivado en la configuración."
+        return "Sin índice semántico: recuperación léxica."
+
     def retrieve(
         self,
         question: str,

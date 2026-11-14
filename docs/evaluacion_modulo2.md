@@ -18,8 +18,9 @@ Línea base de la spec 014 (T026), antes del agente. Evaluación de recuperació
 1. **SC-001 se cumple frente a la línea base**: el semántico y el híbrido superan al léxico del Módulo 1
    en Recall@10 y nDCG@10 en los dos conjuntos.
 2. **El híbrido no supera al semántico puro**: empata en nDCG@10 (±0,006) y queda algo por debajo en
-   Recall@10. La fusión aporta en las preguntas con nombres propios y cifras, pero cuesta ~1,3 s por
-   consulta porque la búsqueda léxica recorre las 15.211 unidades; el semántico tarda 8–14 ms.
+   Recall@10. La fusión aporta en las preguntas con nombres propios y cifras, pero cuesta ~0,9 s por
+   consulta porque la búsqueda léxica recorre las 15.211 unidades (medido el 2026-11-14 sobre
+   Qdrant: híbrido 941 ms, semántico 35 ms; con numpy el 2026-11-10 eran ~1,3 s y 8–14 ms).
 3. **Ningún modo se abstiene** ante preguntas fuera de corpus (0 de 5 y 0 de 4). Confirma la revisión del
    PR #34: la abstención no puede depender del umbral de similitud y debe venir de la puerta de
    decisión de la US2 (FR-011).
@@ -170,48 +171,96 @@ Línea base de la spec 014 (T026), antes del agente. Evaluación de recuperació
 | r27 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
 | r28 | hybrid | out_of_corpus | devolvió evidencia para una pregunta fuera de corpus |
 
+<!-- qdrant:start -->
+## Recuperación sobre Qdrant y barrido de top-k y α (2026-11-14)
+
+A pedido de la evaluación docente (ítem 4.2), las métricas se repitieron sobre la colección Qdrant
+`manuelita_fragments` (modo local embebido, búsqueda exacta), que es lo que usa la demo. Ejecución
+`qdrant-base-2026-11-14`, 40 preguntas (35 puntuables);
+JSON en `docs/evaluacion_qdrant.json`.
+
+| Modo | Recall@1 | Recall@5 | Recall@10 | nDCG@10 | MRR | Latencia media |
+|---|---:|---:|---:|---:|---:|---:|
+| lexical | 0,286 | 0,371 | 0,371 | 0,333 | 0,320 | 724 ms |
+| semantic | 0,343 | 0,571 | 0,686 | 0,492 | 0,434 | 35 ms |
+| hybrid | 0,343 | 0,600 | 0,671 | 0,499 | 0,450 | 941 ms |
+
+Las cifras coinciden con las del índice numpy del 2026-11-10 (la búsqueda local de Qdrant es exacta):
+el cambio de base vectorial no alteró la calidad, y la consulta semántica tarda ~35 ms.
+
+**Barrido** (`scripts/sweep_retrieval.py`, modo híbrido, `lexical_top_k = 8`): top-k semántico
+∈ {5, 8, 12} y peso semántico α ∈ {0,5; 0,65; 0,8} (léxico = 1 − α). JSON en
+`docs/barrido_retrieval.json`.
+
+| top-k semántico | α | Recall@10 | nDCG@10 | MRR |
+|---:|---:|---:|---:|---:|
+| 5 | 0,5 | 0,629 | 0,460 | 0,406 |
+| 5 | 0,65 | 0,629 | 0,507 | 0,468 ← |
+| 5 | 0,8 | 0,629 | 0,507 | 0,468 |
+| 8 | 0,5 | 0,643 | 0,471 | 0,416 |
+| 8 | 0,65 | 0,643 | 0,505 | 0,461 |
+| 8 | 0,8 | 0,643 | 0,505 | 0,461 |
+| 12 | 0,5 | 0,643 | 0,468 | 0,420 |
+| 12 | 0,65 | 0,671 | 0,499 | 0,450 |
+| 12 | 0,8 | 0,671 | 0,499 | 0,450 |
+
+Lectura: la configuración vigente (k = 12, α = 0,65) tiene el **mejor Recall@10**
+(0,671) con nDCG@10 0,499. El mejor nDCG@10 es
+k = 5, α = 0,65 (0,507), pero pierde 0,043 de
+Recall@10; como el contexto del modelo necesita cubrir la evidencia, se mantiene k = 12. α = 0,5
+empeora en todos los k (el BM25 pesa demasiado) y α = 0,8 empata con 0,65: el peso léxico solo
+desempata, por eso se conserva 0,65.
+Con 35 preguntas puntuables, diferencias de ±0,03 equivalen a una pregunta, así que el barrido sirve para
+justificar el rango de los parámetros más que para afinarlos. El troceo 400/60 no se barrió: exige
+reindexar las 15.211 unidades por cada valor.
+<!-- qdrant:end -->
+
 <!-- router:start -->
 ## Enrutador (US2)
 
-**Ejecución**: `router-real-2026-11-10` · **Modo**: real · **Casos**: 36 (30 consultas + 6 repreguntas con su turno previo como historial)
+**Ejecución**: `router-real-2026-11-14` · **Modo**: real · **Casos**: 44 (las repreguntas llevan su turno previo como historial; incluye 5 casos `mixed`)
 
 | Métrica | Valor | Criterio |
 |---|---:|---|
-| Precisión del enrutador | 0.972 (35/36) | SC-002 ≥ 0,90 |
+| Precisión del enrutador | 0.977 (43/44) | SC-002 ≥ 0,90 |
 | Saludos y fuera de alcance sin búsqueda | 10/10 | SC-004 100 % |
-| Llamadas al modelo | 26 | 0 en reglas |
-| Latencia media por decisión | 1335 ms | — |
+| Llamadas al modelo | 34 | 0 en reglas |
+| Latencia media por decisión | 1205 ms | — |
 
 Matriz de confusión (filas: esperada; columnas: predicha):
 
-| Esperada \ Predicha | direct | documental | structured | out_of_scope | clarify |
-|---|---|---|---|---|---|
-| direct | 6 | 0 | 0 | 0 | 0 |
-| documental | 0 | 17 | 1 | 0 | 0 |
-| structured | 0 | 0 | 6 | 0 | 0 |
-| out_of_scope | 0 | 0 | 0 | 4 | 0 |
-| clarify | 0 | 0 | 0 | 0 | 2 |
+| Esperada \ Predicha | direct | documental | structured | mixed | out_of_scope | clarify |
+|---|---|---|---|---|---|---|
+| direct | 6 | 0 | 0 | 0 | 0 | 0 |
+| documental | 0 | 17 | 1 | 0 | 0 | 0 |
+| structured | 0 | 0 | 9 | 0 | 0 | 0 |
+| mixed | 0 | 0 | 0 | 5 | 0 | 0 |
+| out_of_scope | 0 | 0 | 0 | 0 | 4 | 0 |
+| clarify | 0 | 0 | 0 | 0 | 0 | 2 |
 
 Errores:
 
 | Consulta | Esperada | Predicha | Confianza | Decidió | Motivo |
 |---|---|---|---:|---|---|
-| r32 «¿Cuánto bioetanol produce allá al año?» | documental | structured | 0.90 | llm | pregunta por una cifra puntual de producción anual de bioetanol en Brasil |
-
-Lectura:
-
-- **Cumple SC-002 y SC-004**: 0,972 de precisión con DeepSeek (≥ 0,90) y 10/10 saludos y preguntas fuera
-  de alcance resueltos por reglas, sin búsqueda ni llamadas al modelo.
-- **Resuelve la abstención**: las 4 preguntas fuera de corpus se enrutan a `out_of_scope` antes de buscar.
-  La recuperación sola no se abstenía en ningún modo (sección anterior).
-- El único error (r32) es discutible: la repregunta pide una cifra («¿cuánto bioetanol produce allá al
-  año?») y el modelo la mandó a `structured`; con la caída a documental cuando la tabla no tiene el dato,
-  la respuesta sigue siendo correcta.
-- El modo demo (heurística sin modelo) también acierta 35/36, pero esa heurística se escribió conociendo el
-  conjunto: no es una medida independiente y solo garantiza un modo demo determinista.
-- Costo: 26 llamadas al modelo (una por consulta no resuelta por reglas), 1,3 s de media por decisión.
+| r32 «¿Cuánto bioetanol produce allá al año?» | documental | structured | 0.92 | llm | Pregunta por una cifra anual de producción de bioetanol en Brasil, dato puntual tabulable. |
 
 <!-- router:end -->
+
+Lectura (2026-11-14; se escribe fuera de los marcadores para que la regeneración no la borre):
+
+- **Cumple SC-002 y SC-004**: 0,977 de precisión con DeepSeek (≥ 0,90) y 10/10 saludos y preguntas fuera
+  de alcance resueltos por reglas, sin búsqueda ni llamadas al modelo.
+- **Ruta mixta evaluada**: a pedido de la evaluación docente se agregaron 5 casos `mixed` (r37–r41) y
+  3 de cifras anuales (r42–r44, incluida una pregunta por trimestre). Los 8 se enrutan bien con el modelo
+  real. La prueba `tests/integration/agent/test_series_routes.py` verifica, en ambas variantes, que la
+  respuesta mixta cita al menos un `[F#]` y un `[U#]`.
+- **Abstención**: las 4 preguntas fuera de corpus las detiene el **enrutador** (`out_of_scope`) antes de
+  buscar; la recuperación sola no se abstiene en ningún modo (sección anterior).
+- El único error (r32) es discutible: la repregunta pide una cifra anual («¿cuánto bioetanol produce allá
+  al año?») y el modelo la manda a `structured`; si la serie no distingue el país, la respuesta lo dice.
+- El modo demo (heurística sin modelo) acierta 43/44, pero esa heurística se escribió conociendo el
+  conjunto: no es una medida independiente y solo garantiza un modo demo determinista.
+- Costo: 34 llamadas al modelo (una por consulta no resuelta por reglas), 1,2 s de media por decisión.
 
 <!-- variants:start -->
 ## Cadena vs. agente (T066)
@@ -231,9 +280,14 @@ Lectura:
 | Llamadas al modelo por consulta | 1.39 | 2.17 |
 | Búsquedas por consulta | 0.67 | 1.31 |
 | Tokens por consulta | 2695 | 5275 |
-| Fidelidad (juez LLM) | 0.705 | 0.661 |
+| Fidelidad (juez LLM) — **no válida**, ver nota | ~~0.705~~ | ~~0.661~~ |
 | Relevancia de la respuesta (juez LLM) | 0.885 | 0.825 |
 | Precisión de contexto (con referencia) | 0.391 | 0.448 |
+
+**Nota sobre la fidelidad (2026-11-14)**: las cifras aparecen tachadas porque esta ejecución **no es
+válida** para esa métrica: el juez recibió las filas estructuradas sin su frase de origen. El error está
+corregido y la repetición sigue pendiente (`docs/informe_modulo2.md` §5). Relevancia y precisión de
+contexto no se ven afectadas.
 
 Respuestas evaluadas por el juez: chain 24, agent 24. El juez usa `prompts/judge.md` con las definiciones de Ragas (fidelidad = afirmaciones respaldadas / afirmaciones; relevancia = qué tan directamente responde); la precisión de contexto usa las unidades esperadas como referencia.
 

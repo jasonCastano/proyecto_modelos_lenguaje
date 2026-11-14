@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -365,3 +365,21 @@ class ResumeRequest(RequestModel):
     action_id: str = Field(min_length=1, max_length=128)
     decision: Literal["approve", "edit", "reject"]
     args: dict[str, object] | None = None
+
+
+class ObservabilityStatus(BaseModel):
+    """Estado de las trazas, del log estructurado y de la búsqueda vectorial (sin secretos)."""
+
+    langsmith: bool
+    project: str | None = None
+    structured_log: str | None = None
+    vector_store: dict[str, str] = Field(default_factory=dict)
+    adversarial_corpus: bool = False
+
+
+class PendingForget(BaseModel):
+    """Respuesta 202 de ``DELETE /api/memory/{user_id}``: el olvido espera aprobación."""
+
+    status: str
+    thread_id: str
+    pending_action: dict[str, Any] | None = None

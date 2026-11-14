@@ -68,6 +68,7 @@ def make_service(
     summary_model: BaseChatModel | None = None,
     store: Any = None,
     retriever: HybridRetriever | None = None,
+    series: Any = None,
 ) -> ChatService:
     config = config or agent_config()
     retriever = retriever or demo_retriever()
@@ -75,7 +76,12 @@ def make_service(
         config,
         checkpointer if checkpointer is not None else memory_checkpointer(),
         lambda _mode: GraphDeps(
-            config, retriever, None, model or DemoChatModel(), summary_model=summary_model
+            config,
+            retriever,
+            None,
+            model or DemoChatModel(),
+            summary_model=summary_model,
+            series=series,
         ),
         store=store if store is not None else memory_store(),
     )

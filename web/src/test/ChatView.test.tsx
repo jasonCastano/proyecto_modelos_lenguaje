@@ -173,6 +173,7 @@ describe("ChatView", () => {
     vi.unstubAllGlobals();
     window.sessionStorage.clear();
     window.localStorage.clear();
+    window.history.replaceState(null, "", "/");
   });
 
   it("envía el mensaje en streaming, conserva el hilo y lo reutiliza en la repregunta", async () => {
@@ -209,6 +210,7 @@ describe("ChatView", () => {
     expect(screen.getAllByTestId("chat-turn")).toHaveLength(2);
     expect(screen.queryByTestId("chat-live")).not.toBeInTheDocument();
     expect(window.sessionStorage.getItem("manuelita.chat.thread")).toContain(first.thread_id);
+    expect(window.location.hash).toBe(`#/chat/${first.thread_id}`);
   });
 
   it("si el servidor no tiene streaming usa la ruta clásica", async () => {
@@ -236,6 +238,77 @@ describe("ChatView", () => {
       "/api/chat/stream",
       "/api/chat",
     ]);
+  });
+
+  it("un error 5xx del streaming se informa y no repite la petición por la ruta clásica", async () => {
+    const failure = {
+      error: { code: "chat_failed", message: "El modelo falló.", retryable: true, action: "reintentar" },
+    };
+    const fetchMock = routedFetch((url) =>
+      url.endsWith("/chat/stream")
+        ? new Response(JSON.stringify(failure), { status: 502 })
+        : undefined,
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    render(<ChatView mode="demo" />);
+    await user.type(screen.getByTestId("chat-input"), "¿Qué produce Manuelita?");
+    await user.click(screen.getByTestId("chat-send"));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("El modelo falló.");
+    expect(chatCalls(fetchMock)).toHaveLength(1);
+  });
+
+  it("detiene la generación con el botón y lo informa", async () => {
+    const fetchMock = routedFetch((url, init) => {
+      if (!url.endsWith("/chat/stream")) return undefined;
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          const start = { event: "start", thread_id: "8f6c1e0a-0000-4000-8000-000000000007" };
+          controller.enqueue(
+            new TextEncoder().encode(`event: start\ndata: ${JSON.stringify(start)}\n\n`),
+          );
+          init?.signal?.addEventListener("abort", () =>
+            controller.error(new DOMException("Cancelada", "AbortError")),
+          );
+        },
+      });
+      return new Response(stream, { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    render(<ChatView mode="demo" />);
+    await user.type(screen.getByTestId("chat-input"), "¿Qué produce Manuelita?");
+    await user.click(screen.getByTestId("chat-send"));
+    await user.click(await screen.findByTestId("chat-stop"));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Detuviste la generación.");
+    expect(screen.getByTestId("chat-send")).toBeEnabled();
+  });
+
+  it("avisa cuando la búsqueda vectorial cae al respaldo numpy", async () => {
+    const status = {
+      langsmith: false,
+      project: null,
+      structured_log: null,
+      vector_store: { demo: "Respaldo numpy: Qdrant no disponible (ConnectionError)." },
+    };
+    vi.stubGlobal(
+      "fetch",
+      routedFetch((url) =>
+        url.includes("/observability")
+          ? new Response(JSON.stringify(status), { status: 200 })
+          : undefined,
+      ),
+    );
+
+    render(<ChatView mode="demo" />);
+
+    const chip = await screen.findByTestId("vector-store");
+    expect(chip).toHaveTextContent("Respaldo numpy (sin Qdrant)");
+    expect(chip).toHaveAttribute("data-kind", "warning");
   });
 
   it("pausa ante una acción de escritura y la reanuda al aprobar", async () => {

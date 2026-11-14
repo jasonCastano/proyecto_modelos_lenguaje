@@ -19,7 +19,8 @@ from typing import Any
 
 from langchain.agents.middleware import SummarizationMiddleware
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.messages.utils import count_tokens_approximately, trim_messages
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.store.base import BaseStore
@@ -34,6 +35,8 @@ CHECKPOINT_FILE = "checkpoints.sqlite3"
 STORE_FILE = "memory.sqlite3"
 CHARS_PER_TOKEN = 4
 DEMO_SUMMARY_CHARS = 160
+# El resumen persistente nunca ocupa más de esta fracción de la ventana de memoria.
+SUMMARY_SHARE = 4
 
 
 def build_checkpointer(state_dir: Path) -> SqliteSaver:
@@ -67,7 +70,55 @@ def memory_checkpointer() -> InMemorySaver:
 
 
 def estimate_tokens(text: str) -> int:
+    """Tokens aproximados: 4 caracteres por token.
+
+    Es una cota barata y sin dependencias (no hay tokenizador oficial de DeepSeek en local). En
+    español sobrestima un poco frente a los tokenizadores BPE, así que los recortes quedan del
+    lado seguro; los mismos 4 caracteres usa ``count_tokens_approximately`` de LangChain.
+    """
     return max(0, len(text) // CHARS_PER_TOKEN)
+
+
+def summary_budget(memory: MemoryConfig) -> int:
+    """Tope del resumen persistente en tokens (un cuarto de la ventana de memoria)."""
+    return max(200, memory.summarize_after_tokens // SUMMARY_SHARE)
+
+
+def cap_summary(summary: str, max_tokens: int) -> str:
+    """Recorta el resumen a ``max_tokens`` conservando lo más reciente (las últimas líneas)."""
+    if estimate_tokens(summary) <= max_tokens:
+        return summary
+    kept: list[str] = []
+    budget = max_tokens * CHARS_PER_TOKEN
+    for line in reversed(summary.splitlines()):
+        if len(line) + 1 > budget:
+            break
+        kept.append(line)
+        budget -= len(line) + 1
+    if not kept:
+        return summary[-max_tokens * CHARS_PER_TOKEN :]
+    return "\n".join(reversed(kept))
+
+
+def recent_within_budget(turns: Sequence[dict[str, Any]], max_tokens: int) -> list[dict[str, Any]]:
+    """Últimos turnos que caben en ``max_tokens`` (``trim_messages``, estrategia «last»).
+
+    La misma política que la variante agente: se recorta por tokens, empezando siempre en un
+    mensaje del usuario, y lo anterior ya vive en el resumen.
+    """
+    messages: list[BaseMessage] = []
+    for turn in turns:
+        messages.append(HumanMessage(content=str(turn.get("question", ""))))
+        messages.append(AIMessage(content=render_turn(turn).split("\nAsistente: ", 1)[-1]))
+    kept = trim_messages(
+        messages,
+        max_tokens=max_tokens,
+        token_counter=count_tokens_approximately,
+        strategy="last",
+        start_on="human",
+    )
+    count = len(kept) // 2
+    return list(turns[len(turns) - count :]) if count else []
 
 
 def render_turn(turn: dict[str, Any]) -> str:
@@ -128,7 +179,9 @@ def compact_history(
     if not needs_summary(turns, summarized, memory):
         return summary, summarized
     cut = len(turns) - turns_to_keep(memory)
-    return summarize_turns(summary, turns[summarized:cut], model), cut
+    updated = summarize_turns(summary, turns[summarized:cut], model)
+    # Tope duro: el resumen (demo extractivo o del modelo) no crece sin límite.
+    return cap_summary(updated, summary_budget(memory)), cut
 
 
 def build_summarization_middleware(

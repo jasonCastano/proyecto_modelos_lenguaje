@@ -70,6 +70,7 @@ from .memory import (
     UserProfile,
     build_summarization_middleware,
     compact_history,
+    recent_within_budget,
     render_preferences,
     render_profile,
     render_turn,
@@ -79,12 +80,15 @@ from .models import RouteDecision, Turn, TurnMetrics
 from .privacy import build_pii_middleware
 from .prompts import load_agent_prompt
 from .router import apply_structured_fallback, contextual_query, route_message
+from .series import SeriesTable, series_intent
 from .structured import StructuredFact, StructuredStore, normalize
 from .tools import (
     ToolTrace,
+    aggregate_series_impl,
     build_read_tools,
     count_fact,
     count_intent,
+    fact_document,
     query_structured_impl,
     search_documents_impl,
 )
@@ -154,6 +158,7 @@ class GraphDeps:
     router_model: BaseChatModel | None = None
     summary_model: BaseChatModel | None = None
     neutralize: bool = True  # spec 015: neutraliza instrucciones embebidas (False = línea base)
+    series: SeriesTable | None = None
 
 
 class TurnMetricsHandler(BaseCallbackHandler):
@@ -293,7 +298,7 @@ def hitl_request(tool: str, args: dict[str, Any]) -> dict[str, Any]:
 
 def _route_node(deps: GraphDeps):
     def route(state: ChatState) -> dict[str, Any]:
-        intent = detect_write_intent(state["question"])
+        intent = detect_write_intent(state["question"], deps.router_model)
         profile_query = intent is None and is_profile_question(state["question"])
         if intent is not None:
             decision = RouteDecision(
@@ -473,21 +478,20 @@ def _retrieve_node(deps: GraphDeps):
         facts: list[StructuredFact] = []
         fragments: list[RetrievedFragment] = []
         documents: list[GuardedDocument] = []
-        if decision.route in {"structured", "mixed"} and deps.store is not None:
-            facts, documents, _ = query_structured_impl(deps.store, query=query, limit=top_k)
-            entity_type = count_intent(state["question"])
-            counted = count_fact(deps.store, entity_type) if entity_type else None
-            if counted is not None:
-                # El conteo exacto va primero: el modelo lo cita, no lo calcula.
-                facts = [counted, *facts][:top_k]
-                documents = [
-                    GuardedDocument(
-                        f"F{index}",
-                        fact.citations[0].url if fact.citations else "",
-                        f"{fact.subject_label} · {fact.attribute} = {fact.value}. {fact.snippet}",
-                    )
-                    for index, fact in enumerate(facts, start=1)
-                ]
+        if decision.route in {"structured", "mixed"}:
+            asked = series_intent(state["question"])
+            if asked is not None and deps.series is not None:
+                # Cifra anual del CSV curado: la agregación ya viene calculada por la herramienta.
+                facts.append(aggregate_series_impl(deps.series, asked, question=state["question"]))
+            elif deps.store is not None:
+                facts, _, _ = query_structured_impl(deps.store, query=query, limit=top_k)
+                entity_type = count_intent(state["question"])
+                counted = count_fact(deps.store, entity_type) if entity_type else None
+                if counted is not None:
+                    # El conteo exacto basta: el modelo lo cita, no lo calcula, y los hechos
+                    # extraídos automáticamente (ruidosos) no lo acompañan.
+                    facts = [counted]
+            documents = [fact_document(f"F{i}", fact) for i, fact in enumerate(facts, start=1)]
             retrievals += 1
         if decision.route == "structured" and not facts:
             decision = apply_structured_fallback(decision, rows_found=0)
@@ -518,7 +522,10 @@ def _chain_user_message(state: ChatState, deps: GraphDeps) -> str:
     parts: list[str] = []
     if state.get("summary"):
         parts.append(f"<resumen>\n{state['summary']}\n</resumen>")
-    recent = _recent_turns(state, deps)
+    # Recorte por tokens también en la cadena (antes solo «resumen + últimos N turnos»).
+    recent = recent_within_budget(
+        _recent_turns(state, deps), deps.config.memory.summarize_after_tokens
+    )
     if recent:
         parts.append(
             "<historial>\n" + "\n\n".join(render_turn(t) for t in recent) + "\n</historial>"
@@ -630,6 +637,27 @@ def _final_answer(messages: Sequence[BaseMessage]) -> str:
     return ""
 
 
+ROUTE_HINTS = {
+    "structured": (
+        "usa aggregate_series para cifras anuales (ventas, producción, cálculos por año) o "
+        "query_structured para datos puntuales y listas; no uses search_documents salvo que "
+        "esas herramientas no traigan nada"
+    ),
+    "documental": "usa search_documents; las cifras anuales solo si la pregunta las pide",
+    "mixed": (
+        "usa las dos fuentes: aggregate_series o query_structured para la cifra y "
+        "search_documents para el contexto; la respuesta debe citar al menos un F# y un U#"
+    ),
+}
+
+
+def route_hint(state: ChatState) -> str:
+    """Pista explícita para el agente: la ruta del enrutador restringe qué herramientas usar."""
+    decision = state.get("decision") or {}
+    hint = ROUTE_HINTS.get(str(decision.get("route", "")))
+    return f"\n\nRuta decidida por el enrutador: {decision.get('route')}. {hint}." if hint else ""
+
+
 def _agent_node(deps: GraphDeps):
     system = load_agent_prompt("agent").render()
     limits = deps.config.agent
@@ -651,14 +679,18 @@ def _agent_node(deps: GraphDeps):
                 trace,
                 top_k=limits.chain_top_k,
                 neutralize=deps.neutralize,
+                series=deps.series,
+                question=state["question"],
             ),
             *build_write_tools(run),
         ]
 
+        hint = route_hint(state)
+
         @dynamic_prompt
         def personalized_prompt(_request: ModelRequest) -> str:
-            """System prompt con preferencias y perfil del Store, leído en cada llamada."""
-            return system_with_preferences(system, deps, state)
+            """System prompt con preferencias, perfil del Store y la ruta decidida."""
+            return system_with_preferences(system, deps, state) + hint
 
         runnable = create_agent(
             deps.model,

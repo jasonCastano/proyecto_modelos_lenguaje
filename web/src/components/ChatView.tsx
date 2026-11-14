@@ -8,6 +8,7 @@ import {
   type ObservabilityStatus,
   resumeThread,
   sendChat,
+  STREAM_TIMEOUT_MS,
   streamChat,
 } from "../lib/chat";
 import {
@@ -160,7 +161,35 @@ interface StoredThread {
   variant: ChatVariant;
 }
 
+/** Hilo en la URL (`#/chat/<uuid>`): la conversación sobrevive a recargas y se puede compartir. */
+const THREAD_HASH = /^#\/chat\/([0-9a-f-]{36})$/i;
+
+export function threadFromHash(hash: string): string | null {
+  return THREAD_HASH.exec(hash)?.[1] ?? null;
+}
+
+function writeThreadHash(threadId: string | null) {
+  try {
+    const next = threadId ? `#/chat/${threadId}` : "#/chat";
+    if (window.location.hash !== next) window.history.replaceState(null, "", next);
+  } catch {
+    // Sin History API (entornos de prueba restringidos): el hilo sigue en sessionStorage.
+  }
+}
+
 function readThread(): StoredThread | null {
+  const fromUrl = typeof window !== "undefined" ? threadFromHash(window.location.hash) : null;
+  if (fromUrl) {
+    const saved = readSession(THREAD_KEY);
+    let variant: ChatVariant = "chain";
+    try {
+      const parsed = saved ? (JSON.parse(saved) as StoredThread) : null;
+      if (parsed?.id === fromUrl && parsed.variant === "agent") variant = "agent";
+    } catch {
+      variant = "chain";
+    }
+    return { id: fromUrl, variant };
+  }
   const raw = readSession(THREAD_KEY);
   if (!raw) return null;
   try {
@@ -322,6 +351,13 @@ export function ChatView({ mode }: { mode: Mode }) {
   const [recent, setRecent] = useState<RecentThread[]>(() => readRecent());
   const [observability, setObservability] = useState<ObservabilityStatus | null>(null);
   const userId = useRef(anonymousUser());
+  const controller = useRef<AbortController | null>(null);
+
+  function refreshObservability() {
+    void getObservability(mode)
+      .then(setObservability)
+      .catch(() => setObservability(null));
+  }
 
   function refreshPreferences() {
     void getMemory(userId.current)
@@ -337,22 +373,23 @@ export function ChatView({ mode }: { mode: Mode }) {
 
   useEffect(() => {
     refreshPreferences();
-    void getObservability()
-      .then(setObservability)
-      .catch(() => setObservability(null));
+    refreshObservability();
     const saved = stored.current;
     if (!saved) return;
     let active = true;
     void getThread(saved.id)
       .then((view) => {
         if (!active) return;
+        setVariant(view.variant);
         setTurns(view.turns);
         setAction(view.pending_action);
+        writeThreadHash(saved.id);
         refreshPreferences();
       })
       .catch(() => {
         if (!active) return;
         writeSession(THREAD_KEY, null);
+        writeThreadHash(null);
         setThreadId(null);
       });
     return () => {
@@ -372,6 +409,7 @@ export function ChatView({ mode }: { mode: Mode }) {
       setAction(view.pending_action);
       setActionQuestion("");
       writeSession(THREAD_KEY, JSON.stringify({ id: entry.id, variant: view.variant }));
+      writeThreadHash(entry.id);
     } catch (caught) {
       setRecent(() => {
         const next = readRecent().filter((item) => item.id !== entry.id);
@@ -386,6 +424,7 @@ export function ChatView({ mode }: { mode: Mode }) {
 
   function startOver(nextVariant: ChatVariant = variant) {
     writeSession(THREAD_KEY, null);
+    writeThreadHash(null);
     setVariant(nextVariant);
     setThreadId(null);
     setTurns([]);
@@ -454,22 +493,31 @@ export function ChatView({ mode }: { mode: Mode }) {
     const input = { message: clean, threadId, userId: userId.current, variant, mode };
     let current: LiveTurn = { question: clean, route: null, stage: "Enrutando…", text: "" };
     setLive(current);
+    const abort = new AbortController();
+    controller.current = abort;
+    const timer = window.setTimeout(() => abort.abort("timeout"), STREAM_TIMEOUT_MS);
     try {
       let response: ChatResponse;
       try {
-        response = await streamChat(input, (event) => {
-          current = liveStage(event, current);
-          setLive(current);
-        });
+        response = await streamChat(
+          input,
+          (event) => {
+            current = liveStage(event, current);
+            setLive(current);
+          },
+          abort.signal,
+        );
       } catch (caught) {
-        // Un servidor sin streaming (404) responde igual por la ruta clásica.
-        const notFound =
-          caught instanceof ApiClientError && caught.apiError.code === "http_error";
-        if (!notFound) throw caught;
-        response = await sendChat(input);
+        // Solo un servidor sin la ruta de streaming (404 sin cuerpo de error) cae a POST /api/chat;
+        // un 5xx, un hilo inexistente o una cancelación se informan tal cual.
+        const unavailable =
+          caught instanceof ApiClientError && caught.apiError.code === "stream_unavailable";
+        if (!unavailable) throw caught;
+        response = await sendChat(input, abort.signal);
       }
       setThreadId(response.thread_id);
       writeSession(THREAD_KEY, JSON.stringify({ id: response.thread_id, variant }));
+      writeThreadHash(response.thread_id);
       setRecent(rememberThread({ id: response.thread_id, variant, title: clean.slice(0, 60) }));
       if (response.status === "pending_approval") {
         setAction(response.pending_action);
@@ -479,12 +527,19 @@ export function ChatView({ mode }: { mode: Mode }) {
       }
       setMessage("");
       refreshPreferences();
+      refreshObservability();
     } catch (caught) {
       report(caught);
     } finally {
+      window.clearTimeout(timer);
+      controller.current = null;
       setLive(null);
       setBusy(false);
     }
+  }
+
+  function stopGeneration() {
+    controller.current?.abort("user");
   }
 
   return (
@@ -512,6 +567,18 @@ export function ChatView({ mode }: { mode: Mode }) {
             {observability.langsmith
               ? `LangSmith (${observability.project ?? "proyecto"})`
               : "log JSON por turno"}
+          </span>
+        ) : null}
+        {observability?.vector_store?.[mode] ? (
+          <span
+            className="fragments-badge"
+            data-kind={observability.vector_store[mode].startsWith("Respaldo") ? "warning" : "ok"}
+            data-testid="vector-store"
+            title={observability.vector_store[mode]}
+          >
+            {observability.vector_store[mode].startsWith("Respaldo")
+              ? "⚠ Respaldo numpy (sin Qdrant)"
+              : observability.vector_store[mode].replace("Búsqueda vectorial en ", "Vectores: ")}
           </span>
         ) : null}
       </div>
@@ -629,6 +696,16 @@ export function ChatView({ mode }: { mode: Mode }) {
         >
           {busy ? "Pensando…" : action ? "Decide la acción pendiente" : "Enviar"}
         </button>
+        {busy && live ? (
+          <button
+            className="btn btn-link"
+            data-testid="chat-stop"
+            onClick={stopGeneration}
+            type="button"
+          >
+            Detener generación
+          </button>
+        ) : null}
       </form>
 
       {error ? (

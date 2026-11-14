@@ -34,6 +34,7 @@ from .memory import UserMemory, UserProfile
 from .models import Decision, PendingAction, RouteDecision, Turn
 from .observability import log_turn, run_config
 from .privacy import redact_pii
+from .series import default_series
 from .structured import StructuredError, StructuredStore
 
 Variant = Literal["chain", "agent"]
@@ -181,12 +182,15 @@ def open_store(config: AgentConfig) -> StructuredStore | None:
 def build_deps(mode: Mode, config: AgentConfig, retriever: HybridRetriever | None) -> GraphDeps:
     """Dependencias por modo: demo determinista sin red, o DeepSeek con la configuración del LLM."""
     store = open_store(config)
+    series = default_series()
     if mode == "demo":
-        return GraphDeps(config, retriever, store, DemoChatModel())
+        return GraphDeps(config, retriever, store, DemoChatModel(), series=series)
     from ..llm import build_chat_model, load_llm_config
 
     model = build_chat_model(load_llm_config())
-    return GraphDeps(config, retriever, store, model, router_model=model, summary_model=model)
+    return GraphDeps(
+        config, retriever, store, model, router_model=model, summary_model=model, series=series
+    )
 
 
 class ChatService:

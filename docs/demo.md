@@ -1,5 +1,10 @@
 # Guion de demostración — 12 + 3 minutos
 
+> **Reemplazado el 2026-11-14.** El guion vigente de la sustentación del Módulo 2 (casos, preparación con
+> `make demo-prep`, plan B y reparto por integrante) está en [`rubrica_modulo2.md`](rubrica_modulo2.md) §5,
+> como pidió la evaluación docente para no tener dos guiones contradictorios. Este archivo se conserva como
+> referencia del recorrido del Módulo 1.
+
 **Formato** (constitución §5 Fase 1, §8.2): 12 minutos de demostración en vivo + 3 de preguntas, **sin
 diapositivas**, con la app, el repositorio y el IDE abiertos y el pipeline ejecutándose en vivo. Sirve para
 la sustentación del Módulo 2 y reutiliza el recorrido del Módulo 1.

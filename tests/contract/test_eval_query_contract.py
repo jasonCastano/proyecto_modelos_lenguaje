@@ -48,11 +48,13 @@ def test_distribution_matches_tasks_t018() -> None:
     base = [row for row in ROWS if row["type"] != "follow_up"]
 
     # Assert
-    assert len(base) == 30
+    # T018 (30 consultas + 6 repreguntas) más 5 mixtas y 3 de series anuales (evaluación docente).
+    assert len(base) == 38
     assert by_type == {
         "greeting": 6,
         "documental": 12,
-        "structured": 6,
+        "structured": 9,
+        "mixed": 5,
         "out_of_corpus": 4,
         "ambiguous": 2,
         "follow_up": 6,

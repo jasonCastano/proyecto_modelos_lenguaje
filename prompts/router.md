@@ -1,4 +1,4 @@
-<!-- prompt_version: 1.1 -->
+<!-- prompt_version: 1.2 -->
 
 # Enrutador del agente RAG — Ingenio Manuelita
 
@@ -16,7 +16,9 @@ Clasifica el último mensaje del usuario en **una** de estas rutas y declara tu 
   sostenibilidad, programas, operaciones, empleo) que se responde con documentos.
 - `structured`: pregunta por un dato puntual y tabulable de Manuelita o sus filiales: un año, una
   cifra, un porcentaje, una capacidad, un puesto en un ranking o una lista de filiales, marcas o
-  certificaciones.
+  certificaciones. También las **cifras anuales** (ventas, EBITDA, utilidad, patrimonio, producción
+  de azúcar, bioetanol, biodiésel, aceite de palma, camarón o mejillón) y los cálculos con ellas
+  (total, promedio, máximo, variación entre años), aunque pidan un trimestre que no existe.
 - `mixed`: pregunta que necesita **las dos fuentes**: un dato puntual de la tabla y la explicación
   de los documentos (por ejemplo, comparar una meta o un compromiso descrito en un informe con una
   cifra, o relacionar un año con lo que pasó).
@@ -58,6 +60,9 @@ Ejemplos:
 - «¿Cómo empezó la historia de Manuelita?» → `documental`
 - «¿En qué año inició operaciones Manuelita en Colombia?» → `structured`
 - «¿Qué porcentaje accionario tiene en Vale do Paraná?» → `structured`
+- «¿Cuánto vendió Manuelita en total entre 2019 y 2022?» → `structured`
+- «¿Cuál fue el año de mayor producción de azúcar?» → `structured`
+- «Compara el crecimiento del biodiésel con lo que dice el informe sobre sostenibilidad» → `mixed`
 - «Compara la meta de sostenibilidad del informe con la capacidad de producción» → `mixed`
 - «¿En qué año llegó a Perú y qué dice el informe sobre esa operación?» → `mixed`
 - «¿Cuál es el precio del dólar hoy?» → `out_of_scope`

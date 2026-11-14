@@ -1,0 +1,78 @@
+{
+  "questions": 40,
+  "vector_store": "qdrant",
+  "rows": [
+    {
+      "semantic_top_k": 5,
+      "alpha": 0.5,
+      "recall_at_10": 0.6286,
+      "ndcg_at_10": 0.4604,
+      "mrr": 0.4065,
+      "latency_ms_mean": 955.92
+    },
+    {
+      "semantic_top_k": 5,
+      "alpha": 0.65,
+      "recall_at_10": 0.6286,
+      "ndcg_at_10": 0.5066,
+      "mrr": 0.4676,
+      "latency_ms_mean": 967.61
+    },
+    {
+      "semantic_top_k": 5,
+      "alpha": 0.8,
+      "recall_at_10": 0.6286,
+      "ndcg_at_10": 0.5066,
+      "mrr": 0.4676,
+      "latency_ms_mean": 988.23
+    },
+    {
+      "semantic_top_k": 8,
+      "alpha": 0.5,
+      "recall_at_10": 0.6429,
+      "ndcg_at_10": 0.4713,
+      "mrr": 0.4165,
+      "latency_ms_mean": 939.57
+    },
+    {
+      "semantic_top_k": 8,
+      "alpha": 0.65,
+      "recall_at_10": 0.6429,
+      "ndcg_at_10": 0.5048,
+      "mrr": 0.4613,
+      "latency_ms_mean": 960.4
+    },
+    {
+      "semantic_top_k": 8,
+      "alpha": 0.8,
+      "recall_at_10": 0.6429,
+      "ndcg_at_10": 0.5048,
+      "mrr": 0.4613,
+      "latency_ms_mean": 958.18
+    },
+    {
+      "semantic_top_k": 12,
+      "alpha": 0.5,
+      "recall_at_10": 0.6429,
+      "ndcg_at_10": 0.4681,
+      "mrr": 0.4198,
+      "latency_ms_mean": 941.45
+    },
+    {
+      "semantic_top_k": 12,
+      "alpha": 0.65,
+      "recall_at_10": 0.6714,
+      "ndcg_at_10": 0.4986,
+      "mrr": 0.4499,
+      "latency_ms_mean": 940.65
+    },
+    {
+      "semantic_top_k": 12,
+      "alpha": 0.8,
+      "recall_at_10": 0.6714,
+      "ndcg_at_10": 0.4986,
+      "mrr": 0.4499,
+      "latency_ms_mean": 957.02
+    }
+  ]
+}

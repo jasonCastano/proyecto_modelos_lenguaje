@@ -18,7 +18,7 @@ from ..tasks import (
     _parse_sections,
 )
 
-AGENT_PROMPTS = ("router", "agent", "memory_summary", "judge")
+AGENT_PROMPTS = ("router", "agent", "memory_summary", "judge", "profile_extract")
 
 
 def load_agent_prompt(name: str, *, project_root: Path | None = None) -> PromptTemplate:

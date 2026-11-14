@@ -38,10 +38,10 @@ def test_demo_router_meets_no_search_criterion() -> None:
     report = evaluate_router(cases, model=None, min_confidence=0.6, run_id="t", mode="demo")
 
     # Assert
-    assert report.cases == 36
+    assert report.cases == 44
     assert report.no_search_ok == report.no_search_total == 10
     assert report.model_calls == 0
-    assert sum(sum(counter.values()) for counter in report.confusion.values()) == 36
+    assert sum(sum(counter.values()) for counter in report.confusion.values()) == 44
 
 
 def test_router_section_is_replaced_not_duplicated(tmp_path: Path) -> None:

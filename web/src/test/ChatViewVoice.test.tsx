@@ -163,6 +163,7 @@ describe("ChatView con voz", () => {
     vi.unstubAllGlobals();
     window.sessionStorage.clear();
     window.localStorage.clear();
+    window.history.replaceState(null, "", "/");
   });
 
   it("lee la primera oración antes de que termine el streaming y luego el resto en orden", async () => {
@@ -222,7 +223,9 @@ describe("ChatView con voz", () => {
     expect(ttsBodies(fetchMock)).toHaveLength(0);
     expect(screen.queryByTestId("turn-listen")).not.toBeInTheDocument();
     unmount();
-    window.sessionStorage.clear(); // solo interesa la preferencia de voz (localStorage)
+    // Solo interesa la preferencia de voz (localStorage): sin hilo guardado ni en la URL.
+    window.sessionStorage.clear();
+    window.history.replaceState(null, "", "/");
 
     render(<ChatView mode="demo" />);
     await voiceReady();

@@ -19,7 +19,13 @@ from langchain_core.tools import BaseTool, tool
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..rag.hybrid import HybridRetriever, MetadataFilter, RetrievedFragment
-from .guard import GuardedDocument, detect_instructions, render_documents
+from .guard import (
+    NEUTRALIZED_REASON,
+    GuardedDocument,
+    detect_instructions,
+    neutralize_instructions,
+    render_documents,
+)
 from .series import (
     AggregateArgs,
     SeriesTable,
@@ -165,11 +171,15 @@ class ToolTrace:
         self.calls = 0
 
 
-def mark_anomalies(fragment: RetrievedFragment, text: str) -> RetrievedFragment:
+def mark_anomalies(
+    fragment: RetrievedFragment, text: str, *, neutralized: int = 0
+) -> RetrievedFragment:
     """Devuelve el fragmento marcado como anómalo si su texto trae instrucciones embebidas."""
     reasons = detect_instructions(text)
     if not reasons:
         return fragment
+    if neutralized:
+        reasons = [*reasons, f"{NEUTRALIZED_REASON} ({neutralized})"]
     return RetrievedFragment(
         unit_id=fragment.unit_id,
         title=fragment.title,
@@ -202,8 +212,10 @@ def search_documents_impl(
             continue
         unit = retriever.units_by_id.get(fragment.unit_id)
         text = unit.text if unit is not None else ""
-        fragments.append(mark_anomalies(fragment, text))
-        documents.append(GuardedDocument(f"U{len(documents) + 1}", fragment.url, text))
+        # La oración inyectada no llega al modelo: se reemplaza por un aviso y queda en la traza.
+        safe, neutralized = neutralize_instructions(text)
+        fragments.append(mark_anomalies(fragment, text, neutralized=neutralized))
+        documents.append(GuardedDocument(f"U{len(documents) + 1}", fragment.url, safe))
     return fragments, documents
 
 

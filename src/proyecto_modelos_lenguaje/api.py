@@ -131,21 +131,23 @@ def _retriever(mode: str) -> HybridRetriever | None:
         config = load_retrieval_config()
         profile = EmbeddingProfile.from_config(config.embedding)
         notes: list[str] = []
-        adversarial = mode == "demo" and os.environ.get(DEMO_CORPUS_ENV) == "malicious"
+        # Caso 5 de la rúbrica en vivo, en modo demo o con DeepSeek: corpus de prueba con un
+        # documento que intenta «ignorar las instrucciones anteriores»; la interfaz lo muestra
+        # marcado y la oración inyectada no llega al modelo.
+        adversarial = os.environ.get(DEMO_CORPUS_ENV) == "malicious"
+        test_corpus = mode == "demo" or adversarial
         index_dir = DEMO_INDEX if mode == "demo" else config.index_dir
         if adversarial:
-            # Caso 5 de la rúbrica en vivo: corpus de prueba con un documento que intenta
-            # «ignorar las instrucciones anteriores»; la interfaz lo muestra marcado como dato.
             index_dir = MALICIOUS_DIR / "index"
-            notes.append("Corpus demo adversarial (MANUELITA_DEMO_CORPUS=malicious)")
+            notes.append(f"Corpus adversarial ({DEMO_CORPUS_ENV}=malicious, modo {mode})")
         try:
             index = load_index(index_dir, profile)
         except (IndexUnavailableError, IndexInvalidError) as exc:
             index = None
             notes.append(f"Índice no utilizable: {exc}")
-        kind = "hash" if mode == "demo" else "fastembed"
+        kind = "hash" if test_corpus else "fastembed"
         units = _malicious_units() if adversarial else _units()
-        vector_store, note = attach_vector_store(index, config.source, units, demo=mode == "demo")
+        vector_store, note = attach_vector_store(index, config.source, units, demo=test_corpus)
         if note:
             notes.append(note)
         return HybridRetriever(

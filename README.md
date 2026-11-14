@@ -697,8 +697,10 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
   turno, perfil guardado y tarjeta de aprobación.
 - Memoria de largo plazo: «Me llamo Ana y trabajo en Carvajal» propone `save_profile`; tras aprobarla, un
   hilo nuevo responde «¿Dónde trabajo?» desde el Store sin buscar.
-- Blindaje en vivo: con `MANUELITA_DEMO_CORPUS=malicious`, el modo demo usa un corpus con un documento que
-  intenta dar órdenes; la interfaz lo marca y la respuesta no lo obedece.
+- Blindaje en vivo: con `MANUELITA_DEMO_CORPUS=malicious`, los modos demo **y real** (DeepSeek) usan un corpus
+  de prueba con documentos que intentan dar órdenes; la interfaz muestra el aviso, las oraciones inyectadas se
+  neutralizan antes de llegar al modelo y la respuesta no las obedece. Evidencia: `agent shield`
+  (`docs/evaluacion_blindaje.md`, ADR 0019).
 - Trazas opcionales con LangSmith: define `LANGSMITH_TRACING=true` y `LANGSMITH_API_KEY` en `.env` (no se
   versiona). Los mensajes llegan ya sin datos personales; no la actives con usuarios reales sin revisar
   `docs/memoria.md` §6.
@@ -746,8 +748,8 @@ La página incluye:
 - **Consola RAG** con Consulta, Resumen y FAQ, citas `[U#]`, metadatos y fallback.
 - **Recorrido de los Módulos 1 y 2** (11 bloques): problema, datos, medallion, prompts, tareas, Qdrant,
   memoria y enrutador, blindaje, interfaz en streaming, métricas y límites.
-- **Modo demostración** explícito, sin clave ni red (con `MANUELITA_DEMO_CORPUS=malicious`, corpus adversarial
-  para mostrar el blindaje).
+- **Modo demostración** explícito, sin clave ni red. Con `MANUELITA_DEMO_CORPUS=malicious`, corpus adversarial
+  para mostrar el blindaje, también con el modelo real.
 - **Conversación** (Módulo 2):
   - respuesta en streaming con la ruta y la etapa (enrutando, recuperando, escribiendo);
   - fragmentos con puntaje, filas estructuradas y fuentes;

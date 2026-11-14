@@ -162,6 +162,7 @@ export interface ObservabilityStatus {
   langsmith: boolean;
   project: string | null;
   structured_log: string | null;
+  adversarial_corpus?: boolean;
 }
 
 export function getObservability(): Promise<ObservabilityStatus> {

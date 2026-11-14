@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import uuid
 from functools import lru_cache
 
@@ -14,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from .agent.adversarial import adversarial_enabled, adversarial_retriever
 from .agent.config import AgentConfigError, load_agent_config, resolve_state_dir
 from .agent.memory import build_checkpointer, build_store
 from .agent.observability import configure_tracing
@@ -58,8 +58,6 @@ from .rag.hybrid import HybridRetriever
 from .rag.index import load_index
 from .rag.vectorstore import attach_vector_store
 from .retrieval import (
-    EntityIndex,
-    GoldUnit,
     RetrievalError,
     load_entity_index,
     load_faq_seeds,
@@ -79,8 +77,6 @@ from .tasks import (
 
 GOLD_DIR = PROJECT_ROOT / "data" / "gold"
 DEMO_INDEX = PROJECT_ROOT / "tests" / "fixtures" / "rag" / "index"
-MALICIOUS_DIR = PROJECT_ROOT / "tests" / "fixtures" / "rag" / "malicious"
-DEMO_CORPUS_ENV = "MANUELITA_DEMO_CORPUS"
 WEB_DIST = PROJECT_ROOT / "web" / "dist"
 APP_TITLE = "RAG Ingenio Manuelita"
 
@@ -117,33 +113,25 @@ def _model(task: str, mode: str):
     return build_chat_model(load_llm_config())
 
 
-def _malicious_units() -> tuple[GoldUnit, ...]:
-    """Unidades del corpus adversarial de prueba (``tests/fixtures/rag/malicious``)."""
-    lines = (MALICIOUS_DIR / "gold_malicious.jsonl").read_text(encoding="utf-8").splitlines()
-    return tuple(GoldUnit.from_dict(json.loads(line)) for line in lines if line.strip())
-
-
 @lru_cache(maxsize=2)
 def _retriever(mode: str) -> HybridRetriever | None:
     """Build (once per mode) the hybrid retriever; never fail the request."""
     try:
         config = load_retrieval_config()
+        if adversarial_enabled():
+            # Caso 5 de la rúbrica en vivo, en modo demo **y real** (spec 015): corpus de prueba
+            # con documentos que intentan dar órdenes; la interfaz los muestra como dato.
+            return adversarial_retriever("real" if mode == "real" else "demo", config)
         profile = EmbeddingProfile.from_config(config.embedding)
         notes: list[str] = []
-        adversarial = mode == "demo" and os.environ.get(DEMO_CORPUS_ENV) == "malicious"
         index_dir = DEMO_INDEX if mode == "demo" else config.index_dir
-        if adversarial:
-            # Caso 5 de la rúbrica en vivo: corpus de prueba con un documento que intenta
-            # «ignorar las instrucciones anteriores»; la interfaz lo muestra marcado como dato.
-            index_dir = MALICIOUS_DIR / "index"
-            notes.append("Corpus demo adversarial (MANUELITA_DEMO_CORPUS=malicious)")
         try:
             index = load_index(index_dir, profile)
         except (IndexUnavailableError, IndexInvalidError) as exc:
             index = None
             notes.append(f"Índice no utilizable: {exc}")
         kind = "hash" if mode == "demo" else "fastembed"
-        units = _malicious_units() if adversarial else _units()
+        units = _units()
         vector_store, note = attach_vector_store(index, config.source, units, demo=mode == "demo")
         if note:
             notes.append(note)
@@ -151,7 +139,7 @@ def _retriever(mode: str) -> HybridRetriever | None:
             units,
             index=index,
             embedder=build_embedder(profile, kind=kind),
-            entity_index=EntityIndex() if adversarial else _entity_index(),
+            entity_index=_entity_index(),
             config=config,
             notes=tuple(notes),
             vector_store=vector_store,
@@ -349,6 +337,7 @@ def health(probe: bool = False) -> HealthStatus | JSONResponse:
             configured=False,
             demo_available=True,
             detail="Falta DEEPSEEK_API_KEY. El modo demostración está disponible.",
+            adversarial_corpus=adversarial_enabled(),
         )
     if not probe:
         return HealthStatus(
@@ -358,6 +347,7 @@ def health(probe: bool = False) -> HealthStatus | JSONResponse:
             configured=True,
             demo_available=True,
             detail="Proveedor configurado.",
+            adversarial_corpus=adversarial_enabled(),
         )
     try:
         result = health_check(config)
@@ -369,6 +359,7 @@ def health(probe: bool = False) -> HealthStatus | JSONResponse:
         model=config.model,
         configured=True,
         demo_available=True,
+        adversarial_corpus=adversarial_enabled(),
         latency_ms=result.get("latency_ms"),
         detail=result.get("detail"),
     )
@@ -464,7 +455,7 @@ def observability():
         log_path: str | None = str(state_dir / "logs" / "turns.jsonl")
     except Exception:
         log_path = None
-    return {**status, "structured_log": log_path}
+    return {**status, "structured_log": log_path, "adversarial_corpus": adversarial_enabled()}
 
 
 def _chat_error(exc: Exception) -> JSONResponse:

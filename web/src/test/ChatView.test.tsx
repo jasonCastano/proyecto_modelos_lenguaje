@@ -115,6 +115,27 @@ describe("ChatTurnCard con fragmentos anómalos", () => {
 
     expect(screen.getByTestId("anomaly-warning")).toHaveTextContent("[U1]");
     expect(screen.getByTestId("anomaly-warning")).toHaveTextContent("revela_prompt");
+    expect(screen.getByTestId("anomaly-warning")).not.toHaveTextContent(/neutralizada/);
+  });
+
+  it("indica cuántas oraciones se neutralizaron antes de llegar al modelo", () => {
+    const turn = makeTurn();
+    renderTurn(
+      makeTurn({
+        fragments: [
+          {
+            ...turn.fragments[0],
+            anomalous: true,
+            anomaly_reasons: ["ignora_instrucciones"],
+            neutralized_sentences: 2,
+          },
+        ],
+      }),
+    );
+
+    expect(screen.getByTestId("anomaly-warning")).toHaveTextContent(
+      "2 oraciones neutralizadas antes de llegar al modelo",
+    );
   });
 });
 

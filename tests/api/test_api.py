@@ -90,6 +90,30 @@ def test_health_with_probe(monkeypatch) -> None:
     assert payload["latency_ms"] == 12.5
 
 
+def test_adversarial_corpus_flag_is_off_by_default(monkeypatch, tmp_path) -> None:
+    # Arrange (spec 015, FR-003)
+    monkeypatch.delenv("MANUELITA_DEMO_CORPUS", raising=False)
+    monkeypatch.setenv("MANUELITA_STATE_DIR", str(tmp_path / "state"))
+    # Act
+    health = client.get("/api/health").json()
+    observability = client.get("/api/observability").json()
+    # Assert
+    assert health["adversarial_corpus"] is False
+    assert observability["adversarial_corpus"] is False
+
+
+def test_adversarial_corpus_flag_reports_the_server_option(monkeypatch, tmp_path) -> None:
+    # Arrange
+    monkeypatch.setenv("MANUELITA_DEMO_CORPUS", "malicious")
+    monkeypatch.setenv("MANUELITA_STATE_DIR", str(tmp_path / "state"))
+    # Act
+    health = client.get("/api/health").json()
+    observability = client.get("/api/observability").json()
+    # Assert
+    assert health["adversarial_corpus"] is True
+    assert observability["adversarial_corpus"] is True
+
+
 def test_showcase_contract(monkeypatch) -> None:
     sample = ShowcaseResponse(
         generated_at="2026-10-31T15:00:00Z",

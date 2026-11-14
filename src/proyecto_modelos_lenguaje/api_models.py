@@ -80,6 +80,7 @@ class RetrievalFragmentModel(BaseModel):
     reason: str | None = None
     anomalous: bool = False
     anomaly_reasons: list[str] = Field(default_factory=list)
+    neutralized_sentences: int = Field(default=0, ge=0)
 
 
 class RetrievalTraceModel(BaseModel):
@@ -150,6 +151,7 @@ class HealthStatus(BaseModel):
     demo_available: bool = True
     latency_ms: float | None = None
     detail: str | None = None
+    adversarial_corpus: bool = False  # spec 015: el servidor usa el corpus de prueba del blindaje
 
 
 class CorpusMetric(BaseModel):
@@ -259,6 +261,7 @@ class ChatFragmentModel(BaseModel):
     reason: str | None = None
     anomalous: bool = False
     anomaly_reasons: list[str] = Field(default_factory=list)
+    neutralized_sentences: int = Field(default=0, ge=0)
 
 
 class StructuredRowModel(BaseModel):

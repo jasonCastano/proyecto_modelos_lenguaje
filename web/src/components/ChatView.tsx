@@ -217,6 +217,11 @@ export function ChatTurnCard({ turn }: { turn: ChatTurn }) {
             <p key={fragment.label}>
               El fragmento [{fragment.label}] contiene instrucciones dirigidas al asistente (
               {(fragment.anomaly_reasons ?? []).join(", ")}). Se trató como dato y no se obedeció.
+              {fragment.neutralized_sentences
+                ? ` ${fragment.neutralized_sentences} ${
+                    fragment.neutralized_sentences === 1 ? "oración neutralizada" : "oraciones neutralizadas"
+                  } antes de llegar al modelo.`
+                : ""}
             </p>
           ))}
         </div>

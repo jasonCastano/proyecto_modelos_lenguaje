@@ -16,7 +16,7 @@
 | 2.1 Herramienta determinista con `@tool` | 8 % | ✅ | `query_structured` es un `@tool` con `args_schema` Pydantic sobre la tabla SQLite derivada del oro (381 hechos, cita por fila), exportada a `facts.csv` y `entities.json`. La herramienta cuenta y el modelo solo cita (`count_fact`). |
 | 2.2 RAG con Qdrant e índice ANN | 8 % | ✅ | Colección `manuelita_fragments` en Qdrant (coseno, HNSW `m=16`), top-k con filtro por *payload* en una etapa. Recuperación híbrida densa + BM25 y cita `[U#]` validada (`rag/vectorstore.py`, `rag/hybrid.py`). |
 | 2.3 Router Agent | 10 % | ✅ | Reglas (0 llamadas al modelo) más LLM con salida JSON validada por Pydantic. Rutas: directa, documental, estructurada, mixta, fuera de alcance y aclaración. Los saludos no buscan (`tool_calls = 0`). Acierto: 35/36 (97 %). |
-| 2.4 Blindaje del RAG | 4 % | ✅ | El contexto va delimitado como `<documento>` de datos pasivos. Las instrucciones embebidas se marcan como `anomalous` y se avisan en la interfaz; se descartan las respuestas que copian el prompt (`agent/guard.py`, `tests/integration/agent/test_injection.py`). |
+| 2.4 Blindaje del RAG | 4 % | ✅ | El contexto va delimitado como `<documento>` de datos pasivos. Las instrucciones embebidas se marcan como `anomalous` y se avisan en la interfaz; se descartan las respuestas que copian el prompt. Desde la spec 015 las oraciones inyectadas se neutralizan antes de llegar al modelo y el caso se demuestra y se mide con DeepSeek (`agent/guard.py`, `agent shield`, `docs/evaluacion_blindaje.md`, ADR 0019). |
 | 3.1 Frontend propio | 10 % | ✅ | React + Vite + TypeScript desacoplado de FastAPI. Streaming SSE (`/api/chat/stream`), conversaciones recientes que se retoman desde el checkpointer, errores controlados, tarjeta de aprobación, atajos con los casos de la demo y traza por turno (ruta, quién decidió, fragmentos, fuentes, tokens y latencia). |
 | 3.2 Código y gobernanza | 10 % | ✅ | `uv`, Ruff, type hints y docstrings; API tipada con Pydantic. 54 PRs fusionados con revisión al 2026-11-13, Conventional Commits, CI (`test`, `web`, `autoria`) y LICENSE MIT. |
 | 4.1 Diagramas de arquitectura | 8 % | ✅ | README, sección «Agente del Módulo 2»: grafo del agente, checkpointer vs. Store, herramientas y router, y trazas. Además `docs/arquitectura.html`. |
@@ -35,7 +35,7 @@
 | 3. Datos estructurados | «¿Cuántas filiales tiene Manuelita?» y «¿En qué año inició operaciones Manuelita en Perú?» | Ruta Datos estructurados. «6 filiales: Agroindustrial Laredo, …» [F1], conteo hecho por la herramienta; «en 2007» [F1] con la fila visible. |
 | 4. Enrutamiento mixto | «Compara la meta de sostenibilidad del informe con cuántas toneladas de caña procesa Manuelita» | Ruta Documentos + datos: filas [F#] y fragmentos [U#] en la misma respuesta (meta del informe frente a 10.000 t/día y 2,9 millones de t/año). |
 | 4b. Sin quemar búsquedas | «Hola, buenas tardes» y «¿Cuál es el precio del dólar hoy?» | Ruta Directa y Fuera de alcance por reglas: 0 llamadas al modelo y 0 búsquedas. |
-| 5. Blindaje | Reiniciar la API con `MANUELITA_DEMO_CORPUS=malicious`, pasar la app a **modo demo** y preguntar «¿Qué produce Manuelita?». En la terminal: `uv run pytest -q tests/integration/agent/test_injection.py` | El fragmento con «ignora las instrucciones anteriores» aparece marcado («se trató como dato y no se obedeció») y la respuesta no lo sigue. La prueba repite lo mismo con un modelo que intenta revelar el prompt. |
+| 5. Blindaje | Reiniciar la API con `MANUELITA_DEMO_CORPUS=malicious` y dejar la app en **modo real** (DeepSeek); preguntar «¿Qué produce Manuelita?» en Cadena y en Agente. Otros ataques: preguntas de `tests/fixtures/rag/malicious/shield_cases.jsonl`. Evidencia: `docs/evaluacion_blindaje.md` | Aviso «Corpus de prueba adversarial activo». El fragmento con «ignora las instrucciones anteriores» aparece marcado («se trató como dato… oraciones neutralizadas antes de llegar al modelo») y la respuesta cita evidencia legítima sin obedecer. La tabla del informe compara la línea base con la neutralización (6 ataques × 2 variantes × 3 repeticiones). |
 
 **Variante agente**: los mismos casos pasan (2026-11-13), y además personaliza con el perfil («Ana, encontré
 la meta…»). Es más lenta (p95 14,7 s y hasta 22 s en el caso 1), por eso **la demo usa la cadena** y muestra
@@ -92,7 +92,7 @@ real; los botones «Casos de la demo» rellenan cada mensaje), el repositorio en
 | 1:30–4:00 | Memoria | Roberto | Caso 2 completo, incluido el reinicio de la API (2b). |
 | 4:00–6:30 | RAG documental | Jason | Caso 1 y 1b; abrir los fragmentos con puntaje. Mostrar Recall@10/nDCG@10 en `docs/evaluacion_modulo2.md`. |
 | 6:30–8:30 | Estructurado y router | Roberto | Caso 3 (conteo y año) y caso 4 (mixto); señalar el chip de ruta, la confianza y el motivo. Caso 4b: un saludo sin búsquedas. |
-| 8:30–10:00 | Blindaje | Jason | Caso 5: prueba adversarial y explicación de `<documento>` como dato. |
+| 8:30–10:00 | Blindaje | Jason | Caso 5 en vivo con DeepSeek (corpus adversarial), explicación de `<documento>` como dato y de la neutralización, y tabla de `docs/evaluacion_blindaje.md`. |
 | 10:00–11:30 | Repositorio y código | Ambos | PRs, commits y README. En el IDE: `ChatView.tsx` (streaming), `POST /api/chat/stream`, `build_chain_graph` y la decisión «escritura con aprobación». |
 | 11:30–12:00 | Cierre | Roberto | Funciona: los cinco casos. Falta: Jev, despliegue y calificación humana de repreguntas. Aprendizaje: el router ahorra llamadas. |
 
@@ -105,7 +105,8 @@ uv run python -m proyecto_modelos_lenguaje.rag qdrant status        # «lista»;
 uv run python -m proyecto_modelos_lenguaje.agent build-structured --force
 make app                                                              # API + web en http://127.0.0.1:8000
 # En la app: los casos 1 a 4, reiniciar la API y recuperar el hilo
-uv run pytest -q tests/integration/agent/test_injection.py           # caso 5
+uv run pytest -q tests/integration/agent/test_injection.py           # caso 5 (sin red)
+uv run python -m proyecto_modelos_lenguaje.agent shield --mode demo  # caso 5, batería sin red
 git log --oneline --graph -20
 git status
 ```

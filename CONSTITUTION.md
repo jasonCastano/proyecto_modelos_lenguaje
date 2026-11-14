@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.6.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-13
+**Versión**: 1.7.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -529,8 +529,10 @@ exacto. El mapa de evidencias y el guion están en `docs/rubrica_modulo2.md`.
    de hechos y entidades del oro con cita por fila; acceso **solo lectura**.
 8. **RAG Chain vs. RAG Agent**: implementar ambas variantes (recuperar siempre vs. retriever como `@tool` con
    `create_agent`) y compararlas en calidad, latencia y número de llamadas.
-9. **Blindaje**: contexto recuperado aislado con etiquetas XML como dato; prueba adversarial con un documento
-   malicioso que DEBE pasar. Regla de oro HITL: **lectura automática, escritura con aprobación**
+9. **Blindaje**: contexto recuperado aislado con etiquetas XML como dato; las oraciones con instrucciones
+   dirigidas al asistente se neutralizan antes de llegar al modelo; prueba adversarial con documentos maliciosos
+   que DEBE pasar sin red y medirse con el modelo real (`agent shield`, línea base sin neutralización,
+   `docs/evaluacion_blindaje.md`; spec 015, ADR 0019). Regla de oro HITL: **lectura automática, escritura con aprobación**
    (`HumanInTheLoopMiddleware` / `interrupt()` + `Command(resume=...)` con el mismo `thread_id`).
 10. **Evaluación de retrieval**: 20–30 consultas reales con documento correcto y ruta esperada etiquetados; comparar
     al menos dos configuraciones con **Recall@10, nDCG@10** y MRR, más precisión del enrutador, fidelidad de citas,
@@ -541,8 +543,8 @@ exacto. El mapa de evidencias y el guion están en `docs/rubrica_modulo2.md`.
     Las pruebas offline siguen pasando sin red.
 12. **Integración**: la app muestra por turno pregunta, ruta, fragmentos con puntaje, respuesta, fuentes e
     historial, con la respuesta en **streaming** (`POST /api/chat/stream`, SSE). El modo demostración cubre
-    todo sin red ni clave, incluido un corpus adversarial (`MANUELITA_DEMO_CORPUS=malicious`) para mostrar el
-    blindaje.
+    todo sin red ni clave. El corpus adversarial (`MANUELITA_DEMO_CORPUS=malicious`) muestra el blindaje en modo
+    demo y con el modelo real, con un aviso visible en la interfaz.
 13. **Prompts** nuevos (enrutador, agente, resumen de memoria) versionados en `prompts/` y `docs/prompt_log.md`.
 14. **Informe y demo** actualizados; tag `v0.2.0-modulo2`.
 
@@ -924,4 +926,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.6.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-13
+**Versión**: 1.7.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14

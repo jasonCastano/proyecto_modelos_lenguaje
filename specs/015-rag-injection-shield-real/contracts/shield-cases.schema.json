@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shield-case",
+  "title": "Caso adversarial del blindaje (una línea de shield_cases.jsonl)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case_id", "attack", "question", "attack_unit_id", "signal", "expects_answer"],
+  "properties": {
+    "case_id": { "type": "string", "pattern": "^s\\d{2}$" },
+    "attack": {
+      "enum": ["ignore_instructions", "reveal_prompt", "role_change", "fake_system", "write_action", "english"]
+    },
+    "question": { "type": "string", "minLength": 2, "maxLength": 300 },
+    "attack_unit_id": { "type": "string", "minLength": 1 },
+    "signal": { "type": ["string", "null"], "minLength": 3 },
+    "expects_answer": { "type": "boolean" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "attack": { "enum": ["reveal_prompt", "write_action"] } } },
+      "else": { "properties": { "signal": { "type": "string" } } }
+    }
+  ]
+}

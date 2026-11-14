@@ -44,16 +44,28 @@ def configure_tracing() -> dict[str, Any]:
     }
 
 
-def run_config(thread_id: str, variant: str, mode: str) -> dict[str, Any]:
-    """Nombre, etiquetas y metadatos de la traza de un turno."""
+def run_config(
+    thread_id: str, variant: str, mode: str, *, corpus: str | None = None
+) -> dict[str, Any]:
+    """Nombre, etiquetas y metadatos de la traza de un turno.
+
+    ``corpus`` (spec 015) marca las trazas del corpus de prueba adversarial con la etiqueta
+    ``corpus:adversarial`` para filtrarlas en LangSmith; por defecto es el modo.
+    """
+    corpus = corpus or mode
+    tags = ["modulo2", f"variante:{variant}", f"modo:{mode}"]
+    if corpus == "adversarial":
+        tags.append("corpus:adversarial")
     return {
         "run_name": f"turno-{variant}",
-        "tags": ["modulo2", f"variante:{variant}", f"modo:{mode}"],
-        "metadata": {"thread_id": thread_id, "variant": variant, "mode": mode},
+        "tags": tags,
+        "metadata": {"thread_id": thread_id, "variant": variant, "mode": mode, "corpus": corpus},
     }
 
 
-def turn_record(outcome: dict[str, Any], *, variant: str, mode: str) -> dict[str, Any]:
+def turn_record(
+    outcome: dict[str, Any], *, variant: str, mode: str, corpus: str | None = None
+) -> dict[str, Any]:
     """Resumen auditable de un turno, sin el texto de la pregunta ni datos del usuario."""
     turn = outcome.get("turn") or {}
     route = turn.get("route") or {}
@@ -64,6 +76,7 @@ def turn_record(outcome: dict[str, Any], *, variant: str, mode: str) -> dict[str
         "turn_id": turn.get("turn_id"),
         "variant": variant,
         "mode": mode,
+        "corpus": corpus or mode,
         "status": outcome.get("status"),
         "route": route.get("route"),
         "decided_by": route.get("decided_by"),
@@ -84,10 +97,15 @@ def turn_record(outcome: dict[str, Any], *, variant: str, mode: str) -> dict[str
 
 
 def log_turn(
-    outcome: dict[str, Any], *, variant: str, mode: str, log_dir: Path | None
+    outcome: dict[str, Any],
+    *,
+    variant: str,
+    mode: str,
+    log_dir: Path | None,
+    corpus: str | None = None,
 ) -> dict[str, Any]:
     """Escribe el turno en el logger y, si hay directorio de estado, en ``turns.jsonl``."""
-    record = turn_record(outcome, variant=variant, mode=mode)
+    record = turn_record(outcome, variant=variant, mode=mode, corpus=corpus)
     line = json.dumps(record, ensure_ascii=False)
     logger.info(line)
     if log_dir is not None:

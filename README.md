@@ -132,6 +132,8 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
   - Variantes cadena (LCEL) y agente (`create_agent`).
   - Blindaje contra inyección indirecta y aprobación humana de toda escritura (perfil, preferencias,
     olvido, exportación).
+  - **Voz del agente**: las respuestas se leen en voz alta en español, con voz femenina natural (Phonon), por
+    oraciones y mientras se generan; se puede silenciar, detener y volver a escuchar.
 - **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores;
   en el Módulo 2, Recall@10/nDCG@10/MRR, acierto del enrutador y comparación cadena vs. agente con juez LLM.
 - **Interfaz web propia** (React + FastAPI, sin Streamlit) con hero editorial, consola RAG, conversación en
@@ -357,6 +359,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | RAG (Módulo 2) | `fastembed` (ONNX) + **Qdrant** (`qdrant-client`, HNSW, *payload*); índice fuente `.npy` + SQLite |
 | Agente (Módulo 2) | LangChain 1.x + LangGraph (`StateGraph`, `create_agent`, LCEL, `@tool` con Pydantic, middleware HITL/PII/resumen/`dynamic_prompt`, `trim_messages`); SqliteSaver y SqliteStore |
 | Streaming (Módulo 2) | Server-Sent Events en FastAPI (`StreamingResponse`) y `fetch` + `ReadableStream` en React |
+| Voz del agente | **Phonon** (`ptts`, runtime local sin PyTorch) con `gradium/phonon-40m-es`, WAV por oración y Web Audio |
 | Evaluación y trazas (Módulo 2) | Juez LLM propio con definiciones de Ragas; LangSmith (`LANGSMITH_*`) o log JSON por turno |
 | Desarrollo guiado por specs | Spec Kit (`.specify/`), con comandos para OpenCode y Claude Code |
 
@@ -685,6 +688,19 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
   de prueba con documentos que intentan dar órdenes; la interfaz muestra el aviso, las oraciones inyectadas se
   neutralizan antes de llegar al modelo y la respuesta no las obedece. Evidencia: `agent shield`
   (`docs/evaluacion_blindaje.md`, ADR 0019).
+- Voz del agente (spec 016, ADR 0020): el chat lee cada respuesta en español con voz femenina mientras se
+  genera. Requiere aceptar las condiciones de
+  [gradium/phonon-40m-es](https://huggingface.co/gradium/phonon-40m-es) en Hugging Face y definir `HF_TOKEN`
+  en `.env`; el modelo (~75 MB) se descarga a la caché de Hugging Face la primera vez. Diagnóstico:
+
+  ```bash
+  uv run python -m proyecto_modelos_lenguaje.voice --check        # estado, carga y síntesis de prueba
+  uv run python -m proyecto_modelos_lenguaje.voice --list-voices  # voces en español; * = configurada
+  uv run python -m proyecto_modelos_lenguaje.voice --say "Hola" -o hola.wav
+  ```
+
+  La voz se configura en `config/voice.toml` (o `MANUELITA_VOICE`, `MANUELITA_VOICE_ENABLED=0`). Sin modelo,
+  la interfaz avisa y el chat sigue por texto.
 - Trazas opcionales con LangSmith: define `LANGSMITH_TRACING=true` y `LANGSMITH_API_KEY` en `.env` (no se
   versiona). Los mensajes llegan ya sin datos personales; no la actives con usuarios reales sin revisar
   `docs/memoria.md` §6.
@@ -1053,6 +1069,11 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - Técnicas Avanzadas de IA aplicadas en Modelos de Lenguaje.
 - Maestría en IA y Ciencia de Datos, Universidad Autónoma de Occidente, 2026-2S.
 - Docente: Jan Polanco Velasco.
+
+**Modelos de terceros**
+
+- Voz: [Phonon](https://huggingface.co/gradium/phonon-40m-es) de Gradium (`phonon-40m-es`), modelo y voces bajo
+  **CC BY-NC 4.0** (uso académico, no comercial); motor `ptts` bajo MIT/Apache-2.0.
 
 **Fuentes**
 

@@ -28,6 +28,7 @@ import {
   type RetrievalTrace,
 } from "../lib/types";
 import { useVoice } from "../lib/useVoice";
+import { AgentAvatar } from "./AgentAvatar";
 import { ApprovalCard } from "./ApprovalCard";
 import { RetrievedFragments } from "./RetrievedFragments";
 import { SourceList } from "./SourceList";
@@ -79,6 +80,7 @@ export const DEMO_CASES: Array<{ label: string; message: string }> = [
 ];
 
 const RECENT_KEY = "manuelita.chat.recent";
+const AVATAR_HIDDEN_KEY = "manuelita.avatar.hidden";
 const RECENT_MAX = 6;
 
 interface RecentThread {
@@ -383,6 +385,20 @@ export function ChatView({ mode }: { mode: Mode }) {
   }
   const voice = useVoice();
   const [voiceKeys, setVoiceKeys] = useState<Record<number, string>>({});
+  // Spec 017: avatar con sincronización de labios (visible por defecto; preferencia en el navegador).
+  const [avatarHidden, setAvatarHidden] = useState(() => readLocal(AVATAR_HIDDEN_KEY) === "1");
+  const avatarDebug = useRef(
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).has("avatarDebug"),
+  );
+  const avatarState = voice.speaking ? "speaking" : busy || voice.pending ? "thinking" : "idle";
+
+  function toggleAvatar() {
+    setAvatarHidden((previous) => {
+      const next = !previous;
+      writeLocal(AVATAR_HIDDEN_KEY, next ? "1" : "0");
+      return next;
+    });
+  }
 
   function refreshPreferences() {
     void getMemory(userId.current)
@@ -596,6 +612,15 @@ export function ChatView({ mode }: { mode: Mode }) {
           Nueva conversación
         </button>
         <VoiceControls voice={voice} showUnavailable />
+        <button
+          aria-pressed={!avatarHidden}
+          className="btn btn-link"
+          data-testid="avatar-toggle"
+          onClick={toggleAvatar}
+          type="button"
+        >
+          {avatarHidden ? "Mostrar avatar" : "Ocultar avatar"}
+        </button>
         {observability ? (
           <span className="fragments-badge" data-testid="observability">
             Trazas:{" "}
@@ -679,6 +704,11 @@ export function ChatView({ mode }: { mode: Mode }) {
         </div>
       ) : null}
 
+      <div className={`chat-layout${avatarHidden ? "" : " chat-layout--avatar"}`}>
+        {avatarHidden ? null : (
+          <AgentAvatar analyser={voice.analyser} debug={avatarDebug.current} state={avatarState} />
+        )}
+        <div className="chat-main">
       {turns.length > 0 || live ? (
         <ol className="chat-turns" aria-label="Historial de la conversación">
           {turns.map((turn) => (
@@ -704,6 +734,8 @@ export function ChatView({ mode }: { mode: Mode }) {
           fuentes.
         </p>
       )}
+        </div>
+      </div>
 
       {action ? (
         <>

@@ -134,6 +134,8 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
     olvido, exportación).
   - **Voz del agente**: las respuestas se leen en voz alta en español, con voz femenina natural (Phonon), por
     oraciones y mientras se generan; se puede silenciar, detener y volver a escuchar.
+  - **Avatar con sincronización de labios**: una asistente ilustrada junto al chat mueve la boca con el audio de
+    la voz (análisis local en el navegador), parpadea y muestra cuándo está pensando; se puede ocultar.
 - **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores;
   en el Módulo 2, Recall@10/nDCG@10/MRR, acierto del enrutador y comparación cadena vs. agente con juez LLM.
 - **Interfaz web propia** (React + FastAPI, sin Streamlit) con hero editorial, consola RAG, conversación en
@@ -701,6 +703,9 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
 
   La voz se configura en `config/voice.toml` (o `MANUELITA_VOICE`, `MANUELITA_VOICE_ENABLED=0`). Sin modelo,
   la interfaz avisa y el chat sigue por texto.
+- Avatar (spec 017, ADR 0021): junto al chat, la boca sigue el audio de la voz con un analizador de Web Audio, sin
+  servicios externos. «Ocultar avatar» lo esconde y la preferencia se recuerda. Con `?avatarDebug=1` en la URL,
+  la tarjeta muestra la forma y la apertura de la boca para calibrarla.
 - Trazas opcionales con LangSmith: define `LANGSMITH_TRACING=true` y `LANGSMITH_API_KEY` en `.env` (no se
   versiona). Los mensajes llegan ya sin datos personales; no la actives con usuarios reales sin revisar
   `docs/memoria.md` §6.

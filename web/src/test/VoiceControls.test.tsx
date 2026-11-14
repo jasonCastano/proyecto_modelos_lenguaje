@@ -11,6 +11,7 @@ function control(overrides: Partial<VoiceControl> = {}): VoiceControl {
     detail: null,
     muted: false,
     speaking: false,
+    pending: false,
     blocked: false,
     firstAudio: {},
     toggleMuted: vi.fn(),
@@ -20,6 +21,7 @@ function control(overrides: Partial<VoiceControl> = {}): VoiceControl {
     pushToken: vi.fn(),
     finishLive: vi.fn(),
     speak: vi.fn(() => null),
+    analyser: vi.fn(() => null),
     ...overrides,
   };
 }

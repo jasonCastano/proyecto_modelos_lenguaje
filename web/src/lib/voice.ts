@@ -7,6 +7,7 @@
  * La limpieza del texto (citas, Markdown, marcas) la hace el servidor.
  */
 import { request } from "./api";
+import type { AnalyserLike } from "./lipsync";
 import { ApiClientError, type VoiceStatus } from "./types";
 
 export const MAX_SEGMENT_CHARS = 600;
@@ -173,9 +174,23 @@ export interface AudioContextLike {
   state: string;
   destination: unknown;
   currentTime: number;
+  /** Spec 017: frecuencia del contexto (para las bandas del lip-sync). */
+  sampleRate?: number;
   resume(): Promise<void>;
   decodeAudioData(data: ArrayBuffer): Promise<unknown>;
   createBufferSource(): AudioSourceLike;
+  /** Spec 017: analizador intercalado entre la voz y los parlantes. */
+  createAnalyser?(): AnalyserNodeLike;
+}
+
+export interface AnalyserNodeLike extends AnalyserLike {
+  smoothingTimeConstant: number;
+  connect(destination: unknown): unknown;
+}
+
+export interface VoiceAnalyser {
+  node: AnalyserLike;
+  sampleRate: number;
 }
 
 export interface AudioSourceLike {
@@ -228,6 +243,8 @@ export function browserAudioContext(): AudioContextLike | null {
 
 export class VoicePlayer {
   private context: AudioContextLike | null = null;
+  private analyserNode: AnalyserNodeLike | null = null;
+  private analyserFailed = false;
   private session: Session | null = null;
   private counter = 0;
   private readonly options: Required<Omit<VoicePlayerOptions, "createContext">> & {
@@ -244,6 +261,36 @@ export class VoicePlayer {
       onUnavailable: options.onUnavailable ?? (() => undefined),
       onBlocked: options.onBlocked ?? (() => undefined),
     };
+  }
+
+  /**
+   * Spec 017: analizador único del contexto (fftSize 1024), conectado a los parlantes. Cada
+   * oración pasa por él, así el avatar mide exactamente lo que suena. `null` si no se puede.
+   */
+  analyser(): VoiceAnalyser | null {
+    const node = this.ensureAnalyser();
+    const context = this.context;
+    if (!node || !context) return null;
+    return { node, sampleRate: context.sampleRate ?? 48_000 };
+  }
+
+  private ensureAnalyser(): AnalyserNodeLike | null {
+    if (this.analyserNode || this.analyserFailed) return this.analyserNode;
+    const context = this.ensureContext();
+    if (!context?.createAnalyser) {
+      this.analyserFailed = true;
+      return null;
+    }
+    try {
+      const node = context.createAnalyser();
+      node.fftSize = 1024;
+      node.smoothingTimeConstant = 0.5;
+      node.connect(context.destination);
+      this.analyserNode = node;
+    } catch {
+      this.analyserFailed = true;
+    }
+    return this.analyserNode;
   }
 
   /** ¿El navegador puede reproducir audio? */
@@ -412,7 +459,7 @@ export class VoicePlayer {
       if (this.session !== session) return;
       const source = context.createBufferSource();
       source.buffer = buffer;
-      source.connect(context.destination);
+      source.connect(this.ensureAnalyser() ?? context.destination);
       source.onended = () => {
         if (this.session !== session) return;
         session.source = null;

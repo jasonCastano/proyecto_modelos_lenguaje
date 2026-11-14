@@ -206,3 +206,60 @@ describe("VoicePlayer", () => {
     expect(new VoicePlayer({ createContext: () => null }).supported()).toBe(false);
   });
 });
+
+describe("VoicePlayer: analizador para el avatar (spec 017)", () => {
+  function withAnalyser(options: { failing?: boolean } = {}) {
+    const base = fakeContext();
+    const analyserNode = {
+      fftSize: 2048,
+      frequencyBinCount: 1024,
+      smoothingTimeConstant: 0.8,
+      connect: vi.fn(),
+      getFloatTimeDomainData: vi.fn(),
+      getByteFrequencyData: vi.fn(),
+    };
+    const createAnalyser = vi.fn(() => {
+      if (options.failing) throw new Error("sin analizador");
+      return analyserNode;
+    });
+    const context: AudioContextLike = { ...base.context, sampleRate: 44_100, createAnalyser };
+    return { context, sources: base.sources, analyserNode, createAnalyser };
+  }
+
+  it("crea un único analizador conectado a los parlantes", () => {
+    const { context, analyserNode, createAnalyser } = withAnalyser();
+    const player = new VoicePlayer({ createContext: () => context });
+    const first = player.analyser();
+    const second = player.analyser();
+    expect(createAnalyser).toHaveBeenCalledTimes(1);
+    expect(first?.node).toBe(analyserNode);
+    expect(second?.node).toBe(analyserNode);
+    expect(first?.sampleRate).toBe(44_100);
+    expect(analyserNode.fftSize).toBe(1024);
+    expect(analyserNode.smoothingTimeConstant).toBe(0.5);
+    expect(analyserNode.connect).toHaveBeenCalledWith(context.destination);
+  });
+
+  it("cada oración suena a través del analizador", async () => {
+    const { context, sources, analyserNode } = withAnalyser();
+    const fetcher = vi.fn(async (request: SpeechRequest) => new TextEncoder().encode(request.text).buffer as ArrayBuffer);
+    const player = new VoicePlayer({ createContext: () => context, fetcher });
+    player.speakText("Hola.", null);
+    for (let i = 0; i < 4; i += 1) await flush();
+    expect(sources).toHaveLength(1);
+    expect(sources[0].connect).toHaveBeenCalledWith(analyserNode);
+    expect(sources[0].connect).not.toHaveBeenCalledWith(context.destination);
+  });
+
+  it("sin analizador (no existe o falla) la voz va directo a los parlantes", async () => {
+    for (const setup of [() => fakeContext(), () => withAnalyser({ failing: true })]) {
+      const { context, sources } = setup();
+      const fetcher = vi.fn(async (request: SpeechRequest) => new TextEncoder().encode(request.text).buffer as ArrayBuffer);
+      const player = new VoicePlayer({ createContext: () => context, fetcher });
+      expect(player.analyser()).toBeNull();
+      player.speakText("Hola.", null);
+      for (let i = 0; i < 4; i += 1) await flush();
+      expect(sources[0].connect).toHaveBeenCalledWith(context.destination);
+    }
+  });
+});

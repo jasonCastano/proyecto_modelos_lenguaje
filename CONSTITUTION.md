@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.8.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
+**Versión**: 1.9.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -268,6 +268,9 @@ uv.lock
 - El chat del agente lee sus respuestas en voz alta en español, por oraciones y mientras se generan
   (`POST /api/tts`, `GET /api/voice`). El visitante puede silenciarla, detenerla y volver a escucharla; si la
   voz no está disponible, el chat sigue igual por texto (spec 016).
+- Junto al chat hay un **avatar ilustrado** del agente que mueve la boca con el audio de la voz, analizado en el
+  navegador sin servicios externos (spec 017, ADR 0021). La ilustración DEBE ser original: no imita a personas
+  reales ni usa la marca de Manuelita. Respeta `prefers-reduced-motion` y se puede ocultar.
 - DEBE usar la paleta corporativa y motivos de producto definidos en el contrato UI.
 - NO DEBE exponer claves, rutas absolutas ni datos sensibles; la API no devuelve la clave.
 
@@ -943,4 +946,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.8.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
+**Versión**: 1.9.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14

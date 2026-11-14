@@ -3,8 +3,8 @@
 Ejecuta cada pregunta aprobada de ``docs/alcance.md`` con dos prompts versionados y registra lo
 que se puede medir de forma automática (estado, citas, *fallback*, latencia y tokens). La
 calificación de corrección, coherencia y alucinación es humana: el reporte deja esas columnas
-vacías para que el equipo las complete, de modo que ningún resultado se invente (Principios I y V
-de la constitución).
+vacías hasta que ``module1_grading merge`` incorpora las planillas de ambos calificadores, de modo
+que ningún resultado se invente (Principios I y V de la constitución).
 
 Uso::
 
@@ -63,6 +63,7 @@ class BankQuestion:
     kinds: tuple[str, ...]
     items: tuple[str, ...]
     expected: tuple[str, ...]
+    expected_source: str = ""
 
     @property
     def expects_fallback(self) -> bool:
@@ -88,8 +89,17 @@ class EvalRow:
     prompt_version: str
     model: str
     error: str | None = None
-    # Columnas humanas: se completan a mano en el reporte.
+    # Calificación humana consolidada (``module1_grading merge``); vacía hasta entonces.
     human: dict[str, str] = field(default_factory=dict)
+    # Unidades de oro citadas (para mostrar el fragmento al calificar) y fuente esperada del banco.
+    cited_units: list[str] = field(default_factory=list)
+    expected_source: str = ""
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> EvalRow:
+        """Rebuild a row from the JSON record; older records lack the newer optional fields."""
+        names = set(cls.__dataclass_fields__)
+        return cls(**{key: value for key, value in data.items() if key in names})
 
     @property
     def fallback_matches(self) -> bool | None:
@@ -118,6 +128,7 @@ def parse_question_bank(path: Path) -> list[BankQuestion]:
             kinds=_split(match.group(3)),
             items=_split(match.group(4)),
             expected=_split(match.group(6)),
+            expected_source=match.group(5),
         )
     return [questions[key] for key in sorted(questions)]
 
@@ -139,6 +150,8 @@ def _row(question: BankQuestion, variant: str, result: TaskResult) -> EvalRow:
         prompt_version=result.prompt_version,
         model=result.model,
         error=result.error,
+        cited_units=[citation.unit_id for citation in result.citations],
+        expected_source=question.expected_source,
     )
 
 
@@ -185,6 +198,7 @@ def run_evaluation(
                     prompt_version=template.version,
                     model=getattr(model, "model_name", "") or type(model).__name__,
                     error=exc.code,
+                    expected_source=question.expected_source,
                 )
             rows.append(row)
             if progress is not None:
@@ -223,9 +237,12 @@ def _cell(text: str, limit: int = 160) -> str:
 
 
 def render_report(
-    rows: Sequence[EvalRow], summary: dict[str, dict[str, Any]], meta: dict[str, Any]
+    rows: Sequence[EvalRow],
+    summary: dict[str, dict[str, Any]],
+    meta: dict[str, Any],
+    human: dict[str, Any] | None = None,
 ) -> str:
-    """Render the Markdown report with automatic metrics and empty human-grading columns."""
+    """Render the Markdown report; the human columns stay empty until ``human`` is provided."""
     lines = [
         "# Evaluación del Módulo 1 — 40 preguntas",
         "",
@@ -239,6 +256,7 @@ def render_report(
         "2 correcta), **Coherencia** (1–5) y **Alucinación** (sí/no) las califica el equipo a "
         "mano; mientras estén vacías, el informe no puede citar esas cifras.",
         "",
+        *_human_section(human),
         "## Métricas automáticas por variante",
         "",
         "| Variante | Preguntas | ok | review | fallback | error | Con cita | Acierto de fallback "
@@ -267,20 +285,99 @@ def render_report(
     for row in rows:
         citations = " ".join(row.citations) or "—"
         answer = _cell(row.answer) if row.answer else f"error: {row.error}"
+        grade = row.human
         lines.append(
             f"| {row.question_id} | {row.variant} | {row.expected} | {row.status} | {citations} | "
-            f"{answer} |  |  |  |"
+            f"{answer} | {grade.get('correccion', '')} | {grade.get('coherencia', '')} | "
+            f"{grade.get('alucinacion', '')} |"
+        )
+    lines += ["", "## Análisis de errores", ""]
+    failures = [
+        row
+        for row in rows
+        if row.human
+        and (row.human.get("correccion") == "0" or row.human.get("alucinacion") == "sí")
+    ]
+    if not human:
+        lines.append(
+            "Pendiente de la calificación humana: clasificar los fallos en recuperación, "
+            "redacción, cita inválida, alucinación o falta de corpus, y registrar los ajustes en "
+            "`docs/prompt_log.md`."
+        )
+    elif failures:
+        lines += [
+            "Respuestas incorrectas (corrección 0) o con alucinación, para clasificar por causa en "
+            "el informe (recuperación, prompt, alucinación del modelo o falta de corpus):",
+            "",
+            "| ID | Variante | Esperado | Corrección | Alucinación | Respuesta |",
+            "|---|---|---|---|---|---|",
+        ]
+        lines += [
+            f"| {row.question_id} | {row.variant} | {row.expected} | {row.human['correccion']} | "
+            f"{row.human['alucinacion']} | {_cell(row.answer or '—', 120)} |"
+            for row in failures
+        ]
+    else:
+        lines.append("Ninguna respuesta quedó con corrección 0 ni con alucinación.")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _human_section(human: dict[str, Any] | None) -> list[str]:
+    """Tables of the consolidated human grading and the agreement between graders."""
+    if not human:
+        return []
+    graders = " y ".join(human.get("graders", []))
+    lines = [
+        "## Calificación humana",
+        "",
+        f"Calificadores: {graders}. Planillas a ciegas (sin la variante) y en orden aleatorio; los "
+        f"desacuerdos se resolvieron por consenso ({human.get('consensus_items', 0)} ítems). "
+        "La coherencia consolidada es el promedio de ambos calificadores salvo consenso.",
+        "",
+        "| Variante | Respuestas | Corrección media (0–2) | Correctas | Parciales | Incorrectas "
+        "| Coherencia media (1–5) | Desv. | Alucinaciones |",
+        "|---|---|---|---|---|---|---|---|---|",
+    ]
+    for variant, data in human["summary"].items():
+        lines.append(
+            f"| {variant} | {data['n']} | {data['correctness_mean']} | {data['correct']} | "
+            f"{data['partial']} | {data['incorrect']} | {data['coherence_mean']} | "
+            f"{data['coherence_stdev']} | {data['hallucinations']} "
+            f"({data['hallucination_rate']}) |"
         )
     lines += [
         "",
-        "## Análisis de errores",
+        "**Por resultado esperado** (D directa · P parcial · C comparación · M meta · S síntesis "
+        "· X sin evidencia):",
         "",
-        "Pendiente de la calificación humana (M1-09): clasificar los fallos en recuperación, "
-        "redacción, cita inválida, alucinación o falta de corpus, y registrar los ajustes en "
-        "`docs/prompt_log.md`.",
+        "| Variante | Esperado | Respuestas | Corrección media | Alucinaciones |",
+        "|---|---|---|---|---|",
+    ]
+    for variant, groups in human["by_expected"].items():
+        for code, data in groups.items():
+            lines.append(
+                f"| {variant} | {code} | {data['n']} | {data['correctness_mean']} | "
+                f"{data['hallucinations']} |"
+            )
+    agreement = human["agreement"]
+    lines += [
+        "",
+        "**Acuerdo entre calificadores** (antes del consenso):",
+        "",
+        "| Criterio | Acuerdo exacto | Kappa de Cohen | Otra medida |",
+        "|---|---|---|---|",
+        f"| Corrección | {agreement['correctness']['exact']} | "
+        f"{agreement['correctness']['kappa']} | ponderada cuadrática: "
+        f"{agreement['correctness']['weighted_kappa']} |",
+        f"| Coherencia | {agreement['coherence']['exact']} | — | a ±1 punto: "
+        f"{agreement['coherence']['within_one']}; diferencia media "
+        f"{agreement['coherence']['mean_abs_diff']} |",
+        f"| Alucinación | {agreement['hallucination']['exact']} | "
+        f"{agreement['hallucination']['kappa']} | — |",
         "",
     ]
-    return "\n".join(lines)
+    return lines
 
 
 def build_parser() -> argparse.ArgumentParser:

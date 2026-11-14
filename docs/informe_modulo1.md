@@ -9,9 +9,10 @@ Universidad Autónoma de Occidente, 2026-2S
 
 **Fecha**: 2026-11-07
 
-**Estado**: borrador en revisión por ambos integrantes. M1-08 ejecutada el 2026-11-10 con DeepSeek
-(métricas automáticas en la sección 5.4); la calificación humana de corrección, coherencia y alucinación sigue
-pendiente.
+**Estado**: borrador en revisión por ambos integrantes. Evaluación final de las 40 preguntas ejecutada el
+2026-11-14 con DeepSeek y el prompt vigente (`qa.md` 1.1), tres repeticiones (sección 5.4). La calificación
+humana de corrección, coherencia y alucinación está preparada (planillas a ciegas en `docs/calificacion_m1/`) y
+pendiente de que ambos integrantes la completen.
 
 > **Regla de este informe** (Principio I de la [constitución](../CONSTITUTION.md)): cada cifra indica el
 > archivo o el comando del que proviene. Lo que aún no se ha medido se marca como **PENDIENTE** y no se
@@ -345,54 +346,77 @@ Hallazgos registrados en el prompt log:
 
 ### 5.4 Evaluación de 40 preguntas
 
-**Ejecución**: `m1-eval-2026-11-10-deepseek` (2026-11-10, modelo `deepseek-flash`, modo real). Fuente:
-[`docs/evaluacion_modulo1.md`](evaluacion_modulo1.md) (tabla por pregunta) y
-[`docs/evaluacion_modulo1.json`](evaluacion_modulo1.json) (registro completo). Comando:
-`uv run python -m proyecto_modelos_lenguaje.module1_eval --run-id m1-eval-2026-11-10-deepseek`.
+**Diseño**. Las 40 preguntas aprobadas de [`docs/alcance.md`](alcance.md) (19 D, 11 P, 4 C, 3 M, 1 S, 1 X y
+1 «P, X») se responden con dos variantes sobre la misma recuperación léxica del Módulo 1 y el mismo corpus:
 
-Las 40 preguntas aprobadas de [`docs/alcance.md`](alcance.md) se respondieron con las dos variantes sobre la
-misma recuperación léxica. Códigos esperados en el banco: 19 D, 11 P, 4 C, 3 M, 1 S, 1 X y 1 «P, X».
+- **Línea base**: `prompts/qa_zero_shot.md` (0.1-zero-shot), sin reglas ni ejemplos.
+- **Prompt final**: `prompts/qa.md` 1.1 (evidencia parcial frente a evidencia nula, §4.5 y
+  `docs/prompt_log.md` §3.5).
+- Modelo `deepseek-flash`, temperatura 0,1. Como no es determinista, la evaluación se **repite tres veces**.
 
-**Métricas automáticas**:
+**Ejecuciones** (2026-11-14):
 
-| Métrica | Zero-shot | Prompt final | Diferencia |
-|---------|----------:|-------------:|-----------:|
-| Respuestas `ok` con cita válida (de 40) | 40 | 23 | −17 |
-| Abstenciones (`fallback`) | 0 | 17 | +17 |
-| Errores | 0 | 0 | 0 |
-| Abstención correcta en la pregunta `X` (de 1) | 0 | 1 | +1 |
-| Abstenciones en preguntas con respuesta esperada (de 38) | 0 | 16 | +16 |
-| Acierto de *fallback* | 0,974 | 0,590 | −0,384 |
-| Latencia media (s) | 3,772 | 3,650 | −0,122 |
-| Tokens de entrada / salida | 34.685 / 20.715 | 49.645 / 20.242 | +14.960 / −473 |
+| Ejecución | Registro | Uso |
+|---|---|---|
+| `m1-final-2026-11-14-r1` | [`evaluacion_modulo1.md`](evaluacion_modulo1.md) / `.json` | Oficial: es la que se califica a mano |
+| `m1-final-2026-11-14-r2` | [`evaluacion_m1_r2.md`](evaluacion_m1_r2.md) / `.json` | Repetición |
+| `m1-final-2026-11-14-r3` | [`evaluacion_m1_r3.md`](evaluacion_m1_r3.md) / `.json` | Repetición |
 
-**Lectura** (automática, sin calificación humana):
+Comandos: `uv run python -m proyecto_modelos_lenguaje.module1_eval --run-id <id> --out <md> --json-out <json>` y
+`uv run python -m proyecto_modelos_lenguaje.module1_grading aggregate --runs <r1> <r2> <r3>`.
 
-1. **El zero-shot nunca se abstiene**, ni siquiera en la pregunta sin evidencia (`X`). Responde con citas,
-   pero a menudo para decir que el contexto no contiene lo pedido (P01, P06, P08, P09): con cita y sin
-   respuesta útil.
-2. **El prompt final es demasiado conservador**: se abstiene correctamente en la pregunta `X`, pero también en 16
-   preguntas con respuesta esperada (P01, P06, P08, P09, P12, P13, P16, P17, P20, P21, P29, P31, P32, P35, P37
-   y P38). La regla «Sin evidencia» no deja responder parcialmente, que es lo que piden las preguntas `P`.
-3. En varias de esas preguntas el zero-shot declara que el contexto recuperado no trae la información. Eso apunta
-   también a la **recuperación léxica** (unidades poco pertinentes), no solo al prompt. La recuperación híbrida
-   del Módulo 2 sube Recall@5 de 0,371 a 0,600 ([`docs/evaluacion_modulo2.md`](evaluacion_modulo2.md)).
+**Métricas automáticas: media ± desviación estándar de las tres ejecuciones**
+([`evaluacion_modulo1_repeticiones.md`](evaluacion_modulo1_repeticiones.md)):
 
-**Calificación humana — PENDIENTE**: las columnas Corrección (0/1/2), Coherencia (1–5) y Alucinación de
-`docs/evaluacion_modulo1.md` las llenan ambos integrantes. Hasta entonces este informe no reporta respuestas
-correctas, coherencia media ni tasa de alucinación.
+| Métrica (de 40) | Zero-shot | Prompt final |
+|---|---:|---:|
+| Respuestas `ok` con cita válida | 40,0 ± 0,0 | 35,7 ± 1,2 |
+| Abstenciones (`fallback`) | 0,0 ± 0,0 | 4,3 ± 1,2 |
+| Acierto de *fallback* | 0,974 ± 0,000 | 0,880 ± 0,029 |
+| Latencia media (s) | 3,65 ± 0,09 | 3,65 ± 0,14 |
+| Tokens de entrada por ejecución | 34.700 ± 27 | 52.965 ± 0 |
+| Tokens de salida por ejecución | 21.396 ± 885 | 21.831 ± 1.094 |
+| Preguntas cuya abstención cambia entre ejecuciones | 0 | 7 (P08, P09, P12, P14, P17, P20, P38) |
 
-**Ajuste de prompts (M1-09)**: `prompts/qa.md` 1.1 distingue evidencia parcial (responder lo cubierto con citas
-y declarar lo que falta) de evidencia nula (abstención). En la reevaluación `m1-09-qa-v1.1` de las 16 preguntas
-afectadas más P14 y P15 ([`docs/evaluacion_m1_09.md`](evaluacion_m1_09.md)), las abstenciones indebidas bajan
-de 16 a 6. A cambio, P14 (`X`) deja de abstenerse: responde que el corpus no trae el dato y cita la única
-mención relacionada. Las 6 que siguen abstenidas apuntan a la recuperación léxica. Detalle en
-`docs/prompt_log.md` §3.5. Siguen vigentes los candidatos de recuperación de `docs/prompt_log.md` §5.
+**Lectura** (automática; la calidad de las respuestas la decide la calificación humana):
+
+1. **El zero-shot nunca se abstiene**, ni en la pregunta sin evidencia (P14, `X`), y es estable entre
+   ejecuciones. Responde siempre con citas, aunque a menudo para decir que el contexto no trae lo pedido.
+2. **El prompt final 1.1 corrige el exceso de abstención de la versión 1.0**: en la ejecución del 2026-11-10
+   (`qa.md` 1.0, `docs/evaluacion_modulo1.json` en el commit `c6ce329`) se abstenía en 17 de 40; ahora en
+   4,3 ± 1,2. Las abstenciones que quedan caen sobre todo en preguntas `P` (P08, P09, P12, P20, P35), donde la
+   recuperación léxica trae poca evidencia.
+3. **La abstención del prompt final no es estable**: 7 preguntas cambian de conducta entre ejecuciones,
+   incluida P14 (`X`), que solo se abstiene en una de las tres. Es el efecto de la temperatura sobre un criterio
+   de frontera («evidencia parcial» frente a «nula») y se declara como limitación.
+4. El prompt final usa ~53 % más tokens de entrada (las reglas y la delimitación del contexto) sin cambiar la
+   latencia media.
+
+**Calificación humana — protocolo** (Principio V: corrección, coherencia y alucinación por respuesta):
+
+- `module1_grading export` generó una planilla por integrante
+  ([`docs/calificacion_m1/plantilla_roberto.csv`](calificacion_m1/plantilla_roberto.csv) y
+  [`plantilla_jason.csv`](calificacion_m1/plantilla_jason.csv)) con las 80 respuestas de la ejecución oficial,
+  **a ciegas** (sin la variante) y en orden aleatorio distinto para cada uno. Cada fila trae la pregunta, el
+  resultado esperado, la fuente esperada, la respuesta, las citas y el texto de los fragmentos citados, para
+  verificar la alucinación contra la evidencia.
+- Criterios y casos especiales (abstenciones, preguntas `P`) en
+  [`docs/calificacion_m1/INSTRUCCIONES.md`](calificacion_m1/INSTRUCCIONES.md): corrección 0/1/2,
+  coherencia 1–5 y alucinación sí/no.
+- `module1_grading merge` valida las planillas, mide el **acuerdo entre calificadores** (acuerdo exacto, kappa
+  de Cohen y kappa ponderada para la corrección) y exige **consenso** en los desacuerdos de corrección y
+  alucinación (`desacuerdos.csv`). Luego escribe la calificación en el JSON y en el reporte: medias por
+  variante, por resultado esperado y la lista de respuestas incorrectas o con alucinación para el análisis de
+  errores.
+
+**Calificación humana — PENDIENTE**: hasta que ambos completen las planillas y se ejecute `merge`, este informe
+no reporta respuestas correctas, coherencia media ni tasa de alucinación.
 
 ## 6. Limitaciones
 
-1. **Evaluación sin calificación humana**: M1-08 tiene métricas automáticas; falta la calificación de corrección,
-   coherencia y alucinación, y el ajuste del prompt final (M1-09), que se abstiene en exceso.
+1. **Evaluación sin calificación humana todavía**: las métricas automáticas de tres ejecuciones están
+   medidas; la corrección, coherencia y alucinación esperan las planillas de ambos integrantes. La abstención del
+   prompt final varía entre ejecuciones (7 preguntas, incluida P14).
 2. **Línea base de DeepSeek** ejecutada el 2026-11-10 (M1-08); las ejecuciones anteriores usaron Ollama, que
    ADR 0012 declara no comparable directamente.
 3. **Cobertura por reglas**: 24/24 es una medida determinista, no una validación humana; varios ítems tienen

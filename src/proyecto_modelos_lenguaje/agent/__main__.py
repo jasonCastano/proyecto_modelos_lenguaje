@@ -155,6 +155,12 @@ def _evaluate(args: argparse.Namespace, root: Path) -> int:
         )
     if args.compare:
         payload["variants"] = _compare(args, root, config, model, stamp)
+        payload["meta"] = {
+            "run_id": args.run_id or f"variants-{args.mode}-{stamp}",
+            "mode": args.mode,
+            "judge": bool(args.judge),
+            "created_at": stamp,
+        }
     if args.json_out:
         data = payload.get("router") if list(payload) == ["router"] else payload
         Path(args.json_out).write_text(

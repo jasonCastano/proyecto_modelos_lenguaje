@@ -145,30 +145,29 @@ tabla no tiene el dato, la ruta cae a documental y lo registra (`fallback_route`
 ### 5.3 Cadena vs. agente (US1, SC-003, SC-006, SC-007)
 
 Fuente: `docs/evaluacion_modulo2.md` (sección «Cadena vs. agente»), `docs/evaluacion_variantes.json`; ejecución
-`variants-real-2026-11-11` con DeepSeek, 36 consultas por variante, cada una en un hilo nuevo y las repreguntas
-en el hilo de su pregunta previa.
+`variants-real-2026-11-14` con DeepSeek y el código vigente, 44 consultas por variante, cada una en un hilo
+nuevo y las repreguntas en el hilo de su pregunta previa.
 
 | Métrica | Cadena | Agente | Criterio |
 |---|---:|---:|---|
 | Validez de citas | 100 % | 100 % | SC-003 100 % ✅ |
 | Abstención fuera de corpus | 4/4 | 4/4 | ✅ |
 | Repreguntas, métrica estricta | 3/6 | 4/6 | SC-006 ≥ 80 % ❌ |
-| Repreguntas, lectura de respuestas | 5/6 | 5/6 | PENDIENTE de calificación humana |
+| Repreguntas, calificación humana | PENDIENTE | PENDIENTE | Planillas a ciegas en `docs/calificacion_m2/` |
 | Evidencia esperada recuperada (documentales) | 50 % | 67 % | — |
-| Respuestas < 10 s | 100 % | 94 % | SC-007 ✅ cadena · ❌ agente |
-| Latencia media / p95 | 3,4 s / 7,8 s | 5,2 s / 14,7 s | — |
-| Llamadas al modelo / búsquedas por consulta | 1,39 / 0,67 | 2,17 / 1,31 | — |
-| Tokens por consulta | 2.695 | 5.275 | — |
-| Relevancia de la respuesta (juez) | 0,885 | 0,825 | — |
-| Precisión de contexto con referencia | 0,391 | 0,448 | — |
-| Fidelidad (juez) | no válida | no válida | PENDIENTE |
+| Respuestas < 10 s | 95 % | 91 % | SC-007 ❌ (por poco) |
+| Latencia media / p95 | 4,3 s / 10,6 s | 5,6 s / 11,5 s | — |
+| Llamadas al modelo / búsquedas por consulta | 1,50 / 0,84 | 2,41 / 1,45 | — |
+| Tokens por consulta | 3.288 | 8.488 | — |
+| Fidelidad (juez, 27 respuestas) | 0,819 | 0,842 | — |
+| Relevancia de la respuesta (juez) | 0,911 | 0,915 | — |
+| Precisión de contexto con referencia | 0,391 | 0,320 | — |
 
-**Lectura.** La cadena es más rápida y barata y cumple SC-007; el agente busca más y recupera mejor la evidencia
-esperada, a costa de duplicar llamadas y tokens. Ninguna cumple SC-006 con la métrica estricta, que exige la
-unidad etiquetada: varias repreguntas se responden bien con otra evidencia (análisis por consulta en
-`docs/evaluacion_modulo2.md`). La fidelidad de esta ejecución no es válida porque el juez recibió las filas
-estructuradas sin su frase de origen; el error está corregido y la nueva ejecución quedó pendiente porque se
-detuvo por falta de memoria del equipo.
+**Lectura.** La cadena es más rápida y barata; el agente busca más y recupera mejor la evidencia esperada, a
+costa de 1,6 veces más llamadas y 2,6 veces más tokens. La fidelidad del juez ya es válida (recibe la frase de
+origen de las filas `[F#]`). Ninguna cumple SC-006 con la métrica estricta; la calificación humana a ciegas de
+las 12 respuestas a repreguntas y de una muestra de 20 respuestas factuales (que además contrasta al juez) está
+preparada con `module2_grading` y pendiente de completar.
 
 Ragas no instala en Python 3.14 (`ragas` 0.4.3 exige `scikit-network`, sin wheel para 3.14), así que fidelidad y
 relevancia se miden con un juez propio con sus definiciones (`agent/judge.py`, `prompts/judge.md`); sus pruebas
@@ -209,12 +208,12 @@ respuesta sobre sostenibilidad llegó en viñetas con citas en ambas variantes, 
 
 ## 6. Limitaciones y trabajo pendiente
 
-1. **SC-006 no se cumple con la métrica automática** y la lectura de respuestas (5/6) no está calificada por el
-   equipo. El conjunto tiene solo 6 repreguntas: un caso mueve el resultado 17 puntos.
-2. **Fidelidad pendiente**: repetir `agent evaluate --mode real --compare --judge --skip-router` con el juez
-   corregido (unos 50 minutos con DeepSeek).
-3. **SC-007 en el agente**: 94 % bajo 10 s; el p95 es 14,7 s. Opciones: bajar `tool_call_limit` a 2 o usar la
-   cadena por defecto (decisión actual).
+1. **SC-006 no se cumple con la métrica automática** (3/6 y 4/6) y la calificación humana a ciegas está
+   pendiente (`docs/calificacion_m2/`). El conjunto tiene solo 6 repreguntas: un caso mueve el resultado 17 puntos.
+2. **Fidelidad del juez**: repetida el 2026-11-14 con el juez corregido (0,819 y 0,842); falta contrastarla con
+   la calificación humana de la muestra.
+3. **SC-007**: cadena 95 % y agente 91 % bajo 10 s (p95 10,6 s y 11,5 s), con las consultas mixtas y de series
+   incluidas. Opciones: bajar `tool_call_limit` a 2 en el agente; la cadena es la variante por defecto.
 4. **El híbrido no supera al semántico** en Recall@10 y añade ~0,9 s de BM25 por consulta (medido el 2026-11-14 sobre Qdrant: híbrido 941 ms frente a 35 ms del semántico); queda abierta la
    decisión de mantenerlo.
 5. **Etiquetas del conjunto**: las 36 consultas de `module2_queries.jsonl` las redactó Roberto José Guerrero y
@@ -222,7 +221,8 @@ respuesta sobre sostenibilidad llegó en viñetas con citas en ambas variantes, 
 6. **Detección de pedidos de escritura por reglas**: cubre frases previstas; el agente con DeepSeek también llama
    las herramientas por su cuenta, la cadena no.
 7. **Ragas** no instala en Python 3.14; se reemplazó por un juez propio con sus definiciones.
-8. **Calificación humana** de una muestra de respuestas (control del juez) pendiente.
+8. **Calificación humana** de la muestra de 20 respuestas (control del juez) preparada y pendiente de
+   completar (`module2_grading`).
 
 ## 7. Referencias a archivos
 

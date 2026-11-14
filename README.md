@@ -67,8 +67,8 @@ Universidad Autónoma de Occidente, 2026-2S.
 > [`v0.2.0-modulo2`](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2):
 > recuperación semántica e híbrida (spec 013), conversación con memoria por hilo, enrutador, tabla estructurada,
 > variantes cadena y agente con LangGraph, blindaje contra inyección, aprobación humana de escrituras y
-> preferencias del usuario (spec 014, PRs #44–#51). Quedan abiertos la calificación humana de las repreguntas
-> (SC-006) y repetir la fidelidad del juez. De la Fase 1 faltan la ejecución real de la evaluación de
+> preferencias del usuario (spec 014, PRs #44–#51). Quedaba abierta la calificación humana de las
+> repreguntas (SC-006); la fidelidad del juez se repitió el 2026-11-14. De la Fase 1 faltaban la evaluación de
 > 40 preguntas, los resultados del informe, el ensayo de la demo y el tag `v0.1.0-modulo1`. Desde la v1.6.0
 > los commits solo pueden ser de los dos integrantes, sin bots ni asistentes (ADR 0017); el historial se
 > reescribió el 2026-11-12 (coautores de IA) y el 2026-11-13 (commits de Dependabot).
@@ -282,7 +282,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Módulo 2 — memoria, enrutador y agente (spec 014) | ✅ | Cadena y agente con memoria por hilo, enrutador 35/36, HITL y preferencias; PRs #44–#51; `docs/informe_modulo2.md` |
 | Módulo 2 — cadena vs. agente | ✅ | Citas 100 % en ambas; < 10 s: cadena 100 %, agente 94 %; `docs/evaluacion_modulo2.md` |
 | Módulo 2 — Recall@10, nDCG@10 y abstención fuera de corpus | ✅ | Semántico/híbrido > léxico (también sobre Qdrant); la abstención 4/4 la logra el **enrutador**, la recuperación sola no se abstiene (0/4); `docs/evaluacion_modulo2.md` |
-| Módulo 2 — repreguntas (SC-006) y fidelidad del juez | 🟡 | Métrica estricta 3/6 (cadena) y 4/6 (agente); fidelidad pendiente de repetir con el juez corregido |
+| Módulo 2 — repreguntas (SC-006) y fidelidad del juez | 🟡 | Métrica estricta 3/6 (cadena) y 4/6 (agente); fidelidad del juez 0,819 y 0,842 (2026-11-14); calificación humana a ciegas preparada en `docs/calificacion_m2/`, pendiente de completar |
 | Módulo 2 — rúbrica de sustentación | ✅ | 13 ítems con evidencia en `docs/rubrica_modulo2.md`; los cinco casos verificados con DeepSeek (PR #57) |
 | Módulo 2 — Qdrant | ✅ | Colección `manuelita_fragments` (15.211 puntos, coseno, HNSW `m=16`); modo local embebido, servidor con `QDRANT_URL` (sin probar en vivo) |
 | Módulo 2 — memoria de largo plazo | ✅ | Perfil y preferencias en el Store, con aprobación humana; recuperados en otro hilo con `search()` |
@@ -710,22 +710,22 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
 
 #### Resultados del Módulo 2
 
-Ejecución `variants-real-2026-11-11` con DeepSeek, 36 consultas por variante:
+Ejecución `variants-real-2026-11-14` con DeepSeek y el código vigente, 44 consultas por variante:
 
 | Métrica | Cadena | Agente | Criterio |
 |---|---:|---:|---|
 | Validez de citas | 100 % | 100 % | SC-003 ✅ |
 | Abstención fuera de corpus | 4/4 | 4/4 | ✅ |
-| Repreguntas, métrica estricta | 3/6 | 4/6 | SC-006 ≥ 80 % ❌ (pendiente de calificación humana) |
-| Respuestas < 10 s | 100 % | 94 % | SC-007 ✅ cadena · ❌ agente |
-| Latencia p95 | 7,8 s | 14,7 s | — |
-| Llamadas al modelo / tokens por consulta | 1,39 / 2.695 | 2,17 / 5.275 | — |
-| Relevancia (juez) | 0,885 | 0,825 | — |
-| Precisión de contexto | 0,391 | 0,448 | — |
+| Repreguntas, métrica estricta | 3/6 | 4/6 | SC-006 ≥ 80 % ❌ (calificación humana pendiente) |
+| Respuestas < 10 s | 95 % | 91 % | SC-007 ❌ por poco |
+| Latencia p95 | 10,6 s | 11,5 s | — |
+| Llamadas al modelo / tokens por consulta | 1,50 / 3.288 | 2,41 / 8.488 | — |
+| Fidelidad (juez) | 0,819 | 0,842 | — |
+| Relevancia (juez) | 0,911 | 0,915 | — |
+| Precisión de contexto | 0,391 | 0,320 | — |
 
 La **cadena** es la variante por defecto: más rápida y barata. El **agente** recupera mejor la evidencia esperada
-a costa de duplicar llamadas y tokens. La fidelidad del juez se repetirá con la corrección de los contextos
-estructurados.
+a costa de 1,6 veces más llamadas y 2,6 veces más tokens.
 
 ### Experiencia web y API
 
@@ -934,10 +934,10 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   sigue en borrador.
 - El umbral semántico (0,30) no abstiene fuera de corpus por sí solo; en el Módulo 2 la abstención la resuelve
   el enrutador (4/4). El híbrido no supera al semántico en Recall@10 y añade ~0,9 s de BM25 por consulta (medido el 2026-11-14 sobre Qdrant: híbrido 941 ms frente a 35 ms del semántico).
-- Las repreguntas no cumplen SC-006 con la métrica estricta (3/6 y 4/6) y la fidelidad del juez está pendiente de
-  repetir; las etiquetas de recuperación (18 consultas) las hizo un integrante y esperan la revisión
-  cruzada del otro (T018).
-- El agente supera los 10 s en el 6 % de las consultas (p95 14,7 s).
+- Las repreguntas no cumplen SC-006 con la métrica estricta (3/6 y 4/6); la calificación humana a ciegas está
+  pendiente (`docs/calificacion_m2/`). Las etiquetas de recuperación (18 consultas) las hizo un integrante y
+  esperan la revisión cruzada del otro (T018).
+- Cadena y agente superan los 10 s en el 5 % y el 9 % de las consultas (p95 10,6 s y 11,5 s).
 - Ragas no instala en Python 3.14; se usa un juez propio con sus definiciones.
 - Los PRs fusionados antes del 2026-11-07 no tienen aprobaciones formales en GitHub; desde entonces `main` exige
   revisión cruzada.

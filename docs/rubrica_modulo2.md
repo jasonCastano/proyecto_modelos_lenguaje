@@ -114,6 +114,6 @@ propios y cifras pero suma ~0,9 s).
 
 - **Qdrant local** busca de forma exacta y admite una sola instancia por carpeta: con la API abierta, la CLI
   no puede abrir la colección. Usar la CLI antes de `make app`.
-- **Latencia**: precalentar; la variante agente es más lenta (p95 14,7 s), por eso la demo usa la cadena.
+- **Latencia**: precalentar; la variante agente es más lenta (p95 11,5 s frente a 10,6 s de la cadena, 2026-11-14), por eso la demo usa la cadena.
 - **Variante agente y escritura**: en el agente, `save_profile` depende de que el modelo llame la herramienta;
   hacer el caso 2 en la cadena.

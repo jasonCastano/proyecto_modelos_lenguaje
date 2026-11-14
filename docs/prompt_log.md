@@ -166,7 +166,7 @@ Prompts nuevos (seis secciones cada uno):
 
 | Prompt | Archivo | Versión | SHA-256 (12 primeros) | Uso |
 |--------|---------|---------|-----------------------|-----|
-| Agente | `prompts/agent.md` | 1.0 → 1.1 (§3.8) | `a64cb34cd40f` | System prompt de ambas variantes (cadena y agente): solo `<documento>`, citas `[U#]`/`[F#]`, hasta tres búsquedas |
+| Agente | `prompts/agent.md` | 1.0 → 1.1 (§3.8) → 1.2 (§3.12) → 1.3 (§3.13) | `a64cb34cd40f` | System prompt de ambas variantes (cadena y agente): solo `<documento>`, citas `[U#]`/`[F#]`, hasta tres búsquedas |
 | Memoria | `prompts/memory_summary.md` | 1.0 | `e0f515ba64ec` | Resumen del hilo al superar `memory.summarize_after_tokens`; conserva entidades, cifras y URL de las fuentes |
 
 Primera ejecución con `deepseek-flash` (CLI `agent chat --mode real`, 2026-11-11), conversación «¿Qué produce
@@ -241,6 +241,28 @@ combinar o comparar un dato con un texto. La heurística demo la elige cuando ha
 
 Las preguntas sobre el propio usuario («¿Dónde trabajo?») y las declaraciones de perfil («Me llamo Ana…») se
 resuelven por reglas antes del enrutador, sin llamadas al modelo.
+
+### 3.12 `agent.md` 1.2: marca de instrucción omitida (2026-11-14, spec 015)
+
+`prompts/agent.md` pasa a la versión `1.2` (SHA-256 `d592849e5fe9`). Desde la spec 015, las oraciones de un
+documento recuperado que intentan dar órdenes al asistente se sustituyen por `[instrucción embebida omitida]`
+antes de llegar al modelo (`agent/guard.py`, `neutralize`). La regla 4.1 explica la marca: el modelo no debe
+mencionarla ni especular sobre ella, y responde con el resto de la evidencia. Sin la regla, el modelo podría
+preguntar por la marca o tratarla como contenido.
+
+Resultados con DeepSeek sobre los 6 tipos de ataque, con y sin neutralización: `docs/evaluacion_blindaje.md`
+(comando `agent shield`).
+
+### 3.13 `agent.md` 1.3, `router.md` 1.2 y `profile_extract.md` 1.0 (2026-11-14, evaluación docente)
+
+Cambios del PR #63 (correcciones de la evaluación docente del Módulo 2), registrados al integrarlo con la
+spec 015:
+
+| Prompt | Versión | SHA-256 (12 primeros) | Cambio |
+|--------|---------|-----------------------|--------|
+| `prompts/agent.md` | 1.2 → 1.3 | `c4b4ab5d36b7` | Instrucciones de `aggregate_series`: cifras anuales y cálculos (suma, promedio, máximo, mínimo, variación) los hace la herramienta; ante un trimestre se declara que los informes son anuales. Conserva la regla 4.1 de la marca `[instrucción embebida omitida]` (§3.12). |
+| `prompts/router.md` | 1.1 → 1.2 | `57d5d4c674b7` | Define las cifras anuales como ruta estructurada y añade ejemplos de la ruta mixta. Evaluación real: 43/44, mixed 5/5 (`docs/evaluacion_enrutador.json`). |
+| `prompts/profile_extract.md` | 1.0 (nuevo) | `d020b15cb253` | Extracción del perfil con salida JSON validada por Pydantic (`ProfileFacts`) cuando la regex no alcanza; nunca se llama ante preguntas. |
 
 ## 4. Pendiente
 

@@ -1,10 +1,11 @@
-"""CLI del agente RAG: ``chat``, ``build-structured`` y ``evaluate``.
+"""CLI del agente RAG: ``chat``, ``build-structured``, ``evaluate`` y ``shield``.
 
 Uso::
 
     uv run python -m proyecto_modelos_lenguaje.agent build-structured
     uv run python -m proyecto_modelos_lenguaje.agent chat --mode demo "¿Qué produce Manuelita?"
     uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode demo
+    uv run python -m proyecto_modelos_lenguaje.agent shield --mode real --repeat 3
 """
 
 from __future__ import annotations
@@ -70,6 +71,24 @@ def build_parser() -> argparse.ArgumentParser:
         "--report", default=str(REPORT_PATH), help="Markdown donde se escribe la sección."
     )
     evaluate.add_argument("--json-out", default=None)
+
+    shield = sub.add_parser(
+        "shield", help="Evalúa el blindaje contra inyección indirecta (spec 015)."
+    )
+    shield.add_argument("--mode", choices=("demo", "real"), default="demo")
+    shield.add_argument(
+        "--variants", nargs="+", choices=("chain", "agent"), default=["chain", "agent"]
+    )
+    shield.add_argument("--cases", default=None, help="JSONL de casos (shield_cases.jsonl).")
+    shield.add_argument("--repeat", type=int, default=1, help="Repeticiones por caso (≥ 1).")
+    shield.add_argument(
+        "--no-neutralize",
+        action="store_true",
+        help="Línea base: entrega los fragmentos al modelo sin neutralizar.",
+    )
+    shield.add_argument("--run-id", default="")
+    shield.add_argument("--json-out", default=None, help="Informe JSON (por defecto en real).")
+    shield.add_argument("--report", default=None, help="Markdown (por defecto en real).")
     return parser
 
 
@@ -191,7 +210,12 @@ def _cli_retriever(mode: str, root: Path):
     from ..rag.hybrid import HybridRetriever
     from ..rag.index import load_index
     from ..retrieval import load_entity_index, load_gold_units
+    from .adversarial import adversarial_enabled, adversarial_retriever
     from .demo import DEMO_EMBEDDER_KIND, DEMO_INDEX
+
+    if adversarial_enabled():
+        # Corpus de prueba del blindaje (spec 015), en modo demo o real.
+        return adversarial_retriever("real" if mode == "real" else "demo")
 
     config = load_retrieval_config(project_root=root)
     profile = EmbeddingProfile.from_config(config.embedding)
@@ -242,6 +266,70 @@ def _print_turn(outcome) -> None:
     )
 
 
+def _shield(args: argparse.Namespace, root: Path) -> int:
+    """Batería de inyección indirecta; 0 todo pasa, 1 hay fallos, 2 sin configuración/clave."""
+    from ..tasks import _configure_output
+    from .shield import (
+        REPORT_MD,
+        ShieldError,
+        default_json_path,
+        run_shield,
+        write_report_section,
+    )
+
+    _configure_output()
+    neutralize = not args.no_neutralize
+    command = "uv run python -m proyecto_modelos_lenguaje.agent " + " ".join(sys.argv[1:])
+
+    def show(result) -> None:
+        mark = "ok  " if result.passed else "FALLA"
+        print(
+            f"{mark} {result.case_id} {result.attack:<20} {result.variant:<5} rep {result.repeat} "
+            f"· {result.status} · marcado={result.flagged} · neutralizadas={result.neutralized}"
+        )
+
+    try:
+        kwargs = {"cases_path": Path(args.cases)} if args.cases else {}
+        report = run_shield(
+            mode=args.mode,
+            variants=args.variants,
+            repeat=args.repeat,
+            neutralize=neutralize,
+            run_id=args.run_id,
+            config=load_agent_config(project_root=root),
+            command=command.strip(),
+            on_result=show,
+            **kwargs,
+        )
+    except (ShieldError, AgentConfigError) as exc:
+        print(f"no se puede evaluar: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:  # p. ej., configuración del proveedor inválida
+        print(f"no se puede evaluar: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 2
+    results = report["results"]
+    if results and all(r["status"] == "error" for r in results):
+        print("el proveedor no respondió en ningún caso; no se escribe el informe", file=sys.stderr)
+        return 2
+    json_out = args.json_out or (default_json_path(neutralize) if args.mode == "real" else None)
+    md_out = args.report or (REPORT_MD if args.mode == "real" else None)
+    if json_out:
+        path = root / json_out
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"informe JSON: {path}")
+    if md_out:
+        write_report_section(root / md_out, report)
+        print(f"informe Markdown: {root / md_out}")
+    for variant, stats in report["summary"]["by_variant"].items():
+        print(
+            f"{variant}: {stats['passed']}/{stats['cases']} pasan · obedeció {stats['obeyed']} · "
+            f"filtró {stats['leaked']} · escrituras {stats['write_attempts']} · "
+            f"útil {stats['useful_rate']:.0%}"
+        )
+    return 0 if all(r["passed"] for r in results) else 1
+
+
 def _chat(args: argparse.Namespace, root: Path) -> int:
     from ..tasks import _configure_output
     from .config import resolve_state_dir
@@ -287,6 +375,8 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
         return _build_structured(args, root)
     if args.command == "evaluate":
         return _evaluate(args, root)
+    if args.command == "shield":
+        return _shield(args, root)
     return _chat(args, root)
 
 

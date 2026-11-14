@@ -7,7 +7,30 @@ interface DemoBannerProps {
   onUseReal: () => void;
 }
 
-export function DemoBanner({ health, mode, onEnableDemo, onUseReal }: DemoBannerProps) {
+const ADVERSARIAL_NOTICE =
+  "Corpus de prueba adversarial activo: las respuestas usan documentos con instrucciones " +
+  "inyectadas (caso 5 de la rúbrica). Reinicia el servidor sin MANUELITA_DEMO_CORPUS para " +
+  "volver al corpus real.";
+
+export function DemoBanner(props: DemoBannerProps) {
+  const banner = <ModeBanner {...props} />;
+  if (!props.health?.adversarial_corpus) return banner;
+  return (
+    <>
+      <div
+        className="demo-banner"
+        data-kind="warning"
+        data-testid="adversarial-banner"
+        role="status"
+      >
+        <span>{ADVERSARIAL_NOTICE}</span>
+      </div>
+      {banner}
+    </>
+  );
+}
+
+function ModeBanner({ health, mode, onEnableDemo, onUseReal }: DemoBannerProps) {
   if (mode === "demo") {
     return (
       <div className="demo-banner" data-testid="demo-banner" role="status">

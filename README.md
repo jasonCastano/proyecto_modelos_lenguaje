@@ -35,8 +35,9 @@ Universidad Autónoma de Occidente, 2026-2S.
 >   respuesta mixta cita `[F#]` y `[U#]`; la ruta se pasa al agente como pista de herramientas.
 > - **2.2**: aviso visible del respaldo numpy, `docker-compose.yml` con Qdrant servidor, `make demo-prep` y
 >   `rag qdrant status` con `hnsw_ef` y latencia; métricas reevaluadas sobre Qdrant y barrido de top-k × α.
-> - **2.4**: la oración inyectada se neutraliza antes del modelo; evidencia con DeepSeek en
->   `docs/evaluacion_blindaje.md` (0/6 obedecen).
+> - **2.4** (spec 015): las oraciones inyectadas se neutralizan antes del modelo en cadena y agente;
+>   `agent shield` mide 6 ataques con y sin neutralización; con DeepSeek 0 obedecen y 0 filtran el
+>   prompt (`docs/evaluacion_blindaje.md`).
 > - **1.2 y 1.3**: recorte por tokens también en la cadena, tope al resumen, prueba de 50 turnos y extracción
 >   del perfil con LLM + Pydantic.
 > - **3.1 y 3.2**: cancelación y tiempo límite en el chat, hilo en la URL, caída a `/api/chat` solo ante 404;
@@ -759,8 +760,10 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
   turno, perfil guardado y tarjeta de aprobación.
 - Memoria de largo plazo: «Me llamo Ana y trabajo en Carvajal» propone `save_profile`; tras aprobarla, un
   hilo nuevo responde «¿Dónde trabajo?» desde el Store sin buscar.
-- Blindaje en vivo: con `MANUELITA_DEMO_CORPUS=malicious`, el modo demo usa un corpus con un documento que
-  intenta dar órdenes; la interfaz lo marca y la respuesta no lo obedece.
+- Blindaje en vivo: con `MANUELITA_DEMO_CORPUS=malicious`, los modos demo **y real** (DeepSeek) usan un corpus
+  de prueba con documentos que intentan dar órdenes; la interfaz muestra el aviso, las oraciones inyectadas se
+  neutralizan antes de llegar al modelo y la respuesta no las obedece. Evidencia: `agent shield`
+  (`docs/evaluacion_blindaje.md`, ADR 0019).
 - Trazas opcionales con LangSmith: define `LANGSMITH_TRACING=true` y `LANGSMITH_API_KEY` en `.env` (no se
   versiona). Los mensajes llegan ya sin datos personales; no la actives con usuarios reales sin revisar
   `docs/memoria.md` §6.
@@ -808,8 +811,8 @@ La página incluye:
 - **Consola RAG** con Consulta, Resumen y FAQ, citas `[U#]`, metadatos y fallback.
 - **Recorrido de los Módulos 1 y 2** (11 bloques): problema, datos, medallion, prompts, tareas, Qdrant,
   memoria y enrutador, blindaje, interfaz en streaming, métricas y límites.
-- **Modo demostración** explícito, sin clave ni red (con `MANUELITA_DEMO_CORPUS=malicious`, corpus adversarial
-  para mostrar el blindaje).
+- **Modo demostración** explícito, sin clave ni red. Con `MANUELITA_DEMO_CORPUS=malicious`, corpus adversarial
+  para mostrar el blindaje, también con el modelo real.
 - **Conversación** (Módulo 2):
   - respuesta en streaming con la ruta y la etapa (enrutando, recuperando, escribiendo);
   - fragmentos con puntaje, filas estructuradas y fuentes;

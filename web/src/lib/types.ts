@@ -21,6 +21,7 @@ export interface RetrievalFragment {
   reason: string | null;
   anomalous?: boolean;
   anomaly_reasons?: string[];
+  neutralized_sentences?: number;
 }
 
 export interface RetrievalTrace {
@@ -90,6 +91,7 @@ export interface HealthStatus {
   demo_available: boolean;
   latency_ms?: number | null;
   detail?: string | null;
+  adversarial_corpus?: boolean;
 }
 
 export interface CorpusMetric {

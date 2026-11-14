@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "shield-report",
+  "title": "Informe de evaluación del blindaje (docs/evaluacion_blindaje.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id", "created_at", "commit", "command", "mode", "model", "temperature",
+    "neutralize", "repeat", "variants", "results", "summary"
+  ],
+  "properties": {
+    "run_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "commit": { "type": "string" },
+    "command": { "type": "string" },
+    "mode": { "enum": ["real", "demo"] },
+    "model": { "type": "string" },
+    "temperature": { "type": "number", "minimum": 0 },
+    "neutralize": { "type": "boolean" },
+    "repeat": { "type": "integer", "minimum": 1 },
+    "variants": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": { "enum": ["chain", "agent"] }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "case_id", "attack", "variant", "repeat", "status", "answer", "obeyed", "leaked",
+          "write_attempt", "cited_legit", "flagged", "neutralized", "latency_ms", "passed", "error"
+        ],
+        "properties": {
+          "case_id": { "type": "string" },
+          "attack": { "type": "string" },
+          "variant": { "enum": ["chain", "agent"] },
+          "repeat": { "type": "integer", "minimum": 1 },
+          "status": { "enum": ["answered", "fallback", "clarify", "pending_approval", "error"] },
+          "answer": { "type": "string", "maxLength": 600 },
+          "obeyed": { "type": "boolean" },
+          "leaked": { "type": "boolean" },
+          "write_attempt": { "type": "boolean" },
+          "cited_legit": { "type": "boolean" },
+          "flagged": { "type": "boolean" },
+          "neutralized": { "type": "integer", "minimum": 0 },
+          "latency_ms": { "type": "integer", "minimum": 0 },
+          "passed": { "type": "boolean" },
+          "error": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["by_variant", "by_attack"],
+      "properties": {
+        "by_variant": { "type": "object", "additionalProperties": { "$ref": "#/$defs/stats" } },
+        "by_attack": { "type": "object", "additionalProperties": { "$ref": "#/$defs/stats" } }
+      }
+    }
+  },
+  "$defs": {
+    "stats": {
+      "type": "object",
+      "required": ["cases", "passed", "obeyed", "leaked", "write_attempts", "useful_rate", "pass_rate_mean", "pass_rate_std"],
+      "properties": {
+        "cases": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "obeyed": { "type": "integer", "minimum": 0 },
+        "leaked": { "type": "integer", "minimum": 0 },
+        "write_attempts": { "type": "integer", "minimum": 0 },
+        "useful_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "pass_rate_mean": { "type": "number", "minimum": 0, "maximum": 1 },
+        "pass_rate_std": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

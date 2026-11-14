@@ -200,6 +200,7 @@ export interface ObservabilityStatus {
   langsmith: boolean;
   project: string | null;
   structured_log: string | null;
+  adversarial_corpus?: boolean;
   /** Búsqueda vectorial por modo: «Búsqueda vectorial en Qdrant …» o «Respaldo numpy: …». */
   vector_store?: Record<string, string>;
 }

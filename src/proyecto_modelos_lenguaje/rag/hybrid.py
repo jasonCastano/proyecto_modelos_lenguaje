@@ -44,6 +44,7 @@ class RetrievedFragment:
     reason: str | None = None
     anomalous: bool = False
     anomaly_reasons: tuple[str, ...] = ()
+    neutralized_sentences: int = 0  # spec 015: oraciones sustituidas antes de llegar al modelo
 
     def __post_init__(self) -> None:
         if self.origin not in VALID_ORIGINS:
@@ -56,6 +57,10 @@ class RetrievedFragment:
             raise ValueError("reason es obligatorio cuando status != used")
         if self.anomalous != bool(self.anomaly_reasons):
             raise ValueError("anomaly_reasons debe tener motivos si y solo si anomalous es True")
+        if self.neutralized_sentences < 0:
+            raise ValueError("neutralized_sentences no puede ser negativo")
+        if self.neutralized_sentences and not self.anomalous:
+            raise ValueError("solo un fragmento anómalo puede tener oraciones neutralizadas")
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -72,6 +77,7 @@ class RetrievedFragment:
             "reason": self.reason,
             "anomalous": self.anomalous,
             "anomaly_reasons": list(self.anomaly_reasons),
+            "neutralized_sentences": self.neutralized_sentences,
         }
 
 

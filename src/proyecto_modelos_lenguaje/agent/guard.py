@@ -1,17 +1,26 @@
-"""Blindaje contra inyección indirecta: aislamiento XML y detector de instrucciones (FR-016).
+"""Blindaje contra inyección indirecta: aislamiento XML, detector y neutralización (FR-016).
 
-El contenido recuperado es **dato no confiable** (Principio IV). Cada fragmento entra al prompt
-dentro de ``<documento>`` con ``<`` y ``>`` escapados, de modo que no pueda cerrar la etiqueta ni
-abrir otra. El detector no descarta fragmentos (eso ocultaría evidencia): marca el fragmento
-como anómalo para la traza y **neutraliza solo la oración inyectada**, que llega al modelo como un
-aviso entre corchetes en lugar del texto de la orden. El resto del fragmento sigue como evidencia.
+El contenido recuperado es **dato no confiable** (Principio IV). Tres capas:
+
+1. **Aislamiento**: cada fragmento entra al prompt dentro de ``<documento>`` con ``<`` y ``>``
+   escapados, de modo que no pueda cerrar la etiqueta ni abrir otra.
+2. **Detección**: patrones de instrucciones dirigidas al asistente (también en inglés y con
+   mayúsculas, tildes o caracteres invisibles intercalados) marcan el fragmento como anómalo.
+3. **Neutralización** (spec 015): las oraciones detectadas se sustituyen por
+   ``[instrucción embebida omitida]`` antes de llegar al modelo. El resto del fragmento se conserva
+   (no se oculta evidencia) y la fuente original sigue disponible en la traza.
 """
 
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Iterable
 from dataclasses import dataclass
+
+OMITTED_MARKER = "[instrucción embebida omitida]"
+INVISIBLE_CHARS = dict.fromkeys(map(ord, "​‌‍⁠﻿"))
+SENTENCE_SPLIT = re.compile(r"(?<=[.!?;])\s+|\n+")
 
 INSTRUCTION_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
@@ -54,38 +63,72 @@ INSTRUCTION_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         "etiqueta_documento",
         re.compile(r"</?\s*(documento|context|system)\b", re.IGNORECASE),
     ),
+    (
+        # Spec 015: un documento que pide escribir en la memoria o exportar (FR-008).
+        "accion_escritura",
+        re.compile(
+            r"\b(save_preference|save_profile|forget_memory|export_conversation)\b"
+            r"|\b(guarda\w*|almacena\w*|olvida\w*|borra\w*|exporta\w*|save|store|forget|export)\b"
+            r"[^.\n]{0,60}\b(preferencias?|memoria|perfil|conversaci[oó]n|preferences?|memory"
+            r"|profile|conversation)\b",
+            re.IGNORECASE,
+        ),
+    ),
 )
+
+
+def normalize_for_detection(text: str) -> str:
+    """Texto sin tildes ni caracteres invisibles y con espacios colapsados (anti-evasión)."""
+    visible = (text or "").translate(INVISIBLE_CHARS)
+    decomposed = unicodedata.normalize("NFKD", visible)
+    plain = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    return " ".join(plain.split())
 
 
 def detect_instructions(text: str) -> list[str]:
     """Devuelve los motivos (nombres de patrón) de instrucciones dirigidas al modelo."""
-    return [name for name, pattern in INSTRUCTION_PATTERNS if pattern.search(text or "")]
+    raw = text or ""
+    normalized = normalize_for_detection(raw)
+    return [
+        name
+        for name, pattern in INSTRUCTION_PATTERNS
+        if pattern.search(raw) or pattern.search(normalized)
+    ]
 
 
-NEUTRALIZED_REASON = "oración neutralizada"
-SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+|\n+")
+@dataclass(frozen=True, slots=True)
+class NeutralizedText:
+    """Texto listo para el modelo y las oraciones que se sustituyeron (con sus motivos)."""
+
+    text: str
+    removed: tuple[tuple[str, tuple[str, ...]], ...] = ()
 
 
-def neutralize_instructions(text: str) -> tuple[str, int]:
-    """Reemplaza cada oración con instrucciones embebidas por un aviso; devuelve ``(texto, n)``.
+def neutralize(text: str) -> NeutralizedText:
+    """Sustituye por ``OMITTED_MARKER`` las oraciones con instrucciones dirigidas al asistente.
 
-    El modelo nunca ve la orden literal («ignora las instrucciones…»), pero sí sabe que el
-    documento traía una, y el resto del fragmento sigue disponible como evidencia.
+    Opera por oración para conservar el contenido legítimo del mismo fragmento. Si no hay
+    instrucciones, devuelve el texto idéntico.
     """
-    parts = SENTENCE_SPLIT.split(text or "")
-    cleaned: list[str] = []
-    count = 0
-    for part in parts:
-        reasons = detect_instructions(part)
-        if reasons:
-            count += 1
-            cleaned.append(
-                f"[Oración omitida: el documento contenía una instrucción dirigida al asistente "
-                f"({', '.join(reasons)}); se trata como dato y no se obedece.]"
-            )
-        elif part.strip():
-            cleaned.append(part)
-    return " ".join(cleaned), count
+    if not text or not detect_instructions(text):
+        return NeutralizedText(text or "")
+    removed: list[tuple[str, tuple[str, ...]]] = []
+    pieces: list[str] = []
+    last = 0
+    for match in SENTENCE_SPLIT.finditer(text):
+        pieces.append(text[last : match.start()])
+        pieces.append(match.group(0))
+        last = match.end()
+    pieces.append(text[last:])
+    for index in range(0, len(pieces), 2):  # posiciones pares: oraciones; impares: separadores
+        sentence = pieces[index]
+        reasons = detect_instructions(sentence)
+        if sentence.strip() and reasons:
+            removed.append((sentence.strip(), tuple(reasons)))
+            pieces[index] = OMITTED_MARKER
+    if not removed:  # la instrucción cruza oraciones: se omite el fragmento entero
+        return NeutralizedText(OMITTED_MARKER, ((text.strip(), tuple(detect_instructions(text))),))
+    return NeutralizedText("".join(pieces), tuple(removed))
 
 
 def _escape(text: str) -> str:

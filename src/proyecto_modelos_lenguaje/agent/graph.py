@@ -157,6 +157,7 @@ class GraphDeps:
     model: BaseChatModel
     router_model: BaseChatModel | None = None
     summary_model: BaseChatModel | None = None
+    neutralize: bool = True  # spec 015: neutraliza instrucciones embebidas (False = línea base)
     series: SeriesTable | None = None
 
 
@@ -497,7 +498,9 @@ def _retrieve_node(deps: GraphDeps):
         if decision.route in {"documental", "mixed"}:
             if deps.retriever is None:
                 raise ChatUnavailableError("El índice de recuperación no está disponible.")
-            found, guarded = search_documents_impl(deps.retriever, query, top_k=top_k)
+            found, guarded = search_documents_impl(
+                deps.retriever, query, top_k=top_k, neutralize=deps.neutralize
+            )
             fragments = found
             # Los hechos llevan F#; los fragmentos, U#: en la ruta mixta conviven ambos.
             documents = [*documents, *guarded]
@@ -675,6 +678,7 @@ def _agent_node(deps: GraphDeps):
                 deps.store,
                 trace,
                 top_k=limits.chain_top_k,
+                neutralize=deps.neutralize,
                 series=deps.series,
                 question=state["question"],
             ),

@@ -21,6 +21,32 @@ describe("DemoBanner", () => {
     expect(onUseReal).toHaveBeenCalled();
   });
 
+  it("avisa cuando el servidor usa el corpus de prueba adversarial", () => {
+    render(
+      <DemoBanner
+        health={{ ...healthy, adversarial_corpus: true }}
+        mode="real"
+        onEnableDemo={vi.fn()}
+        onUseReal={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("adversarial-banner")).toHaveTextContent(
+      /Corpus de prueba adversarial activo/i,
+    );
+  });
+
+  it("no muestra el aviso adversarial con el corpus real", () => {
+    render(
+      <DemoBanner
+        health={{ ...healthy, adversarial_corpus: false }}
+        mode="real"
+        onEnableDemo={vi.fn()}
+        onUseReal={vi.fn()}
+      />,
+    );
+    expect(screen.queryByTestId("adversarial-banner")).toBeNull();
+  });
+
   it("ofrece demo cuando falta la clave", async () => {
     const onEnableDemo = vi.fn();
     render(

@@ -20,6 +20,7 @@ from langgraph.types import Checkpointer, Command
 
 from ..rag.hybrid import HybridRetriever
 from .actions import ActionArgsError, validate_args
+from .adversarial import corpus_label
 from .config import AgentConfig
 from .demo import DemoChatModel
 from .graph import (
@@ -235,13 +236,19 @@ class ChatService:
     ) -> dict[str, Any]:
         config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
         if variant and mode:
-            config.update(run_config(thread_id, variant, mode))
+            config.update(run_config(thread_id, variant, mode, corpus=corpus_label(mode)))
         if handler is not None:
             config["callbacks"] = [handler]
         return config
 
     def _log(self, outcome: ChatOutcome, variant: str, mode: str) -> ChatOutcome:
-        log_turn(outcome.to_dict(), variant=variant, mode=mode, log_dir=self.log_dir)
+        log_turn(
+            outcome.to_dict(),
+            variant=variant,
+            mode=mode,
+            log_dir=self.log_dir,
+            corpus=corpus_label(mode),
+        )
         return outcome
 
     def _load(self, thread_id: str) -> tuple[dict[str, Any], dict[str, Any] | None]:

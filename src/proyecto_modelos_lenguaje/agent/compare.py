@@ -54,6 +54,10 @@ class QueryResult:
     answer: str
     contexts: list[str] = field(default_factory=list)
     judge: JudgeScores | None = None
+    # Para calificar repreguntas a mano: el turno previo del mismo hilo.
+    follow_up_of: str | None = None
+    previous_question: str = ""
+    previous_answer: str = ""
 
     @property
     def factual(self) -> bool:
@@ -84,6 +88,10 @@ class QueryResult:
                 "input_tokens",
                 "output_tokens",
                 "answer",
+                "contexts",
+                "follow_up_of",
+                "previous_question",
+                "previous_answer",
             )
         }
         payload["judge"] = None if self.judge is None else self.judge.to_dict()
@@ -221,6 +229,9 @@ def run_variant(
             output_tokens=turn.metrics.output_tokens,
             answer=turn.answer,
             contexts=_contexts(service, mode, turn),
+            follow_up_of=parent,
+            previous_question=results[parent].question if parent in results else "",
+            previous_answer=results[parent].answer if parent in results else "",
         )
         if judge_model is not None and result.factual and not result.fallback and result.contexts:
             result.judge = judge_answer(

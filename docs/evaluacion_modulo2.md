@@ -265,7 +265,7 @@ Lectura (2026-11-14; se escribe fuera de los marcadores para que la regeneració
 <!-- variants:start -->
 ## Cadena vs. agente (T066)
 
-**Ejecución**: `variants-real-2026-11-11` · **Modo**: real · **Consultas**: 36 (cada una en un hilo nuevo; las 6 repreguntas en el hilo de su pregunta previa; una consulta de calentamiento descartada)
+**Ejecución**: `variants-real-2026-11-14` · **Modo**: real · **Consultas**: 44 (cada una en un hilo nuevo; las 6 repreguntas en el hilo de su pregunta previa; una consulta de calentamiento descartada)
 
 | Métrica | chain | agent |
 |---|---|---|
@@ -274,55 +274,48 @@ Lectura (2026-11-14; se escribe fuera de los marcadores para que la regeneració
 | Abstención fuera de corpus | 100 % | 100 % |
 | Repreguntas correctas (SC-006) | 50 % | 67 % |
 | Evidencia esperada recuperada (documentales) | 50 % | 67 % |
-| Latencia media (ms) | 3415 | 5168 |
-| Latencia p95 (ms) | 7842 | 14674 |
-| Respuestas < 10 s (SC-007) | 100 % | 94 % |
-| Llamadas al modelo por consulta | 1.39 | 2.17 |
-| Búsquedas por consulta | 0.67 | 1.31 |
-| Tokens por consulta | 2695 | 5275 |
-| Fidelidad (juez LLM) — **no válida**, ver nota | ~~0.705~~ | ~~0.661~~ |
-| Relevancia de la respuesta (juez LLM) | 0.885 | 0.825 |
-| Precisión de contexto (con referencia) | 0.391 | 0.448 |
+| Latencia media (ms) | 4265 | 5609 |
+| Latencia p95 (ms) | 10630 | 11549 |
+| Respuestas < 10 s (SC-007) | 95 % | 91 % |
+| Llamadas al modelo por consulta | 1.5 | 2.41 |
+| Búsquedas por consulta | 0.84 | 1.45 |
+| Tokens por consulta | 3288 | 8488 |
+| Fidelidad (juez LLM) | 0.819 | 0.842 |
+| Relevancia de la respuesta (juez LLM) | 0.911 | 0.915 |
+| Precisión de contexto (con referencia) | 0.391 | 0.32 |
 
-**Nota sobre la fidelidad (2026-11-14)**: las cifras aparecen tachadas porque esta ejecución **no es
-válida** para esa métrica: el juez recibió las filas estructuradas sin su frase de origen. El error está
-corregido y la repetición sigue pendiente (`docs/informe_modulo2.md` §5). Relevancia y precisión de
-contexto no se ven afectadas.
-
-Respuestas evaluadas por el juez: chain 24, agent 24. El juez usa `prompts/judge.md` con las definiciones de Ragas (fidelidad = afirmaciones respaldadas / afirmaciones; relevancia = qué tan directamente responde); la precisión de contexto usa las unidades esperadas como referencia.
+Respuestas evaluadas por el juez: chain 27, agent 27. El juez usa `prompts/judge.md` con las definiciones de Ragas (fidelidad = afirmaciones respaldadas / afirmaciones; relevancia = qué tan directamente responde); la precisión de contexto usa las unidades esperadas como referencia.
 
 Repreguntas por variante:
 
 | Consulta | chain | agent |
 |---|---|---|
-| r31 «¿Y a qué cliente le exporta esa uva?» | ❌ documental, 3 citas | ✅ documental, 5 citas |
-| r32 «¿Cuánto bioetanol produce allá al año?» | ❌ structured, 6 citas | ❌ structured, 6 citas |
-| r33 «¿A quién le compró las haciendas?» | ✅ documental, 3 citas | ❌ documental, 3 citas |
-| r34 «¿Qué tan productivo es ese cultivo?» | ✅ documental, 3 citas | ✅ documental, 6 citas |
-| r35 «¿Cómo se llama ese programa?» | ✅ documental, 3 citas | ✅ documental, 5 citas |
-| r36 «¿Desde cuándo vende esa energía?» | ❌ structured, 2 citas | ✅ structured, 5 citas |
+| r31 «¿Y a qué cliente le exporta esa uva?» | ❌ documental, 2 citas | ✅ documental, 4 citas |
+| r32 «¿Cuánto bioetanol produce allá al año?» | ❌ structured, 1 citas | ❌ structured, 5 citas |
+| r33 «¿A quién le compró las haciendas?» | ✅ documental, 3 citas | ✅ documental, 3 citas |
+| r34 «¿Qué tan productivo es ese cultivo?» | ✅ documental, 3 citas | ✅ documental, 3 citas |
+| r35 «¿Cómo se llama ese programa?» | ✅ documental, 5 citas | ✅ documental, 6 citas |
+| r36 «¿Desde cuándo vende esa energía?» | ❌ documental, 3 citas | ❌ documental, 4 citas |
 
 <!-- variants:end -->
 
-### Lectura de la comparación (2026-11-11)
+### Lectura de la comparación (2026-11-14)
 
-- **SC-003 (citas)**: 100 % en ambas variantes. Toda respuesta factual cita evidencia válida o declara falta de
-  evidencia; la validación lo garantiza por construcción.
+Ejecución `variants-real-2026-11-14` con el código vigente (series anuales, ruta mixta y neutralización del
+blindaje), 44 consultas por variante y juez corregido. La búsqueda vectorial usó el respaldo numpy porque la API
+en ejecución tenía abierta la colección local de Qdrant; es la misma búsqueda exacta (las métricas sobre Qdrant
+coinciden, sección «Reevaluación sobre Qdrant»).
+
+- **SC-003 (citas)**: 100 % en ambas variantes; la validación lo garantiza por construcción.
 - **Abstención fuera de corpus**: 4/4 en ambas, resuelta por el enrutador sin buscar.
-- **SC-006 (repreguntas ≥ 80 %)**: **no se cumple con la métrica automática** (cadena 3/6, agente 4/6). La
-  métrica exige que la unidad etiquetada como esperada esté entre los fragmentos recuperados. Leyendo las seis
-  respuestas, ambas variantes resuelven la referencia con el hilo en 5/6 casos, con otra evidencia válida:
-  cadena r31 nombra a Walmart, r36 responde 2016; agente r32 responde por Brasil («allá») y declara que la
-  producción anual no está en el corpus. Fallos por contenido: cadena r32 (responde con la capacidad de Colombia,
-  no de Brasil) y agente r33 (no dice a quién se compraron las haciendas). Esta lectura es de Roberto José
-  Guerrero y **requiere calificación humana del equipo** antes de darla por buena.
-- **SC-007 (< 10 s)**: cadena 100 %, agente 94 % (p95 14,7 s). El agente hace 1,3 búsquedas y 2,2 llamadas al
-  modelo por consulta frente a 0,7 y 1,4 de la cadena, y gasta casi el doble de tokens.
-- **Fidelidad del juez: no válida en esta ejecución.** Para las filas estructuradas `[F#]` el juez recibió solo
-  `sujeto · atributo = valor`, sin la frase de origen que el modelo sí vio, y marcó como no respaldadas
-  afirmaciones que estaban en esa frase (r19–r23). El error está corregido en `agent/compare.py`; una segunda
-  ejecución se detuvo por falta de memoria del equipo en la consulta 14 y queda **PENDIENTE**. La relevancia
-  (cadena 0,885, agente 0,825) y la precisión de contexto (0,391 y 0,448) no dependen de ese error.
-- **Elección**: la cadena es la variante por defecto (más rápida, más barata, cumple SC-007); el agente
-  recupera mejor la evidencia esperada (67 % frente a 50 % en documentales) y resuelve más repreguntas con la
-  métrica estricta.
+- **Fidelidad del juez, ahora válida**: cadena 0,819 y agente 0,842 sobre 27 respuestas factuales cada una. El
+  juez ya recibe la frase de origen de las filas `[F#]` (el error de la ejecución del 2026-11-11 está corregido).
+  Relevancia 0,911 y 0,915.
+- **SC-006 (repreguntas ≥ 80 %)**: con la métrica estricta (unidad etiquetada entre los fragmentos) la cadena
+  resuelve 3/6 y el agente 4/6. Esa métrica no ve las respuestas correctas con otra evidencia; la calificación
+  humana a ciegas (sección siguiente) decide cuántas resuelven la referencia.
+- **SC-007 (< 10 s)**: cadena 95 % y agente 91 % (p95 10,6 s y 11,5 s). Las consultas mixtas y de series añaden
+  trabajo a ambas. El agente hace 1,45 búsquedas y 2,41 llamadas por consulta frente a 0,84 y 1,5 de la cadena, y
+  gasta 2,6 veces más tokens.
+- **Elección**: la cadena sigue siendo la variante por defecto (más rápida y barata); el agente recupera mejor
+  la evidencia esperada en documentales (67 % frente a 50 %).

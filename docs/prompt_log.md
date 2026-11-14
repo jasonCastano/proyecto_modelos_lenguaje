@@ -273,6 +273,20 @@ Sin cambios de prompt. Tres ejecuciones de las 40 preguntas con `qa_zero_shot.md
 prompt final cambian de conducta entre ejecuciones, incluida P14 (`X`). La calificación humana a ciegas se hace
 con `module1_grading` (planillas en `docs/calificacion_m1/`).
 
+### 3.15 Juez `judge.md` 1.0 repetido con el contexto corregido (2026-11-14)
+
+Sin cambios de prompt. `agent evaluate --mode real --compare --judge --skip-router` con el código vigente
+(`variants-real-2026-11-14`, 44 consultas por variante, 27 respuestas juzgadas por variante). El juez recibe
+ahora la frase de origen de las filas `[F#]`, el error que invalidó la fidelidad de §3.10:
+
+| Variante | Llamadas/consulta | Tokens/consulta | p95 | Relevancia | Fidelidad |
+|---|---:|---:|---:|---:|---:|
+| Cadena | 1,50 | 3.288 | 10,6 s | 0,911 | 0,819 |
+| Agente | 2,41 | 8.488 | 11,5 s | 0,915 | 0,842 |
+
+El registro guarda los fragmentos de cada respuesta para la calificación humana a ciegas
+(`module2_grading`, `docs/calificacion_m2/`), que además contrasta la fidelidad del juez con la de las personas.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

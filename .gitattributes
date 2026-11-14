@@ -10,3 +10,4 @@ docs/arquitectura*.png -text
 docs/diagramas/** -text
 docs/capturas/diagramas/** -text
 docs/calificacion_m1/*.csv -text
+docs/calificacion_m2/*.csv -text

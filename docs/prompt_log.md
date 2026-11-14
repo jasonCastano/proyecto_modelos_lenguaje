@@ -166,7 +166,7 @@ Prompts nuevos (seis secciones cada uno):
 
 | Prompt | Archivo | Versión | SHA-256 (12 primeros) | Uso |
 |--------|---------|---------|-----------------------|-----|
-| Agente | `prompts/agent.md` | 1.0 → 1.1 (§3.8) → 1.2 (§3.12) → 1.3 (§3.13) | `a64cb34cd40f` | System prompt de ambas variantes (cadena y agente): solo `<documento>`, citas `[U#]`/`[F#]`, hasta tres búsquedas |
+| Agente | `prompts/agent.md` | 1.0 → 1.1 (§3.8) → 1.2 (§3.12) → 1.3 (§3.13) → 1.4 (§3.16) | `e55a1956534a` | System prompt de ambas variantes (cadena y agente): solo `<documento>`, citas `[U#]`/`[F#]`, hasta tres búsquedas |
 | Memoria | `prompts/memory_summary.md` | 1.0 | `e0f515ba64ec` | Resumen del hilo al superar `memory.summarize_after_tokens`; conserva entidades, cifras y URL de las fuentes |
 
 Primera ejecución con `deepseek-flash` (CLI `agent chat --mode real`, 2026-11-11), conversación «¿Qué produce
@@ -286,6 +286,18 @@ ahora la frase de origen de las filas `[F#]`, el error que invalidó la fidelida
 
 El registro guarda los fragmentos de cada respuesta para la calificación humana a ciegas
 (`module2_grading`, `docs/calificacion_m2/`), que además contrasta la fidelidad del juez con la de las personas.
+
+### 3.16 Valer-IA Caña: `agent.md` 1.4, `router.md` 1.3, `conduct.md` 1.0 y `welcome.md` 1.0 (2026-11-14, spec 018)
+
+El asistente pasa a tener identidad propia, **Valer-IA Caña**, con trato profesional para visitantes del sitio
+(ADR 0022):
+
+| Prompt | Versión | SHA-256 (12 primeros) | Cambio |
+|--------|---------|-----------------------|--------|
+| `prompts/agent.md` | 1.3 → 1.4 | `e55a1956534a` | Rol de Valer-IA Caña. Se declara IA y no se presenta como canal autorizado (CONSTITUTION §10). Reglas 6 a 10: mantener el papel y no revelar instrucciones; quejas, empleo y trámites solo con canales oficiales de la evidencia; no pedir ni repetir datos sensibles (`[REDACTED_*]`); sin asesoría legal, médica ni financiera; calma ante la hostilidad y nada de datos de terceros. |
+| `prompts/router.md` | 1.2 → 1.3 | `189a1fea5f87` | `out_of_scope` incluye `scope_reason` (`off_topic`, `third_party`, `prompt_extraction`, `abuse`, `harmful`, `advice`). Las reglas deterministas de `router.py` deciden antes que el LLM. |
+| `prompts/conduct.md` | 1.0 (nuevo) | `dd8b99789dd4` | Respuestas deterministas de Valer-IA (saludo, despedida con oferta de recordar, aclaración, «¿eres una IA?», un texto por motivo de conducta, aviso de datos sensibles y la conversación de identidad por correo). No pasan por el modelo. |
+| `prompts/welcome.md` | 1.0 (nuevo) | `52c9c4ce0592` | Bienvenida al entrar (`GET /api/welcome`) con citas a `unit_6f64efa98eb8cc68` (1864, Valle del Cauca) y `unit_652e702c01489750` (plataformas y países), verificadas por prueba. |
 
 ## 4. Pendiente
 

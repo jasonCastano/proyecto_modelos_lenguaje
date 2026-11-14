@@ -14,6 +14,10 @@
     "alternative": {
       "enum": ["direct", "documental", "structured", "mixed", "out_of_scope", "clarify", null]
     },
-    "fallback_route": {"enum": ["documental", null]}
+    "fallback_route": {"enum": ["documental", null]},
+    "scope_reason": {
+      "description": "Spec 018: motivo de conducta de Valer-IA (solo out_of_scope, o identity con direct).",
+      "enum": ["off_topic", "abuse", "harmful", "third_party", "prompt_extraction", "advice", "identity", null]
+    }
   }
 }

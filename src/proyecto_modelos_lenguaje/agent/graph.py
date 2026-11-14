@@ -63,6 +63,13 @@ from .actions import (
 )
 from .config import AgentConfig
 from .guard import GuardedDocument, leaks_prompt, render_documents
+from .identity import (
+    MAX_THREAD_ATTEMPTS,
+    IdentityRegistry,
+    extract_name,
+    looks_like_name,
+    names_match,
+)
 from .memory import (
     PROFILE_KEYS,
     PROFILE_LABELS,
@@ -78,8 +85,8 @@ from .memory import (
 )
 from .models import RouteDecision, Turn, TurnMetrics
 from .privacy import build_pii_middleware
-from .prompts import load_agent_prompt
-from .router import apply_structured_fallback, contextual_query, route_message
+from .prompts import load_agent_prompt, load_conduct
+from .router import AI_QUESTION, apply_structured_fallback, contextual_query, route_message
 from .series import SeriesTable, series_intent
 from .structured import StructuredFact, StructuredStore, normalize
 from .tools import (
@@ -96,25 +103,25 @@ from .tools import (
 LABEL_PATTERN = re.compile(r"\[([UF]\d+)\]")
 ROUTER_HISTORY_TURNS = 3
 FAREWELL = re.compile(r"\b(gracias|adios|chao|hasta luego|hasta pronto|nos vemos|eso es todo)\b")
-GREETING_ANSWER = (
-    "¡Hola! Soy el asistente de información pública del Grupo Manuelita. Pregúntame por su "
-    "historia, productos, sostenibilidad, programas o filiales."
-)
-FAREWELL_ANSWER = "Con gusto. Si tienes otra pregunta sobre Manuelita, aquí estoy."
-OUT_OF_SCOPE_ANSWER = (
-    "Solo puedo responder sobre el Grupo Manuelita con su información pública; esa pregunta queda "
-    "fuera de ese alcance."
-)
-CLARIFY_ANSWER = (
-    "No estoy seguro de a qué te refieres. ¿Puedes precisar la pregunta, por ejemplo qué empresa, "
-    "producto o tema de Manuelita te interesa?"
-)
+# Spec 018: respuestas deterministas de Valer-IA Caña, versionadas en prompts/conduct.md.
+SENSITIVE_NOTICES = frozenset({"credit_card", "document", "phone"})
+IDENTITY_STAGE_NONE: dict[str, Any] = {"stage": "none", "attempts": 0, "offered": False}
+
+
+def conduct(key: str, **values: str) -> str:
+    """Texto de ``prompts/conduct.md`` con ``{name}`` / ``{masked}`` reemplazados."""
+    text = load_conduct()[key]
+    for name, value in values.items():
+        text = text.replace("{" + name + "}", value)
+    return text
+
+
 NO_RETRIEVAL_ROUTES = frozenset({"direct", "out_of_scope", "clarify"})
 REVIEW_DECISIONS = ["approve", "edit", "reject"]
 REJECTED_ANSWER = "Entendido: no realicé la acción porque fue rechazada en la revisión."
 PROFILE_UNKNOWN_ANSWER = (
     "Todavía no sé eso de ti: no me lo has contado en esta conversación ni está guardado en tu "
-    "perfil. Puedes decírmelo, por ejemplo «Me llamo Ana y trabajo en Carvajal»."
+    "perfil. Si quieres, cuéntamelo; por ejemplo: «Me llamo Laura y soy docente»."
 )
 
 
@@ -145,6 +152,13 @@ class ChatState(TypedDict, total=False):
     intent: dict[str, Any] | None
     actions: list[dict[str, Any]]
     profile_query: bool
+    # spec 018: identidad conversacional, avisos de datos sensibles y cliente para la respuesta
+    identity: dict[str, Any]
+    identity_event: dict[str, Any] | None
+    pii_notice: list[str]
+    client: dict[str, Any] | None
+    identity_next: str
+    notices: list[str]
 
 
 @dataclass(slots=True)
@@ -411,27 +425,216 @@ def _action_node(deps: GraphDeps):
 
 
 def reply_node(state: ChatState) -> dict[str, Any]:
-    """Respuestas sin búsqueda: perfil, saludo o despedida, fuera de alcance y aclaración."""
-    route = state["decision"]["route"]
+    """Respuestas sin búsqueda de Valer-IA: perfil, saludo, despedida, conducta y aclaración."""
+    decision = state["decision"]
+    route = decision["route"]
     store = get_store()
     stored = (
         {item.key: item.value for item in UserProfile(store).list(state.get("user_id", "anon"))}
         if store is not None
         else {}
     )
+    identity = {**IDENTITY_STAGE_NONE, **(state.get("identity") or {})}
+    question = normalize(state["question"])
     if state.get("profile_query"):
         answer = profile_answer(stored, profile_from_turns(state.get("turns") or []))
     elif route == "direct":
-        farewell = FAREWELL.search(normalize(state["question"]))
-        answer = FAREWELL_ANSWER if farewell else GREETING_ANSWER
-        if not farewell and stored.get("name"):
+        if FAREWELL.search(question):
+            # Oferta de recordar: una vez por visita y solo a un visitante anónimo (FR-007).
+            anonymous = not stored.get("name") and identity.get("stage") != "recognized"
+            if anonymous and not identity.get("offered"):
+                identity["offered"] = True
+                answer = conduct("farewell_offer")
+            else:
+                answer = conduct("farewell")
+        elif AI_QUESTION.search(question):
+            answer = conduct("ai_disclosure")
+        elif stored.get("name"):
             # Memoria de largo plazo: el saludo usa el nombre guardado en el Store.
-            answer = answer.replace("¡Hola!", f"¡Hola, {stored['name']}!", 1)
+            answer = conduct("greeting_named", name=stored["name"])
+        else:
+            answer = conduct("greeting")
     elif route == "out_of_scope":
-        answer = OUT_OF_SCOPE_ANSWER
+        answer = conduct(decision.get("scope_reason") or "off_topic")
     else:
-        answer = CLARIFY_ANSWER
-    return {"answer": answer, "citations": [], "fallback": False}
+        answer = conduct("clarify")
+    return {"answer": answer, "citations": [], "fallback": False, "identity": identity}
+
+
+# ---------------------------------------------------------------- identidad (spec 018)
+
+TURN_RESET: dict[str, Any] = {
+    "intent": None,
+    "profile_query": False,
+    "fragments": [],
+    "structured_rows": [],
+    "evidence": {},
+    "context": "",
+    "citations": [],
+    "fallback": False,
+    "retrievals": 0,
+}
+
+
+def _identity_decision(reason: str) -> dict[str, Any]:
+    return RouteDecision(
+        route="direct",
+        confidence=1.0,
+        reason=reason,
+        decided_by="rules",
+        scope_reason="identity",
+    ).model_dump(mode="json")
+
+
+def _registered_name(store: BaseStore | None, user_id: str | None) -> str | None:
+    if store is None or not user_id:
+        return None
+    for item in UserProfile(store).list(user_id):
+        if item.key == "name":
+            return item.value
+    return None
+
+
+def identify_node(state: ChatState) -> dict[str, Any]:
+    """Reconocimiento conversacional determinista (contracts/identity-flow.md).
+
+    No llama al modelo de lenguaje y nunca ve el correo: solo su huella (``identity_event``).
+    ``identity_next`` decide el camino: ``route`` (turno normal), ``reply`` (respuesta de
+    identidad) o ``remember`` (acción ``remember_client`` con aprobación humana).
+    """
+    event = state.get("identity_event") or None
+    identity = {**IDENTITY_STAGE_NONE, **(state.get("identity") or {})}
+    stage = identity.get("stage", "none")
+    user_id = state.get("user_id", "anon")
+    store = get_store()
+    registry = IdentityRegistry(store) if store is not None else None
+    question = state["question"]
+
+    def reply(text: str, reason: str, **extra: Any) -> dict[str, Any]:
+        return {
+            **TURN_RESET,
+            "decision": _identity_decision(reason),
+            "answer": text,
+            "identity": identity,
+            "identity_next": "reply",
+            **extra,
+        }
+
+    def remember(name: str) -> dict[str, Any]:
+        return {
+            **TURN_RESET,
+            "decision": _identity_decision("pide que lo recuerden (requiere aprobación)"),
+            "answer": "",
+            "identity": identity,
+            "intent": {"tool": "remember_client", "args": {"name": name}},
+            "identity_next": "remember",
+        }
+
+    if event and event.get("kind") == "reset":
+        if event.get("explicit", True) or stage == "recognized":
+            identity = dict(IDENTITY_STAGE_NONE)
+            return reply(
+                conduct("identity_reset"),
+                "el visitante pide empezar de nuevo",
+                client={"user_id": user_id, "reset": True},
+            )
+        return {"identity_next": "route", "identity": identity}
+
+    if event and event.get("kind") == "email":
+        masked = event.get("masked")
+        if not event.get("valid", True):
+            return reply(conduct("identity_invalid_email"), "correo con formato inválido")
+        if identity.get("attempts", 0) >= MAX_THREAD_ATTEMPTS or registry is None:
+            return reply(conduct("identity_neutral"), "reconocimiento no disponible en este hilo")
+        fp = str(event.get("fingerprint"))
+        owner = registry.lookup(fp)
+        if owner == user_id:
+            name = _registered_name(store, user_id)
+            return reply(
+                conduct("greeting_named", name=name) if name else conduct("identity_neutral"),
+                "el visitante ya está identificado",
+            )
+        if owner and not registry.is_locked(fp):
+            identity.update(stage="awaiting_name_confirm", fingerprint=fp)
+            return reply(
+                conduct("identity_confirm_name"),
+                "correo registrado: se pide confirmar el nombre",
+                client={"user_id": user_id, "masked_email": masked},
+            )
+        # Correo nuevo (o bloqueado, que se trata igual para no revelar nada).
+        identity.update(stage="none", fingerprint=fp, masked=masked)
+        name = extract_profile(question).get("name") or _registered_name(store, user_id)
+        if name:
+            return remember(name)
+        identity["stage"] = "awaiting_name_new"
+        return reply(
+            conduct("identity_ask_name"),
+            "correo nuevo: se pide el nombre para recordarlo",
+            client={"user_id": user_id, "masked_email": masked},
+        )
+
+    if stage == "awaiting_name_confirm":
+        fp = str(identity.get("fingerprint") or "")
+        identity["stage"] = "none"
+        if not looks_like_name(question):
+            identity["attempts"] = identity.get("attempts", 0) + 1
+            identity["fingerprint"] = None
+            return {"identity_next": "route", "identity": identity}
+        owner = registry.lookup(fp) if registry and fp else None
+        registered = _registered_name(store, owner)
+        if owner and registered and names_match(registered, extract_name(question)):
+            identity.update(stage="recognized", fingerprint=None, recognized_name=registered)
+            return reply(
+                conduct("identity_recognized", name=registered),
+                "cliente reconocido por correo y nombre",
+                user_id=owner,
+                client={"user_id": owner, "recognized": True, "name": registered},
+            )
+        if registry and fp:
+            registry.record_failure(fp)
+        identity["attempts"] = identity.get("attempts", 0) + 1
+        identity["fingerprint"] = None
+        return reply(conduct("identity_neutral"), "confirmación de identidad no válida")
+
+    if stage == "awaiting_name_new":
+        identity["stage"] = "none"
+        if looks_like_name(question):
+            return remember(extract_name(question))
+        return {"identity_next": "route", "identity": identity}
+
+    return {"identity_next": "route", "identity": identity}
+
+
+def _after_identify(state: ChatState) -> str:
+    return str(state.get("identity_next") or "route")
+
+
+def remember_node(state: ChatState) -> dict[str, Any]:
+    """Acción ``remember_client``: ``interrupt()`` y, si se aprueba, perfil + vínculo del correo."""
+    intent = state.get("intent") or {}
+    args = dict(intent.get("args") or {})
+    identity = {**IDENTITY_STAGE_NONE, **(state.get("identity") or {})}
+    response = interrupt(hitl_request("remember_client", args))
+    decision = ((response or {}).get("decisions") or [{"type": "reject"}])[0]
+    fp = identity.get("fingerprint")
+    identity.update(fingerprint=None, masked=None)
+    if decision.get("type") == "reject":
+        return {"answer": conduct("identity_declined"), "identity": identity}
+    if decision.get("type") == "edit":
+        args = decision.get("edited_action", {}).get("args", args)
+    name = str(args.get("name") or "").strip()[:80]
+    store = get_store()
+    user_id = state.get("user_id", "anon")
+    if store is None or not fp or not name:
+        return {"answer": conduct("identity_declined"), "identity": identity}
+    UserProfile(store).save(user_id, {"name": name})
+    IdentityRegistry(store).link(str(fp), user_id)
+    identity.update(stage="recognized", recognized_name=name)
+    return {
+        "answer": conduct("identity_saved", name=name),
+        "identity": identity,
+        "client": {"user_id": user_id, "recognized": True, "name": name},
+    }
 
 
 def _finalize_node(deps: GraphDeps):
@@ -441,13 +644,19 @@ def _finalize_node(deps: GraphDeps):
         metrics = handler.snapshot(retrievals) if handler else TurnMetrics(tool_calls=retrievals)
         turns = list(state.get("turns") or [])
         citations = state.get("citations") or []
+        answer = state.get("answer", "")
+        notices: list[str] = []
+        if SENSITIVE_NOTICES & set(state.get("pii_notice") or []):
+            # Spec 018 (FR-020): aviso determinista si el visitante compartió datos sensibles.
+            notices.append("sensitive_data")
+            answer = f"{conduct('sensitive_notice')}\n\n{answer}".strip()
         turn = Turn(
             turn_id=len(turns) + 1,
             question=state["question"],
             route=RouteDecision.model_validate(state["decision"]),
             fragments=state.get("fragments") or [],
             structured_rows=state.get("structured_rows") or [],
-            answer=state.get("answer", ""),
+            answer=answer,
             citations=citations,
             sources=list(dict.fromkeys(c["url"] for c in citations if c.get("url"))),
             fallback=state.get("fallback", False),
@@ -461,7 +670,13 @@ def _finalize_node(deps: GraphDeps):
             deps.config.memory,
             deps.summary_model,
         )
-        return {"turns": turns, "summary": summary, "summarized": summarized}
+        return {
+            "turns": turns,
+            "summary": summary,
+            "summarized": summarized,
+            "notices": notices,
+            "identity_event": None,
+        }
 
     return finalize
 
@@ -580,13 +795,19 @@ def build_chain_graph(
 ) -> CompiledStateGraph:
     """Variante cadena: recuperación fija y una respuesta por turno."""
     graph = StateGraph(ChatState)
+    graph.add_node("identify", identify_node)
+    graph.add_node("remember", remember_node)
     graph.add_node("route", _route_node(deps))
     graph.add_node("reply", reply_node)
     graph.add_node("retrieve", _retrieve_node(deps))
     graph.add_node("answer", _answer_node(deps))
     graph.add_node("action", _action_node(deps))
     graph.add_node("finalize", _finalize_node(deps))
-    graph.add_edge(START, "route")
+    graph.add_edge(START, "identify")
+    graph.add_conditional_edges(
+        "identify", _after_identify, {"route": "route", "reply": "finalize", "remember": "remember"}
+    )
+    graph.add_edge("remember", "finalize")
     graph.add_conditional_edges(
         "route", _after_route, {"reply": "reply", "work": "retrieve", "action": "action"}
     )
@@ -741,11 +962,17 @@ def build_agent_graph(
 ) -> CompiledStateGraph:
     """Variante agente: la puerta de decisión y después ``create_agent`` con herramientas."""
     graph = StateGraph(ChatState)
+    graph.add_node("identify", identify_node)
+    graph.add_node("remember", remember_node)
     graph.add_node("route", _route_node(deps))
     graph.add_node("reply", reply_node)
     graph.add_node("agent", _agent_node(deps))
     graph.add_node("finalize", _finalize_node(deps))
-    graph.add_edge(START, "route")
+    graph.add_edge(START, "identify")
+    graph.add_conditional_edges(
+        "identify", _after_identify, {"route": "route", "reply": "finalize", "remember": "remember"}
+    )
+    graph.add_edge("remember", "finalize")
     graph.add_conditional_edges(
         "route", _after_route, {"reply": "reply", "work": "agent", "action": "agent"}
     )

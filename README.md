@@ -134,6 +134,9 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
     olvido, exportación).
   - **Voz del agente**: las respuestas se leen en voz alta en español, con voz femenina natural (Phonon), por
     oraciones y mientras se generan; se puede silenciar, detener y volver a escuchar.
+  - **Valer-IA Caña**: la asistente se presenta al entrar, atiende con tono profesional, reconoce de forma
+    opcional a un cliente que vuelve por su correo (sin guardar el correo en claro) y maneja con reglas las
+    preguntas fuera de tema, la extracción del prompt, los datos de terceros, los insultos y los pedidos dañinos.
   - **Avatar con sincronización de labios**: una asistente ilustrada junto al chat mueve la boca con el audio de
     la voz (análisis local en el navegador), parpadea y muestra cuándo está pensando; se puede ocultar.
 - **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores;
@@ -703,6 +706,11 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
 
   La voz se configura en `config/voice.toml` (o `MANUELITA_VOICE`, `MANUELITA_VOICE_ENABLED=0`). Sin modelo,
   la interfaz avisa y el chat sigue por texto.
+- Valer-IA Caña (spec 018, ADR 0022): vista para visitantes por defecto y vista técnica con
+  `?vista=tecnica` (variante, trazas, casos de la rúbrica, rutas y métricas). Conducta medida con
+  `uv run python -m proyecto_modelos_lenguaje.agent conduct --mode demo|real`
+  (`docs/evaluacion_conducta.md`). Define `MANUELITA_IDENTITY_KEY` en `.env` para fijar la clave del
+  reconocimiento por correo.
 - Avatar (spec 017, ADR 0021): junto al chat, la boca sigue el audio de la voz con un analizador de Web Audio, sin
   servicios externos. «Ocultar avatar» lo esconde y la preferencia se recuerda. Con `?avatarDebug=1` en la URL,
   la tarjeta muestra la forma y la apertura de la boca para calibrarla.

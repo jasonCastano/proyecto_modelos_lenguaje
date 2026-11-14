@@ -23,6 +23,7 @@ from langchain_core.tools import BaseTool, StructuredTool
 from langgraph.store.base import BaseStore
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
+from .identity import IdentityRegistry
 from .memory import PROFILE_KEYS, PreferenceError, UserMemory, UserProfile
 from .prompts import load_agent_prompt
 from .structured import normalize
@@ -41,6 +42,8 @@ TOOL_DESCRIPTIONS = {
     "save_preference": "Guardar una preferencia del usuario para próximas conversaciones",
     "save_profile": "Guardar datos del perfil del usuario (nombre, trabajo, cargo o ciudad)",
     "export_conversation": "Exportar la conversación actual en Markdown",
+    # Spec 018: no es herramienta del modelo; la propone el nodo de identidad.
+    "remember_client": "Recordar al visitante por su correo para reconocerlo en próximas visitas",
 }
 
 
@@ -72,6 +75,14 @@ class SaveProfileArgs(BaseModel):
         return self
 
 
+class RememberClientArgs(BaseModel):
+    """Spec 018: nombre con el que se recordará al visitante (la huella la pone el servidor)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=80, description="Nombre del visitante.")
+
+
 class ExportConversationArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -83,6 +94,7 @@ ARG_SCHEMAS: dict[str, type[BaseModel]] = {
     "save_preference": SavePreferenceArgs,
     "save_profile": SaveProfileArgs,
     "export_conversation": ExportConversationArgs,
+    "remember_client": RememberClientArgs,
 }
 
 
@@ -295,6 +307,7 @@ def execute_action(
     if tool == "forget_memory":
         preferences = memory.forget(user_id)
         facts = profile.forget(user_id)
+        IdentityRegistry(store).unlink_user(user_id)  # spec 018: también el vínculo del correo
         return f"Olvidé {preferences} preferencias y {facts} datos de tu perfil."
     if tool == "save_profile":
         facts = {key: value for key, value in clean.items() if value}

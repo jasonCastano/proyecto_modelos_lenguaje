@@ -167,6 +167,15 @@ export interface ChatRoute {
   decided_by: "rules" | "llm" | "demo";
   alternative?: ChatRouteName | null;
   fallback_route?: "documental" | null;
+  scope_reason?:
+    | "off_topic"
+    | "abuse"
+    | "harmful"
+    | "third_party"
+    | "prompt_extraction"
+    | "advice"
+    | "identity"
+    | null;
 }
 
 export interface ChatFragment extends RetrievalFragment {
@@ -215,7 +224,7 @@ export interface ChatTurn {
 
 export interface PendingAction {
   action_id: string;
-  tool: "forget_memory" | "save_preference" | "save_profile" | "export_conversation";
+  tool: "forget_memory" | "save_preference" | "save_profile" | "export_conversation" | "remember_client";
   args: Record<string, unknown>;
   proposed_at: string;
   decision?: "approve" | "edit" | "reject" | null;
@@ -233,6 +242,31 @@ export interface ChatResponse {
   status: ChatStatus;
   pending_action: PendingAction | null;
   anomalies: ChatAnomaly[];
+  /** Spec 018: cliente activo tras el turno (reconocimiento o reinicio). */
+  client?: ClientInfo | null;
+  notices?: string[];
+}
+
+export interface ClientInfo {
+  user_id: string;
+  recognized: boolean;
+  name: string | null;
+  reset: boolean;
+  masked_email: string | null;
+}
+
+export interface WelcomeCitation {
+  label: string;
+  unit_id: string;
+  url: string;
+  title: string;
+}
+
+export interface WelcomeResponse {
+  assistant: string;
+  version: string;
+  text: string;
+  citations: WelcomeCitation[];
 }
 
 export interface ThreadView {

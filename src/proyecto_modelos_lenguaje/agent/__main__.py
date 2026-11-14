@@ -11,6 +11,7 @@ Uso::
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import sys
 from collections.abc import Sequence
@@ -89,7 +90,49 @@ def build_parser() -> argparse.ArgumentParser:
     shield.add_argument("--run-id", default="")
     shield.add_argument("--json-out", default=None, help="Informe JSON (por defecto en real).")
     shield.add_argument("--report", default=None, help="Markdown (por defecto en real).")
+
+    conduct = sub.add_parser(
+        "conduct", help="Evalúa la conducta de Valer-IA ante situaciones difíciles (spec 018)."
+    )
+    conduct.add_argument("--mode", choices=("demo", "real"), default="demo")
+    conduct.add_argument(
+        "--variants", nargs="+", choices=("chain", "agent"), default=["chain", "agent"]
+    )
+    conduct.add_argument("--cases", default=None, help="JSONL de casos (conduct_cases.jsonl).")
+    conduct.add_argument("--json-out", default=None, help="Informe JSON (por defecto en real).")
     return parser
+
+
+def _conduct(args: argparse.Namespace) -> int:
+    """``agent conduct``: 0 si cumple las metas, 1 si no, 2 por error de configuración."""
+    with contextlib.suppress(AttributeError, ValueError):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    from .conduct import CASES_FILE, REPORT_JSON, render_markdown, run_conduct, write_reports
+
+    try:
+        report = run_conduct(
+            mode=args.mode,
+            variants=tuple(args.variants),
+            cases_path=Path(args.cases) if args.cases else CASES_FILE,
+        )
+    except Exception as exc:
+        print(f"error de configuración: {exc}", file=sys.stderr)
+        return 2
+    for variant, row in report["summary"].items():
+        print(
+            f"{variant}: {row['passed']}/{row['cases']} cumplen "
+            f"({row['compliance']:.0%}) · fugas {row['leaks']}"
+        )
+    if args.json_out:
+        Path(args.json_out).write_text(
+            json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+    elif args.mode == "real":
+        write_reports(report)
+        print(f"informe: {REPORT_JSON} y su Markdown")
+    if args.mode != "real" and not args.json_out:
+        print(render_markdown(report))
+    return 0 if report["meets_targets"] else 1
 
 
 def _build_structured(args: argparse.Namespace, root: Path) -> int:
@@ -383,6 +426,8 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
         return _evaluate(args, root)
     if args.command == "shield":
         return _shield(args, root)
+    if args.command == "conduct":
+        return _conduct(args)
     return _chat(args, root)
 
 

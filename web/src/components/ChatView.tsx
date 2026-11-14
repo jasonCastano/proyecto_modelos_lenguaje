@@ -28,14 +28,16 @@ import {
   type RetrievalTrace,
 } from "../lib/types";
 import { useVoice } from "../lib/useVoice";
+import { adoptUser, resetVisit, viewMode, visitUser } from "../lib/session";
 import { AgentAvatar } from "./AgentAvatar";
 import { ApprovalCard } from "./ApprovalCard";
 import { RetrievedFragments } from "./RetrievedFragments";
+import { QuickReplies } from "./QuickReplies";
 import { SourceList } from "./SourceList";
 import { VoiceControls } from "./VoiceControls";
+import { WelcomeMessage } from "./WelcomeMessage";
 
 const THREAD_KEY = "manuelita.chat.thread";
-const USER_KEY = "manuelita.chat.user";
 const MAX_CHARS = 500;
 const PREFERENCE_LABEL: Record<string, string> = {
   response_format: "formato",
@@ -148,17 +150,6 @@ function writeLocal(key: string, value: string): void {
 }
 
 /** Usuario anónimo estable en este navegador: la memoria de largo plazo lo usa como namespace. */
-function anonymousUser(): string {
-  const saved = readLocal(USER_KEY);
-  if (saved) return saved;
-  const random =
-    typeof crypto !== "undefined" && "randomUUID" in crypto
-      ? crypto.randomUUID().slice(0, 12)
-      : Math.random().toString(36).slice(2, 14);
-  const user = `anon-${random}`;
-  writeLocal(USER_KEY, user);
-  return user;
-}
 
 interface StoredThread {
   id: string;
@@ -228,12 +219,27 @@ function turnCitations(turn: ChatTurn): Citation[] {
   }));
 }
 
+const REDACTED_LABEL: Record<string, string> = {
+  EMAIL: "‹correo protegido›",
+  PHONE: "‹teléfono protegido›",
+  DOCUMENT: "‹documento protegido›",
+  CREDIT_CARD: "‹tarjeta protegida›",
+};
+
+/** Spec 018: en la vista de visitante, las marcas de redacción se muestran en lenguaje natural. */
+export function visitorText(text: string): string {
+  return text.replace(/\[REDACTED_([A-Z_]+)\]/g, (match, kind: string) => REDACTED_LABEL[kind] ?? match);
+}
+
 export function ChatTurnCard({
   turn,
   firstAudioMs,
   onListen,
+  technical = true,
 }: {
   turn: ChatTurn;
+  /** Spec 018: en la vista normal (visitantes) se ocultan ruta, fragmentos y métricas. */
+  technical?: boolean;
   /** Spec 016: tiempo hasta el primer audio de la lectura en vivo. */
   firstAudioMs?: number;
   /** Spec 016: lee la respuesta en voz alta; sin voz no se muestra el botón. */
@@ -246,15 +252,17 @@ export function ChatTurnCard({
     <li className="chat-turn" data-testid="chat-turn" data-kind={kind}>
       <p className="chat-question">
         <span className="sr-only">Pregunta: </span>
-        {turn.question}
+        {technical ? turn.question : visitorText(turn.question)}
       </p>
-      <div className="chat-route">
-        <span className="fragments-badge" data-testid="route-chip">
-          Ruta: {ROUTE_LABEL[route.route]} · {Math.round(route.confidence * 100)} %
-        </span>
-        <span className="fragments-meta">{route.reason}</span>
-      </div>
-      {anomalous.length > 0 ? (
+      {technical ? (
+        <div className="chat-route">
+          <span className="fragments-badge" data-testid="route-chip">
+            Ruta: {ROUTE_LABEL[route.route]} · {Math.round(route.confidence * 100)} %
+          </span>
+          <span className="fragments-meta">{route.reason}</span>
+        </div>
+      ) : null}
+      {technical && anomalous.length > 0 ? (
         <div className="console-message" data-kind="warning" data-testid="anomaly-warning" role="note">
           {anomalous.map((fragment) => (
             <p key={fragment.label}>
@@ -269,8 +277,8 @@ export function ChatTurnCard({
           ))}
         </div>
       ) : null}
-      <RetrievedFragments trace={turnTrace(turn)} showMeta={false} />
-      {turn.structured_rows.length > 0 ? (
+      {technical ? <RetrievedFragments trace={turnTrace(turn)} showMeta={false} /> : null}
+      {technical && turn.structured_rows.length > 0 ? (
         <ul className="chat-rows" data-testid="structured-rows">
           {turn.structured_rows.map((row) => (
             <li key={row.fact_id}>
@@ -283,6 +291,7 @@ export function ChatTurnCard({
       <div className={`answer ${turn.fallback ? "answer-fallback" : ""}`}>
         <p className="answer-body">{turn.answer}</p>
         <SourceList citations={turnCitations(turn)} />
+        {technical ? (
         <p className="answer-meta" data-testid="turn-trace">
           Decidió: {DECIDED_LABEL[route.decided_by] ?? route.decided_by}
           {route.alternative ? ` (alternativa: ${ROUTE_LABEL[route.alternative]})` : ""} ·{" "}
@@ -296,6 +305,7 @@ export function ChatTurnCard({
               })} s`
             : ""}
         </p>
+        ) : null}
         {onListen && turn.answer ? (
           <button className="btn btn-link" data-testid="turn-listen" onClick={onListen} type="button">
             🔊 Escuchar
@@ -375,7 +385,9 @@ export function ChatView({ mode }: { mode: Mode }) {
   const [live, setLive] = useState<LiveTurn | null>(null);
   const [recent, setRecent] = useState<RecentThread[]>(() => readRecent());
   const [observability, setObservability] = useState<ObservabilityStatus | null>(null);
-  const userId = useRef(anonymousUser());
+  const userId = useRef(visitUser());
+  // Spec 018: vista de visitante (normal) o de sustentación (técnica, con ?vista=tecnica).
+  const technical = useRef(viewMode() === "tecnica").current;
   const controller = useRef<AbortController | null>(null);
 
   function refreshObservability() {
@@ -495,6 +507,10 @@ export function ChatView({ mode }: { mode: Mode }) {
     setError(null);
     try {
       const response = await resumeThread(threadId, action.action_id, decision, args);
+      if (response.client?.user_id && response.client.user_id !== userId.current) {
+        userId.current = response.client.user_id;
+        adoptUser(response.client.user_id);
+      }
       setTurns((previous) => [...previous, response.turn]);
       setAction(response.status === "pending_approval" ? response.pending_action : null);
       refreshPreferences();
@@ -562,6 +578,19 @@ export function ChatView({ mode }: { mode: Mode }) {
         if (!unavailable) throw caught;
         response = await sendChat(input, abort.signal);
       }
+      if (response.client?.reset) {
+        // «Empecemos de nuevo»: cliente anónimo nuevo y conversación limpia.
+        voice.finishLive(response.turn.answer, response.thread_id);
+        userId.current = resetVisit();
+        startOver();
+        setMessage("");
+        return;
+      }
+      if (response.client?.user_id && response.client.user_id !== userId.current) {
+        // Cliente reconocido por correo y nombre: los turnos siguientes usan su memoria.
+        userId.current = response.client.user_id;
+        adoptUser(response.client.user_id);
+      }
       setThreadId(response.thread_id);
       voice.finishLive(response.turn.answer, response.thread_id);
       if (voiceKey) setVoiceKeys((previous) => ({ ...previous, [response.turn.turn_id]: voiceKey }));
@@ -594,23 +623,27 @@ export function ChatView({ mode }: { mode: Mode }) {
 
   return (
     <div className="chat-view" data-testid="chat-view">
-      <div className="console-options">
-        <label htmlFor="chat-variant">Variante</label>
-        <select
-          className="select-input"
-          id="chat-variant"
-          onChange={(event) => startOver(event.target.value as ChatVariant)}
-          value={variant}
-        >
-          {(Object.keys(VARIANT_LABEL) as ChatVariant[]).map((key) => (
-            <option key={key} value={key}>
-              {VARIANT_LABEL[key]}
-            </option>
-          ))}
-        </select>
-        <button className="btn btn-link" type="button" onClick={() => startOver()}>
-          Nueva conversación
-        </button>
+      <div className="console-options" data-testid="chat-controls">
+        {technical ? (
+          <>
+            <label htmlFor="chat-variant">Variante</label>
+            <select
+              className="select-input"
+              id="chat-variant"
+              onChange={(event) => startOver(event.target.value as ChatVariant)}
+              value={variant}
+            >
+              {(Object.keys(VARIANT_LABEL) as ChatVariant[]).map((key) => (
+                <option key={key} value={key}>
+                  {VARIANT_LABEL[key]}
+                </option>
+              ))}
+            </select>
+            <button className="btn btn-link" type="button" onClick={() => startOver()}>
+              Nueva conversación
+            </button>
+          </>
+        ) : null}
         <VoiceControls voice={voice} showUnavailable />
         <button
           aria-pressed={!avatarHidden}
@@ -621,7 +654,7 @@ export function ChatView({ mode }: { mode: Mode }) {
         >
           {avatarHidden ? "Mostrar avatar" : "Ocultar avatar"}
         </button>
-        {observability ? (
+        {technical && observability ? (
           <span className="fragments-badge" data-testid="observability">
             Trazas:{" "}
             {observability.langsmith
@@ -629,7 +662,7 @@ export function ChatView({ mode }: { mode: Mode }) {
               : "log JSON por turno"}
           </span>
         ) : null}
-        {observability?.vector_store?.[mode] ? (
+        {technical && observability?.vector_store?.[mode] ? (
           <span
             className="fragments-badge"
             data-kind={observability.vector_store[mode].startsWith("Respaldo") ? "warning" : "ok"}
@@ -643,7 +676,7 @@ export function ChatView({ mode }: { mode: Mode }) {
         ) : null}
       </div>
 
-      {recent.length > 0 ? (
+      {technical && recent.length > 0 ? (
         <nav className="console-options" aria-label="Conversaciones recientes" data-testid="recent-threads">
           <span>Conversaciones recientes:</span>
           {recent.map((entry) => (
@@ -662,22 +695,24 @@ export function ChatView({ mode }: { mode: Mode }) {
         </nav>
       ) : null}
 
-      <div className="console-options" aria-label="Casos de la demo" data-testid="demo-cases">
-        <span>Casos de la demo:</span>
-        {DEMO_CASES.map((item) => (
-          <button
-            className="chip"
-            disabled={busy || action !== null}
-            key={item.label}
-            onClick={() => setMessage(item.message)}
-            type="button"
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      {technical ? (
+        <div className="console-options" aria-label="Casos de la demo" data-testid="demo-cases">
+          <span>Casos de la demo:</span>
+          {DEMO_CASES.map((item) => (
+            <button
+              className="chip"
+              disabled={busy || action !== null}
+              key={item.label}
+              onClick={() => setMessage(item.message)}
+              type="button"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
-      {preferences.length > 0 || profile.length > 0 ? (
+      {technical && (preferences.length > 0 || profile.length > 0) ? (
         <div className="console-options" data-testid="preferences">
           {profile.length > 0 ? (
             <span data-testid="profile">
@@ -709,44 +744,48 @@ export function ChatView({ mode }: { mode: Mode }) {
           <AgentAvatar analyser={voice.analyser} debug={avatarDebug.current} state={avatarState} />
         )}
         <div className="chat-main">
-      {turns.length > 0 || live ? (
-        <ol className="chat-turns" aria-label="Historial de la conversación">
-          {turns.map((turn) => (
-            <ChatTurnCard
-              firstAudioMs={voiceKeys[turn.turn_id] ? voice.firstAudio[voiceKeys[turn.turn_id]] : undefined}
-              key={turn.turn_id}
-              onListen={
-                voice.available && !voice.muted
-                  ? () => {
-                      const key = voice.speak(turn.answer, threadId);
-                      if (key) setVoiceKeys((previous) => ({ ...previous, [turn.turn_id]: key }));
-                    }
-                  : undefined
-              }
-              turn={turn}
-            />
-          ))}
-          {live ? <LiveTurnCard live={live} /> : null}
-        </ol>
-      ) : (
-        <p className="console-subtitle">
-          Pregunta y repregunta: el asistente recuerda el hilo, enruta cada mensaje y cita sus
-          fuentes.
-        </p>
-      )}
+          <ol className="chat-turns" aria-label="Conversación con Valer-IA Caña">
+            <WelcomeMessage conversationStarted={turns.length > 0 || live !== null} voice={voice} />
+            {turns.map((turn) => (
+              <ChatTurnCard
+                firstAudioMs={voiceKeys[turn.turn_id] ? voice.firstAudio[voiceKeys[turn.turn_id]] : undefined}
+                key={turn.turn_id}
+                onListen={
+                  voice.available && !voice.muted
+                    ? () => {
+                        const key = voice.speak(turn.answer, threadId);
+                        if (key) setVoiceKeys((previous) => ({ ...previous, [turn.turn_id]: key }));
+                      }
+                    : undefined
+                }
+                technical={technical}
+                turn={turn}
+              />
+            ))}
+            {live ? <LiveTurnCard live={live} /> : null}
+          </ol>
         </div>
       </div>
 
       {action ? (
-        <>
-          {actionQuestion ? <p className="chat-question">{actionQuestion}</p> : null}
-          <ApprovalCard
+        technical ? (
+          <>
+            {actionQuestion ? <p className="chat-question">{actionQuestion}</p> : null}
+            <ApprovalCard
+              action={action}
+              busy={busy}
+              key={action.action_id}
+              onDecide={(decision, args) => void decide(decision, args)}
+            />
+          </>
+        ) : (
+          <QuickReplies
             action={action}
             busy={busy}
             key={action.action_id}
-            onDecide={(decision, args) => void decide(decision, args)}
+            onDecide={(decision) => void decide(decision)}
           />
-        </>
+        )
       ) : null}
 
       <form className="console-form" onSubmit={(event) => void submit(event)}>
@@ -758,7 +797,12 @@ export function ChatView({ mode }: { mode: Mode }) {
             id="chat-message"
             maxLength={MAX_CHARS}
             onChange={(event) => setMessage(event.target.value)}
-            placeholder="¿Qué produce Manuelita?"
+            disabled={!technical && action !== null}
+            placeholder={
+              !technical && action !== null
+                ? "Responde a la pregunta de Valer-IA"
+                : "Escríbele a Valer-IA Caña, por ejemplo: ¿Qué produce Manuelita?"
+            }
             value={message}
           />
           <div className="console-options">
@@ -773,7 +817,13 @@ export function ChatView({ mode }: { mode: Mode }) {
           disabled={busy || action !== null}
           type="submit"
         >
-          {busy ? "Pensando…" : action ? "Decide la acción pendiente" : "Enviar"}
+          {busy
+            ? "Pensando…"
+            : action
+              ? technical
+                ? "Decide la acción pendiente"
+                : "Responde arriba"
+              : "Enviar"}
         </button>
         {busy && live ? (
           <button

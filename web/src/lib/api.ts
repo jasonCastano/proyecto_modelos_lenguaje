@@ -7,6 +7,7 @@ import {
   type RetrievalFragment,
   type RetrievalTrace,
   type ShowcaseResponse,
+  type WelcomeResponse,
 } from "./types";
 
 const API_BASE = "/api";
@@ -136,6 +137,11 @@ export function generateFaq(
 
 export function health(probe = false): Promise<HealthStatus> {
   return request<HealthStatus>(`/health${probe ? "?probe=true" : ""}`);
+}
+
+/** Spec 018: bienvenida de Valer-IA Caña (sin modelo de lenguaje). */
+export function getWelcome(): Promise<WelcomeResponse> {
+  return request<WelcomeResponse>("/welcome");
 }
 
 export function showcase(): Promise<ShowcaseResponse> {

@@ -9,7 +9,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 Route = Literal["direct", "documental", "structured", "mixed", "out_of_scope", "clarify"]
 DecidedBy = Literal["rules", "llm", "demo"]
-WriteTool = Literal["forget_memory", "save_preference", "save_profile", "export_conversation"]
+WriteTool = Literal[
+    "forget_memory", "save_preference", "save_profile", "export_conversation", "remember_client"
+]
+# Spec 018: motivo de una respuesta sin búsqueda (conducta de Valer-IA).
+ScopeReason = Literal[
+    "off_topic", "abuse", "harmful", "third_party", "prompt_extraction", "advice", "identity"
+]
 Decision = Literal["approve", "edit", "reject"]
 
 
@@ -24,6 +30,7 @@ class RouteDecision(BaseModel):
     decided_by: DecidedBy
     alternative: Route | None = None
     fallback_route: Literal["documental"] | None = None
+    scope_reason: ScopeReason | None = None
 
     def effective(self, min_confidence: float) -> RouteDecision:
         """Ruta efectiva: con confianza baja se pide aclaración en vez de adivinar."""

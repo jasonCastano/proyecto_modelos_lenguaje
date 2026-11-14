@@ -21,7 +21,7 @@ from langgraph.types import Checkpointer, Command
 from ..rag.hybrid import HybridRetriever
 from .actions import ActionArgsError, validate_args
 from .adversarial import corpus_label
-from .config import AgentConfig
+from .config import AgentConfig, resolve_state_dir
 from .demo import DemoChatModel
 from .graph import (
     ChatUnavailableError,
@@ -30,10 +30,11 @@ from .graph import (
     build_agent_graph,
     build_chain_graph,
 )
+from .identity import detect_identity_event, load_key
 from .memory import UserMemory, UserProfile
 from .models import Decision, PendingAction, RouteDecision, Turn
 from .observability import log_turn, run_config
-from .privacy import redact_pii
+from .privacy import find_pii, redact_pii
 from .series import default_series
 from .structured import StructuredError, StructuredStore
 
@@ -121,6 +122,8 @@ class ChatOutcome:
     status: str
     pending_action: dict[str, Any] | None = None
     anomalies: list[dict[str, Any]] = field(default_factory=list)
+    client: dict[str, Any] | None = None  # spec 018: cliente activo tras el turno
+    notices: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -129,7 +132,26 @@ class ChatOutcome:
             "status": self.status,
             "pending_action": self.pending_action,
             "anomalies": self.anomalies,
+            "client": self.client,
+            "notices": self.notices,
         }
+
+
+CLIENT_FIELDS = ("user_id", "recognized", "name", "reset", "masked_email")
+
+
+def client_of(values: dict[str, Any]) -> dict[str, Any]:
+    """Cliente del hilo para la respuesta: nunca incluye el correo en claro ni la huella."""
+    raw = dict(values.get("client") or {})
+    identity = values.get("identity") or {}
+    client = {
+        "user_id": raw.get("user_id") or values.get("user_id") or "anon",
+        "recognized": bool(raw.get("recognized") or identity.get("stage") == "recognized"),
+        "name": raw.get("name") or identity.get("recognized_name"),
+        "reset": bool(raw.get("reset")),
+        "masked_email": raw.get("masked_email"),
+    }
+    return {key: client[key] for key in CLIENT_FIELDS}
 
 
 def validate_message(message: str) -> str:
@@ -203,6 +225,7 @@ class ChatService:
         deps_factory: Callable[[Mode], GraphDeps],
         store: BaseStore | None = None,
         log_dir: Path | None = None,
+        identity_key: str | None = None,
     ) -> None:
         self.config = config
         self.checkpointer = checkpointer
@@ -211,6 +234,22 @@ class ChatService:
         self._deps_factory = deps_factory
         self._graphs: dict[tuple[str, str], Any] = {}
         self._deps: dict[str, GraphDeps] = {}
+        self._identity_key: str | None = identity_key
+        self._identity_ready = identity_key is not None
+
+    def identity_key(self) -> str | None:
+        """Clave HMAC de la huella del correo (spec 018); ``None`` desactiva el reconocimiento."""
+        if not self._identity_ready:
+            self._identity_ready = True
+            try:
+                state_dir = resolve_state_dir(self.config.state_env_var)
+            except Exception:
+                state_dir = None
+            try:
+                self._identity_key = load_key(state_dir)
+            except Exception:
+                self._identity_key = None
+        return self._identity_key
 
     def deps(self, mode: Mode) -> GraphDeps:
         """Dependencias de un modo, cargadas una vez y compartidas por ambas variantes."""
@@ -285,9 +324,22 @@ class ChatService:
                 route=RouteDecision.model_validate(result["decision"]),
             )
             pending = pending_from_interrupt(interrupts[0], None)
-            return ChatOutcome(thread_id, turn, "pending_approval", pending_action=pending)
+            return ChatOutcome(
+                thread_id,
+                turn,
+                "pending_approval",
+                pending_action=pending,
+                client=client_of(result),
+            )
         turn = Turn.model_validate(result["turns"][-1])
-        return ChatOutcome(thread_id, turn, turn_status(turn), anomalies=anomalies_of(turn))
+        return ChatOutcome(
+            thread_id,
+            turn,
+            turn_status(turn),
+            anomalies=anomalies_of(turn),
+            client=client_of(result),
+            notices=list(result.get("notices") or []),
+        )
 
     def send(
         self,
@@ -358,16 +410,39 @@ class ChatService:
                 question=values["question"],
                 route=RouteDecision.model_validate(values["decision"]),
             )
-            return ChatOutcome(thread_id, turn, "pending_approval", pending_action=pending)
+            return ChatOutcome(
+                thread_id,
+                turn,
+                "pending_approval",
+                pending_action=pending,
+                client=client_of(values),
+            )
         turn = Turn.model_validate(values["turns"][-1])
-        return ChatOutcome(thread_id, turn, turn_status(turn), anomalies=anomalies_of(turn))
+        return ChatOutcome(
+            thread_id,
+            turn,
+            turn_status(turn),
+            anomalies=anomalies_of(turn),
+            client=client_of(values),
+            notices=list(values.get("notices") or []),
+        )
 
     def _prepare(
         self, message: str, thread_id: str | None, user_id: str, variant: Variant
     ) -> tuple[str, dict[str, Any]]:
-        question = redact_pii(validate_message(message))
+        original = validate_message(message)
         validate_user_id(user_id)
-        state: dict[str, Any] = {"question": question}
+        # Spec 018: la identidad se calcula sobre el texto original y el correo se descarta aquí;
+        # el hilo, el modelo y los registros solo ven el mensaje redactado y la huella.
+        event = detect_identity_event(original, self.identity_key())
+        pii_kinds = sorted({match["type"] for match in find_pii(original)})
+        question = redact_pii(original)
+        state: dict[str, Any] = {
+            "question": question,
+            "identity_event": event.to_dict() if event else None,
+            "pii_notice": pii_kinds,
+            "client": None,
+        }
         if thread_id is None:
             thread_id = str(uuid.uuid4())
             state.update(

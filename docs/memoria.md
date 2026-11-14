@@ -12,6 +12,7 @@ Este documento declara qué recuerda el asistente, dónde lo guarda, cuánto tie
 | **Hilo** (memoria corta) | Turnos visibles (pregunta, ruta, fragmentos, respuesta, citas, métricas), resumen del historial y registro de decisiones humanas (`actions[]`) | Un `thread_id` | `checkpoints.sqlite3` |
 | **Preferencias** (memoria larga) | Solo preferencias declaradas de una lista cerrada: `response_format` (formato de respuesta), `topics_of_interest` (temas de interés) y `language` (idioma), cada una con un valor de hasta 200 caracteres | Un `user_id` anónimo, entre hilos | `memory.sqlite3` |
 | **Perfil** (memoria larga, ADR 0018) | Datos que el usuario cuenta de sí mismo y aprueba guardar: `name`, `workplace`, `role` y `city`, cada uno de hasta 80 caracteres y con datos personales redactados | Un `user_id` anónimo, entre hilos; namespace `("users", user_id, "profile")` | `memory.sqlite3` |
+| **Identidad por correo** (spec 018, ADR 0022) | Solo la huella `HMAC-SHA256(clave, correo normalizado)` y el `user_id` al que pertenece, creada con el «sí» del visitante (acción `remember_client`); fallos de confirmación con fecha para el bloqueo de 1 hora. **Nunca el correo en claro** | Entre visitas y navegadores; namespaces `("identities",)` y `("identity_failures", huella)` | `memory.sqlite3` |
 | **Log de turnos** | Una línea JSON por turno: ruta, quién decidió, herramientas, latencia, tokens y fallo de evidencia. Sin la pregunta, la respuesta ni el `user_id` | Todos los hilos | `logs/turns.jsonl` |
 
 No se guardan resúmenes de conversación en la memoria larga, ni texto libre fuera de esas claves. El perfil se
@@ -62,7 +63,12 @@ cita.
 
 ## 5. Privacidad (FR-010)
 
-- El `user_id` es un identificador anónimo generado en el navegador (`anon-…`); no hay cuentas ni nombres.
+- El `user_id` es un identificador anónimo generado en el navegador (`anon-…`) y vive en `sessionStorage`: cada
+  visita nueva empieza con un cliente limpio (spec 018). No hay cuentas ni contraseñas.
+- **Correo (spec 018)**: el visitante puede compartirlo de forma opcional en la conversación. El servidor calcula su
+  huella HMAC **antes** de redactar el mensaje y descarta el correo; el hilo, el modelo, las trazas y los registros
+  solo ven `[REDACTED_EMAIL]`. Reconocer a un cliente exige el correo y el nombre registrado; 3 fallos por hilo o 5
+  por hora bloquean el intento sin revelar si el correo existe. «Olvidar» borra también el vínculo.
 - Los datos personales se **redactan antes de persistir**, con el mismo formato que `PIIMiddleware`
   (`[REDACTED_EMAIL]`, `[REDACTED_PHONE]`, `[REDACTED_DOCUMENT]`, `[REDACTED_CREDIT_CARD]`):
   - en el mensaje del usuario, antes de guardarlo en el hilo;

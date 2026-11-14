@@ -210,6 +210,9 @@ class ShowcaseResponse(BaseModel):
 # ---------------------------------------------------------------- conversación (spec 014, US1)
 
 Route = Literal["direct", "documental", "structured", "mixed", "out_of_scope", "clarify"]
+ScopeReason = Literal[
+    "off_topic", "abuse", "harmful", "third_party", "prompt_extraction", "advice", "identity"
+]
 ChatStatus = Literal["answered", "fallback", "clarify", "pending_approval"]
 
 
@@ -235,6 +238,7 @@ class RouteModel(BaseModel):
     decided_by: Literal["rules", "llm", "demo"]
     alternative: Route | None = None
     fallback_route: Literal["documental"] | None = None
+    scope_reason: ScopeReason | None = None
 
 
 class TurnMetricsModel(BaseModel):
@@ -311,6 +315,38 @@ class AnomalyModel(BaseModel):
     reasons: list[str] = Field(default_factory=list)
 
 
+class ClientInfo(BaseModel):
+    """Cliente del hilo tras el turno (spec 018). Nunca incluye el correo en claro."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    user_id: str
+    recognized: bool = False
+    name: str | None = None
+    reset: bool = False
+    masked_email: str | None = None
+
+
+class WelcomeCitation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str
+    unit_id: str
+    url: str
+    title: str
+
+
+class WelcomeResponse(BaseModel):
+    """``GET /api/welcome``: presentación de Valer-IA Caña (sin modelo de lenguaje)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    assistant: str
+    version: str
+    text: str
+    citations: list[WelcomeCitation] = Field(default_factory=list)
+
+
 class ChatResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -319,6 +355,9 @@ class ChatResponse(BaseModel):
     status: ChatStatus
     pending_action: dict[str, object] | None = None
     anomalies: list[AnomalyModel] = Field(default_factory=list)
+    # spec 018: cliente activo (reconocimiento o reinicio) y avisos del turno
+    client: ClientInfo | None = None
+    notices: list[str] = Field(default_factory=list)
 
 
 class ThreadView(BaseModel):

@@ -161,27 +161,31 @@ Cumplimiento de la rúbrica de sustentación, ítem por ítem, y guion de la dem
 [`docs/rubrica_modulo2.md`](docs/rubrica_modulo2.md). Decisión:
 [ADR 0018](docs/decisions/0018-qdrant-y-rubrica-modulo2.md).
 
-**Grafo del agente (LangGraph)**. Las dos variantes comparten el estado del hilo, la puerta de decisión y el
-cierre del turno:
+**Grafo del agente (LangGraph)**. Las dos variantes comparten el estado del hilo, la puerta de decisión y el cierre del turno:
 
 ```mermaid
-flowchart LR
-    START((inicio)) --> route{route<br/>reglas → LLM}
-    route -- "saludo · fuera de alcance · aclaración · perfil" --> reply[reply<br/>sin buscar]
-    route -- "escritura (perfil, preferencia, olvido, exportar)" --> action[action<br/>interrupt → aprobación humana]
+flowchart TD
+    START(("inicio")) --> route{"route: reglas → LLM"}
+
+    route -- "saludo · fuera de alcance · aclaración · perfil" --> reply["reply: sin buscar"]
+    route -- "escritura (perfil, preferencia, olvido, exportar)" --> action["action: interrupt → aprobación humana"]
     route -- "documental · estructurada · mixta" --> work
-    subgraph cadena [Variante cadena]
-        work --> retrieve[retrieve<br/>Qdrant + BM25 y/o tabla]
-        retrieve --> answer[answer<br/>RunnablePassthrough → ChatPromptTemplate → DeepSeek]
+
+    subgraph cadena ["Variante cadena"]
+        work --> retrieve["retrieve: Qdrant + BM25 y/o tabla"]
+        retrieve --> answer["answer: RunnablePassthrough → ChatPromptTemplate → DeepSeek"]
     end
-    subgraph agente [Variante agente]
-        work -.-> ag[create_agent<br/>@tool + middleware<br/>HITL · PII · resumen · límites]
+
+    subgraph agente ["Variante agente"]
+        work -.-> ag["create_agent: @tool + middleware · HITL · PII · resumen · límites"]
     end
+
     reply --> finalize
     action --> finalize
     answer --> finalize
     ag --> finalize
-    finalize[finalize<br/>turno · métricas · resumen] --> END((fin))
+
+    finalize["finalize: turno · métricas · resumen"] --> END(("fin"))
 ```
 
 **Memoria: checkpointer frente a Store**:

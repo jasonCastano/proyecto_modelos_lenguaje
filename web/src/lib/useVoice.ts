@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { getVoiceStatus, VoicePlayer, type VoicePlayerOptions } from "./voice";
+import { getVoiceStatus, type VoiceAnalyser, VoicePlayer, type VoicePlayerOptions } from "./voice";
 
 export const MUTED_KEY = "manuelita.voice.muted";
 
@@ -28,6 +28,8 @@ export interface VoiceControl {
   detail: string | null;
   muted: boolean;
   speaking: boolean;
+  /** Spec 017: hay oraciones en cola que todavía no suenan. */
+  pending: boolean;
   blocked: boolean;
   /** Primer audio por sesión (ms desde que se cerró la primera oración). */
   firstAudio: Record<string, number>;
@@ -40,6 +42,8 @@ export interface VoiceControl {
   finishLive(finalAnswer: string | null, threadId: string | null): void;
   /** «Escuchar» una respuesta guardada. */
   speak(text: string, threadId: string | null): string | null;
+  /** Spec 017: analizador del audio que suena (para el avatar), o `null`. */
+  analyser(): VoiceAnalyser | null;
 }
 
 /** Estado de la voz del chat (spec 016, contracts/ui-voice.md). */
@@ -48,6 +52,8 @@ export function useVoice(options: Pick<VoicePlayerOptions, "createContext" | "fe
   const [detail, setDetail] = useState<string | null>(null);
   const [muted, setMuted] = useState(readMuted);
   const [speaking, setSpeaking] = useState(false);
+  // Spec 017: hay voz en cola que aún no suena (el avatar sigue «pensando» hasta que habla).
+  const [pending, setPending] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const [firstAudio, setFirstAudio] = useState<Record<string, number>>({});
   const playerRef = useRef<VoicePlayer | null>(null);
@@ -56,7 +62,10 @@ export function useVoice(options: Pick<VoicePlayerOptions, "createContext" | "fe
   if (!playerRef.current) {
     playerRef.current = new VoicePlayer({
       ...optionsRef.current,
-      onSpeaking: setSpeaking,
+      onSpeaking: (value) => {
+        setSpeaking(value);
+        if (!value) setPending(false);
+      },
       onBlocked: setBlocked,
       onFirstAudio: (key, ms) => setFirstAudio((previous) => ({ ...previous, [key]: ms })),
       onUnavailable: (message) => {
@@ -109,7 +118,9 @@ export function useVoice(options: Pick<VoicePlayerOptions, "createContext" | "fe
       player.stop();
       if (!enabled) return null;
       void player.unlock();
-      return player.start(threadId);
+      const key = player.start(threadId);
+      setPending(true);
+      return key;
     },
     [enabled, player],
   );
@@ -126,6 +137,7 @@ export function useVoice(options: Pick<VoicePlayerOptions, "createContext" | "fe
       if (!enabled || !player.activeKey) return;
       player.setThread(threadId);
       player.finish(finalAnswer);
+      setPending(player.speaking);
     },
     [enabled, player],
   );
@@ -134,13 +146,19 @@ export function useVoice(options: Pick<VoicePlayerOptions, "createContext" | "fe
     (text: string, threadId: string | null) => {
       if (!enabled) return null;
       void player.unlock();
-      return player.speakText(text, threadId);
+      const key = player.speakText(text, threadId);
+      setPending(true);
+      return key;
     },
     [enabled, player],
   );
 
+  const analyser = useCallback(() => player.analyser(), [player]);
+
   return {
+    analyser,
     available,
+    pending,
     detail,
     muted,
     speaking,

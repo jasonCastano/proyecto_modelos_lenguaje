@@ -75,9 +75,32 @@ function sse(final: ChatResponse): Response {
 /** AudioContext simulado: cada fuente "suena" y termina en el siguiente ciclo. */
 class FakeAudioContext {
   static played: string[] = [];
+  /** Spec 017: si es `true`, la oración sigue sonando hasta `endAll()`. */
+  static hold = false;
+  static playing: Array<() => void> = [];
+  static endAll() {
+    const pending = FakeAudioContext.playing;
+    FakeAudioContext.playing = [];
+    pending.forEach((end) => end());
+  }
   state = "running";
   destination = {};
   currentTime = 0;
+  sampleRate = 48_000;
+  createAnalyser() {
+    return {
+      fftSize: 1024,
+      frequencyBinCount: 512,
+      smoothingTimeConstant: 0.5,
+      connect() {},
+      getFloatTimeDomainData(array: Float32Array) {
+        array.fill(0);
+      },
+      getByteFrequencyData(array: Uint8Array) {
+        array.fill(0);
+      },
+    };
+  }
   async resume() {}
   async decodeAudioData(data: ArrayBuffer) {
     return new TextDecoder().decode(data);
@@ -89,7 +112,8 @@ class FakeAudioContext {
       connect() {},
       start() {
         FakeAudioContext.played.push(String(source.buffer));
-        setTimeout(() => source.onended?.(), 0);
+        if (FakeAudioContext.hold) FakeAudioContext.playing.push(() => source.onended?.());
+        else setTimeout(() => source.onended?.(), 0);
       },
       stop() {},
     };
@@ -156,6 +180,8 @@ describe("ChatView con voz", () => {
 
   beforeEach(() => {
     FakeAudioContext.played = [];
+    FakeAudioContext.hold = false;
+    FakeAudioContext.playing = [];
     vi.stubGlobal("AudioContext", FakeAudioContext);
   });
 
@@ -343,5 +369,117 @@ describe("ChatView con voz", () => {
     await ask("¿Qué produce Manuelita?");
     await waitFor(() => expect(FakeAudioContext.played).toEqual(["También biocombustibles [U1]."]));
     expect(screen.queryByTestId("voice-unavailable")).not.toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------- avatar (spec 017)
+
+describe("ChatView con avatar", () => {
+  const spoken = chatResponse(makeTurn());
+
+  beforeEach(() => {
+    FakeAudioContext.played = [];
+    FakeAudioContext.hold = true;
+    FakeAudioContext.playing = [];
+    vi.stubGlobal("AudioContext", FakeAudioContext);
+  });
+
+  afterEach(() => {
+    FakeAudioContext.hold = false;
+    vi.unstubAllGlobals();
+    window.sessionStorage.clear();
+    window.localStorage.clear();
+    window.history.replaceState(null, "", "/");
+  });
+
+  function avatar() {
+    return screen.getByTestId("agent-avatar");
+  }
+
+  it("pasa de reposo a pensando, a hablando con la voz, y vuelve al reposo", async () => {
+    const held = heldSse(spoken);
+    const fetchMock = voiceFetch((url) => (url.endsWith("/chat/stream") ? held.response : undefined));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<ChatView mode="demo" />);
+    await voiceReady();
+    expect(avatar()).toHaveAttribute("data-state", "idle");
+    // Registra cada cambio de estado (el paso por «pensando» puede durar muy poco).
+    const states: string[] = [];
+    const observer = new MutationObserver(() => {
+      const state = avatar().getAttribute("data-state") ?? "";
+      if (states[states.length - 1] !== state) states.push(state);
+    });
+    observer.observe(avatar(), { attributes: true, attributeFilter: ["data-state"] });
+    await ask("¿Qué produce Manuelita?");
+
+    await waitFor(() => expect(avatar()).toHaveAttribute("data-state", "speaking"));
+    held.release();
+    await screen.findByTestId("chat-turn");
+    await waitFor(() => expect(FakeAudioContext.playing.length).toBeGreaterThan(0));
+    for (let i = 0; i < 4 && avatar().getAttribute("data-state") !== "idle"; i += 1) {
+      FakeAudioContext.endAll();
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    await waitFor(() => expect(avatar()).toHaveAttribute("data-state", "idle"));
+    observer.disconnect();
+    // Sin paso por «reposo» entre pensar y hablar
+    expect(states.slice(0, 2)).toEqual(["thinking", "speaking"]);
+    expect(states[states.length - 1]).toBe("idle");
+    expect(screen.getByTestId("avatar-mouth")).toHaveAttribute("data-shape", "closed");
+  });
+
+  it("con la voz silenciada piensa y vuelve al reposo sin abrir la boca", async () => {
+    const fetchMock = voiceFetch((url) => (url.endsWith("/chat/stream") ? sse(spoken) : undefined));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<ChatView mode="demo" />);
+    await voiceReady();
+    await userEvent.setup().click(screen.getByTestId("voice-toggle"));
+    await ask("¿Qué produce Manuelita?");
+    await screen.findByTestId("chat-turn");
+    await waitFor(() => expect(avatar()).toHaveAttribute("data-state", "idle"));
+    expect(screen.getByTestId("avatar-mouth")).toHaveAttribute("data-shape", "closed");
+    expect(ttsBodies(fetchMock)).toHaveLength(0);
+  });
+
+  it("se puede ocultar, la preferencia persiste y la voz sigue sonando", async () => {
+    FakeAudioContext.hold = false;
+    const fetchMock = voiceFetch((url) => (url.endsWith("/chat/stream") ? sse(spoken) : undefined));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { unmount } = render(<ChatView mode="demo" />);
+    await voiceReady();
+    const toggle = screen.getByTestId("avatar-toggle");
+    expect(toggle).toHaveTextContent("Ocultar avatar");
+    await userEvent.setup().click(toggle);
+    expect(screen.queryByTestId("agent-avatar")).not.toBeInTheDocument();
+    expect(window.localStorage.getItem("manuelita.avatar.hidden")).toBe("1");
+
+    await ask("¿Qué produce Manuelita?");
+    await screen.findByTestId("chat-turn");
+    await waitFor(() => expect(ttsBodies(fetchMock).length).toBeGreaterThan(0));
+    unmount();
+    window.sessionStorage.clear();
+    window.history.replaceState(null, "", "/");
+
+    render(<ChatView mode="demo" />);
+    expect(screen.queryByTestId("agent-avatar")).not.toBeInTheDocument();
+    expect(screen.getByTestId("avatar-toggle")).toHaveTextContent("Mostrar avatar");
+  });
+
+  it("si el almacenamiento falla, el avatar queda visible solo en la sesión", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("bloqueado");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("bloqueado");
+    });
+    vi.stubGlobal("fetch", voiceFetch(() => undefined));
+    render(<ChatView mode="demo" />);
+    expect(avatar()).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByTestId("avatar-toggle"));
+    expect(screen.queryByTestId("agent-avatar")).not.toBeInTheDocument();
+    vi.restoreAllMocks();
   });
 });

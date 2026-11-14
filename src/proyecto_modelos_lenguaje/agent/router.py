@@ -27,6 +27,7 @@ from pydantic import ValidationError
 
 from .models import RouteDecision
 from .prompts import load_agent_prompt
+from .series import series_intent
 from .structured import normalize
 
 SMALLTALK = frozenset(
@@ -59,6 +60,11 @@ STRUCTURED_CUES = re.compile(
 MIXED_CUES = re.compile(
     r"\b(compara\w*|contrasta\w*|frente a|versus|vs|relacion\w* entre|coincide\w*|"
     r"cumpl\w* (la|su|el) (meta|objetivo|compromiso)|meta|objetivo|segun el documento)\b"
+)
+# Cifra anual con año, cálculo o comparación: «ventas de 2021», «promedio de producción de azúcar».
+SERIES_CUES = re.compile(
+    r"\b(20[12]\d|promedio|total|suma|maximo|minimo|variacion|crecimiento|evolucion|por ano|"
+    r"cuanto|cuanta|cifras?|mayor|menor|mas alto|mas bajo|ano de|en que ano)\b"
 )
 DEICTIC = re.compile(r"\b(eso|esa|ese|esto|aquello|lo anterior|mejor|alla|ahi)\b")
 COMPANY = re.compile(r"\b(manuelita|fundacion|palmar|altamira|laredo|oceanos|mejillones|ingenio)\b")
@@ -111,7 +117,10 @@ def heuristic_decision(message: str, history: Sequence[str] = ()) -> RouteDecisi
             reason="referencia sin antecedente en la conversación",
             decided_by="demo",
         )
-    if MIXED_CUES.search(text) and (STRUCTURED_CUES.search(text) or "dato" in text):
+    asks_series = series_intent(message) is not None and bool(
+        STRUCTURED_CUES.search(text) or SERIES_CUES.search(text)
+    )
+    if MIXED_CUES.search(text) and (asks_series or STRUCTURED_CUES.search(text) or "dato" in text):
         return RouteDecision(
             route="mixed",
             confidence=0.75,
@@ -119,7 +128,7 @@ def heuristic_decision(message: str, history: Sequence[str] = ()) -> RouteDecisi
             decided_by="demo",
             alternative="documental",
         )
-    if STRUCTURED_CUES.search(text):
+    if asks_series or STRUCTURED_CUES.search(text):
         return RouteDecision(
             route="structured",
             confidence=0.75,

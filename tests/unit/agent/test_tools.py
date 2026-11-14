@@ -62,7 +62,7 @@ def store(tmp_path: Path) -> StructuredStore:
 def test_search_documents_returns_isolated_documents_and_records_trace(retriever, store) -> None:
     # Arrange
     trace = ToolTrace()
-    search, _ = build_read_tools(retriever, store, trace)
+    search, _, _ = build_read_tools(retriever, store, trace)
 
     # Act
     output = search.invoke({"query": "vertimientos de aguas residuales"})
@@ -77,7 +77,7 @@ def test_search_documents_returns_isolated_documents_and_records_trace(retriever
 def test_query_structured_by_subject_and_by_free_text(retriever, store) -> None:
     # Arrange
     trace = ToolTrace()
-    _, query = build_read_tools(retriever, store, trace)
+    _, query, _ = build_read_tools(retriever, store, trace)
 
     # Act
     by_subject = query.invoke({"subject": "Palmar de Altamira", "attribute": "procesar"})
@@ -94,7 +94,7 @@ def test_query_structured_by_subject_and_by_free_text(retriever, store) -> None:
 
 def test_query_structured_without_store_is_declared(retriever) -> None:
     # Arrange
-    _, query = build_read_tools(retriever, None, ToolTrace())
+    _, query, _ = build_read_tools(retriever, None, ToolTrace())
 
     # Act / Assert
     assert "no está disponible" in query.invoke({"query": "año"})
@@ -124,7 +124,7 @@ def test_mark_anomalies_flags_embedded_instructions() -> None:
 
 def test_query_structured_schema_is_pydantic_and_rejects_empty_calls(retriever, store) -> None:
     # Arrange
-    _, query = build_read_tools(retriever, store, ToolTrace())
+    _, query, _ = build_read_tools(retriever, store, ToolTrace())
 
     # Act
     schema = query.args_schema.model_json_schema()

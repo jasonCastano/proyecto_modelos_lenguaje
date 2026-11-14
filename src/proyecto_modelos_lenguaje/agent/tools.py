@@ -20,6 +20,14 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from ..rag.hybrid import HybridRetriever, MetadataFilter, RetrievedFragment
 from .guard import GuardedDocument, detect_instructions, render_documents
+from .series import (
+    AggregateArgs,
+    SeriesTable,
+    aggregate,
+    asks_for_quarter,
+    describe_metrics,
+    series_fact,
+)
 from .structured import StructuredFact, StructuredStore, normalize
 
 EntityType = Literal["subsidiary", "brand", "certification", "company"]
@@ -126,6 +134,23 @@ def render_count(entity_type: str, total: int, names: Sequence[str]) -> str:
     return f"Conteo exacto calculado por la herramienta: {total} {label} ({listed})."
 
 
+def fact_document(label: str, fact: StructuredFact) -> GuardedDocument:
+    """Documento ``F#`` de un hecho: el agregado de una serie va con su texto calculado."""
+    source = fact.citations[0].url if fact.citations else ""
+    if fact.fact_id.startswith(("series_", "count_")):
+        return GuardedDocument(label, source, fact.snippet)
+    return GuardedDocument(
+        label, source, f"{fact.subject_label} · {fact.attribute} = {fact.value}. {fact.snippet}"
+    )
+
+
+def aggregate_series_impl(
+    series: SeriesTable, args: AggregateArgs, *, question: str = ""
+) -> StructuredFact:
+    """Agregación exacta de una serie anual como hecho citable."""
+    return series_fact(aggregate(series, args), quarter_requested=asks_for_quarter(question))
+
+
 @dataclass(slots=True)
 class ToolTrace:
     """Lo que las herramientas recuperaron en el turno, para la traza y las citas."""
@@ -200,14 +225,7 @@ def query_structured_impl(
         facts = store.get_facts(subject=subject, attribute=attribute, limit=limit)
     if not facts and query:
         facts = store.search_facts(query, limit=limit)
-    documents = [
-        GuardedDocument(
-            f"F{index}",
-            fact.citations[0].url if fact.citations else "",
-            f"{fact.subject_label} · {fact.attribute} = {fact.value}. {fact.snippet}",
-        )
-        for index, fact in enumerate(facts, start=1)
-    ]
+    documents = [fact_document(f"F{index}", fact) for index, fact in enumerate(facts, start=1)]
     return facts, documents, entities
 
 
@@ -217,6 +235,8 @@ def build_read_tools(
     trace: ToolTrace,
     *,
     top_k: int = 8,
+    series: SeriesTable | None = None,
+    question: str = "",
 ) -> Sequence[BaseTool]:
     """Herramientas de lectura para el agente; registran lo recuperado en ``trace``."""
 
@@ -257,6 +277,11 @@ def build_read_tools(
             entity_type=entity_type,
             limit=limit,
         )
+        counted = count_fact(store, entity_type) if entity_type else None
+        if counted is not None:
+            # El conteo exacto es un hecho citable F#, como cualquier otro dato de la tabla.
+            facts = [counted, *facts]
+            documents = [fact_document("F", counted), *documents]
         offset = len(trace.facts)
         trace.facts.extend(facts)
         relabeled = [
@@ -264,10 +289,10 @@ def build_read_tools(
             for index, doc in enumerate(documents, start=1)
         ]
         parts = []
-        if entity_type:
+        if entity_type and counted is None:
             total, names = count_entities(store, entity_type)
             parts.append(render_count(entity_type, total, names))
-        elif entities:
+        elif entities and counted is None:
             names = ", ".join(f"{e['canonical_name']} ({e['entity_type']})" for e in entities)
             parts.append(f"Entidades: {names}")
         rendered = render_documents(relabeled)
@@ -275,4 +300,28 @@ def build_read_tools(
             parts.append(rendered)
         return "\n".join(parts) or "Sin datos estructurados para esa consulta."
 
-    return (search_documents, query_structured)
+    catalog = describe_metrics(series) if series is not None else ""
+
+    @tool(args_schema=AggregateArgs)
+    def aggregate_series(
+        metric: str,
+        op: str = "list",
+        year_from: int | None = None,
+        year_to: int | None = None,
+    ) -> str:
+        """Cifras anuales de Manuelita (ventas, EBITDA, utilidad, patrimonio, producción de
+        azúcar, caña, bioetanol, biodiésel, aceite de palma, camarón, mejillón, inversión social)
+        desde un CSV curado con fuente. Calcula en código la suma, el promedio, el máximo, el
+        mínimo o la variación en un rango de años. Úsala para cualquier cifra o cálculo anual."""
+        trace.calls += 1
+        if series is None:
+            return "Las series anuales no están disponibles."
+        args = AggregateArgs(metric=metric, op=op, year_from=year_from, year_to=year_to)  # type: ignore[arg-type]
+        fact = aggregate_series_impl(series, args, question=question)
+        trace.facts.append(fact)
+        label = f"F{len(trace.facts)}"
+        return render_documents([fact_document(label, fact)])
+
+    if catalog:
+        aggregate_series.description += f"\nMétricas disponibles:\n{catalog}"
+    return (search_documents, query_structured, aggregate_series)

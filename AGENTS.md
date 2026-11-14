@@ -73,9 +73,10 @@ Regla del agente: lectura automática, escritura con aprobación (`save_preferen
 - Toda respuesta factual cita fuente o declara fallo de evidencia.
 - Actualiza `CONSTITUTION.md` en el mismo commit ante cambios arquitectónicos, tecnológicos o de proceso.
 - Ejecuta `make check` antes de commitear; CI corre lo mismo.
-- **Autoría**: los commits son de `jasonCastano` (Jason Alejandro Castaño) o `Robertto48` (Roberto José
-  Guerrero Criollo), o de un bot autorizado (`dependabot[bot]`). Nunca añadas `Co-authored-by` de un
-  asistente de IA ni firmas «Generated with …» en commits, PRs, tags o releases (`CONSTITUTION.md` §4.3).
+- **Autoría**: los commits son solo de `jasonCastano` (Jason Alejandro Castaño) o `Robertto48` (Roberto José
+  Guerrero Criollo). Un agente NO hace `git commit`, `git push`, `gh pr create`, tags ni releases por su cuenta:
+  prepara los cambios y el integrante los commitea con su identidad. Nunca añadas `Co-authored-by`,
+  `Signed-off-by` de un asistente ni firmas «Generated with …» (`CONSTITUTION.md` §4.3).
 
 ## Estructura
 

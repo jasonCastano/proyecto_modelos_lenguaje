@@ -114,18 +114,19 @@ Se usa la especificación de [Conventional Commits](https://www.conventionalcomm
 
 ### Autoría de los commits
 
-Solo pueden figurar como autor o coautor (`Co-authored-by`) de un commit:
+Solo pueden figurar como autor, coautor (`Co-authored-by`) o firmante (`Signed-off-by`) de un commit:
 
 | Cuenta | Persona |
 |--------|---------|
 | `jasonCastano` | Jason Alejandro Castaño |
 | `Robertto48` | Roberto José Guerrero Criollo |
-| `dependabot[bot]` | Bot autorizado de dependencias |
 
-Los asistentes de IA no figuran como autores ni coautores, y los PRs no llevan firmas del tipo
-«Generated with …». El hook `commit-msg` (se instala con `make dev`) y el job `autoria` del CI lo verifican
-con `scripts/check_commit_authors.py`. Con Claude Code, el proyecto ya fija `"includeCoAuthoredBy": false` en
-`.claude/settings.json`.
+Ningún bot ni asistente de IA (Claude Code, OpenCode, Copilot, Dependabot, `github-actions[bot]`…) crea
+commits, PRs, tags ni releases: las herramientas asisten en local y el integrante hace el commit y el PR con su
+cuenta. Los PRs no llevan firmas del tipo «Generated with …». Las dependencias se actualizan a mano
+(`uv lock --upgrade-package <pkg>` en una rama `chore/...`). El hook `commit-msg` (se instala con `make dev`) y el job `autoria` del CI lo verifican
+con `scripts/check_commit_authors.py`. Con Claude Code, el proyecto ya fija `"includeCoAuthoredBy": false` y
+`"attribution": {"commit": "", "pr": ""}` en `.claude/settings.json`.
 
 ## 🔀 Pull Requests
 

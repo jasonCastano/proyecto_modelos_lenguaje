@@ -45,9 +45,9 @@ Universidad Autónoma de Occidente, 2026-2S.
 > variantes cadena y agente con LangGraph, blindaje contra inyección, aprobación humana de escrituras y
 > preferencias del usuario (spec 014, PRs #44–#51). Quedan abiertos la calificación humana de las repreguntas
 > (SC-006) y repetir la fidelidad del juez. De la Fase 1 faltan la ejecución real de la evaluación de
-> 40 preguntas, los resultados del informe, el ensayo de la demo y el tag `v0.1.0-modulo1`. Desde la v1.4.0
-> los commits solo pueden ser de los integrantes o de bots autorizados (PR #54, ADR 0017); el historial se
-> reescribió el 2026-11-12 para quitar los coautores de IA.
+> 40 preguntas, los resultados del informe, el ensayo de la demo y el tag `v0.1.0-modulo1`. Desde la v1.6.0
+> los commits solo pueden ser de los dos integrantes, sin bots ni asistentes (ADR 0017); el historial se
+> reescribió el 2026-11-12 (coautores de IA) y el 2026-11-13 (commits de Dependabot).
 
 ---
 
@@ -306,8 +306,8 @@ versionan capturas temporales de la auditoría.
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
 | CI y Pull Requests | ✅ | 54 PRs fusionados al 2026-11-13 (PR #57 en revisión); CI con `test`, `web` y `autoria` |
 | Protección de `main` | ✅ | PR con 1 aprobación y checks `test` y `web`; sin push directo ni force-push |
-| Gobernanza del repositorio | ✅ | PR/issue templates, labels, Dependabot, pre-commit y Makefile |
-| Autoría de commits | ✅ | Solo `jasonCastano`, `Robertto48` y `dependabot[bot]`; hook `commit-msg` y job `autoria`; historial sin coautores de IA (ADR 0017) |
+| Gobernanza del repositorio | ✅ | PR/issue templates, labels, pre-commit y Makefile |
+| Autoría de commits | ✅ | Solo `jasonCastano` y `Robertto48`, sin bots ni asistentes; hook `commit-msg` y job `autoria`; historial sin coautores de IA ni commits de bots (ADR 0017) |
 | Panel «Contributors» de GitHub | 🟡 | La API y la gráfica ya muestran solo a los autorizados; la portada espera el recálculo de la caché de GitHub |
 | Cobertura de los 24 ítems | ✅ | 24/24 evaluados por la capa oro con evidencia |
 
@@ -844,7 +844,7 @@ referencian por manifiesto y hash.
 ├── scripts/                       # Entradas operativas
 ├── specs/                         # Especificaciones, planes y tareas (001–014)
 ├── tests/                         # Unitarias, integración, contrato y E2E
-├── .github/                       # PR/issue templates, CI, labels y Dependabot
+├── .github/                       # PR/issue templates, CI y labels
 ├── .opencode/                     # Comandos y skill de bitácora (generador compartido)
 ├── .claude/                       # Skills de Claude Code y settings.json (sin coautoría)
 ├── AGENTS.md                      # Contexto para asistentes LLM
@@ -886,15 +886,15 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - **Rama estable**: `main`, protegida: todo cambio entra por Pull Request con al menos una aprobación del otro
   integrante y los checks `test` y `web` en verde; el autor no aprueba su propio PR.
 - **Ramas**: `feat/...`, `fix/...`, `docs/...` o `chore/...`; commits con Conventional Commits.
-- **Autoría**: los commits son de `jasonCastano` o `Robertto48`, o de un bot autorizado
-  (`dependabot[bot]`); los asistentes de IA no figuran como coautores. Lo verifican el hook `commit-msg` y
+- **Autoría**: los commits son solo de `jasonCastano` o `Robertto48`; ningún bot (Dependabot incluido) ni
+  asistente de IA hace commits, PRs ni figura como coautor. Lo verifican el hook `commit-msg` y
   el job `autoria` del CI ([`CONSTITUTION.md`](CONSTITUTION.md) §4.3).
 - **Especificaciones**: cada fase tiene especificación, plan y tareas en [`specs/`](specs/), gestionados con
   Spec Kit (`/speckit-specify`, `/speckit-plan`, `/speckit-tasks`, …).
 - **Entregas**: cada módulo se etiqueta (`v0.1.0-modulo1`, `v0.2.0-modulo2`) sobre un commit con CI verde.
 - **Plantillas**: PR e issues en [`.github/`](.github/), con checklist de constitución y pruebas.
-- **Etiquetas y Dependabot**: declaradas en [`.github/labels.yml`](.github/labels.yml) y
-  [`.github/dependabot.yml`](.github/dependabot.yml).
+- **Etiquetas**: declaradas en [`.github/labels.yml`](.github/labels.yml). Las dependencias se actualizan a
+  mano (sin Dependabot de versiones; las alertas de seguridad siguen activas).
 - **Calidad local**: [`Makefile`](Makefile), [`.pre-commit-config.yaml`](.pre-commit-config.yaml) y
   [`.editorconfig`](.editorconfig).
 - **Contribución**: lee [`CONTRIBUTING.md`](CONTRIBUTING.md) y el

@@ -138,8 +138,8 @@ la complejidad no justificada dificulta la revisión y la reproducción.
 - **Commits**: mensajes en formato Conventional Commits y commits atómicos alineados con las
   tareas del plan.
 - **Autoría**: autor y coautores de cada commit DEBEN ser `jasonCastano` (Jason Alejandro
-  Castaño), `Robertto48` (Roberto José Guerrero Criollo) o un bot autorizado (`dependabot[bot]`).
-  Ningún asistente de IA figura como autor, coautor ni firma de commits o PRs
+  Castaño) o `Robertto48` (Roberto José Guerrero Criollo). Ningún bot (Dependabot incluido) ni
+  asistente de IA figura como autor, coautor, firmante ni firma de commits, PRs, tags o releases
   (`CONSTITUTION.md` §4.3).
 - **Documentación**: README, ficha de datos y registro de experimentos se actualizan cuando
   cambia el comportamiento observable.
@@ -175,4 +175,4 @@ es «Agente con memoria y enrutador» (base vectorial, memoria por `thread_id`, 
 estructurado, RAG Chain vs. Agent, blindaje XML, HITL y evaluación Recall@10/nDCG@10); todo plan de Spec Kit
 DEBE verificar la puerta de la Fase 2 definida allí.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-11-12
+**Version**: 1.2.0 | **Ratified**: 2026-10-27 | **Last Amended**: 2026-11-13

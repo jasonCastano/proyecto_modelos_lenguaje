@@ -70,6 +70,7 @@ from .memory import (
     UserProfile,
     build_summarization_middleware,
     compact_history,
+    recent_within_budget,
     render_preferences,
     render_profile,
     render_turn,
@@ -296,7 +297,7 @@ def hitl_request(tool: str, args: dict[str, Any]) -> dict[str, Any]:
 
 def _route_node(deps: GraphDeps):
     def route(state: ChatState) -> dict[str, Any]:
-        intent = detect_write_intent(state["question"])
+        intent = detect_write_intent(state["question"], deps.router_model)
         profile_query = intent is None and is_profile_question(state["question"])
         if intent is not None:
             decision = RouteDecision(
@@ -518,7 +519,10 @@ def _chain_user_message(state: ChatState, deps: GraphDeps) -> str:
     parts: list[str] = []
     if state.get("summary"):
         parts.append(f"<resumen>\n{state['summary']}\n</resumen>")
-    recent = _recent_turns(state, deps)
+    # Recorte por tokens también en la cadena (antes solo «resumen + últimos N turnos»).
+    recent = recent_within_budget(
+        _recent_turns(state, deps), deps.config.memory.summarize_after_tokens
+    )
     if recent:
         parts.append(
             "<historial>\n" + "\n\n".join(render_turn(t) for t in recent) + "\n</historial>"

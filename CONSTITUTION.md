@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.5.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-13
+**Versión**: 1.6.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-13
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -51,8 +51,8 @@ decisión técnica sin depender de diapositivas ni de la memoria de una sola per
 - Todo entregable DEBE ser producido por Jason Alejandro Castaño y Roberto José Guerrero, o declarar
   explícitamente la herramienta de IA utilizada como asistencia.
 - La autoría en Git y GitHub (autor, coautor y firma de commits y PRs) DEBE corresponder solo a los integrantes
-  del equipo o a bots autorizados (§4.3). Un asistente de IA NO DEBE figurar como autor ni contribuidor; su uso
-  se declara en la documentación (principio IX).
+  del equipo (§4.3). Ningún asistente de IA ni bot DEBE figurar como autor, committer ni contribuidor; el uso
+  de asistentes se declara en la documentación (principio IX).
 - NO SE DEBE inventar información, citas, métricas, resultados, fuentes ni retroalimentación.
 - Toda idea, dataset, imagen o fragmento externo DEBE citarse con su fuente y licencia.
 - Los resultados reportados DEBEN provenir de ejecuciones reales del sistema, no de ejemplos escritos a mano.
@@ -188,7 +188,7 @@ data/                          # capas medallion versionadas por Git LFS
 specs/                         # especificaciones, planes y contratos
 tests/                         # unitarias, integración, contrato y visuales
 docs/                          # alcance, decisiones, arquitectura, informe, prompt log
-.github/                       # PR/issue templates, CI, labels y Dependabot
+.github/                       # PR/issue templates, CI y labels
 .opencode/                     # comandos y skill de bitácora (generador compartido)
 .claude/skills/                # skills de Claude Code (speckit-*, bitacora)
 AGENTS.md                      # contexto para asistentes LLM
@@ -295,7 +295,7 @@ uv.lock
   estructura, capturas de la app, fuentes de datos, limitaciones, licencia y créditos.
 - `README.md` DEBE enlazar el diagrama interactivo `docs/arquitectura.html` y su fuente
   `docs/arquitectura.json`, regenerados con Archify.
-- La gobernanza visible (PR/issue templates, labels, Dependabot, pre-commit y Makefile) DEBE estar
+- La gobernanza visible (PR/issue templates, labels, pre-commit y Makefile) DEBE estar
   versionada y enlazada desde el README.
 - Los créditos DEBEN nombrar a ambos integrantes y al curso.
 
@@ -315,15 +315,21 @@ uv.lock
 - Commits atómicos, con cuerpo cuando la decisión no sea obvia.
 - NO se versionan binarios, datos, `.env`, capturas temporales ni artefactos de build.
 - El historial DEBE permitir reconstruir la evolución del pipeline, los prompts y la app.
-- **Autoría permitida**: todo commit DEBE tener como autor (y, si aplica, coautor `Co-authored-by`) a una de
-  estas identidades:
+- **Autoría permitida**: todo commit DEBE tener como autor (y, si aplica, coautor `Co-authored-by` o firmante
+  `Signed-off-by`) a una de estas dos identidades, y a ninguna otra:
   - `jasonCastano` — Jason Alejandro Castaño;
-  - `Robertto48` — Roberto José Guerrero Criollo;
-  - un bot autorizado: `dependabot[bot]`. Añadir otro bot exige enmienda de esta constitución.
-- GitHub (`noreply@github.com`) solo se acepta como *committer* de los merges hechos desde la web.
+  - `Robertto48` — Roberto José Guerrero Criollo.
+- **Prohibido contribuir a bots y asistentes**: ninguna herramienta (Claude Code, OpenCode, Copilot, Dependabot,
+  `github-actions[bot]` u otra) PUEDE crear commits, PRs, tags ni releases en el repositorio. Las herramientas
+  solo asisten en local; el commit y el PR los hace un integrante con su cuenta.
+- GitHub (`noreply@github.com`) solo se acepta como *committer* de los merges que un integrante hace desde la
+  web.
 - NO SE DEBEN incluir trailers `Co-authored-by` de asistentes de IA ni firmas del tipo «Generated with …» en
   commits, PRs, tags o releases. Los asistentes se configuran para no añadirlos (`.claude/settings.json` con
-  `"includeCoAuthoredBy": false`).
+  `"includeCoAuthoredBy": false` y `"attribution": {"commit": "", "pr": ""}`).
+- **Dependencias**: las actualizaciones las hace un integrante (`uv lock --upgrade-package <pkg>` y PR). Las
+  actualizaciones de versión de Dependabot están desactivadas (no hay `.github/dependabot.yml`); las alertas de
+  seguridad de GitHub siguen activas porque no crean commits.
 - Verificación: el hook `commit-msg` de pre-commit y el job `autoria` del CI ejecutan
   `scripts/check_commit_authors.py`; la lista de identidades vive en `src/proyecto_modelos_lenguaje/authorship.py`
   y debe coincidir con esta sección. Decisión y procedimiento de limpieza del historial en
@@ -349,7 +355,8 @@ uv.lock
   `build` y `clean`.
 - **Pre-commit**: higiene de archivos, Ruff, sincronización de `uv.lock` y autoría de commits (`commit-msg`);
   se instala con `make dev`.
-- **GitHub**: plantilla de PR, formularios de issue, labels declarativas, Dependabot y workflow de labels.
+- **GitHub**: plantilla de PR, formularios de issue, labels declarativas y workflow de labels (sin Dependabot
+  de versiones, §4.3).
 - **Contribución**: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` y `AGENTS.md` describen el flujo y el contexto.
 - **Arquitectura**: `docs/arquitectura.json` es la fuente; `docs/arquitectura.html` se regenera con
   Archify y se enlaza desde el README. El HTML no se edita a mano.
@@ -917,4 +924,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.5.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-13
+**Versión**: 1.6.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-13

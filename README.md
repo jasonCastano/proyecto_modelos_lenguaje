@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-681%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-687%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/M%C3%B3dulo%202-v0.2.0-brightgreen)](CONSTITUTION.md)
 
@@ -26,8 +26,8 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado actual (2026-11-13, constitución v1.5.0)**: el proyecto cumple la **rúbrica de sustentación del
-> Módulo 2** (Anuncio 006, sustentación el 14 de noviembre). Desde el PR #57:
+> **Estado actual (2026-11-13, constitución v1.6.0)**: el proyecto cumple la **rúbrica de sustentación del
+> Módulo 2** (Anuncio 006, sustentación el 14 de noviembre). Desde el PR #57, fusionado el 13 de noviembre:
 > - **Qdrant** es la base vectorial (HNSW y filtro por *payload*).
 > - La **memoria de largo plazo** guarda el perfil en el Store: «Me llamo Ana…» y, en otro hilo, «¿Dónde trabajo?».
 > - El enrutador tiene una **ruta mixta** (tabla y documentos en un turno).
@@ -38,6 +38,11 @@ Universidad Autónoma de Occidente, 2026-2S.
 >
 > Evidencia ítem por ítem y guion de 15 minutos en [`docs/rubrica_modulo2.md`](docs/rubrica_modulo2.md);
 > decisión en [ADR 0018](docs/decisions/0018-qdrant-y-rubrica-modulo2.md).
+>
+> Después de la rúbrica se fusionaron:
+> - **PR #58**: commits solo de los dos integrantes, sin bots ni asistentes (constitución v1.6.0, ADR 0017).
+> - **PR #59**: purga de la cuarentena de la curación `2026-10-curation-01` (8,93 GB liberados).
+> - **PR #60**: `CLAUDE.md` del proyecto y bitácora del 13 de noviembre.
 >
 > **Estado al 2026-11-12 (constitución v1.4.0)**: el **Módulo 2 está entregado** con el tag
 > [`v0.2.0-modulo2`](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2):
@@ -261,15 +266,31 @@ node ~/.agents/skills/archify/bin/archify.mjs finalize dataflow \
 Si la copia global de la skill está incompleta, clona
 [`tt-a1i/archify`](https://github.com/tt-a1i/archify) y usa `archify/bin/archify.mjs`.
 
-El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → índice semántico, recuperación
-híbrida y tabla estructurada → enrutador y grafos LangGraph (cadena, agente, HITL) → experiencia web y memoria**.
+El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → Qdrant, recuperación híbrida y
+tabla estructurada → enrutador (con ruta mixta) y grafos LangGraph (cadena, agente, HITL) → experiencia web y
+memoria (hilos, perfil y preferencias)**. En GitHub, el enlace abre el código del HTML; para verlo interactivo,
+clona el repositorio y abre `docs/arquitectura.html` en el navegador.
 
 ## Capturas
 
-![Experiencia web de Manuelita](docs/capturas/web/escritorio.png)
+**Portada** (escritorio, 1440×900):
 
-La captura corresponde a la página real en 1440×900. La validación E2E se ejecuta con `make e2e` y no se
-versionan capturas temporales de la auditoría.
+![Portada de la experiencia web de Manuelita en escritorio](docs/capturas/web/escritorio.png)
+
+**Conversación del Módulo 2** (modo demostración). El perfil se guarda tras la aprobación humana y la
+pregunta documental muestra la ruta, los fragmentos recuperados, las fuentes y la traza del turno:
+
+![Conversación con memoria de perfil, ruta documental, fragmentos y traza por turno](docs/capturas/web/conversacion.png)
+
+<details>
+<summary><strong>Vista móvil</strong> (375×812)</summary>
+
+<img src="docs/capturas/web/movil.png" alt="Portada de la experiencia web de Manuelita en móvil" width="320">
+
+</details>
+
+Las capturas corresponden a la página real del 13 de noviembre de 2026 en modo demostración. La validación
+E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la auditoría.
 
 ## Estado del proyecto
 
@@ -286,7 +307,7 @@ versionan capturas temporales de la auditoría.
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados y purgados (2026-11-13), 26.347 auditorías |
-| Pruebas | ✅ | 681 pruebas offline (652 Python + 29 web) y E2E de la conversación |
+| Pruebas | ✅ | 687 pruebas offline (658 Python + 29 web) y E2E de la conversación |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
 | App web + LangChain | ✅ | Frontend React + API FastAPI; hero, consola RAG y showcase del Módulo 1 |
@@ -304,7 +325,7 @@ versionan capturas temporales de la auditoría.
 | Módulo 2 — memoria de largo plazo | ✅ | Perfil y preferencias en el Store, con aprobación humana; recuperados en otro hilo con `search()` |
 | Módulo 2 — streaming y trazas | ✅ | `POST /api/chat/stream` (SSE); `turns.jsonl` por turno; LangSmith al definir la clave |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
-| CI y Pull Requests | ✅ | 54 PRs fusionados al 2026-11-13 (PR #57 en revisión); CI con `test`, `web` y `autoria` |
+| CI y Pull Requests | ✅ | 59 PRs fusionados al 2026-11-13 (el último, #60); CI con `test`, `web` y `autoria` |
 | Protección de `main` | ✅ | PR con 1 aprobación y checks `test` y `web`; sin push directo ni force-push |
 | Gobernanza del repositorio | ✅ | PR/issue templates, labels, pre-commit y Makefile |
 | Autoría de commits | ✅ | Solo `jasonCastano` y `Robertto48`, sin bots ni asistentes; hook `commit-msg` y job `autoria`; historial sin coautores de IA ni commits de bots (ADR 0017) |
@@ -330,7 +351,7 @@ versionan capturas temporales de la auditoría.
 | Oro | 0,20 GB |
 | Cuarentena | 0 GB (purgada el 2026-11-13; 8,93 GB liberados) |
 | Datos totales | 0,59 GB (límite: 10 GB) |
-| Pruebas offline | 681 |
+| Pruebas offline | 687 |
 | Consultas etiquetadas (Módulo 2) | 36 |
 | Acierto del enrutador | 97 % (35/36) |
 | Hechos en la tabla estructurada | 381 (15 entidades, 477 citas; exportada a CSV/JSON) |
@@ -860,7 +881,7 @@ referencian por manifiesto y hash.
 ## Calidad y reproducibilidad
 
 - **Entorno reproducible**: `uv sync --frozen`; versiones fijadas en `uv.lock`.
-- **Pruebas offline**: 681 pruebas unitarias, de integración y de contrato (652 Python + 29 web).
+- **Pruebas offline**: 687 pruebas unitarias, de integración y de contrato (658 Python + 29 web).
 - **Verificación completa**: `make check` ejecuta Ruff, pytest, Vitest y build web; CI separa Python y web y
   revisa la autoría de los commits de cada PR (job `autoria`).
 - **Auditoría visual**: `make audit` recorre 7 perfiles y 3 estados de datos con Playwright.

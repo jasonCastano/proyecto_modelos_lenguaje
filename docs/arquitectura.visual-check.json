@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "pending",
   "provenance": "current",
-  "deliveryReceiptId": "351c933d-b327-4489-bd9f-50ef6de85d18",
+  "deliveryReceiptId": "7b512fde-2c5f-456c-8340-dfcb5fbd09ed",
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "c83f8c7eacadaa6956da19fb1aae15b2e140dbd778241fd2176e5f35a5948a33",
-    "bytes": 862462
+    "sha256": "8f92e693b43c9f0d52bad041bce4cb83f7af46f9d0828607879b05754583e43f",
+    "bytes": 862750
   },
   "state": {
     "detail": "read",
@@ -905,23 +905,23 @@
         "file": "arquitectura.visual-check.html"
       },
       {
-        "sha256": "67d1c0364ef15fcd4fef1742dca2b41de7b8fad49b966d69994a9b4e1d856632",
-        "bytes": 136560,
+        "sha256": "390cd417a90675924cbdf0c6088af90375b2b77031f9f95647127f6aa00b0f52",
+        "bytes": 136732,
         "file": "arquitectura.visual-check.1440x900.light.png"
       },
       {
-        "sha256": "aeb7270134e61360db912a84e619bf64fd85f29acd04db7761294ddc5cd58534",
-        "bytes": 151868,
+        "sha256": "2ef57005ed3167ed89652c527f0158197cf8847242ab4f1080844508db31ab69",
+        "bytes": 152785,
         "file": "arquitectura.visual-check.1440x900.dark.png"
       },
       {
-        "sha256": "aa7cb2d3a8256026278a7087d2e22daeb03bc4d446bf108b16351b0c020886bd",
-        "bytes": 167911,
+        "sha256": "1f66715c7bc6892bffe6e7a1f87326f5e6c2e63f989dbf9abd02f093615cb1a8",
+        "bytes": 167239,
         "file": "arquitectura.visual-check.2048x1320.light.png"
       },
       {
-        "sha256": "7ae7691f125ac23d1b4b7dc58ac123c1c47f02d585da6e0db24377d9e4f97da5",
-        "bytes": 184967,
+        "sha256": "4b6f1168c1108b865700dfe1b6d267096018213a6143988c5e87480cac40ab39",
+        "bytes": 185181,
         "file": "arquitectura.visual-check.2048x1320.dark.png"
       }
     ]

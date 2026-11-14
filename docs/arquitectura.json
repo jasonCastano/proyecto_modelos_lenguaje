@@ -9,7 +9,7 @@
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "e88faae844184eb5599c44cc47ce6b6dcda66ef4"
+      "revision": "edb4a724e4b0731147d805f9e38c6e278823b354"
     }
   },
   "stages": [
@@ -47,7 +47,7 @@
         {
           "path": "config/official_channels.toml",
           "line": 1,
-          "end_line": 24
+          "end_line": 104
         }
       ]
     },
@@ -142,7 +142,7 @@
         {
           "path": "src/proyecto_modelos_lenguaje/rag/hybrid.py",
           "line": 1,
-          "end_line": 383
+          "end_line": 499
         }
       ]
     },
@@ -179,33 +179,38 @@
         {
           "path": "web/src/components/ChatView.tsx",
           "line": 1,
-          "end_line": 394
+          "end_line": 636
         },
         {
           "path": "web/src/components/ApprovalCard.tsx",
           "line": 1,
-          "end_line": 79
+          "end_line": 84
         },
         {
           "path": "src/proyecto_modelos_lenguaje/api.py",
           "line": 1,
-          "end_line": 525
+          "end_line": 594
         }
       ]
     },
     {
       "id": "rag-index",
       "type": "backend",
-      "label": "Índice semántico",
-      "sublabel": "e5-small 384d · numpy + SQLite",
+      "label": "Qdrant",
+      "sublabel": "e5-small 384d · HNSW · payload",
       "tag": "Módulo 2",
       "stage": 2,
       "row": 2,
       "sources": [
         {
+          "path": "src/proyecto_modelos_lenguaje/rag/vectorstore.py",
+          "line": 1,
+          "end_line": 286
+        },
+        {
           "path": "src/proyecto_modelos_lenguaje/rag/index.py",
           "line": 1,
-          "end_line": 517
+          "end_line": 564
         },
         {
           "path": "src/proyecto_modelos_lenguaje/rag/embeddings.py",
@@ -218,7 +223,7 @@
       "id": "router",
       "type": "backend",
       "label": "Enrutador",
-      "sublabel": "reglas + DeepSeek",
+      "sublabel": "reglas + DeepSeek · ruta mixta",
       "tag": "Módulo 2",
       "stage": 3,
       "row": 0,
@@ -226,12 +231,12 @@
         {
           "path": "src/proyecto_modelos_lenguaje/agent/router.py",
           "line": 1,
-          "end_line": 205
+          "end_line": 218
         },
         {
           "path": "prompts/router.md",
           "line": 1,
-          "end_line": 73
+          "end_line": 79
         }
       ]
     },
@@ -247,7 +252,7 @@
         {
           "path": "src/proyecto_modelos_lenguaje/agent/structured.py",
           "line": 1,
-          "end_line": 501
+          "end_line": 533
         }
       ]
     },
@@ -263,12 +268,12 @@
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
           "line": 1,
-          "end_line": 603
+          "end_line": 714
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/actions.py",
           "line": 1,
-          "end_line": 181
+          "end_line": 267
         },
         {
           "path": "prompts/agent.md",
@@ -281,7 +286,7 @@
       "id": "memory",
       "type": "database",
       "label": "Memoria",
-      "sublabel": "hilos · preferencias",
+      "sublabel": "hilos · perfil · preferencias",
       "tag": "fuera del repo",
       "stage": 4,
       "row": 3,
@@ -289,7 +294,7 @@
         {
           "path": "src/proyecto_modelos_lenguaje/agent/memory.py",
           "line": 1,
-          "end_line": 244
+          "end_line": 331
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/privacy.py",

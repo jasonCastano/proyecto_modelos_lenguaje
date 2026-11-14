@@ -632,6 +632,18 @@ button.chip:disabled {
   font-size: 0.72rem;
 }
 
+/* Chips sobre el fondo oscuro de la consola: texto claro para mantener el contraste. */
+.console-options button.chip {
+  border-color: rgb(245 247 243 / 30%);
+  color: rgb(245 247 243 / 90%);
+}
+
+.console-options button.chip:hover:not(:disabled),
+.console-options button.chip:focus-visible {
+  border-color: var(--lime);
+  color: var(--paper);
+}
+
 .console-options label {
   display: inline-flex;
   align-items: center;

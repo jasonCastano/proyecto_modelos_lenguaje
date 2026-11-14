@@ -230,3 +230,42 @@ def test_aggregate_reports_mean_and_stdev(run: dict[str, Path], tmp_path: Path) 
     assert "± " in out.read_text(encoding="utf-8")
     with pytest.raises(GradingError):
         aggregate_runs([first])
+
+
+def test_read_grades_accepts_semicolon_csv_saved_by_excel(
+    run: dict[str, Path], tmp_path: Path
+) -> None:
+    out = _export(run, tmp_path)
+    path = out / "plantilla_ana.csv"
+    rows = _read(path)
+    for row in rows:
+        row.update(correccion="2", coherencia="5", alucinacion="Sí")
+    with path.open("w", encoding="utf-8-sig", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]), delimiter=";")
+        writer.writeheader()
+        writer.writerows(rows)
+
+    grades = read_grades(path, {row["item"] for row in rows})
+
+    assert len(grades) == len(rows)
+    assert all(grade == Grade(2, 5, True) for grade in grades.values())
+
+
+def test_instructions_explain_variants_with_illustrative_examples(
+    run: dict[str, Path], tmp_path: Path
+) -> None:
+    text = (_export(run, tmp_path) / "INSTRUCCIONES.md").read_text(encoding="utf-8")
+
+    for heading in (
+        "## 3. Cómo responden las dos variantes",
+        "### Zero-shot",
+        "### Prompt final",
+        "## 4. Ejemplos de calificación",
+        "## 5. Cómo debe quedar la planilla",
+    ):
+        assert heading in text
+    assert "merge \\\n" in text  # una sola barra de continuación
+    bank = (module1_eval.PROJECT_ROOT / "docs" / "alcance.md").read_text(encoding="utf-8")
+    examples = [line for line in text.splitlines() if line.startswith("**Pregunta**")]
+    assert len(examples) == 4
+    assert not any(line.split("«")[1].split("»")[0] in bank for line in examples)

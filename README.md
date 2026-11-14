@@ -273,7 +273,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
 | App web + LangChain | ✅ | Frontend React + API FastAPI; hero, consola RAG y showcase del Módulo 1 |
 | Auditoría E2E | ✅ | Playwright: 360–1920 px, demo, fallback y foco; `make e2e` |
-| Evaluación de 40 preguntas | 🟡 | Herramienta lista (`module1_eval`); falta la ejecución real y la calificación humana |
+| Evaluación de 40 preguntas | 🟡 | Tres ejecuciones reales con DeepSeek (2026-11-14, media ± desviación); calificación humana a ciegas preparada en `docs/calificacion_m1/`, pendiente de completar |
 | Informe del Módulo 1 | 🟡 | Borrador en `docs/informe_modulo1.md`; resultados pendientes de M1-08 |
 | Tag `v0.1.0-modulo1` | 🟡 | Pendiente de cerrar la puerta de la Fase 1 |
 | Módulo 2 — recuperación semántica (spec 013) | ✅ | PR #34 fusionado; `docs/evaluacion_modulo2.md` (ver hallazgos en `docs/revision_pr34.md`) |
@@ -913,9 +913,9 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   evidencia verificable.
 - La capa oro produjo 15.211 unidades extractivas, 381 hechos, 15 entidades y 38 conflictos; 24/24 ítems
   evaluados. Los conflictos y la cobertura requieren revisión muestral antes de la evaluación final.
-- La evaluación de 40 preguntas tiene la herramienta lista (`module1_eval`), pero falta la ejecución real con
-  DeepSeek y la calificación humana; el informe y el guion de demo son borradores y faltan las capturas de
-  Consulta/Resumen/FAQ.
+- La evaluación de 40 preguntas se ejecutó tres veces con DeepSeek (`docs/evaluacion_modulo1_repeticiones.md`);
+  falta que ambos integrantes completen la calificación humana a ciegas (`docs/calificacion_m1/`) y el informe
+  sigue en borrador.
 - El umbral semántico (0,30) no abstiene fuera de corpus por sí solo; en el Módulo 2 la abstención la resuelve
   el enrutador (4/4). El híbrido no supera al semántico en Recall@10 y añade ~0,9 s de BM25 por consulta (medido el 2026-11-14 sobre Qdrant: híbrido 941 ms frente a 35 ms del semántico).
 - Las repreguntas no cumplen SC-006 con la métrica estricta (3/6 y 4/6) y la fidelidad del juez está pendiente de

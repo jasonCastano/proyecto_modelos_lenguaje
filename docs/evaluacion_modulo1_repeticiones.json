@@ -1,0 +1,160 @@
+{
+  "runs": [
+    "m1-final-2026-11-14-r1",
+    "m1-final-2026-11-14-r2",
+    "m1-final-2026-11-14-r3"
+  ],
+  "variants": {
+    "zero_shot": {
+      "ok": {
+        "mean": 40.0,
+        "stdev": 0.0,
+        "values": [
+          40.0,
+          40.0,
+          40.0
+        ]
+      },
+      "fallback": {
+        "mean": 0.0,
+        "stdev": 0.0,
+        "values": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "with_citation": {
+        "mean": 40.0,
+        "stdev": 0.0,
+        "values": [
+          40.0,
+          40.0,
+          40.0
+        ]
+      },
+      "fallback_agreement": {
+        "mean": 0.974,
+        "stdev": 0.0,
+        "values": [
+          0.974,
+          0.974,
+          0.974
+        ]
+      },
+      "latency_mean_s": {
+        "mean": 3.647,
+        "stdev": 0.091,
+        "values": [
+          3.752,
+          3.601,
+          3.588
+        ]
+      },
+      "input_tokens": {
+        "mean": 34700.333,
+        "stdev": 26.558,
+        "values": [
+          34685.0,
+          34685.0,
+          34731.0
+        ]
+      },
+      "output_tokens": {
+        "mean": 21396.333,
+        "stdev": 884.707,
+        "values": [
+          22371.0,
+          20644.0,
+          21174.0
+        ]
+      },
+      "unstable_fallback": []
+    },
+    "final": {
+      "ok": {
+        "mean": 35.667,
+        "stdev": 1.155,
+        "values": [
+          35.0,
+          35.0,
+          37.0
+        ]
+      },
+      "fallback": {
+        "mean": 4.333,
+        "stdev": 1.155,
+        "values": [
+          5.0,
+          5.0,
+          3.0
+        ]
+      },
+      "with_citation": {
+        "mean": 35.667,
+        "stdev": 1.155,
+        "values": [
+          35.0,
+          35.0,
+          37.0
+        ]
+      },
+      "fallback_agreement": {
+        "mean": 0.88,
+        "stdev": 0.029,
+        "values": [
+          0.897,
+          0.846,
+          0.897
+        ]
+      },
+      "latency_mean_s": {
+        "mean": 3.65,
+        "stdev": 0.142,
+        "values": [
+          3.599,
+          3.81,
+          3.541
+        ]
+      },
+      "input_tokens": {
+        "mean": 52965.0,
+        "stdev": 0.0,
+        "values": [
+          52965.0,
+          52965.0,
+          52965.0
+        ]
+      },
+      "output_tokens": {
+        "mean": 21831.333,
+        "stdev": 1093.823,
+        "values": [
+          22088.0,
+          22774.0,
+          20632.0
+        ]
+      },
+      "unstable_fallback": [
+        "P08",
+        "P09",
+        "P12",
+        "P14",
+        "P17",
+        "P20",
+        "P38"
+      ]
+    }
+  },
+  "prompt_sha256": {
+    "zero_shot": [
+      "474d712010c93772d0e955f3a0c0ad9d12724230435cb273299a8633b3024930"
+    ],
+    "final": [
+      "f37ec0c5cac2df939c6f9a65353c02e74f9d4fb94857205a55e7ddcdf37a062b"
+    ]
+  },
+  "models": [
+    "deepseek-flash"
+  ]
+}

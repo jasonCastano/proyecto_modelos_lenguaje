@@ -264,6 +264,15 @@ spec 015:
 | `prompts/router.md` | 1.1 → 1.2 | `57d5d4c674b7` | Define las cifras anuales como ruta estructurada y añade ejemplos de la ruta mixta. Evaluación real: 43/44, mixed 5/5 (`docs/evaluacion_enrutador.json`). |
 | `prompts/profile_extract.md` | 1.0 (nuevo) | `d020b15cb253` | Extracción del perfil con salida JSON validada por Pydantic (`ProfileFacts`) cuando la regex no alcanza; nunca se llama ante preguntas. |
 
+### 3.14 Evaluación final del Módulo 1 con `qa.md` 1.1 (2026-11-14)
+
+Sin cambios de prompt. Tres ejecuciones de las 40 preguntas con `qa_zero_shot.md` 0.1 y `qa.md` 1.1
+(`deepseek-flash`, temperatura 0,1): `m1-final-2026-11-14-r1` (oficial), `-r2` y `-r3`. Media ± desviación en
+`docs/evaluacion_modulo1_repeticiones.md`: el prompt final responde con cita 35,7 ± 1,2 de 40 y se abstiene en
+4,3 ± 1,2 (frente a 17 con `qa.md` 1.0); el zero-shot responde las 40 y nunca se abstiene. Siete preguntas del
+prompt final cambian de conducta entre ejecuciones, incluida P14 (`X`). La calificación humana a ciegas se hace
+con `module1_grading` (planillas en `docs/calificacion_m1/`).
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

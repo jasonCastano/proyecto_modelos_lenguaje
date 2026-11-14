@@ -18,8 +18,9 @@ Línea base de la spec 014 (T026), antes del agente. Evaluación de recuperació
 1. **SC-001 se cumple frente a la línea base**: el semántico y el híbrido superan al léxico del Módulo 1
    en Recall@10 y nDCG@10 en los dos conjuntos.
 2. **El híbrido no supera al semántico puro**: empata en nDCG@10 (±0,006) y queda algo por debajo en
-   Recall@10. La fusión aporta en las preguntas con nombres propios y cifras, pero cuesta ~1,3 s por
-   consulta porque la búsqueda léxica recorre las 15.211 unidades; el semántico tarda 8–14 ms.
+   Recall@10. La fusión aporta en las preguntas con nombres propios y cifras, pero cuesta ~0,9 s por
+   consulta porque la búsqueda léxica recorre las 15.211 unidades (medido el 2026-11-14 sobre
+   Qdrant: híbrido 941 ms, semántico 35 ms; con numpy el 2026-11-10 eran ~1,3 s y 8–14 ms).
 3. **Ningún modo se abstiene** ante preguntas fuera de corpus (0 de 5 y 0 de 4). Confirma la revisión del
    PR #34: la abstención no puede depender del umbral de similitud y debe venir de la puerta de
    decisión de la US2 (FR-011).
@@ -235,9 +236,14 @@ Lectura (2026-11-14; se escribe fuera de los marcadores para que la regeneració
 | Llamadas al modelo por consulta | 1.39 | 2.17 |
 | Búsquedas por consulta | 0.67 | 1.31 |
 | Tokens por consulta | 2695 | 5275 |
-| Fidelidad (juez LLM) | 0.705 | 0.661 |
+| Fidelidad (juez LLM) — **no válida**, ver nota | ~~0.705~~ | ~~0.661~~ |
 | Relevancia de la respuesta (juez LLM) | 0.885 | 0.825 |
 | Precisión de contexto (con referencia) | 0.391 | 0.448 |
+
+**Nota sobre la fidelidad (2026-11-14)**: las cifras aparecen tachadas porque esta ejecución **no es
+válida** para esa métrica: el juez recibió las filas estructuradas sin su frase de origen. El error está
+corregido y la repetición sigue pendiente (`docs/informe_modulo2.md` §5). Relevancia y precisión de
+contexto no se ven afectadas.
 
 Respuestas evaluadas por el juez: chain 24, agent 24. El juez usa `prompts/judge.md` con las definiciones de Ragas (fidelidad = afirmaciones respaldadas / afirmaciones; relevancia = qué tan directamente responde); la precisión de contexto usa las unidades esperadas como referencia.
 

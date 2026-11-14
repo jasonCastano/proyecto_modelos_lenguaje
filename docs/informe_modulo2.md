@@ -69,7 +69,7 @@ vive en `MANUELITA_STATE_DIR`, fuera del repositorio; la app sigue sin escribir 
 
 | Vista derivada | Origen | Contenido | Comando | Versionado |
 |---|---|---|---|---|
-| Índice semántico | `data/gold/knowledge_units.jsonl` | 15.211 vectores de 384 dimensiones, troceo `unit+window` 400/60 tokens | `rag index rebuild` | Solo el manifiesto (`data/module2/index/manifest.json`) |
+| Índice semántico | `data/gold/knowledge_units.jsonl` | 15.211 vectores de 384 dimensiones, troceo `unit+window` 400/60 tokens | `rag index rebuild` | No (todo `data/module2/` está fuera de Git; el manifiesto vive junto al índice y cada evaluación registra su `run_id`) |
 | Tabla estructurada | `data/gold/entities.jsonl`, `facts.jsonl` | 15 entidades, 381 hechos, 477 citas | `agent build-structured` | No; se reconstruye |
 | Conjunto etiquetado | Redactado a mano | 36 consultas: 6 saludos, 12 documentales, 6 estructuradas, 4 fuera de corpus, 2 ambiguas, 6 repreguntas | — | `tests/fixtures/rag/module2_queries.jsonl` |
 | Índice adversarial | 5 unidades reales + 1 con instrucciones embebidas | 6 vectores hash | `tests/fixtures/rag/build_fixture.py malicious` | Sí (prueba) |
@@ -125,7 +125,7 @@ calentamiento. El código de recuperación no cambió después, así que la medi
 | Latencia p95 — 40 preguntas | 1.564 ms | 14 ms | 1.648 ms |
 
 **SC-001 cumplido**: semántico e híbrido superan al léxico en Recall@10 y nDCG@10. El híbrido no supera al
-semántico puro y cuesta ~1,6 s más por consulta por el BM25; la decisión de mantenerlo está abierta (§6).
+semántico puro y cuesta ~0,9 s de BM25 por consulta (medido el 2026-11-14 sobre Qdrant: híbrido 941 ms frente a 35 ms del semántico); la decisión de mantenerlo está abierta (§6).
 Ningún modo de recuperación se abstiene por sí solo fuera de corpus; la abstención la resuelve el enrutador.
 
 ### 5.2 Enrutador (US2, SC-002, SC-004)
@@ -212,7 +212,7 @@ respuesta sobre sostenibilidad llegó en viñetas con citas en ambas variantes, 
    corregido (unos 50 minutos con DeepSeek).
 3. **SC-007 en el agente**: 94 % bajo 10 s; el p95 es 14,7 s. Opciones: bajar `tool_call_limit` a 2 o usar la
    cadena por defecto (decisión actual).
-4. **El híbrido no supera al semántico** en Recall@10 y añade ~1,6 s de BM25 por consulta; queda abierta la
+4. **El híbrido no supera al semántico** en Recall@10 y añade ~0,9 s de BM25 por consulta (medido el 2026-11-14 sobre Qdrant: híbrido 941 ms frente a 35 ms del semántico); queda abierta la
    decisión de mantenerlo.
 5. **Etiquetas del conjunto**: las 36 consultas de `module2_queries.jsonl` las redactó Roberto José Guerrero y
    esperan la revisión de Jason (T018).

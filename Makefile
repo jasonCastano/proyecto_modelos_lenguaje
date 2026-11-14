@@ -5,7 +5,7 @@
 APP_URL ?= http://127.0.0.1:8000
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev pre-commit-install pre-commit lint format format-check test python-check web-install web-dev web-test web-build check-web check app audit e2e build clean
+.PHONY: help install dev pre-commit-install pre-commit lint format format-check test python-check web-install web-dev web-test web-build check-web check app structured demo-prep qdrant-up audit e2e build clean
 
 help: ## Muestra esta ayuda
 	@echo RAG Ingenio Manuelita — comandos disponibles
@@ -22,7 +22,10 @@ help: ## Muestra esta ayuda
 	@echo   web-build          Build de producción
 	@echo   check-web          web-install + tests + build
 	@echo   check              python-check + check-web
-	@echo   app                Build web + API local (FastAPI)
+	@echo   app                Build web + tabla estructurada + API local (FastAPI)
+	@echo   structured         Tabla estructurada derivada del oro (si falta)
+	@echo   demo-prep          Indice, coleccion Qdrant y tabla listos para la demo
+	@echo   qdrant-up          Qdrant servidor (HNSW) con Docker Compose
 	@echo   audit              E2E visual y funcional con Playwright
 	@echo   build              sdist + wheel
 	@echo   clean              Limpia cachés y artefactos locales
@@ -68,8 +71,20 @@ check-web: web-install web-test web-build ## Verificación del frontend
 
 check: python-check check-web ## Verificación completa
 
-app: web-build ## Construye el frontend y abre la API local
+app: web-build structured ## Construye el frontend y abre la API local
 	uv run uvicorn proyecto_modelos_lenguaje.api:app --host 127.0.0.1 --port 8000
+
+structured: ## Construye la tabla estructurada si falta (la app no escribe en data/)
+	-uv run python -m proyecto_modelos_lenguaje.agent build-structured
+
+demo-prep: ## Deja listo el equipo de la demo: indice, Qdrant y tabla estructurada
+	uv run python -m proyecto_modelos_lenguaje.rag index verify || uv run python -m proyecto_modelos_lenguaje.rag index rebuild --force
+	uv run python -m proyecto_modelos_lenguaje.rag qdrant build
+	uv run python -m proyecto_modelos_lenguaje.agent build-structured --force
+	uv run python -m proyecto_modelos_lenguaje.rag qdrant status
+
+qdrant-up: ## Qdrant servidor con indice HNSW real (exportar QDRANT_URL=http://localhost:6333)
+	docker compose up -d qdrant
 
 audit: e2e ## Auditoría E2E de la experiencia web
 

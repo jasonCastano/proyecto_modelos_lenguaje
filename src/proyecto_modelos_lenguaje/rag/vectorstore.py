@@ -18,6 +18,7 @@ Si la colección no existe o no coincide con el índice, la recuperación vuelve
 
 from __future__ import annotations
 
+import logging
 import os
 import tomllib
 from collections.abc import Callable, Mapping, Sequence
@@ -29,6 +30,8 @@ import numpy as np
 
 from ..config import PROJECT_ROOT
 from .index import LoadedIndex
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from qdrant_client import QdrantClient
@@ -255,12 +258,16 @@ def connect_vector_store(
             build_collection(client, settings, index, units_by_id or {}, force=True)
         elif not collection_matches(client, settings, index):
             client.close()
-            return None, (
-                f"Colección Qdrant {settings.collection} ausente o desactualizada en "
-                f"{settings.location}; se usó la matriz numpy (`rag qdrant build`)."
+            note = (
+                f"Respaldo numpy: la colección Qdrant {settings.collection} está ausente o "
+                f"desactualizada en {settings.location} (`rag qdrant build`)."
             )
+            logger.warning(note)
+            return None, note
     except Exception as exc:
-        return None, f"Qdrant no disponible ({type(exc).__name__}); se usó la matriz numpy."
+        note = f"Respaldo numpy: Qdrant no disponible ({type(exc).__name__})."
+        logger.warning(note)
+        return None, note
     store = QdrantVectorStore(client, settings)
     return store, f"Búsqueda vectorial en {store.describe()}"
 

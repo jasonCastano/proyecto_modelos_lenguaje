@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.6.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-13
+**Versión**: 1.7.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -525,8 +525,12 @@ exacto. El mapa de evidencias y el guion están en `docs/rubrica_modulo2.md`.
    - Se declaran qué se guarda, la retención y el borrado (`docs/memoria.md`); nunca datos sensibles.
 7. **Enrutador**: puerta de decisión que clasifica cada mensaje en directo, documental, estructurado, **mixto**
    (tabla y documentos en el mismo turno) o fuera de alcance, con confianza; con confianza baja pide aclaración.
-   Las herramientas exponen esquemas Pydantic y la aritmética (conteos) la hace la herramienta, nunca el modelo. El origen estructurado (tabla SQL/CSV) se deriva
-   de hechos y entidades del oro con cita por fila; acceso **solo lectura**.
+   Las herramientas exponen esquemas Pydantic y la aritmética (conteos, sumas, promedios, máximos,
+   mínimos y variaciones) la hace la herramienta, nunca el modelo. Hay dos orígenes estructurados de
+   **solo lectura**: la tabla SQLite derivada de hechos y entidades del oro, y el CSV **curado y
+   versionado** `data/curated/series_anuales.csv` con cifras anuales de los informes de sostenibilidad
+   (una fila por cifra, con `unit_id`, URL y página; una prueba verifica cada valor contra su unidad
+   de oro). Los informes son anuales: una pregunta por trimestre se responde declarando ese límite.
 8. **RAG Chain vs. RAG Agent**: implementar ambas variantes (recuperar siempre vs. retriever como `@tool` con
    `create_agent`) y compararlas en calidad, latencia y número de llamadas.
 9. **Blindaje**: contexto recuperado aislado con etiquetas XML como dato; prueba adversarial con un documento
@@ -924,4 +928,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.6.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-13
+**Versión**: 1.7.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14

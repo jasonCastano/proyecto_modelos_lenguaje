@@ -77,6 +77,22 @@ function parseBlock(block: string): ChatStreamEvent | null {
   }
 }
 
+/** Tiempo máximo de una respuesta en streaming antes de cancelarla (ms). */
+export const STREAM_TIMEOUT_MS = 90_000;
+
+/** Error por cancelación: el usuario detuvo la generación o se agotó el tiempo. */
+function abortError(signal: AbortSignal | undefined): ApiClientError {
+  const timedOut = signal?.reason === "timeout";
+  return new ApiClientError({
+    code: timedOut ? "timeout" : "cancelled",
+    message: timedOut
+      ? "La respuesta tardó demasiado y se canceló. Vuelve a intentar."
+      : "Detuviste la generación.",
+    retryable: true,
+    action: "reintentar",
+  });
+}
+
 /**
  * Conversación en streaming (SSE sobre `fetch`): llama a `onEvent` con la ruta, la recuperación y
  * cada token, y resuelve con la respuesta final validada (la misma de `POST /api/chat`).
@@ -101,6 +117,7 @@ export async function streamChat(
       signal,
     });
   } catch {
+    if (signal?.aborted) throw abortError(signal);
     throw new ApiClientError({
       code: "network_error",
       message: "No se pudo conectar con el servicio. Revisa la conexión y vuelve a intentar.",
@@ -112,6 +129,15 @@ export async function streamChat(
     const payload = (await response.json().catch(() => null)) as {
       error?: { code: string; message: string; retryable: boolean; action: string };
     } | null;
+    if (!payload?.error && response.status === 404) {
+      // Solo un servidor sin la ruta de streaming justifica caer a POST /api/chat.
+      throw new ApiClientError({
+        code: "stream_unavailable",
+        message: "El servicio no ofrece streaming.",
+        retryable: true,
+        action: "reintentar",
+      });
+    }
     throw new ApiClientError(
       payload?.error ?? {
         code: "http_error",
@@ -126,7 +152,19 @@ export async function streamChat(
   let buffer = "";
   let final: ChatResponse | null = null;
   for (;;) {
-    const { done, value } = await reader.read();
+    let chunk: ReadableStreamReadResult<Uint8Array>;
+    try {
+      chunk = await reader.read();
+    } catch {
+      if (signal?.aborted) throw abortError(signal);
+      throw new ApiClientError({
+        code: "stream_incomplete",
+        message: "La respuesta se interrumpió antes de terminar. Vuelve a intentar.",
+        retryable: true,
+        action: "reintentar",
+      });
+    }
+    const { done, value } = chunk;
     buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
     let boundary = buffer.indexOf("\n\n");
     while (boundary >= 0) {
@@ -162,8 +200,10 @@ export interface ObservabilityStatus {
   langsmith: boolean;
   project: string | null;
   structured_log: string | null;
+  /** Búsqueda vectorial por modo: «Búsqueda vectorial en Qdrant …» o «Respaldo numpy: …». */
+  vector_store?: Record<string, string>;
 }
 
-export function getObservability(): Promise<ObservabilityStatus> {
-  return request<ObservabilityStatus>("/observability");
+export function getObservability(mode?: "demo" | "real"): Promise<ObservabilityStatus> {
+  return request<ObservabilityStatus>(mode ? `/observability?mode=${mode}` : "/observability");
 }

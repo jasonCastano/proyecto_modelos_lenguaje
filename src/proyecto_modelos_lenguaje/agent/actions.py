@@ -11,16 +11,20 @@ La memoria larga vive en el Store de LangGraph: preferencias en
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import HumanMessage
 from langchain_core.tools import BaseTool, StructuredTool
 from langgraph.store.base import BaseStore
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
-from .memory import PreferenceError, UserMemory, UserProfile
+from .memory import PROFILE_KEYS, PreferenceError, UserMemory, UserProfile
+from .prompts import load_agent_prompt
 from .structured import normalize
 
 WRITE_TOOLS: tuple[str, ...] = (
@@ -118,29 +122,79 @@ _NAME_WORD = r"[A-ZÁÉÍÓÚÑ][a-záéíóúñü]+"
 PROFILE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
         "name",
-        # Solo la frase disparadora ignora mayúsculas; el nombre debe ir capitalizado.
-        re.compile(rf"\b(?i:me llamo|mi nombre es)\s+({_NAME_WORD}(?:\s+{_NAME_WORD})?)"),
+        # Solo la frase disparadora ignora mayúsculas; el nombre debe ir capitalizado
+        # («soy Ana» sí; «soy ingeniera» o «soy de Cali» no).
+        re.compile(
+            rf"\b(?i:me llamo|mi nombre es|me dicen|soy)\s+({_NAME_WORD}(?:\s+{_NAME_WORD})?)"
+            r"(?=\s*(?:[,.;!?]|$|\s+(?i:y|de|trabajo|laboro|vivo|soy)\b))"
+        ),
     ),
     (
         "workplace",
         re.compile(
-            r"\btrabajo (?:en|para|con)\s+(.{2,60}?)(?=\s+(?:y|como|desde)\b|[,.;!?]|$)", re.I
+            r"\b(?:trabajo|laboro|estoy trabajando) (?:actualmente )?(?:en|para|con)\s+"
+            r"(.{2,60}?)(?=\s+(?:y|como|desde)\b|[,.;!?]|$)"
+            r"|\bmi empresa es\s+(.{2,60}?)(?=\s+(?:y|como|desde)\b|[,.;!?]|$)",
+            re.I,
         ),
     ),
     (
         "role",
         re.compile(
-            r"\b(?:trabajo como|mi cargo es|soy (?:el|la) )\s*(.{3,60}?)"
-            r"(?=\s+(?:y|en)\b|[,.;!?]|$)",
+            r"\b(?:trabajo como|laboro como|me desempeño como|mi cargo es|soy (?:el|la) )"
+            r"\s*(.{3,60}?)(?=\s+(?:y|en)\b|[,.;!?]|$)",
             re.I,
         ),
     ),
-    ("city", re.compile(r"\bvivo en\s+(.{2,60}?)(?=\s+(?:y|desde)\b|[,.;!?]|$)", re.I)),
+    (
+        "city",
+        re.compile(
+            r"\b(?:vivo en|resido en|soy de)\s+(.{2,60}?)(?=\s+(?:y|desde)\b|[,.;!?]|$)", re.I
+        ),
+    ),
+)
+# Mensaje que probablemente declara datos personales: si la regex no los extrae, se pide al LLM.
+PROFILE_CUE = re.compile(
+    r"\b(me llamo|mi nombre|me dicen|soy|trabajo|laboro|mi empresa|vivo|resido|mi cargo|"
+    r"me desempeno|me presento|les escribe|te escribe|estoy vinculad[oa]|mi profesion)\b"
 )
 PROFILE_QUESTION = re.compile(
     r"\b(donde trabajo|como me llamo|cual es mi nombre|quien soy|que sabes de mi|donde vivo|"
-    r"cual es mi cargo|en que trabajo|recuerdas mi nombre|sabes como me llamo|mi perfil)\b"
+    r"cual es mi cargo|en que trabajo|recuerdas mi nombre|sabes como me llamo|mi perfil|"
+    r"donde laboro|cual es mi empresa|para quien trabajo|de donde soy|a que me dedico)\b"
 )
+
+
+class ProfileFacts(BaseModel):
+    """Salida estructurada del extractor LLM del perfil (``prompts/profile_extract.md``)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    name: str | None = Field(default=None, max_length=80)
+    workplace: str | None = Field(default=None, max_length=80)
+    role: str | None = Field(default=None, max_length=80)
+    city: str | None = Field(default=None, max_length=80)
+
+    def as_profile(self) -> dict[str, str]:
+        values = self.model_dump()
+        return {
+            key: str(value).strip(" .,;!?¿¡\"'")
+            for key, value in values.items()
+            if value and str(value).strip(" .,;!?¿¡\"'")
+        }
+
+
+def extract_profile_llm(model: BaseChatModel, message: str) -> dict[str, str]:
+    """Extrae el perfil con el LLM y salida JSON validada con Pydantic; ``{}`` si algo falla."""
+    prompt = load_agent_prompt("profile_extract").render(message=message)
+    try:
+        response = model.invoke([HumanMessage(content=prompt)])
+        match = re.search(r"\{.*\}", str(response.content), flags=re.DOTALL)
+        if match is None:
+            return {}
+        return ProfileFacts.model_validate(json.loads(match.group(0))).as_profile()
+    except Exception:
+        return {}
 
 
 def extract_profile(message: str) -> dict[str, str]:
@@ -149,7 +203,8 @@ def extract_profile(message: str) -> dict[str, str]:
     for key, pattern in PROFILE_PATTERNS:
         match = pattern.search(message)
         if match:
-            value = match.group(1).strip(" .,;!?¿¡")
+            group = next((g for g in match.groups() if g), "")
+            value = group.strip(" .,;!?¿¡")
             if value:
                 found[key] = value
     return found
@@ -172,14 +227,22 @@ class WriteIntent:
         return {"tool": self.tool, "args": dict(self.args)}
 
 
-def detect_write_intent(message: str) -> WriteIntent | None:
-    """Reglas deterministas para pedidos de escritura (0 llamadas al modelo)."""
+def detect_write_intent(message: str, model: BaseChatModel | None = None) -> WriteIntent | None:
+    """Pedidos de escritura: reglas deterministas y, para el perfil, el LLM como refuerzo.
+
+    Las reglas no llaman al modelo. Solo si el mensaje parece declarar datos personales («laboro
+    en…», «mi empresa es…») y la regex no extrae nada, se pide al LLM una salida JSON validada.
+    """
     text = normalize(message).strip(" ¿?¡!.")
     if FORGET.search(text):
         return WriteIntent("forget_memory", {})
     if EXPORT.search(text):
         return WriteIntent("export_conversation", {"format": "markdown"})
     profile = extract_profile(message)
+    declares = "?" not in message and PROFILE_CUE.search(text) is not None
+    if not profile and model is not None and declares:
+        extracted = extract_profile_llm(model, message)
+        profile = {key: value for key, value in extracted.items() if key in PROFILE_KEYS}
     if profile:
         return WriteIntent("save_profile", profile)
     topics = TOPICS.search(text)

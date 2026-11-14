@@ -6,6 +6,7 @@ import json
 import os
 import uuid
 from functools import lru_cache
+from typing import Any, Literal
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
@@ -29,8 +30,11 @@ from .api_models import (
     FaqResponse,
     HealthStatus,
     MemoryView,
+    ObservabilityStatus,
+    PendingForget,
     ResumeRequest,
     RetrievalTraceModel,
+    ShowcaseResponse,
     SummaryRequest,
     ThreadView,
 )
@@ -130,21 +134,23 @@ def _retriever(mode: str) -> HybridRetriever | None:
         config = load_retrieval_config()
         profile = EmbeddingProfile.from_config(config.embedding)
         notes: list[str] = []
-        adversarial = mode == "demo" and os.environ.get(DEMO_CORPUS_ENV) == "malicious"
+        # Caso 5 de la rúbrica en vivo, en modo demo o con DeepSeek: corpus de prueba con un
+        # documento que intenta «ignorar las instrucciones anteriores»; la interfaz lo muestra
+        # marcado y la oración inyectada no llega al modelo.
+        adversarial = os.environ.get(DEMO_CORPUS_ENV) == "malicious"
+        test_corpus = mode == "demo" or adversarial
         index_dir = DEMO_INDEX if mode == "demo" else config.index_dir
         if adversarial:
-            # Caso 5 de la rúbrica en vivo: corpus de prueba con un documento que intenta
-            # «ignorar las instrucciones anteriores»; la interfaz lo muestra marcado como dato.
             index_dir = MALICIOUS_DIR / "index"
-            notes.append("Corpus demo adversarial (MANUELITA_DEMO_CORPUS=malicious)")
+            notes.append(f"Corpus adversarial ({DEMO_CORPUS_ENV}=malicious, modo {mode})")
         try:
             index = load_index(index_dir, profile)
         except (IndexUnavailableError, IndexInvalidError) as exc:
             index = None
             notes.append(f"Índice no utilizable: {exc}")
-        kind = "hash" if mode == "demo" else "fastembed"
+        kind = "hash" if test_corpus else "fastembed"
         units = _malicious_units() if adversarial else _units()
-        vector_store, note = attach_vector_store(index, config.source, units, demo=mode == "demo")
+        vector_store, note = attach_vector_store(index, config.source, units, demo=test_corpus)
         if note:
             notes.append(note)
         return HybridRetriever(
@@ -374,16 +380,18 @@ def health(probe: bool = False) -> HealthStatus | JSONResponse:
     )
 
 
-@app.get("/api/showcase")
-def showcase():
+@app.get("/api/showcase", response_model=ShowcaseResponse)
+def showcase() -> ShowcaseResponse | JSONResponse:
+    """Recorrido de los Módulos 1 y 2 con métricas reales del repositorio."""
     try:
         return build_showcase()
     except Exception as exc:
         return _exception_response(exc)
 
 
-@app.post("/api/ask")
-def ask(payload: AskRequest):
+@app.post("/api/ask", response_model=CitedAnswer)
+def ask(payload: AskRequest) -> CitedAnswer | JSONResponse:
+    """Q&A del Módulo 1 con citas ``[U#]`` y recuperación híbrida."""
     try:
         result = answer_question(
             payload.question,
@@ -399,8 +407,9 @@ def ask(payload: AskRequest):
     return _to_answer(result, str(uuid.uuid4()), payload.mode)
 
 
-@app.post("/api/summary")
-def summary(payload: SummaryRequest):
+@app.post("/api/summary", response_model=CitedAnswer)
+def summary(payload: SummaryRequest) -> CitedAnswer | JSONResponse:
+    """Resumen del corpus con citas."""
     try:
         result = summarize_corpus(
             pack=payload.pack,
@@ -415,7 +424,8 @@ def summary(payload: SummaryRequest):
 
 
 @app.post("/api/faq", response_model=FaqResponse)
-def faq(payload: FaqRequest):
+def faq(payload: FaqRequest) -> FaqResponse | JSONResponse:
+    """Preguntas frecuentes con evidencia."""
     try:
         items = generate_faq(
             limit=payload.limit,
@@ -455,16 +465,29 @@ def _chat_service() -> ChatService:
     )
 
 
-@app.get("/api/observability")
-def observability():
-    """Estado de las trazas (LangSmith) y del log estructurado, sin secretos."""
+@app.get("/api/observability", response_model=ObservabilityStatus)
+def observability(mode: Literal["demo", "real"] | None = None) -> ObservabilityStatus:
+    """Estado de las trazas (LangSmith), del log estructurado y de la búsqueda vectorial."""
     status = configure_tracing()
+    vector_store: dict[str, str] = {}
+    if mode is not None:
+        retriever = _retriever(mode)
+        vector_store[mode] = (
+            retriever.vector_search_status()
+            if retriever is not None
+            else "Recuperación no disponible."
+        )
     try:
         state_dir = resolve_state_dir(load_agent_config().state_env_var)
         log_path: str | None = str(state_dir / "logs" / "turns.jsonl")
     except Exception:
         log_path = None
-    return {**status, "structured_log": log_path}
+    return ObservabilityStatus(
+        langsmith=bool(status.get("langsmith")),
+        project=status.get("project"),
+        structured_log=log_path,
+        vector_store=vector_store,
+    )
 
 
 def _chat_error(exc: Exception) -> JSONResponse:
@@ -488,7 +511,8 @@ def _chat_error(exc: Exception) -> JSONResponse:
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-def chat(payload: ChatRequest):
+def chat(payload: ChatRequest) -> dict[str, Any] | JSONResponse:
+    """Un turno de la conversación (cadena o agente) con memoria por ``thread_id``."""
     try:
         outcome = _chat_service().send(
             payload.message,
@@ -508,8 +532,8 @@ def _sse(event: dict[str, object]) -> str:
     return f"event: {kind}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
 
 
-@app.post("/api/chat/stream")
-def chat_stream(payload: ChatRequest):
+@app.post("/api/chat/stream", response_model=None)
+def chat_stream(payload: ChatRequest) -> StreamingResponse | JSONResponse:
     """Misma conversación que ``/api/chat`` pero en streaming (SSE): ruta, recuperación,
     tokens de la respuesta y, al final, el turno validado con sus citas."""
     try:
@@ -530,7 +554,8 @@ def chat_stream(payload: ChatRequest):
 
 
 @app.post("/api/threads/{thread_id}/resume", response_model=ChatResponse)
-def resume(thread_id: str, payload: ResumeRequest):
+def resume(thread_id: str, payload: ResumeRequest) -> dict[str, Any] | JSONResponse:
+    """Aprueba, edita o rechaza la acción de escritura pendiente (Human-in-the-Loop)."""
     try:
         outcome = _chat_service().resume(
             thread_id, action_id=payload.action_id, decision=payload.decision, args=payload.args
@@ -541,15 +566,17 @@ def resume(thread_id: str, payload: ResumeRequest):
 
 
 @app.get("/api/memory/{user_id}", response_model=MemoryView)
-def memory(user_id: str):
+def memory(user_id: str) -> dict[str, Any] | JSONResponse:
+    """Perfil y preferencias guardados del usuario (memoria de largo plazo)."""
     try:
         return _chat_service().preferences(user_id)
     except Exception as exc:
         return _chat_error(exc)
 
 
-@app.delete("/api/memory/{user_id}", status_code=202)
-def forget_memory(user_id: str, thread_id: str):
+@app.delete("/api/memory/{user_id}", status_code=202, response_model=PendingForget)
+def forget_memory(user_id: str, thread_id: str) -> JSONResponse:
+    """Pide olvidar la memoria del usuario; la acción espera aprobación humana."""
     try:
         outcome = _chat_service().request_forget(user_id, thread_id)
     except Exception as exc:
@@ -565,7 +592,8 @@ def forget_memory(user_id: str, thread_id: str):
 
 
 @app.get("/api/threads/{thread_id}", response_model=ThreadView)
-def thread(thread_id: str):
+def thread(thread_id: str) -> dict[str, Any] | JSONResponse:
+    """Turnos y acción pendiente de un hilo guardado en el checkpointer."""
     try:
         return _chat_service().thread(thread_id)
     except Exception as exc:
@@ -578,7 +606,7 @@ if WEB_DIST.is_dir():
         app.mount("/assets", StaticFiles(directory=assets), name="assets")
 
     @app.get("/{path:path}")
-    def spa(path: str):
+    def spa(path: str) -> FileResponse:
         root = WEB_DIST.resolve()
         candidate = (WEB_DIST / path).resolve()
         if candidate.is_file() and root in candidate.parents:

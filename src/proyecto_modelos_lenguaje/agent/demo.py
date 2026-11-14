@@ -23,7 +23,8 @@ from langchain_core.outputs import ChatGeneration, ChatGenerationChunk, ChatResu
 from ..config import PROJECT_ROOT
 from ..tasks import FALLBACK_ANSWER
 from .actions import detect_write_intent
-from .router import contextual_query
+from .router import contextual_query, heuristic_decision
+from .series import series_intent
 
 DEMO_INDEX = PROJECT_ROOT / "tests" / "fixtures" / "rag" / "index"
 DEMO_EMBEDDER_KIND = "hash"
@@ -83,13 +84,15 @@ class DemoChatModel(BaseChatModel):
     """
 
     tools_bound: bool = False
+    tool_names: tuple[str, ...] = ()
 
     @property
     def _llm_type(self) -> str:
         return "manuelita-demo"
 
     def bind_tools(self, tools: Sequence[Any], **_kwargs: Any) -> DemoChatModel:  # type: ignore[override]
-        return self.model_copy(update={"tools_bound": bool(tools)})
+        names = tuple(str(getattr(tool, "name", "")) for tool in tools)
+        return self.model_copy(update={"tools_bound": bool(tools), "tool_names": names})
 
     def _generate(
         self,
@@ -109,11 +112,10 @@ class DemoChatModel(BaseChatModel):
             previous = _question(humans[-2]) if len(humans) > 1 else None
             intent = detect_write_intent(current)
             if intent is not None:
-                call = {"name": intent.tool, "args": dict(intent.args), "id": "demo_write_1"}
+                calls = [{"name": intent.tool, "args": dict(intent.args), "id": "demo_write_1"}]
             else:
-                query = contextual_query(current, previous)[:300]
-                call = {"name": "search_documents", "args": {"query": query}, "id": "demo_call_1"}
-            message = AIMessage(content="", tool_calls=[call])
+                calls = self._read_calls(current, previous)
+            message = AIMessage(content="", tool_calls=calls)
         else:
             evidence = "\n".join(str(m.content) for m in (tool_results or messages[-1:]))
             if tool_results and not DOCUMENT_PATTERN.search(evidence):
@@ -123,6 +125,28 @@ class DemoChatModel(BaseChatModel):
                 system = " ".join(str(m.content) for m in messages if isinstance(m, SystemMessage))
                 message = AIMessage(content=demo_answer(evidence, bullets=BULLETS_HINT in system))
         return ChatResult(generations=[ChatGeneration(message=message)])
+
+    def _read_calls(self, current: str, previous: str | None) -> list[dict[str, Any]]:
+        """Herramientas de lectura según la ruta heurística: cifra anual, conteo o documentos."""
+        from .tools import count_intent
+
+        route = heuristic_decision(current).route
+        query = contextual_query(current, previous)[:300]
+        calls: list[dict[str, Any]] = []
+        if route in {"structured", "mixed"}:
+            asked = series_intent(current)
+            entity_type = count_intent(current)
+            if asked is not None and "aggregate_series" in self.tool_names:
+                args = asked.model_dump(exclude_none=True)
+                calls.append({"name": "aggregate_series", "args": args, "id": "demo_series_1"})
+            elif "query_structured" in self.tool_names:
+                args = {"entity_type": entity_type} if entity_type else {"query": query}
+                calls.append({"name": "query_structured", "args": args, "id": "demo_struct_1"})
+        if route != "structured" or not calls:
+            calls.append(
+                {"name": "search_documents", "args": {"query": query}, "id": "demo_call_1"}
+            )
+        return calls
 
     def _stream(
         self,

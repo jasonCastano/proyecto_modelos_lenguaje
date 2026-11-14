@@ -1637,3 +1637,9 @@ button.chip:disabled {
 .console-message[data-kind="warning"] p {
   margin: 0;
 }
+
+/* Aviso visible cuando la búsqueda vectorial cae al respaldo numpy (sin Qdrant). */
+.fragments-badge[data-kind="warning"] {
+  color: var(--ink);
+  background: var(--gold);
+}

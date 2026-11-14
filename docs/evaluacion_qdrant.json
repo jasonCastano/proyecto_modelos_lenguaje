@@ -1,0 +1,413 @@
+{
+  "run_id": "qdrant-base-2026-11-14",
+  "questions": 40,
+  "scored_questions": 35,
+  "warmup": 3,
+  "k_values": [
+    1,
+    3,
+    5,
+    10
+  ],
+  "modes": {
+    "semantic": {
+      "mode": "semantic",
+      "recall_at_k": {
+        "1": 0.3429,
+        "3": 0.5143,
+        "5": 0.5714,
+        "10": 0.6857
+      },
+      "ndcg_at_10": 0.4925,
+      "mrr": 0.4345,
+      "citation_coverage": 1.0,
+      "abstention_rate": 0.0,
+      "latency_ms": {
+        "mean": 35.0,
+        "p95": 39.46
+      }
+    },
+    "lexical": {
+      "mode": "lexical",
+      "recall_at_k": {
+        "1": 0.2857,
+        "3": 0.3429,
+        "5": 0.3714,
+        "10": 0.3714
+      },
+      "ndcg_at_10": 0.3328,
+      "mrr": 0.32,
+      "citation_coverage": 1.0,
+      "abstention_rate": 0.0,
+      "latency_ms": {
+        "mean": 724.25,
+        "p95": 765.93
+      }
+    },
+    "hybrid": {
+      "mode": "hybrid",
+      "recall_at_k": {
+        "1": 0.3429,
+        "3": 0.5143,
+        "5": 0.6,
+        "10": 0.6714
+      },
+      "ndcg_at_10": 0.4986,
+      "mrr": 0.4499,
+      "citation_coverage": 1.0,
+      "abstention_rate": 0.0,
+      "latency_ms": {
+        "mean": 940.53,
+        "p95": 1001.05
+      }
+    }
+  },
+  "baseline": "lexical",
+  "verdict": "hybrid >= baseline en Recall@10, nDCG@10 y MRR",
+  "errors": [
+    {
+      "question_id": "p01",
+      "mode": "semantic",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p02",
+      "mode": "semantic",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p05",
+      "mode": "semantic",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p06",
+      "mode": "semantic",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p11",
+      "mode": "semantic",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p12",
+      "mode": "semantic",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "n04",
+      "mode": "semantic",
+      "type": "proper_noun",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "e01",
+      "mode": "semantic",
+      "type": "english",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "e04",
+      "mode": "semantic",
+      "type": "english",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "e05",
+      "mode": "semantic",
+      "type": "english",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "o01",
+      "mode": "semantic",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o02",
+      "mode": "semantic",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o03",
+      "mode": "semantic",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o04",
+      "mode": "semantic",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o05",
+      "mode": "semantic",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "p01",
+      "mode": "lexical",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p02",
+      "mode": "lexical",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p03",
+      "mode": "lexical",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p04",
+      "mode": "lexical",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p05",
+      "mode": "lexical",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p06",
+      "mode": "lexical",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p07",
+      "mode": "lexical",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p08",
+      "mode": "lexical",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p09",
+      "mode": "lexical",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p11",
+      "mode": "lexical",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p12",
+      "mode": "lexical",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "f06",
+      "mode": "lexical",
+      "type": "figure",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "f07",
+      "mode": "lexical",
+      "type": "figure",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "f08",
+      "mode": "lexical",
+      "type": "figure",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "n01",
+      "mode": "lexical",
+      "type": "proper_noun",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "n02",
+      "mode": "lexical",
+      "type": "proper_noun",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "n05",
+      "mode": "lexical",
+      "type": "proper_noun",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "e01",
+      "mode": "lexical",
+      "type": "english",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "e02",
+      "mode": "lexical",
+      "type": "english",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "e03",
+      "mode": "lexical",
+      "type": "english",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "e04",
+      "mode": "lexical",
+      "type": "english",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "e05",
+      "mode": "lexical",
+      "type": "english",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "o01",
+      "mode": "lexical",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o02",
+      "mode": "lexical",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o03",
+      "mode": "lexical",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o04",
+      "mode": "lexical",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o05",
+      "mode": "lexical",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "p01",
+      "mode": "hybrid",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p02",
+      "mode": "hybrid",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p05",
+      "mode": "hybrid",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p06",
+      "mode": "hybrid",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p11",
+      "mode": "hybrid",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "p12",
+      "mode": "hybrid",
+      "type": "paraphrase",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "e01",
+      "mode": "hybrid",
+      "type": "english",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "e04",
+      "mode": "hybrid",
+      "type": "english",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "e05",
+      "mode": "hybrid",
+      "type": "english",
+      "cause": "la unidad esperada no apareció en el ranking"
+    },
+    {
+      "question_id": "o01",
+      "mode": "hybrid",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o02",
+      "mode": "hybrid",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o03",
+      "mode": "hybrid",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o04",
+      "mode": "hybrid",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    },
+    {
+      "question_id": "o05",
+      "mode": "hybrid",
+      "type": "out_of_corpus",
+      "cause": "devolvió evidencia para una pregunta fuera de corpus"
+    }
+  ],
+  "regressions": [
+    {
+      "question_id": "n04",
+      "type": "proper_noun",
+      "ndcg_hybrid": 0.0,
+      "ndcg_lexical": 1.0
+    }
+  ]
+}

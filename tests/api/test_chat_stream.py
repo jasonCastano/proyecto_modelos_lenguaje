@@ -95,6 +95,15 @@ def test_each_turn_is_logged_as_structured_json(client: TestClient, tmp_path: Pa
     assert "question" not in record and "user_id" not in record
 
 
+def test_observability_reports_which_vector_search_is_in_use(client: TestClient) -> None:
+    # Act
+    status = client.get("/api/observability", params={"mode": "demo"}).json()
+
+    # Assert: la UI muestra si busca en Qdrant o si cayó al respaldo numpy.
+    assert "demo" in status["vector_store"]
+    assert status["vector_store"]["demo"].startswith(("Búsqueda vectorial", "Respaldo numpy"))
+
+
 def test_adversarial_demo_corpus_shows_the_injection_as_data(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

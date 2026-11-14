@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\nodo-agente.json",
+    "sha256": "247cbda90c1e1897e304290eb13daa3f34398ae09f6330ab84efb41dade97340",
+    "bytes": 7506
+  },
+  "artifact": {
+    "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\nodo-agente.html",
+    "sha256": "9a0223f858727692bc156e0c9295164786561712d80bcee608a8f83cc813fc7b",
+    "bytes": 851314
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\nodo-agente-final1\\nodo-agente.finalize.json",
+    "summaryReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\nodo-agente-final1\\nodo-agente.finalize-summary.json",
+    "browserCheckReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\nodo-agente-final1\\nodo-agente.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-11-14T04:14:03.185Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 30100,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

@@ -1,0 +1,329 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Herramientas y router",
+    "locale": "es",
+    "output": "docs/diagramas/herramientas-router.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
+      "provider": "github",
+      "revision": "a0611c326087e92943bb9fb22cb0d240feee6c4e"
+    }
+  },
+  "lanes": [
+    {
+      "id": "nosearch",
+      "label": "Sin búsqueda"
+    },
+    {
+      "id": "rules",
+      "label": "Reglas (0 llamadas al modelo)"
+    },
+    {
+      "id": "llmlane",
+      "label": "Router LLM"
+    },
+    {
+      "id": "tools",
+      "label": "Herramientas @tool"
+    },
+    {
+      "id": "answerlane",
+      "label": "Respuesta"
+    }
+  ],
+  "mainPath": [
+    "msg",
+    "rules",
+    "llm",
+    "structured",
+    "guard",
+    "answer"
+  ],
+  "nodes": [
+    {
+      "id": "msg",
+      "lane": "rules",
+      "col": 0,
+      "type": "external",
+      "label": "Mensaje",
+      "sublabel": "pregunta + historial",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 299,
+          "end_line": 325
+        }
+      ]
+    },
+    {
+      "id": "rules",
+      "lane": "rules",
+      "col": 1,
+      "type": "security",
+      "label": "Reglas",
+      "sublabel": "saludo · fuera de alcance · perfil",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/router.py",
+          "line": 85,
+          "end_line": 108
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/actions.py",
+          "line": 213,
+          "end_line": 216
+        }
+      ]
+    },
+    {
+      "id": "direct",
+      "lane": "nosearch",
+      "col": 3,
+      "type": "backend",
+      "label": "Respuesta directa",
+      "sublabel": "sin buscar",
+      "tag": "0 búsquedas",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 413,
+          "end_line": 435
+        }
+      ]
+    },
+    {
+      "id": "profile",
+      "lane": "nosearch",
+      "col": 1,
+      "type": "database",
+      "label": "Perfil del Store",
+      "sublabel": "«¿Dónde trabajo?»",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 361,
+          "end_line": 382
+        }
+      ]
+    },
+    {
+      "id": "llm",
+      "lane": "llmlane",
+      "col": 3,
+      "type": "cloud",
+      "label": "Router LLM",
+      "sublabel": "JSON + Pydantic",
+      "tag": "RouteDecision",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/router.py",
+          "line": 162,
+          "end_line": 204
+        }
+      ]
+    },
+    {
+      "id": "clarify",
+      "lane": "llmlane",
+      "col": 5,
+      "type": "backend",
+      "label": "Aclaración",
+      "sublabel": "pide precisar",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/router.py",
+          "line": 183,
+          "end_line": 204
+        },
+        {
+          "path": "config/agent.toml",
+          "line": 5,
+          "end_line": 5
+        }
+      ]
+    },
+    {
+      "id": "search",
+      "lane": "tools",
+      "col": 2,
+      "type": "database",
+      "label": "search_documents",
+      "sublabel": "Qdrant top-k + BM25",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/tools.py",
+          "line": 259,
+          "end_line": 275
+        }
+      ]
+    },
+    {
+      "id": "structured",
+      "lane": "tools",
+      "col": 3,
+      "type": "database",
+      "label": "query_structured",
+      "sublabel": "tabla SQLite · conteos",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/tools.py",
+          "line": 276,
+          "end_line": 322
+        }
+      ]
+    },
+    {
+      "id": "series",
+      "lane": "tools",
+      "col": 4,
+      "type": "database",
+      "label": "aggregate_series",
+      "sublabel": "CSV curado · Decimal",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/tools.py",
+          "line": 323,
+          "end_line": 345
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/series.py",
+          "line": 207,
+          "end_line": 265
+        }
+      ]
+    },
+    {
+      "id": "guard",
+      "lane": "answerlane",
+      "col": 3,
+      "type": "security",
+      "label": "Contexto aislado",
+      "sublabel": "<documento> como datos",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/guard.py",
+          "line": 107,
+          "end_line": 160
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "lane": "answerlane",
+      "col": 5,
+      "type": "backend",
+      "label": "Respuesta citada",
+      "sublabel": "U# / F# validadas",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 250,
+          "end_line": 264
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "msg-rules",
+      "from": "msg",
+      "to": "rules",
+      "variant": "emphasis"
+    },
+    {
+      "id": "rules-direct",
+      "from": "rules",
+      "to": "direct",
+      "label": "saludo · fuera de alcance"
+    },
+    {
+      "id": "rules-profile",
+      "from": "rules",
+      "to": "profile",
+      "label": "pregunta sobre el usuario"
+    },
+    {
+      "id": "rules-llm",
+      "from": "rules",
+      "to": "llm",
+      "label": "resto",
+      "variant": "emphasis"
+    },
+    {
+      "id": "llm-clarify",
+      "from": "llm",
+      "to": "clarify",
+      "label": "confianza < 0,6",
+      "variant": "dashed"
+    },
+    {
+      "id": "llm-search",
+      "from": "llm",
+      "to": "search",
+      "label": "documental · mixta",
+      "variant": "emphasis"
+    },
+    {
+      "id": "llm-structured",
+      "from": "llm",
+      "to": "structured",
+      "label": "estructurada · mixta"
+    },
+    {
+      "id": "llm-series",
+      "from": "llm",
+      "to": "series",
+      "label": "cifras anuales"
+    },
+    {
+      "id": "search-guard",
+      "from": "search",
+      "to": "guard",
+      "variant": "emphasis"
+    },
+    {
+      "id": "structured-guard",
+      "from": "structured",
+      "to": "guard"
+    },
+    {
+      "id": "series-guard",
+      "from": "series",
+      "to": "guard"
+    },
+    {
+      "id": "guard-answer",
+      "from": "guard",
+      "to": "answer",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Puerta de decisión",
+      "items": [
+        "Las reglas resuelven saludos, temas ajenos y preguntas sobre el usuario sin llamar al modelo",
+        "El router LLM devuelve JSON validado con Pydantic; con confianza < 0,6 la ruta efectiva es aclaración"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Herramientas deterministas",
+      "items": [
+        "Los conteos y las sumas, promedios, máximos, mínimos y variaciones los calcula la herramienta",
+        "La ruta mixta combina filas [F#] y fragmentos [U#] en la misma respuesta"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Escrituras",
+      "items": [
+        "Los pedidos de escritura (perfil, preferencia, olvido, exportar) también los detectan las reglas y pasan por aprobación humana"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "a6dee44d-8665-4bce-8219-1d4cc821de6f",
+  "status": "current",
+  "command": "deliver",
+  "type": "sequence",
+  "input": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\trazas.json",
+  "output": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\trazas.html",
+  "specification": {
+    "sha256": "60bd535feac2fe546f977a59523968958df3e3e3f7cadb24b05c426134e64cc6",
+    "bytes": 4423
+  },
+  "artifact": {
+    "sha256": "36668f8597aca0c931258dfef48836e9914d06520491a0e36e5a9f6623b5ad57",
+    "bytes": 840240
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "caa29151-2983-49b5-9199-9abe6a8fee88",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\memoria.json",
+  "output": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\memoria.html",
+  "specification": {
+    "sha256": "1885a7896b8df85a8d402e7717fe0b9a95d11ca901174d52be993cd932b08df4",
+    "bytes": 5293
+  },
+  "artifact": {
+    "sha256": "dd1d9669d0cdcead62260a10fa78a1488142baff76ab13af3934ef4c154fd405",
+    "bytes": 851454
+  }
+}

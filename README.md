@@ -142,37 +142,9 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
 
 ## Arquitectura
 
-```mermaid
-flowchart LR
-    S[Fuentes públicas<br/>sitio oficial · prensa · gremios · datos abiertos]
-    P[Scrapling<br/>robots · sitemap · rate limit]
-    B[(Bronce<br/>data/bronze<br/>bytes + metadata + hash)]
-    C[Catálogo SQLite<br/>procedencia · dedupe · auditoría]
-    V[Plata<br/>data/silver<br/>limpieza + chunks]
-    G[Oro<br/>data/gold<br/>base de conocimiento]
-    I[(Qdrant<br/>e5-small 384d · HNSW<br/>payload filtrable)]
-    H[Recuperación híbrida<br/>semántica + BM25 · traza]
-    L[LangChain + DeepSeek<br/>Resumen · FAQ · Q&A]
-    UI[Web React + FastAPI<br/>citas · fragmentos]
-    T[(Tabla estructurada<br/>SQLite · hechos del oro)]
-    R[Enrutador<br/>directo · documental · estructurado · mixto]
-    M[LangGraph · cadena / agente<br/>memoria por hilo · HITL]
-    D[Despliegue y canales<br/>WhatsApp / Telegram]
+[![Pipeline de datos, RAG y agente de Manuelita](docs/capturas/arquitectura.png)](docs/arquitectura.html)
 
-    S --> P --> B
-    B --> C
-    B --> V --> G
-    G --> I --> H
-    G --> H --> L --> UI
-    G --> T
-    UI --> R
-    R --> H
-    R --> T
-    H --> M
-    T --> M
-    M --> UI
-    M -. Fase 3 .-> D
-```
+*Diagrama interactivo (Archify): [`docs/arquitectura.html`](docs/arquitectura.html), con pan/zoom, temas y trazabilidad al código. Detalle en [Arquitectura interactiva](#arquitectura-interactiva-archify).*
 
 ### Agente del Módulo 2
 
@@ -182,99 +154,36 @@ Cumplimiento de la rúbrica de sustentación, ítem por ítem, y guion de la dem
 
 **Grafo del agente (LangGraph)**. Las dos variantes comparten el estado del hilo, la puerta de decisión y el cierre del turno:
 
-```mermaid
-flowchart TD
-    START(("inicio")) --> route{"route: reglas → LLM"}
+[![Grafo del agente (LangGraph): cadena y agente](docs/capturas/diagramas/grafo-agente.png)](docs/diagramas/grafo-agente.html)
 
-    route -- "saludo · fuera de alcance · aclaración · perfil" --> reply["reply: sin buscar"]
-    route -- "escritura (perfil, preferencia, olvido, exportar)" --> action["action: interrupt → aprobación humana"]
-    route -- "documental · estructurada · mixta" --> work
-
-    subgraph cadena ["Variante cadena"]
-        work --> retrieve["retrieve: Qdrant + BM25 y/o tabla"]
-        retrieve --> answer["answer: RunnablePassthrough → ChatPromptTemplate → DeepSeek"]
-    end
-
-    subgraph agente ["Variante agente"]
-        work -.-> ag["create_agent: @tool + middleware · HITL · PII · resumen · límites"]
-    end
-
-    reply --> finalize
-    action --> finalize
-    answer --> finalize
-    ag --> finalize
-
-    finalize["finalize: turno · métricas · resumen"] --> END(("fin"))
-```
+*Diagrama interactivo (Archify): [`docs/diagramas/grafo-agente.html`](docs/diagramas/grafo-agente.html).*
 
 **Nodo del agente desplegado (`create_agent`)**: el bucle modelo ↔ herramientas, la pista de ruta y el punto
 de interrupción Human-in-the-Loop:
 
-```mermaid
-flowchart TB
-    IN[Mensajes del hilo<br/>trim_messages + resumen] --> MW[Middleware antes del modelo<br/>dynamic_prompt: perfil, preferencias y ruta<br/>PII · resumen · límites de llamadas]
-    MW --> LLM{DeepSeek<br/>¿llama una herramienta?}
-    LLM -- "lectura" --> RT["search_documents · query_structured · aggregate_series<br/>(sin aprobación)"]
-    RT -- "documentos U# / F# como datos" --> MW
-    LLM -- "escritura" --> HITL[[interrupt: save_profile · save_preference ·<br/>forget_memory · export_conversation]]
-    HITL -- "aprobar / editar" --> WR[Store o exportación] --> MW
-    HITL -- "rechazar" --> MW
-    LLM -- "respuesta final" --> VAL[validate_answer<br/>citas U#/F# válidas · sin fuga del prompt]
-    VAL --> OUT((turno))
-```
+[![Nodo del agente desplegado (create_agent)](docs/capturas/diagramas/nodo-agente.png)](docs/diagramas/nodo-agente.html)
+
+*Diagrama interactivo (Archify): [`docs/diagramas/nodo-agente.html`](docs/diagramas/nodo-agente.html).*
 
 **Memoria: checkpointer frente a Store**:
 
-```mermaid
-flowchart TB
-    subgraph corto [Corto plazo · por hilo]
-        CK[(SqliteSaver<br/>checkpoints.sqlite3)]
-        T1[thread_id A<br/>turnos · resumen · acciones]
-        T2[thread_id B]
-        CK --- T1
-        CK --- T2
-    end
-    subgraph largo [Largo plazo · por usuario]
-        ST[(SqliteStore<br/>memory.sqlite3)]
-        NP["(users, id, profile)<br/>nombre · trabajo · cargo · ciudad"]
-        NF["(users, id, preferences)<br/>formato · temas · idioma · TTL 30 días"]
-        ST --- NP
-        ST --- NF
-    end
-    T1 -- "save_profile (con aprobación)" --> NP
-    NP -- "store.search() en otro hilo" --> T2
-    T1 -. "trim_messages · SummarizationMiddleware" .-> T1
-```
+[![Memoria: checkpointer frente a Store](docs/capturas/diagramas/memoria.png)](docs/diagramas/memoria.html)
+
+*Diagrama interactivo (Archify): [`docs/diagramas/memoria.html`](docs/diagramas/memoria.html).*
 
 **Herramientas y router**:
 
-```mermaid
-flowchart LR
-    M[Mensaje] --> RG{Reglas<br/>0 llamadas}
-    RG -- saludo / fuera de alcance --> D[Respuesta directa]
-    RG -- pregunta sobre el usuario --> P[Perfil del Store]
-    RG -- ambiguo --> LLM{Router LLM<br/>JSON + Pydantic}
-    LLM -- documental --> SD["@tool search_documents<br/>Qdrant top-k + BM25"]
-    LLM -- estructurada --> QS["@tool query_structured<br/>SQLite / CSV · conteo exacto"]
-    LLM -- mixta --> SD
-    LLM -- mixta --> QS
-    LLM -- "confianza < 0,6" --> C[Aclaración]
-    SD --> G[Contexto en documento<br/>como datos pasivos]
-    QS --> G
-    G --> A[Respuesta con citas U# / F#<br/>validadas]
-```
+[![Herramientas y router](docs/capturas/diagramas/herramientas-router.png)](docs/diagramas/herramientas-router.html)
+
+*Diagrama interactivo (Archify): [`docs/diagramas/herramientas-router.html`](docs/diagramas/herramientas-router.html).*
 
 **Trazas**: cada turno lleva `run_name`, etiquetas y metadatos para LangSmith (`LANGSMITH_TRACING`,
 `LANGSMITH_API_KEY` y `LANGSMITH_PROJECT`). También se registra como JSON en
 `$MANUELITA_STATE_DIR/logs/turns.jsonl` (ruta, quién decidió, herramientas, latencia y tokens).
 
-```mermaid
-flowchart LR
-    UI[React<br/>POST /api/chat/stream] -- SSE: route · tool · token · done --> UI
-    UI --> API[FastAPI] --> GR[LangGraph]
-    GR -- callbacks --> LS[(LangSmith<br/>proyecto manuelita-modulo2)]
-    GR --> LOG[(turns.jsonl<br/>log estructurado)]
-```
+[![Trazas de un turno: SSE, LangSmith y turns.jsonl](docs/capturas/diagramas/trazas.png)](docs/diagramas/trazas.html)
+
+*Diagrama interactivo (Archify): [`docs/diagramas/trazas.html`](docs/diagramas/trazas.html).*
 
 **Decisiones clave**:
 
@@ -289,19 +198,31 @@ flowchart LR
 
 ### Arquitectura interactiva (Archify)
 
-El pipeline completo se puede explorar como un diagrama interactivo autocontenido: pan/zoom, temas
-claro/oscuro, búsqueda y trazabilidad de relaciones. La fuente tipada es
-[`docs/arquitectura.json`](docs/arquitectura.json) y el HTML se genera con Archify; no se edita a mano.
+Todos los diagramas de arquitectura del README se generan con Archify (ya no hay diagramas Mermaid). Cada uno es
+un HTML autocontenido con pan/zoom, temas claro/oscuro, búsqueda y enlaces de cada nodo a su código en GitHub; la
+fuente tipada es un JSON versionado y el HTML no se edita a mano. Las imágenes del README son capturas del HTML.
 
-[![Pipeline de datos y RAG de Manuelita](docs/capturas/arquitectura.png)](docs/arquitectura.html)
+| Diagrama | Tipo | Fuente | HTML |
+|---|---|---|---|
+| Pipeline de datos, RAG y agente | `dataflow` | [`docs/arquitectura.json`](docs/arquitectura.json) | [`docs/arquitectura.html`](docs/arquitectura.html) |
+| Grafo del agente (LangGraph) | `workflow` | [`docs/diagramas/grafo-agente.json`](docs/diagramas/grafo-agente.json) | [`grafo-agente.html`](docs/diagramas/grafo-agente.html) |
+| Nodo del agente desplegado | `workflow` | [`docs/diagramas/nodo-agente.json`](docs/diagramas/nodo-agente.json) | [`nodo-agente.html`](docs/diagramas/nodo-agente.html) |
+| Memoria: checkpointer frente a Store | `architecture` | [`docs/diagramas/memoria.json`](docs/diagramas/memoria.json) | [`memoria.html`](docs/diagramas/memoria.html) |
+| Herramientas y router | `workflow` | [`docs/diagramas/herramientas-router.json`](docs/diagramas/herramientas-router.json) | [`herramientas-router.html`](docs/diagramas/herramientas-router.html) |
+| Trazas de un turno | `sequence` | [`docs/diagramas/trazas.json`](docs/diagramas/trazas.json) | [`trazas.html`](docs/diagramas/trazas.html) |
 
-Regenerar y validar (con la skill Archify instalada):
+Regenerar y validar (con la skill Archify instalada; cambiar el tipo y la ruta según la tabla):
 
 ```bash
 node ~/.agents/skills/archify/bin/archify.mjs finalize dataflow \
   docs/arquitectura.json docs/arquitectura.html \
   --repo-root . --quality showcase --json
+node ~/.agents/skills/archify/bin/archify.mjs finalize workflow \
+  docs/diagramas/grafo-agente.json docs/diagramas/grafo-agente.html \
+  --repo-root . --quality showcase --json
 ```
+
+Las capturas de `docs/capturas/diagramas/` salen de `archify.mjs visual-check <html>` (vista clara de 2048×1320).
 
 Si la copia global de la skill está incompleta, clona
 [`tt-a1i/archify`](https://github.com/tt-a1i/archify) y usa `archify/bin/archify.mjs`.
@@ -905,6 +826,7 @@ referencian por manifiesto y hash.
 ├── docs/                          # Alcance, ficha de datos, ADRs y arquitectura
 │   ├── arquitectura.json          # Fuente Archify
 │   ├── arquitectura.html          # Diagrama interactivo
+│   ├── diagramas/                 # Diagramas Archify del agente (JSON + HTML)
 │   └── decisions/                 # ADRs
 ├── scripts/                       # Entradas operativas
 ├── specs/                         # Especificaciones, planes y tareas (001–014)

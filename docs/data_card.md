@@ -35,7 +35,7 @@ OCR, traducción, embeddings ni respuestas generadas por un LLM.
 | Métrica | Valor |
 |---------|------:|
 | Artefactos catalogados en bronce | 26.905 |
-| Artefactos en cuarentena | 26.347 |
+| Artefactos retirados (purgados el 2026-11-13) | 26.347 |
 | Artefactos activos tras curaduría | **557** |
 | Campañas de bronce | 9 |
 | Documentos de plata | 496 |
@@ -365,6 +365,7 @@ uv sync
 |---------|-------|--------|
 | 1.0 | 2026-10-30 | Ficha inicial con el corpus de referencia: 557 activos, 404 canónicos, 3.810 fragmentos, 15.211 unidades y 24/24 ítems |
 | 1.1 | 2026-10-30 | Bronce, plata y oro versionados en Git LFS; cuarentena y cachés excluidos |
+| 1.2 | 2026-11-13 | Cuarentena purgada (corrida `2026-10-curation-01`): 26.347 artefactos y 8,93 GB eliminados; el catálogo los marca `purged` |
 
 ---
 

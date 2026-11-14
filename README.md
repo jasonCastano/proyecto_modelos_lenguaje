@@ -285,7 +285,7 @@ versionan capturas temporales de la auditoría.
 | Capa oro | ✅ | 15.211 unidades, 381 hechos, 38 conflictos, 24/24 ítems; `data/gold/` |
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
-| Cuarentena y auditoría | ✅ | 26.347 artefactos retirados, 26.347 auditorías |
+| Cuarentena y auditoría | ✅ | 26.347 artefactos retirados y purgados (2026-11-13), 26.347 auditorías |
 | Pruebas | ✅ | 681 pruebas offline (652 Python + 29 web) y E2E de la conversación |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
@@ -317,7 +317,7 @@ versionan capturas temporales de la auditoría.
 |---------|------:|
 | Artefactos adquiridos | 26.905 |
 | Artefactos activos | 557 |
-| Artefactos en cuarentena | 26.347 |
+| Artefactos retirados (purgados) | 26.347 |
 | Videos de YouTube con transcripción | 33 |
 | Documentos plata canónicos | 404 |
 | Fragmentos plata | 3.810 |
@@ -328,8 +328,8 @@ versionan capturas temporales de la auditoría.
 | Bronze activo | 0,36 GB |
 | Plata | 0,03 GB |
 | Oro | 0,20 GB |
-| Cuarentena | 8,93 GB |
-| Datos totales | 9,52 GB (límite: 10 GB) |
+| Cuarentena | 0 GB (purgada el 2026-11-13; 8,93 GB liberados) |
+| Datos totales | 0,59 GB (límite: 10 GB) |
 | Pruebas offline | 681 |
 | Consultas etiquetadas (Módulo 2) | 36 |
 | Acierto del enrutador | 97 % (35/36) |
@@ -916,8 +916,9 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 
 ## Limitaciones conocidas
 
-- El corpus activo es de 557 artefactos; 26.347 fueron retirados a cuarentena por no ser relevantes.
-- La cuarentena ocupa 8,93 GB y el total de datos está en 9,52 GB; la purga definitiva está pendiente.
+- El corpus activo es de 557 artefactos; 26.347 fueron retirados por no ser relevantes y purgados el
+  2026-11-13 (`pml curate purge --run 2026-10-curation-01`): ya no se pueden restaurar.
+- La purga liberó 8,93 GB; el total de datos quedó en 0,59 GB. El catálogo conserva la auditoría.
 - La capa plata produjo 404 documentos canónicos y 3.810 fragmentos; 92 artefactos quedaron como alias por
   duplicados o versiones. 61 se omitieron: 35 sin texto, 10 PDF escaneados, 6 PDF cifrados y 10 sitemaps.
 - Instagram y Linktree no se capturan por `robots.txt`; 30 videos de YouTube no están disponibles y 3 exigen sesión.

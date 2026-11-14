@@ -9,6 +9,7 @@ const TOOL_LABEL: Record<PendingAction["tool"], string> = {
   save_profile: "Guardar datos de tu perfil",
   forget_memory: "Olvidar tus preferencias y tu perfil",
   export_conversation: "Exportar la conversación",
+  remember_client: "Recordarte por tu correo en próximas visitas",
 };
 
 const ARG_LABEL: Record<string, string> = {

@@ -218,21 +218,21 @@ reindexar las 15.211 unidades por cada valor.
 <!-- router:start -->
 ## Enrutador (US2)
 
-**Ejecución**: `router-real-2026-11-14` · **Modo**: real · **Casos**: 44 (las repreguntas llevan su turno previo como historial; incluye 5 casos `mixed`)
+**Ejecución**: `router-real-2026-11-14-valeria` · **Modo**: real · **Casos**: 44 (las repreguntas llevan su turno previo como historial; incluye 5 casos `mixed`)
 
 | Métrica | Valor | Criterio |
 |---|---:|---|
-| Precisión del enrutador | 0.977 (43/44) | SC-002 ≥ 0,90 |
+| Precisión del enrutador | 0.955 (42/44) | SC-002 ≥ 0,90 |
 | Saludos y fuera de alcance sin búsqueda | 10/10 | SC-004 100 % |
 | Llamadas al modelo | 34 | 0 en reglas |
-| Latencia media por decisión | 1205 ms | — |
+| Latencia media por decisión | 1235 ms | — |
 
 Matriz de confusión (filas: esperada; columnas: predicha):
 
 | Esperada \ Predicha | direct | documental | structured | mixed | out_of_scope | clarify |
 |---|---|---|---|---|---|---|
 | direct | 6 | 0 | 0 | 0 | 0 | 0 |
-| documental | 0 | 17 | 1 | 0 | 0 | 0 |
+| documental | 0 | 16 | 2 | 0 | 0 | 0 |
 | structured | 0 | 0 | 9 | 0 | 0 | 0 |
 | mixed | 0 | 0 | 0 | 5 | 0 | 0 |
 | out_of_scope | 0 | 0 | 0 | 0 | 4 | 0 |
@@ -242,14 +242,20 @@ Errores:
 
 | Consulta | Esperada | Predicha | Confianza | Decidió | Motivo |
 |---|---|---|---:|---|---|
-| r32 «¿Cuánto bioetanol produce allá al año?» | documental | structured | 0.92 | llm | Pregunta por una cifra anual de producción de bioetanol en Brasil, dato puntual tabulable. |
+| r10 «¿En qué región de Chile cultiva mejillones la empresa?» | documental | structured | 0.75 | llm | pregunta por un dato puntual de una operación: la región de cultivo de mejillones en Chile |
+| r32 «¿Cuánto bioetanol produce allá al año?» | documental | structured | 0.87 | llm | pide una cifra anual de producción de bioetanol en Brasil, dato tabulable |
 
 <!-- router:end -->
 
 Lectura (2026-11-14; se escribe fuera de los marcadores para que la regeneración no la borre):
 
-- **Cumple SC-002 y SC-004**: 0,977 de precisión con DeepSeek (≥ 0,90) y 10/10 saludos y preguntas fuera
-  de alcance resueltos por reglas, sin búsqueda ni llamadas al modelo.
+- **Cumple SC-002 y SC-004**: 0,977 (43/44) con DeepSeek en `router-real-2026-11-14` (≥ 0,90) y 10/10
+  saludos y preguntas fuera de alcance resueltos por reglas, sin búsqueda ni llamadas al modelo.
+- **Reevaluación tras Valer-IA (spec 018, `router-real-2026-11-14-valeria`)**: 0,955 (42/44), 10/10 sin
+  búsqueda. Las reglas de conducta nuevas no bloquearon ninguna de las 44 preguntas. El único error nuevo (r10,
+  región de cultivo de mejillones) es una decisión del LLM entre `documental` y `structured`, la misma frontera
+  del error previo r32, y no está relacionado con `scope_reason`. Se registra como variación del clasificador
+  (SC-008 de la spec 018).
 - **Ruta mixta evaluada**: a pedido de la evaluación docente se agregaron 5 casos `mixed` (r37–r41) y
   3 de cifras anuales (r42–r44, incluida una pregunta por trimestre). Los 8 se enrutan bien con el modelo
   real. La prueba `tests/integration/agent/test_series_routes.py` verifica, en ambas variantes, que la

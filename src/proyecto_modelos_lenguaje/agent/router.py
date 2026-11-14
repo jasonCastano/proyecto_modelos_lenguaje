@@ -52,6 +52,63 @@ OUT_OF_SCOPE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         re.compile(r"\b(python|javascript|sql|codigo|programa en|funcion en|script)\b"),
     ),
 )
+# Spec 018: motivos de conducta de Valer-IA (texto normalizado: minúsculas, sin tildes).
+# Se evalúan antes que los temas ajenos; las palabras de la industria («quema de caña», «demanda de
+# azúcar», «política antifraude») no los activan porque los patrones exigen verbos o personas.
+CONDUCT_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        "prompt_extraction",
+        re.compile(
+            r"\b((tu|tus|el|del|su) (system )?prompt|prompt del sistema|"
+            r"(tus|las) instrucciones (internas|iniciales|del sistema|secretas|ocultas)|"
+            r"instrucciones del sistema|ignora (tus|las|todas)( \w+){0,3} instrucciones|"
+            r"olvida (tus|las) (instrucciones|reglas)|(actua|finge|comportate) como|"
+            r"modo desarrollador|jailbreak|dan mode|repite (todo )?lo (anterior|de arriba))\b"
+        ),
+    ),
+    (
+        "third_party",
+        re.compile(
+            r"\b((correo|email|telefono|celular|direccion|cedula|salario|sueldo|"
+            r"datos( personales)?)"
+            r" (de|del|de los|de las) (otros? |otras? |los |las |un |una |el |la |algun )?"
+            r"(cliente|clientes|usuario|usuarios|empleado|empleados|trabajador|trabajadores|"
+            r"persona|personas|gerente|presidente|directivos?)|"
+            r"cuanto (gana|ganan|cobra)|"
+            r"quien(es)? (mas )?(se )?(ha |han )?(registrado|registro|registraron)|"
+            r"(lista|base de datos) de (clientes|usuarios|empleados))\b"
+        ),
+    ),
+    (
+        "harmful",
+        re.compile(
+            r"\b(hackear|hackeo|hackeas|piratear|estafar|robar|envenenar|sabotear|secuestrar|"
+            r"matar|(hacer|fabricar|construir|armar) (una |un )?(bomba|explosivo|arma)|"
+            r"como (hago|hacer|fabrico|fabricar) (una |un )?(bomba|explosivo|arma))\b"
+        ),
+    ),
+    (
+        "abuse",
+        re.compile(
+            r"\b(idiota|estupida|estupido|imbecil|inutil|maldita|maldito|basura|pendeja|pendejo|"
+            r"hijueputa|gonorrea|malparida|malparido|perra|zorra|callate|mierda)\b"
+        ),
+    ),
+    (
+        "advice",
+        re.compile(
+            r"\b((asesoria|consejo|consulta) "
+            r"(legal|medica|medico|financiera|juridica|de inversion)|"
+            r"(deberia|debo|me conviene|vale la pena) invertir|"
+            r"que (medicamento|medicina|remedio) (tomo|debo|me))\b"
+        ),
+    ),
+)
+# «¿Eres una persona?», «¿quién eres?»: se responde como IA, sin buscar.
+AI_QUESTION = re.compile(
+    r"\b(eres (una |un )?(humana|humano|persona|real|robot|bot|ia|inteligencia artificial|maquina)|"
+    r"hablo con (una |un )?(persona|humano|humana|bot|maquina)|quien eres|que eres)\b"
+)
 STRUCTURED_CUES = re.compile(
     r"(en que ano|cuant[oa]s?\b|que porcentaje|porcentaje|que puesto|capacidad|cifra|"
     r"cuantas toneladas|lista de (filiales|marcas|certificaciones)|que filiales|que marcas)"
@@ -72,6 +129,11 @@ DEICTIC = re.compile(r"\b(eso|esa|ese|esto|aquello|lo anterior|mejor|alla|ahi)\b
 COMPANY = re.compile(r"\b(manuelita|fundacion|palmar|altamira|laredo|oceanos|mejillones|ingenio)\b")
 
 
+OUT_OF_SCOPE_REASONS = frozenset(
+    {"off_topic", "abuse", "harmful", "third_party", "prompt_extraction", "advice"}
+)
+
+
 @dataclass(frozen=True, slots=True)
 class RouterResult:
     decision: RouteDecision
@@ -89,6 +151,23 @@ def rule_decision(message: str) -> RouteDecision | None:
         return RouteDecision(
             route="clarify", confidence=0.3, reason="mensaje vacío", decided_by="rules"
         )
+    text = " ".join(words)
+    for reason, pattern in CONDUCT_PATTERNS:
+        if pattern.search(text):
+            return RouteDecision(
+                route="out_of_scope",
+                confidence=0.95,
+                reason=f"conducta: {reason.replace('_', ' ')}",
+                decided_by="rules",
+                scope_reason=reason,
+            )
+    if AI_QUESTION.search(text):
+        return RouteDecision(
+            route="direct",
+            confidence=0.95,
+            reason="pregunta por la naturaleza de la asistente",
+            decided_by="rules",
+        )
     if len(words) <= 8 and all(word in SMALLTALK for word in words):
         return RouteDecision(
             route="direct",
@@ -96,7 +175,6 @@ def rule_decision(message: str) -> RouteDecision | None:
             reason="saludo, agradecimiento o despedida",
             decided_by="rules",
         )
-    text = " ".join(words)
     for name, pattern in OUT_OF_SCOPE_PATTERNS:
         if pattern.search(text) and not COMPANY.search(text):
             return RouteDecision(
@@ -104,6 +182,7 @@ def rule_decision(message: str) -> RouteDecision | None:
                 confidence=0.9,
                 reason=f"tema ajeno a Manuelita ({name.replace('_', ' ')})",
                 decided_by="rules",
+                scope_reason="off_topic",
             )
     return None
 
@@ -169,13 +248,18 @@ def llm_decision(
     response = bound.invoke([SystemMessage(content=system), HumanMessage(content=message)])
     payload = _extract_json(str(response.content))
     reason = str(payload.get("reason") or "sin motivo")[:200]
+    route = payload.get("route")
+    scope = payload.get("scope_reason") if route == "out_of_scope" else None
+    if route == "out_of_scope" and scope not in OUT_OF_SCOPE_REASONS:
+        scope = "off_topic"
     return RouteDecision.model_validate(
         {
-            "route": payload.get("route"),
+            "route": route,
             "confidence": payload.get("confidence"),
             "reason": reason,
             "decided_by": "llm",
             "alternative": payload.get("alternative"),
+            "scope_reason": scope,
         }
     )
 

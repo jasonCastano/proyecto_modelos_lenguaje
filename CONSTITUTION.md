@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.9.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
+**Versión**: 1.10.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -268,6 +268,11 @@ uv.lock
 - El chat del agente lee sus respuestas en voz alta en español, por oraciones y mientras se generan
   (`POST /api/tts`, `GET /api/voice`). El visitante puede silenciarla, detenerla y volver a escucharla; si la
   voz no está disponible, el chat sigue igual por texto (spec 016).
+- La asistente se presenta como **Valer-IA Caña** (spec 018, ADR 0022): da la bienvenida al entrar, se declara
+  inteligencia artificial y NO DEBE presentarse como canal oficial ni autorizado de Manuelita (§10). La vista
+  normal es para visitantes; la vista técnica (`?vista=tecnica`) conserva la demostración de la rúbrica.
+- Cada visita empieza con un cliente anónimo limpio. El reconocimiento por correo es opcional, conversacional y
+  determinista (huella HMAC más el nombre registrado); el correo en claro NO DEBE persistirse ni enviarse al modelo.
 - Junto al chat hay un **avatar ilustrado** del agente que mueve la boca con el audio de la voz, analizado en el
   navegador sin servicios externos (spec 017, ADR 0021). La ilustración DEBE ser original: no imita a personas
   reales ni usa la marca de Manuelita. Respeta `prefers-reduced-motion` y se puede ocultar.
@@ -288,7 +293,7 @@ uv.lock
 
 ### 3.9 Seguridad
 
-- `.env`, credenciales, tokens y claves NO se versionan; `.gitignore` los cubre. Esto incluye `HF_TOKEN`, que
+- `.env`, credenciales, tokens y claves NO se versionan; `.gitignore` los cubre. Esto incluye `MANUELITA_IDENTITY_KEY` (clave HMAC del reconocimiento por correo) y `HF_TOKEN`, que
   solo sirve para descargar el modelo de voz.
 - No se ejecuta código arbitrario proveniente del scraping.
 - Las dependencias se mantienen actualizadas y fijadas; se revisan vulnerabilidades antes de la entrega.
@@ -946,4 +951,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.9.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
+**Versión**: 1.10.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14

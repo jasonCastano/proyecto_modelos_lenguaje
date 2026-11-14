@@ -430,6 +430,8 @@ def _offline_voice(monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setenv("MANUELITA_VOICE_ENGINE", "fake")
     monkeypatch.setenv("MANUELITA_VOICE_WARMUP", "0")
+    # Spec 018: clave fija de identidad; la suite nunca genera identity.key.
+    monkeypatch.setenv("MANUELITA_IDENTITY_KEY", "clave-de-prueba-de-identidad-0123456789abcdef")
     reset_voice_service()
     yield
     reset_voice_service()

@@ -19,6 +19,7 @@ from .agent.config import AgentConfigError, load_agent_config, resolve_state_dir
 from .agent.memory import build_checkpointer, build_store
 from .agent.observability import configure_tracing
 from .agent.service import ChatError, ChatService, build_deps
+from .agent.welcome import load_welcome
 from .api_models import (
     ApiError,
     AskRequest,
@@ -39,6 +40,7 @@ from .api_models import (
     ThreadView,
     TtsRequest,
     VoiceStatus,
+    WelcomeResponse,
 )
 from .api_models import (
     Citation as CitationModel,
@@ -514,6 +516,21 @@ def observability(mode: Literal["demo", "real"] | None = None) -> ObservabilityS
         adversarial_corpus=adversarial_enabled(),
         voice=voice_info,
     )
+
+
+@app.get("/api/welcome", response_model=WelcomeResponse)
+def welcome():
+    """Bienvenida de Valer-IA Caña (spec 018): plantilla con citas al oro, sin LLM."""
+    try:
+        return WelcomeResponse(**load_welcome())
+    except Exception:
+        return _api_error(
+            "welcome_unavailable",
+            "La bienvenida no está disponible.",
+            retryable=True,
+            action="continuar",
+            status_code=503,
+        )
 
 
 @app.get("/api/voice", response_model=VoiceStatus)

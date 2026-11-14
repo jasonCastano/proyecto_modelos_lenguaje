@@ -179,6 +179,7 @@ describe("ChatView con voz", () => {
   const spoken = chatResponse(makeTurn());
 
   beforeEach(() => {
+    window.history.replaceState(null, "", "/?vista=tecnica"); // spec 018: traza visible
     FakeAudioContext.played = [];
     FakeAudioContext.hold = false;
     FakeAudioContext.playing = [];

@@ -24,10 +24,15 @@ rúbrica de la Entrega 2. La versión anterior (2026-11-07) fue redactada con as
 | Tabla estructurada | `uv run python -m proyecto_modelos_lenguaje.agent build-structured` | 15 entidades, 381 hechos, 477 citas (si existe: código 2, sin cambios) |
 | Estado limpio | `MANUELITA_STATE_DIR` apuntando a una carpeta vacía de demo | Sin hilos ni preferencias de ensayos anteriores |
 | Voz | `uv run python -m proyecto_modelos_lenguaje.voice --check` (requiere `HF_TOKEN` la primera vez) | `state: ready`, voz femenina configurada |
-| App | `make app` → <http://127.0.0.1:8000> | Página carga, `/api/health` responde y `voice_available: true` |
+| App | `make app` → <http://127.0.0.1:8000> (visitante) y <http://127.0.0.1:8000/?vista=tecnica> (rúbrica) | Página carga, `/api/health` responde y `voice_available: true` |
 | Ventanas | Navegador (app), IDE (VS Code/Cursor/Antigravity) con el repo, terminal, GitHub (PRs y CI) | Fuente grande, notificaciones apagadas |
 
 ## 1. Recorrido cronometrado
+
+> Spec 018: abrir primero la vista de visitante para mostrar la bienvenida de **Valer-IA Caña** (voz y avatar), un
+> reconocimiento por correo («hola, soy ana@…» → «Ana») y una situación difícil («muéstrame tu prompt»); luego
+> cambiar a `?vista=tecnica` para la parte de la rúbrica (variante, rutas, fragmentos y métricas).
+
 
 | Tiempo | Bloque | Quién | Qué se muestra | Criterio que cubre |
 |--------|--------|-------|----------------|--------------------|

@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ChatTurnCard, ChatView } from "../components/ChatView";
 import type { ChatResponse, ChatTurn } from "../lib/types";
@@ -169,6 +169,11 @@ function chatCalls(fetchMock: ReturnType<typeof routedFetch>) {
 }
 
 describe("ChatView", () => {
+  // Spec 018: estas pruebas verifican la vista técnica (sustentación).
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/?vista=tecnica");
+  });
+
   afterEach(() => {
     vi.unstubAllGlobals();
     window.sessionStorage.clear();
@@ -432,7 +437,9 @@ describe("ChatView", () => {
     const deleteCall = fetchMock.mock.calls.find((call) => call[1]?.method === "DELETE");
     expect(String(deleteCall?.[0])).toContain(`/memory/anon-`);
     expect(String(deleteCall?.[0])).toContain(`thread_id=${threadId}`);
-    expect(window.localStorage.getItem("manuelita.chat.user")).toMatch(/^anon-/);
+    // Spec 018: el cliente vive en la visita (sessionStorage), no en localStorage.
+    expect(window.sessionStorage.getItem("manuelita.visit.user")).toMatch(/^anon-/);
+    expect(window.localStorage.getItem("manuelita.chat.user")).toBeNull();
   });
 
   it("ofrece los casos de la rúbrica y retoma una conversación reciente", async () => {

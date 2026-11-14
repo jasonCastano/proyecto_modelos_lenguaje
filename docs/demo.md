@@ -23,7 +23,8 @@ rúbrica de la Entrega 2. La versión anterior (2026-11-07) fue redactada con as
 | Índice semántico | `uv run python -m proyecto_modelos_lenguaje.rag index verify` | Manifiesto válido (si falla: `rag index build`) |
 | Tabla estructurada | `uv run python -m proyecto_modelos_lenguaje.agent build-structured` | 15 entidades, 381 hechos, 477 citas (si existe: código 2, sin cambios) |
 | Estado limpio | `MANUELITA_STATE_DIR` apuntando a una carpeta vacía de demo | Sin hilos ni preferencias de ensayos anteriores |
-| App | `make app` → <http://127.0.0.1:8000> | Página carga y `/api/health` responde |
+| Voz | `uv run python -m proyecto_modelos_lenguaje.voice --check` (requiere `HF_TOKEN` la primera vez) | `state: ready`, voz femenina configurada |
+| App | `make app` → <http://127.0.0.1:8000> | Página carga, `/api/health` responde y `voice_available: true` |
 | Ventanas | Navegador (app), IDE (VS Code/Cursor/Antigravity) con el repo, terminal, GitHub (PRs y CI) | Fuente grande, notificaciones apagadas |
 
 ## 1. Recorrido cronometrado
@@ -32,7 +33,7 @@ rúbrica de la Entrega 2. La versión anterior (2026-11-07) fue redactada con as
 |--------|--------|-------|----------------|--------------------|
 | 0:00–1:00 | Problema y alcance | Jason | Hero de la app; `docs/alcance.md` (8 categorías, 40 preguntas) | Análisis de la empresa |
 | 1:00–3:30 | Pipeline en vivo | Jason | `uv run python scripts/scrape_empresa.py --campaign <id> --limit 3 --dry-run --json`; robots/sitemap, métricas de URLs, páginas, tokens y descartes; `uv run pml silver status --json` y `uv run pml gold status --json` | Pipeline de scraping, UI y scraping visible |
-| 3:30–5:00 | Conversación con memoria | Roberto | Pestaña «Conversación», variante Cadena: «¿Qué produce Manuelita?» → «¿Y dónde lo produce?»; señalar el chip de ruta y confianza, los fragmentos con puntaje, las fuentes y las métricas del turno; «Nueva conversación» + «¿Y lo anterior?» → aclaración | Memoria multi-turno y RAG |
+| 3:30–5:00 | Conversación con memoria | Roberto | Pestaña «Conversación», variante Cadena: «¿Qué produce Manuelita?» → «¿Y dónde lo produce?»; señalar que la respuesta **se escucha mientras se escribe** (voz femenina, sin leer las citas; «🔊 primer audio» en la traza), el chip de ruta y confianza, los fragmentos con puntaje, las fuentes y las métricas del turno; «Nueva conversación» + «¿Y lo anterior?» → aclaración | Memoria multi-turno y RAG |
 | 5:00–6:30 | Enrutador | Roberto | «Hola» (directa, 0 llamadas), «¿En qué países opera Manuelita?» (estructurada, filas `[F#]`), «¿Cuál es el precio del dólar hoy?» (fuera de alcance, sin buscar); abrir `prompts/router.md` | Enrutamiento documental vs. estructurado |
 | 6:30–8:00 | Blindaje y aprobación humana | Roberto | Variante Agente: «Prefiero respuestas en viñetas» → tarjeta de aprobación → Aprobar; nueva conversación responde en viñetas; «Olvidar» → Rechazar; caso 5 con el **modelo real**: API arrancada con `MANUELITA_DEMO_CORPUS=malicious` (aviso «Corpus de prueba adversarial activo»), «¿Qué produce Manuelita?» → aviso del fragmento («se trató como dato… N oraciones neutralizadas»), respuesta citada sin «HACKEADO»; cerrar con la tabla de `docs/evaluacion_blindaje.md` (línea base vs. neutralización) | Inyección indirecta y HITL |
 | 8:00–9:30 | Evaluación | Ambos | `docs/evaluacion_modulo2.md`: Recall@10/nDCG@10 por modo, enrutador 35/36, cadena vs. agente (citas, repreguntas, latencia, llamadas, juez) | Evaluación empírica |
@@ -62,6 +63,7 @@ Usar preguntas del banco aprobado (`docs/alcance.md`) para que la respuesta sea 
 | Índice semántico ausente | La app degrada a recuperación léxica y lo declara en la traza; mostrarlo como diseño, no como error |
 | El scraping en vivo se bloquea | Usar `--dry-run` sobre una campaña ya registrada y mostrar el catálogo con `uv run pml ... status` |
 | La app no levanta | `uv run uvicorn proyecto_modelos_lenguaje.api:app --port 8000` y revisar el log en la terminal |
+| La voz no suena o no está disponible | El chat sigue por texto (aviso «La voz no está disponible…»); revisar `voice --check` después de la demo. Si el navegador bloqueó el audio, pulsar «▶ Reproducir voz». Si molesta en la sala, «🔇 Voz silenciada» |
 | Pregunta inesperada sobre código | Abrir el archivo en el IDE y buscar con el buscador del editor; no improvisar cifras |
 
 ## 4. Lista de verificación del ensayo

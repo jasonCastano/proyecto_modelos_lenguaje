@@ -152,6 +152,7 @@ class HealthStatus(BaseModel):
     latency_ms: float | None = None
     detail: str | None = None
     adversarial_corpus: bool = False  # spec 015: el servidor usa el corpus de prueba del blindaje
+    voice_available: bool = False  # spec 016: el motor de voz (Phonon) está listo o cargando
 
 
 class CorpusMetric(BaseModel):
@@ -375,6 +376,8 @@ class ObservabilityStatus(BaseModel):
     structured_log: str | None = None
     vector_store: dict[str, str] = Field(default_factory=dict)
     adversarial_corpus: bool = False
+    # spec 016: estado resumido de la voz del agente
+    voice: dict[str, Any] = Field(default_factory=dict)
 
 
 class PendingForget(BaseModel):
@@ -383,3 +386,30 @@ class PendingForget(BaseModel):
     status: str
     thread_id: str
     pending_action: dict[str, Any] | None = None
+
+
+class TtsRequest(BaseModel):
+    """Una oración de la respuesta del agente para leer en voz alta (spec 016)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    text: str = Field(min_length=1)
+    voice: str | None = None
+    thread_id: str | None = None
+    segment: int | None = Field(default=None, ge=0)
+
+
+class VoiceStatus(BaseModel):
+    """Estado del motor de voz, sin token ni rutas (spec 016, contracts/tts-api.md)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    available: bool
+    state: Literal["disabled", "loading", "ready", "unavailable"]
+    engine: str
+    model: str
+    voice: str
+    language: str
+    sample_rate: int | None = None
+    license: str
+    detail: str | None = None

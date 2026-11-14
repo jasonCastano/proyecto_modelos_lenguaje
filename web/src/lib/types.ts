@@ -92,6 +92,7 @@ export interface HealthStatus {
   latency_ms?: number | null;
   detail?: string | null;
   adversarial_corpus?: boolean;
+  voice_available?: boolean;
 }
 
 export interface CorpusMetric {
@@ -272,3 +273,17 @@ export type ChatStreamEvent =
   | { event: "token"; text: string }
   | { event: "done"; response: ChatResponse }
   | { event: "error"; error: { code: string; message: string } };
+
+// ---------------------------------------------------------------- voz del agente (spec 016)
+
+export interface VoiceStatus {
+  available: boolean;
+  state: "disabled" | "loading" | "ready" | "unavailable";
+  engine: string;
+  model: string;
+  voice: string;
+  language: string;
+  sample_rate: number | null;
+  license: string;
+  detail: string | null;
+}

@@ -22,6 +22,7 @@ dependencies = [
     "lxml>=6.1",
     "numpy>=2.5.4",
     "openpyxl>=3.1",
+    "ptts>=0.7.1",
     "pypdf>=6.21",
     "python-dotenv>=1.2.4",
     "pyyaml>=6.0",
@@ -73,8 +74,9 @@ ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q -m 'not network'"
+addopts = "-q -m 'not network and not voice'"
 markers = [
     "network: requiere red o claves (Ragas, LangSmith, DeepSeek); excluida por defecto y en CI",
+    "voice: requiere el modelo Phonon descargado (HF_TOKEN); excluida por defecto y en CI",
 ]
 filterwarnings = ["ignore::DeprecationWarning"]

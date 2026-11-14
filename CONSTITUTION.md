@@ -174,6 +174,9 @@ entrega y la calidad de la demostración.
 - Node.js 24 para el frontend web; `package-lock.json` versionado y `npm ci` reproducible.
 - Estructura `src/` para el paquete `proyecto_modelos_lenguaje` y `web/` para React/Vite.
 - API con FastAPI + Uvicorn; Ruff para lint/formato y `pytest`/Vitest para pruebas.
+- Voz del agente con **Phonon** (paquete `ptts`, runtime local sin PyTorch; modelo `gradium/phonon-40m-es`).
+  El modelo y sus voces son **CC BY-NC 4.0** (uso académico, no comercial) y el motor es MIT/Apache-2.0; el
+  modelo se descarga a la caché de Hugging Face, nunca al repositorio (spec 016, ADR 0020).
 - Dependencias de runtime y desarrollo separadas; versiones fijadas en `uv.lock` y `package-lock.json`.
 - Variables de entorno para claves y configuración sensible; `.env` fuera del repositorio.
 
@@ -262,12 +265,17 @@ uv.lock
 - DEBE mostrar tres funcionalidades: Consulta, Resumen y FAQ, con citas y fallback.
 - DEBE incluir una página del Módulo 1 con datos, arquitectura, prompts, app, métricas y límites.
 - DEBE incluir modo demostración explícito, estados de carga y errores accionables.
+- El chat del agente lee sus respuestas en voz alta en español, por oraciones y mientras se generan
+  (`POST /api/tts`, `GET /api/voice`). El visitante puede silenciarla, detenerla y volver a escucharla; si la
+  voz no está disponible, el chat sigue igual por texto (spec 016).
 - DEBE usar la paleta corporativa y motivos de producto definidos en el contrato UI.
 - NO DEBE exponer claves, rutas absolutas ni datos sensibles; la API no devuelve la clave.
 
 ### 3.8 Pruebas y calidad
 
-- `uv run pytest` DEBE pasar sin red para las pruebas unitarias y de contrato.
+- `uv run pytest` DEBE pasar sin red para las pruebas unitarias y de contrato. Las pruebas que requieren red o
+  claves se marcan `network` y las que requieren el modelo de voz se marcan `voice`; ambas quedan fuera por
+  defecto y en la CI.
 - `make check` DEBE ejecutar Ruff (lint + formato), `pytest` y la verificación web (Vitest + build); el CI corre ambos jobs.
 - La app DEBE auditarse con `make e2e` (Playwright) en los perfiles responsive definidos por la feature 012.
 - Cada módulo crítico (scraping, chunking, prompts, recuperación, app) DEBE tener al menos una prueba.
@@ -277,7 +285,8 @@ uv.lock
 
 ### 3.9 Seguridad
 
-- `.env`, credenciales, tokens y claves NO se versionan; `.gitignore` los cubre.
+- `.env`, credenciales, tokens y claves NO se versionan; `.gitignore` los cubre. Esto incluye `HF_TOKEN`, que
+  solo sirve para descargar el modelo de voz.
 - No se ejecuta código arbitrario proveniente del scraping.
 - Las dependencias se mantienen actualizadas y fijadas; se revisan vulnerabilidades antes de la entrega.
 - Los datos de terceros se citan y se usan dentro de lo permitido por su licencia.

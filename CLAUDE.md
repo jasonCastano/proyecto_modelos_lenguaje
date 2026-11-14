@@ -35,7 +35,11 @@ uv run python -m proyecto_modelos_lenguaje.tasks qa --question "¿Qué produce M
 uv run python -m proyecto_modelos_lenguaje.tasks summary --pack 8000 --json
 uv run python -m proyecto_modelos_lenguaje.tasks faq --limit 12 --json
 uv run python -m proyecto_modelos_lenguaje.llm --check   # valida DEEPSEEK_API_KEY / modelo
+uv run python -m proyecto_modelos_lenguaje.voice --check # voz Phonon (spec 016; HF_TOKEN la 1.ª vez)
 ```
+
+Pruebas con red o claves llevan el marcador `network` y las del modelo de voz `voice`; ambas se excluyen por
+defecto (`uv run pytest -o addopts="" -m voice tests/integration/voice` para correrlas).
 
 Pipeline de datos (CLI `pml` = `proyecto_modelos_lenguaje.cli:main`; cada capa tiene también un wrapper en
 `scripts/`):

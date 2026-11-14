@@ -27,9 +27,11 @@ import {
   type ProfileItem,
   type RetrievalTrace,
 } from "../lib/types";
+import { useVoice } from "../lib/useVoice";
 import { ApprovalCard } from "./ApprovalCard";
 import { RetrievedFragments } from "./RetrievedFragments";
 import { SourceList } from "./SourceList";
+import { VoiceControls } from "./VoiceControls";
 
 const THREAD_KEY = "manuelita.chat.thread";
 const USER_KEY = "manuelita.chat.user";
@@ -224,7 +226,17 @@ function turnCitations(turn: ChatTurn): Citation[] {
   }));
 }
 
-export function ChatTurnCard({ turn }: { turn: ChatTurn }) {
+export function ChatTurnCard({
+  turn,
+  firstAudioMs,
+  onListen,
+}: {
+  turn: ChatTurn;
+  /** Spec 016: tiempo hasta el primer audio de la lectura en vivo. */
+  firstAudioMs?: number;
+  /** Spec 016: lee la respuesta en voz alta; sin voz no se muestra el botón. */
+  onListen?: () => void;
+}) {
   const route = turn.route;
   const kind = route.route === "clarify" ? "clarify" : turn.fallback ? "fallback" : "answered";
   const anomalous = turn.fragments.filter((fragment) => fragment.anomalous);
@@ -275,7 +287,18 @@ export function ChatTurnCard({ turn }: { turn: ChatTurn }) {
           {turn.metrics.latency_ms} ms · {turn.metrics.model_calls} llamadas al modelo ·{" "}
           {turn.metrics.tool_calls} búsquedas · {turn.metrics.input_tokens + turn.metrics.output_tokens}{" "}
           tokens
+          {firstAudioMs !== undefined
+            ? ` · 🔊 primer audio ${(firstAudioMs / 1000).toLocaleString("es-CO", {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              })} s`
+            : ""}
         </p>
+        {onListen && turn.answer ? (
+          <button className="btn btn-link" data-testid="turn-listen" onClick={onListen} type="button">
+            🔊 Escuchar
+          </button>
+        ) : null}
       </div>
     </li>
   );
@@ -358,6 +381,8 @@ export function ChatView({ mode }: { mode: Mode }) {
       .then(setObservability)
       .catch(() => setObservability(null));
   }
+  const voice = useVoice();
+  const [voiceKeys, setVoiceKeys] = useState<Record<number, string>>({});
 
   function refreshPreferences() {
     void getMemory(userId.current)
@@ -399,6 +424,7 @@ export function ChatView({ mode }: { mode: Mode }) {
 
   /** Retoma un hilo guardado: el estado vive en el checkpointer del servidor, no en el navegador. */
   async function openThread(entry: RecentThread) {
+    voice.stop();
     setBusy(true);
     setError(null);
     try {
@@ -423,6 +449,8 @@ export function ChatView({ mode }: { mode: Mode }) {
   }
 
   function startOver(nextVariant: ChatVariant = variant) {
+    voice.stop();
+    setVoiceKeys({});
     writeSession(THREAD_KEY, null);
     writeThreadHash(null);
     setVariant(nextVariant);
@@ -493,6 +521,8 @@ export function ChatView({ mode }: { mode: Mode }) {
     const input = { message: clean, threadId, userId: userId.current, variant, mode };
     let current: LiveTurn = { question: clean, route: null, stage: "Enrutando…", text: "" };
     setLive(current);
+    // Spec 016: el envío es el gesto que habilita el audio; corta cualquier lectura anterior.
+    const voiceKey = voice.startLive(threadId);
     const abort = new AbortController();
     controller.current = abort;
     const timer = window.setTimeout(() => abort.abort("timeout"), STREAM_TIMEOUT_MS);
@@ -504,6 +534,7 @@ export function ChatView({ mode }: { mode: Mode }) {
           (event) => {
             current = liveStage(event, current);
             setLive(current);
+            if (event.event === "token") voice.pushToken(event.text);
           },
           abort.signal,
         );
@@ -516,6 +547,8 @@ export function ChatView({ mode }: { mode: Mode }) {
         response = await sendChat(input, abort.signal);
       }
       setThreadId(response.thread_id);
+      voice.finishLive(response.turn.answer, response.thread_id);
+      if (voiceKey) setVoiceKeys((previous) => ({ ...previous, [response.turn.turn_id]: voiceKey }));
       writeSession(THREAD_KEY, JSON.stringify({ id: response.thread_id, variant }));
       writeThreadHash(response.thread_id);
       setRecent(rememberThread({ id: response.thread_id, variant, title: clean.slice(0, 60) }));
@@ -529,6 +562,7 @@ export function ChatView({ mode }: { mode: Mode }) {
       refreshPreferences();
       refreshObservability();
     } catch (caught) {
+      voice.stop();
       report(caught);
     } finally {
       window.clearTimeout(timer);
@@ -561,6 +595,7 @@ export function ChatView({ mode }: { mode: Mode }) {
         <button className="btn btn-link" type="button" onClick={() => startOver()}>
           Nueva conversación
         </button>
+        <VoiceControls voice={voice} showUnavailable />
         {observability ? (
           <span className="fragments-badge" data-testid="observability">
             Trazas:{" "}
@@ -647,7 +682,19 @@ export function ChatView({ mode }: { mode: Mode }) {
       {turns.length > 0 || live ? (
         <ol className="chat-turns" aria-label="Historial de la conversación">
           {turns.map((turn) => (
-            <ChatTurnCard key={turn.turn_id} turn={turn} />
+            <ChatTurnCard
+              firstAudioMs={voiceKeys[turn.turn_id] ? voice.firstAudio[voiceKeys[turn.turn_id]] : undefined}
+              key={turn.turn_id}
+              onListen={
+                voice.available && !voice.muted
+                  ? () => {
+                      const key = voice.speak(turn.answer, threadId);
+                      if (key) setVoiceKeys((previous) => ({ ...previous, [turn.turn_id]: key }));
+                    }
+                  : undefined
+              }
+              turn={turn}
+            />
           ))}
           {live ? <LiveTurnCard live={live} /> : null}
         </ol>

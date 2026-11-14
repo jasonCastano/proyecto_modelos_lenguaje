@@ -8,7 +8,7 @@ from functools import lru_cache
 from typing import Any, Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
@@ -37,6 +37,8 @@ from .api_models import (
     ShowcaseResponse,
     SummaryRequest,
     ThreadView,
+    TtsRequest,
+    VoiceStatus,
 )
 from .api_models import (
     Citation as CitationModel,
@@ -78,6 +80,10 @@ from .tasks import (
     generate_faq,
     summarize_corpus,
 )
+from .voice.audio import to_wav_bytes
+from .voice.engine import UnknownVoiceError, VoiceUnavailableError, get_voice_service
+from .voice.log import log_voice
+from .voice.text import clean_for_speech
 
 GOLD_DIR = PROJECT_ROOT / "data" / "gold"
 DEMO_INDEX = PROJECT_ROOT / "tests" / "fixtures" / "rag" / "index"
@@ -88,11 +94,32 @@ load_dotenv(PROJECT_ROOT / ".env", override=False)
 configure_tracing()
 
 app = FastAPI(title=APP_TITLE, version="0.1.0")
+
+
+@app.on_event("startup")
+def _voice_warmup() -> None:
+    """Precarga el modelo de voz en un hilo (spec 016, R5); nunca bloquea ni rompe el arranque."""
+    try:
+        service = get_voice_service()
+        if service.config.warmup and service.config.engine != "fake":
+            service.warmup_async()
+    except Exception:  # la voz es opcional
+        pass
+
+
+def _voice_available() -> bool:
+    try:
+        return get_voice_service().status().available
+    except Exception:
+        return False
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["Content-Type"],
+    expose_headers=["X-Voice", "X-Synth-Ms", "X-Audio-Ms"],
 )
 
 
@@ -342,6 +369,7 @@ def health(probe: bool = False) -> HealthStatus | JSONResponse:
             demo_available=True,
             detail="Falta DEEPSEEK_API_KEY. El modo demostración está disponible.",
             adversarial_corpus=adversarial_enabled(),
+            voice_available=_voice_available(),
         )
     if not probe:
         return HealthStatus(
@@ -352,6 +380,7 @@ def health(probe: bool = False) -> HealthStatus | JSONResponse:
             demo_available=True,
             detail="Proveedor configurado.",
             adversarial_corpus=adversarial_enabled(),
+            voice_available=_voice_available(),
         )
     try:
         result = health_check(config)
@@ -364,6 +393,7 @@ def health(probe: bool = False) -> HealthStatus | JSONResponse:
         configured=True,
         demo_available=True,
         adversarial_corpus=adversarial_enabled(),
+        voice_available=_voice_available(),
         latency_ms=result.get("latency_ms"),
         detail=result.get("detail"),
     )
@@ -471,12 +501,93 @@ def observability(mode: Literal["demo", "real"] | None = None) -> ObservabilityS
         log_path: str | None = str(state_dir / "logs" / "turns.jsonl")
     except Exception:
         log_path = None
+    try:
+        voice = get_voice_service().status()
+        voice_info = {"available": voice.available, "state": voice.state, "voice": voice.voice}
+    except Exception:
+        voice_info = {"available": False, "state": "unavailable", "voice": None}
     return ObservabilityStatus(
         langsmith=bool(status.get("langsmith")),
         project=status.get("project"),
         structured_log=log_path,
         vector_store=vector_store,
         adversarial_corpus=adversarial_enabled(),
+        voice=voice_info,
+    )
+
+
+@app.get("/api/voice", response_model=VoiceStatus)
+def voice_status() -> VoiceStatus:
+    """Estado del motor de voz (spec 016). Siempre 200; la indisponibilidad va en el cuerpo."""
+    return VoiceStatus(**get_voice_service().status().to_dict())
+
+
+def _voice_unavailable(detail: str | None) -> JSONResponse:
+    return _api_error(
+        "voice_unavailable",
+        detail or "La voz no está disponible.",
+        retryable=False,
+        action="continuar sin voz",
+        status_code=503,
+    )
+
+
+@app.post("/api/tts")
+def tts(payload: TtsRequest):
+    """Sintetiza una oración de la respuesta como WAV (spec 016, contracts/tts-api.md)."""
+    service = get_voice_service()
+    voice_name = payload.voice or service.config.voice
+    log = {"thread_id": payload.thread_id, "segment": payload.segment, "voice": voice_name}
+    if len(payload.text) > service.config.max_chars:
+        return _api_error(
+            "text_too_long",
+            f"El texto supera {service.config.max_chars} caracteres.",
+            retryable=False,
+            action="revisar",
+            status_code=422,
+        )
+    if service.state in {"disabled", "unavailable"}:
+        log_voice(**log, chars=0, status="unavailable", error="voice_unavailable")
+        return _voice_unavailable(service.status().detail)
+    text = clean_for_speech(payload.text)
+    try:
+        if payload.voice:
+            service.resolve_voice(payload.voice)
+        if not text:
+            log_voice(**log, chars=0, status="empty")
+            return Response(status_code=204, headers={"Cache-Control": "no-store"})
+        result = service.synthesize(text, payload.voice)
+    except UnknownVoiceError as exc:
+        return _api_error(
+            "unknown_voice", str(exc), retryable=False, action="revisar", status_code=422
+        )
+    except VoiceUnavailableError as exc:
+        log_voice(**log, chars=len(text), status="unavailable", error="voice_unavailable")
+        return _voice_unavailable(str(exc))
+    except Exception as exc:
+        log_voice(**log, chars=len(text), status="error", error=type(exc).__name__)
+        return _api_error(
+            "voice_error",
+            "No se pudo sintetizar la voz de esta oración.",
+            retryable=True,
+            action="reintentar",
+            status_code=500,
+        )
+    log_voice(
+        **{**log, "voice": result.voice},
+        chars=len(text),
+        synth_ms=result.synth_ms,
+        audio_ms=result.audio_ms,
+    )
+    return Response(
+        content=to_wav_bytes(result.samples, result.sample_rate),
+        media_type="audio/wav",
+        headers={
+            "Cache-Control": "no-store",
+            "X-Voice": result.voice,
+            "X-Synth-Ms": str(result.synth_ms),
+            "X-Audio-Ms": str(result.audio_ms),
+        },
     )
 
 

@@ -1,0 +1,15 @@
+# Voz del agente (spec 016): síntesis local con Phonon (paquete `ptts`).
+# Las variables MANUELITA_VOICE_ENABLED, MANUELITA_VOICE_ENGINE, MANUELITA_VOICE y
+# MANUELITA_VOICE_WARMUP tienen prioridad sobre este archivo.
+# Licencia del modelo y las voces: CC BY-NC 4.0 (uso académico, no comercial).
+
+[voice]
+enabled = true
+engine = "phonon"                       # "phonon" | "fake"
+model = "hf://gradium/phonon-40m-es"
+language = "es"
+quant = "q8_0"                          # ptts.available_quants(): f32, q8_0, q8k, q6k, q5k, q4k, …
+voice = "Rebeca"                        # voz oficial (T037): femenina, español de México (id Sx8m6WdXBG06zwZT)
+voice_gender = "female"
+max_chars = 600
+warmup = true

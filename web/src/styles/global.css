@@ -1643,3 +1643,15 @@ button.chip:disabled {
   color: var(--ink);
   background: var(--gold);
 }
+
+/* Spec 016: controles de la voz del agente */
+.voice-controls {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.voice-controls [aria-pressed="true"] {
+  font-weight: 600;
+}

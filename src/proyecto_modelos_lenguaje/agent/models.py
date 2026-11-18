@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Route = Literal["direct", "documental", "structured", "mixed", "out_of_scope", "clarify"]
 DecidedBy = Literal["rules", "llm", "demo"]
@@ -13,9 +14,23 @@ WriteTool = Literal[
     "forget_memory", "save_preference", "save_profile", "export_conversation", "remember_client"
 ]
 # Spec 018: motivo de una respuesta sin búsqueda (conducta de Valer-IA).
+# Spec 019: «crisis» (angustia grave) y «unattainable» (precios, compromisos, pedir una persona).
 ScopeReason = Literal[
-    "off_topic", "abuse", "harmful", "third_party", "prompt_extraction", "advice", "identity"
+    "off_topic",
+    "abuse",
+    "harmful",
+    "third_party",
+    "prompt_extraction",
+    "advice",
+    "identity",
+    "crisis",
+    "unattainable",
 ]
+# Spec 019: estado emocional del visitante y tipo de pedido no atendible.
+Sentiment = Literal["neutral", "satisfied", "confused", "frustrated", "angry", "distressed"]
+UnattainableKind = Literal["pricing", "commitment", "human"]
+TOPIC_PATTERN = re.compile(r"^[a-záéíóúñü]+( [a-záéíóúñü]+){0,3}$")
+TOPIC_MAX_CHARS = 40
 Decision = Literal["approve", "edit", "reject"]
 
 
@@ -31,6 +46,30 @@ class RouteDecision(BaseModel):
     alternative: Route | None = None
     fallback_route: Literal["documental"] | None = None
     scope_reason: ScopeReason | None = None
+    # Spec 019: tema ajeno saneado, emoción propuesta por el LLM y tipo de pedido no atendible.
+    topic: str | None = None
+    sentiment: Sentiment | None = None
+    kind: UnattainableKind | None = None
+
+    @field_validator("topic", mode="before")
+    @classmethod
+    def _sanitize_topic(cls, value: object) -> str | None:
+        """Saneado: ``[a-záéíóúñ ]``, como máximo 4 palabras y 40 caracteres; si no, ``None``."""
+        if not isinstance(value, str):
+            return None
+        topic = " ".join(value.lower().split())
+        if len(topic) > TOPIC_MAX_CHARS or TOPIC_PATTERN.fullmatch(topic) is None:
+            return None
+        return topic
+
+    @model_validator(mode="after")
+    def _scope_fields(self) -> RouteDecision:
+        # ``topic`` solo acompaña a un tema ajeno; ``kind``, a un pedido no atendible.
+        if self.topic is not None and self.scope_reason not in {"off_topic", "advice"}:
+            object.__setattr__(self, "topic", None)
+        if self.kind is not None and self.scope_reason != "unattainable":
+            object.__setattr__(self, "kind", None)
+        return self
 
     def effective(self, min_confidence: float) -> RouteDecision:
         """Ruta efectiva: con confianza baja se pide aclaración en vez de adivinar."""

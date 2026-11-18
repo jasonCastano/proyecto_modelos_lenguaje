@@ -36,6 +36,10 @@ QUESTION_PATTERN = re.compile(r"<pregunta>(.*?)</pregunta>", re.DOTALL)
 SNIPPET_CHARS = 220
 STREAM_PIECE = re.compile(r"\S+\s*|\s+")
 BULLETS_HINT = "formato de respuesta: viñetas"
+# Spec 019: brief de atención («Atención:») con las solicitudes numeradas del turno.
+ATTENTION_REQUEST = re.compile(r"^\s*(\d+)\) (.+)$", re.MULTILINE)
+REPHRASE_HINT = "Retoma en una frase lo que entendiste"
+MAX_DEMO_SEARCHES = 3
 
 
 def build_demo_model(
@@ -62,17 +66,48 @@ def _question(text: str) -> str:
     return (asked.group(1) if asked else text).strip()
 
 
-def demo_answer(evidence_text: str, *, bullets: bool = False) -> str:
-    """Respuesta extractiva: la primera oración de los dos primeros documentos, con su cita."""
+def attention_requests(text: str) -> list[str]:
+    """Solicitudes del bloque «Atención:» (vacío si el turno tiene una sola)."""
+    if "Atención:" not in text:
+        return []
+    block = text[text.index("Atención:") :]
+    return [match.group(2).strip() for match in ATTENTION_REQUEST.finditer(block)]
+
+
+def demo_answer(
+    evidence_text: str,
+    *,
+    bullets: bool = False,
+    requests: Sequence[str] = (),
+    rephrase: bool = False,
+) -> str:
+    """Respuesta extractiva: la primera oración de los dos primeros documentos, con su cita.
+
+    Con varias solicitudes (spec 019) responde una línea numerada por solicitud, cada una con un
+    documento distinto; si se pide retomar, antepone lo que entendió.
+    """
     documents = DOCUMENT_PATTERN.findall(evidence_text)
     if not documents:
         return FALLBACK_ANSWER
+    if len(requests) >= 2:
+        lines = []
+        for index, request in enumerate(requests):
+            label, text = documents[
+                min(len(documents) - 1, index * len(documents) // len(requests))
+            ]
+            lines.append(f"{index + 1}. Sobre «{request}»: {_first_sentence(text)} [{label}].")
+        return "Según los documentos públicos de Manuelita:\n" + "\n".join(lines)
     parts = [f"{_first_sentence(text)} [{label}]." for label, text in documents[:2] if text.strip()]
     if not parts:
         return FALLBACK_ANSWER
+    lead = "Entiendo que buscas información sobre Manuelita. " if rephrase else ""
     if bullets:
-        return "Según los documentos públicos de Manuelita:\n" + "\n".join(f"- {p}" for p in parts)
-    return "Según los documentos públicos de Manuelita: " + " ".join(parts)
+        return (
+            lead
+            + "Según los documentos públicos de Manuelita:\n"
+            + "\n".join(f"- {p}" for p in parts)
+        )
+    return lead + "Según los documentos públicos de Manuelita: " + " ".join(parts)
 
 
 class DemoChatModel(BaseChatModel):
@@ -114,7 +149,13 @@ class DemoChatModel(BaseChatModel):
             if intent is not None:
                 calls = [{"name": intent.tool, "args": dict(intent.args), "id": "demo_write_1"}]
             else:
-                calls = self._read_calls(current, previous)
+                system = " ".join(str(m.content) for m in messages if isinstance(m, SystemMessage))
+                requests = attention_requests(system)
+                calls = (
+                    self._part_calls(requests)
+                    if len(requests) >= 2
+                    else self._read_calls(current, previous)
+                )
             message = AIMessage(content="", tool_calls=calls)
         else:
             evidence = "\n".join(str(m.content) for m in (tool_results or messages[-1:]))
@@ -123,8 +164,28 @@ class DemoChatModel(BaseChatModel):
                 message = AIMessage(content=evidence.strip())
             else:
                 system = " ".join(str(m.content) for m in messages if isinstance(m, SystemMessage))
-                message = AIMessage(content=demo_answer(evidence, bullets=BULLETS_HINT in system))
+                human = str(messages[last_human].content) if last_human >= 0 else ""
+                guide = f"{system}\n{human}"
+                message = AIMessage(
+                    content=demo_answer(
+                        evidence,
+                        bullets=BULLETS_HINT in system,
+                        requests=attention_requests(guide),
+                        rephrase=REPHRASE_HINT in guide,
+                    )
+                )
         return ChatResult(generations=[ChatGeneration(message=message)])
+
+    def _part_calls(self, requests: Sequence[str]) -> list[dict[str, Any]]:
+        """Una búsqueda por solicitud (como máximo tres, el límite de herramientas por turno)."""
+        return [
+            {
+                "name": "search_documents",
+                "args": {"query": f"Manuelita {request}"[:300]},
+                "id": f"demo_part_{index}",
+            }
+            for index, request in enumerate(requests[:MAX_DEMO_SEARCHES], start=1)
+        ]
 
     def _read_calls(self, current: str, previous: str | None) -> list[dict[str, Any]]:
         """Herramientas de lectura según la ruta heurística: cifra anual, conteo o documentos."""

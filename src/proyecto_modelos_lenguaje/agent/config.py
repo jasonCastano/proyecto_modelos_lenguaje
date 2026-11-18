@@ -40,6 +40,16 @@ class MemoryConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class CareConfig:
+    """Habilidades de atención de Valer-IA (spec 019)."""
+
+    enabled: bool = True
+    max_requests: int = 5
+    hostility_levels: int = 3
+    complaint_escalation: int = 3
+
+
+@dataclass(frozen=True, slots=True)
 class AgentConfig:
     router: RouterConfig
     agent: AgentLimits
@@ -47,6 +57,7 @@ class AgentConfig:
     structured_path: Path
     state_env_var: str
     source: Path
+    care: CareConfig = CareConfig()
 
 
 def _section(document: dict[str, Any], key: str, source: Path) -> dict[str, Any]:
@@ -134,6 +145,27 @@ def load_agent_config(
         structured_path=structured_path,
         state_env_var=_string(state, "env_var", table="state"),
         source=source,
+        care=_care_config(document.get("care")),
+    )
+
+
+def _care_config(section: object) -> CareConfig:
+    """Sección ``[care]`` opcional; sin ella valen los valores por defecto."""
+    if section is None:
+        return CareConfig()
+    if not isinstance(section, dict):
+        raise AgentConfigError("[care] debe ser una tabla.")
+    enabled = section.get("enabled", True)
+    if not isinstance(enabled, bool):
+        raise AgentConfigError("care.enabled debe ser booleano.")
+    max_requests = _integer(section, "max_requests", table="care")
+    if max_requests > 10:
+        raise AgentConfigError("care.max_requests debe estar entre 1 y 10.")
+    return CareConfig(
+        enabled=enabled,
+        max_requests=max_requests,
+        hostility_levels=_integer(section, "hostility_levels", table="care"),
+        complaint_escalation=_integer(section, "complaint_escalation", table="care"),
     )
 
 

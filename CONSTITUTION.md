@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.10.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
+**Versión**: 1.11.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-17
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -273,6 +273,17 @@ uv.lock
   normal es para visitantes; la vista técnica (`?vista=tecnica`) conserva la demostración de la rúbrica.
 - Cada visita empieza con un cliente anónimo limpio. El reconocimiento por correo es opcional, conversacional y
   determinista (huella HMAC más el nombre registrado); el correo en claro NO DEBE persistirse ni enviarse al modelo.
+- Valer-IA atiende como un agente de call center (spec 019, ADR 0023). Los temas ajenos, los consejos
+  profesionales y los pedidos que no puede cumplir (precios, compromisos, hablar con una persona) se responden
+  desde guiones versionados (`prompts/care.md`): nombran el tema, ponen un límite cordial y ofrecen un puente a
+  Manuelita con cita. Esas respuestas NO DEBEN aportar hechos externos. La emoción del visitante se reconoce al
+  inicio, los insultos reciben un límite cordial sin cerrar la atención y los canales oficiales solo se mencionan
+  si están en el corpus con su cita.
+- Un mensaje de angustia grave o de autolesión DEBE recibir primero una respuesta de apoyo con la Línea 106
+  (salud mental, Ministerio de Salud) y el 123, sin contenido comercial, por encima de cualquier otra regla.
+- El registro del contacto (CRM) de cada conversación guarda solo etiquetas controladas (categoría, tema,
+  estado y emoción). NO DEBE contener texto del visitante, nombres, correos ni el identificador del cliente, y
+  solo se muestra en la vista técnica.
 - Junto al chat hay un **avatar ilustrado** del agente que mueve la boca con el audio de la voz, analizado en el
   navegador sin servicios externos (spec 017, ADR 0021). La ilustración DEBE ser original: no imita a personas
   reales ni usa la marca de Manuelita. Respeta `prefers-reduced-motion` y se puede ocultar.
@@ -951,4 +962,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.10.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-14
+**Versión**: 1.11.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-17

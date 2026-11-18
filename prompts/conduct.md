@@ -1,9 +1,13 @@
-<!-- prompt_version: 1.0 -->
+<!-- prompt_version: 1.1 -->
 # Valer-IA Caña — respuestas de conducta e identidad
 
 Respuestas deterministas de Valer-IA Caña (spec 018, `contracts/conduct.md` y `contracts/identity-flow.md`). No
 pasan por el modelo de lenguaje: el enrutador o el nodo de identidad eligen la sección. `{name}` y `{masked}` se
 reemplazan en tiempo de ejecución.
+
+Desde la spec 019, `off_topic`, `advice` y `clarify` son el respaldo cuando `[care] enabled = false`
+(`config/agent.toml`): con la atención activa, esas respuestas se componen desde `prompts/care.md`.
+`abuse` se usa en el primer insulto sin consulta; los demás motivos no cambian.
 
 ## greeting
 

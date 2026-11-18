@@ -17,7 +17,21 @@
     "fallback_route": {"enum": ["documental", null]},
     "scope_reason": {
       "description": "Spec 018: motivo de conducta de Valer-IA (solo out_of_scope, o identity con direct).",
-      "enum": ["off_topic", "abuse", "harmful", "third_party", "prompt_extraction", "advice", "identity", null]
+      "enum": ["off_topic", "abuse", "harmful", "third_party", "prompt_extraction", "advice", "identity", "crisis", "unattainable", null]
+    },
+    "topic": {
+      "description": "Spec 019: tema ajeno saneado (como máximo 4 palabras y 40 caracteres), solo con off_topic o advice.",
+      "type": ["string", "null"],
+      "maxLength": 40,
+      "pattern": "^[a-záéíóúñü]+( [a-záéíóúñü]+){0,3}$"
+    },
+    "sentiment": {
+      "description": "Spec 019: emoción del visitante propuesta por el enrutador LLM.",
+      "enum": ["neutral", "satisfied", "confused", "frustrated", "angry", "distressed", null]
+    },
+    "kind": {
+      "description": "Spec 019: tipo de pedido no atendible, solo con unattainable.",
+      "enum": ["pricing", "commitment", "human", null]
     }
   }
 }

@@ -124,6 +124,7 @@ class ChatOutcome:
     anomalies: list[dict[str, Any]] = field(default_factory=list)
     client: dict[str, Any] | None = None  # spec 018: cliente activo tras el turno
     notices: list[str] = field(default_factory=list)
+    contact: dict[str, Any] | None = None  # spec 019: registro del contacto (CRM)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -134,6 +135,7 @@ class ChatOutcome:
             "anomalies": self.anomalies,
             "client": self.client,
             "notices": self.notices,
+            "contact": self.contact,
         }
 
 
@@ -330,6 +332,7 @@ class ChatService:
                 "pending_approval",
                 pending_action=pending,
                 client=client_of(result),
+                contact=result.get("contact"),
             )
         turn = Turn.model_validate(result["turns"][-1])
         return ChatOutcome(
@@ -339,6 +342,7 @@ class ChatService:
             anomalies=anomalies_of(turn),
             client=client_of(result),
             notices=list(result.get("notices") or []),
+            contact=result.get("contact"),
         )
 
     def send(
@@ -416,6 +420,7 @@ class ChatService:
                 "pending_approval",
                 pending_action=pending,
                 client=client_of(values),
+                contact=values.get("contact"),
             )
         turn = Turn.model_validate(values["turns"][-1])
         return ChatOutcome(
@@ -425,6 +430,7 @@ class ChatService:
             anomalies=anomalies_of(turn),
             client=client_of(values),
             notices=list(values.get("notices") or []),
+            contact=values.get("contact"),
         )
 
     def _prepare(
@@ -539,4 +545,5 @@ class ChatService:
             "status": "pending_approval" if pending else "idle",
             "pending_action": pending,
             "actions": values.get("actions") or [],
+            "contact": values.get("contact"),
         }

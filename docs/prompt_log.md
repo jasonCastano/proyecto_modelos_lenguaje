@@ -299,6 +299,37 @@ El asistente pasa a tener identidad propia, **Valer-IA Caña**, con trato profes
 | `prompts/conduct.md` | 1.0 (nuevo) | `dd8b99789dd4` | Respuestas deterministas de Valer-IA (saludo, despedida con oferta de recordar, aclaración, «¿eres una IA?», un texto por motivo de conducta, aviso de datos sensibles y la conversación de identidad por correo). No pasan por el modelo. |
 | `prompts/welcome.md` | 1.0 (nuevo) | `7a0027ed8cc5` | Bienvenida al entrar (`GET /api/welcome`), con URL y título declarados (no lee el oro en ejecución), con citas a `unit_6f64efa98eb8cc68` (1864, Valle del Cauca) y `unit_652e702c01489750` (plataformas y países), verificadas por prueba. |
 
+### 3.17 Atención de call center: `care.md` 1.0, `agent.md` 1.5, `router.md` 1.4 y `conduct.md` 1.1 (2026-11-17, spec 019)
+
+Valer-IA atiende como un agente de call center (ADR 0023). Las situaciones fuera de Manuelita dejan de tener una
+frase fija:
+
+| Prompt | Versión | SHA-256 (12 primeros) | Cambio |
+|--------|---------|-----------------------|--------|
+| `prompts/care.md` | 1.0 (nuevo) | `c644e8d88089` | Guiones de atención con 2 a 4 variantes por sección: aperturas por emoción, reconocimiento del tema, límites (tema ajeno, consejo, precio, compromiso, persona), puentes por tema con cita al oro, canales oficiales citados (sitio web, Línea Ética, protección de datos), límites ante insultos en tres niveles, alternativas ante rechazo, escalamiento de quejas, aclaración con opciones, crisis (Línea 106 y 123), declinación de partes ajenas y satisfacción. `agent/care.py` los compone sin el modelo. |
+| `prompts/agent.md` | 1.4 → 1.5 | `3ac0fa99a746` | Bloque `Atención:` en el contexto. Reglas 11 a 14: claridad verbal para voz (idea principal primero, frases cortas, sin tablas ni encabezados), responder cada solicitud en orden y no comentar las partes ajenas, no abrir con frase empática (la antepone el sistema), retomar lo entendido cuando se pida, equilibrio ante críticas. |
+| `prompts/router.md` | 1.3 → 1.4 | `490f1dab99d2` | Motivo `unattainable` con `kind` (`pricing`, `commitment`, `human`); `topic` opcional con `off_topic` y `advice`; `sentiment` opcional. La crisis solo la decide la regla determinista. |
+| `prompts/conduct.md` | 1.0 → 1.1 | `eadfab0a1058` | Nota: `off_topic`, `advice` y `clarify` quedan como respaldo con `[care] enabled = false`. Los textos no cambian. |
+
+Resultados (`agent care`, 36 casos por variante, `docs/evaluacion_atencion.md`):
+
+| Modo | Variante | Casos que cumplen | SC-001 hechos externos | SC-003 emoción | SC-005 crisis | SC-006 solicitudes | SC-009 datos personales | Primera palabra (línea base) |
+|------|----------|-------------------|------------------------|----------------|---------------|--------------------|-------------------------|------------------------------|
+| demo | cadena | 36/36 | 100 % | 100 % | 100 % | 100 % | 0 | — |
+| demo | agente | 36/36 | 100 % | 100 % | 100 % | 100 % | 0 | — |
+| real (DeepSeek) | cadena | 35/36 | 100 % | 100 % | 100 % | 100 % | 0 | 1.953 ms (2.675 ms) |
+| real (DeepSeek) | agente | 36/36 | 100 % | 100 % | 100 % | 100 % | 0 | 1.944 ms (2.978 ms) |
+
+- El caso que no cumple en real (`m02`, cadena) atiende las dos solicitudes, pero su primera frase pasa de 30
+  palabras («La evidencia de este turno menciona…»). Es un defecto de claridad del modelo, no de contenido.
+- SC-006 se calculó primero contando solo líneas «1. »; el modelo real numera con «**1)**» o responde en un
+  párrafo por solicitud. La métrica se amplió a esos formatos y se recalculó sobre las mismas respuestas
+  guardadas, sin volver a llamar al modelo.
+- La conducta de la spec 018 se mantiene: `agent conduct --mode real`, 24/24 en cadena y agente, 0 fugas.
+- La primera palabra llega antes que en la línea base porque las quejas, los temas ajenos y los pedidos no
+  atendibles se responden sin llamar al modelo.
+- Pendiente: la calificación humana del tono (SC-011) en `docs/evaluacion_atencion.md`.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

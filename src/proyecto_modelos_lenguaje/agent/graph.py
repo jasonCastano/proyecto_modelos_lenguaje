@@ -52,6 +52,7 @@ from langgraph.types import Checkpointer, interrupt
 
 from ..rag.hybrid import HybridRetriever, RetrievedFragment
 from ..tasks import FALLBACK_ANSWER, STRICT_REMINDER, is_model_fallback
+from . import care
 from .actions import (
     TOOL_DESCRIPTIONS,
     WRITE_TOOLS,
@@ -85,8 +86,14 @@ from .memory import (
 )
 from .models import RouteDecision, Turn, TurnMetrics
 from .privacy import build_pii_middleware
-from .prompts import load_agent_prompt, load_conduct
-from .router import AI_QUESTION, apply_structured_fallback, contextual_query, route_message
+from .prompts import load_agent_prompt, load_care, load_conduct
+from .router import (
+    AI_QUESTION,
+    COMPANY,
+    apply_structured_fallback,
+    contextual_query,
+    route_message,
+)
 from .series import SeriesTable, series_intent
 from .structured import StructuredFact, StructuredStore, normalize
 from .tools import (
@@ -110,7 +117,8 @@ IDENTITY_STAGE_NONE: dict[str, Any] = {"stage": "none", "attempts": 0, "offered"
 
 def conduct(key: str, **values: str) -> str:
     """Texto de ``prompts/conduct.md`` con ``{name}`` / ``{masked}`` reemplazados."""
-    text = load_conduct()[key]
+    sections = load_conduct()
+    text = sections.get(key) or sections["off_topic"]
     for name, value in values.items():
         text = text.replace("{" + name + "}", value)
     return text
@@ -159,6 +167,10 @@ class ChatState(TypedDict, total=False):
     client: dict[str, Any] | None
     identity_next: str
     notices: list[str]
+    # spec 019: atención (rachas y variantes del hilo), señales del turno y registro del contacto
+    care: dict[str, Any]
+    care_signals: dict[str, Any] | None
+    contact: dict[str, Any]
 
 
 @dataclass(slots=True)
@@ -312,6 +324,12 @@ def hitl_request(tool: str, args: dict[str, Any]) -> dict[str, Any]:
 
 def _route_node(deps: GraphDeps):
     def route(state: ChatState) -> dict[str, Any]:
+        care_config = deps.config.care
+        care_state = care.copy_care_state(state.get("care"))
+        signals: care.CareSignals | None = None
+        if care_config.enabled:
+            signals = care.analyze(state["question"], care_state, care_config)
+            care.update_counters(signals, care_state, care_config)
         intent = detect_write_intent(state["question"], deps.router_model)
         profile_query = intent is None and is_profile_question(state["question"])
         if intent is not None:
@@ -331,13 +349,17 @@ def _route_node(deps: GraphDeps):
         else:
             history = [t["question"] for t in (state.get("turns") or [])[-ROUTER_HISTORY_TURNS:]]
             decision = route_message(
-                state["question"],
+                routed_text(state["question"], signals),
                 history=history,
                 model=deps.router_model,
                 min_confidence=deps.config.router.min_confidence,
                 temperature=deps.config.router.llm_temperature,
+                signals=signals,
             ).decision
+            decision = _apply_care(decision, signals, care_state)
         return {
+            "care": care_state,
+            "care_signals": signals,
             "intent": intent.to_dict() if intent else None,
             "profile_query": profile_query,
             "decision": decision.model_dump(mode="json"),
@@ -352,6 +374,43 @@ def _route_node(deps: GraphDeps):
         }
 
     return route
+
+
+def routed_text(question: str, signals: care.CareSignals | None) -> str:
+    """Con varias solicitudes, el enrutador ve solo las partes de Manuelita (spec 019, R7)."""
+    parts = care.manuelita_parts(signals)
+    if signals and len(signals.get("requests") or []) > 1 and parts:
+        return "; ".join(part["text"] for part in parts)
+    return question
+
+
+RETRIEVAL_ROUTES = ("documental", "structured", "mixed")
+
+
+def _apply_care(
+    decision: RouteDecision, signals: care.CareSignals | None, care_state: care.CareState
+) -> RouteDecision:
+    """Emoción propuesta por el LLM y una sola aclaración seguida (spec 019, R3 y R10)."""
+    if signals is None:
+        return decision
+    if signals.get("sentiment") == "neutral" and decision.sentiment not in {None, "neutral"}:
+        signals["sentiment"] = str(decision.sentiment)
+    if decision.route != "clarify":
+        care_state["clarify_streak"] = 0
+        return decision
+    if care_state["clarify_streak"] >= 1:
+        # Ya se pidió una aclaración: se responde con la interpretación más probable.
+        care_state["clarify_streak"] = 0
+        signals["best_guess"] = True
+        alternative = decision.alternative if decision.alternative in RETRIEVAL_ROUTES else None
+        return decision.model_copy(
+            update={
+                "route": alternative or "documental",
+                "reason": "ambigüedad repetida: se usa la interpretación más probable",
+            }
+        )
+    care_state["clarify_streak"] += 1
+    return decision
 
 
 def _after_route(state: ChatState) -> str:
@@ -425,7 +484,11 @@ def _action_node(deps: GraphDeps):
 
 
 def reply_node(state: ChatState) -> dict[str, Any]:
-    """Respuestas sin búsqueda de Valer-IA: perfil, saludo, despedida, conducta y aclaración."""
+    """Respuestas sin búsqueda de Valer-IA: perfil, saludo, despedida, conducta y aclaración.
+
+    Con la atención activa (spec 019), los temas ajenos, los consejos, los pedidos no atendibles,
+    las quejas sin consulta, la aclaración y las crisis se componen desde ``prompts/care.md``.
+    """
     decision = state["decision"]
     route = decision["route"]
     store = get_store()
@@ -436,8 +499,18 @@ def reply_node(state: ChatState) -> dict[str, Any]:
     )
     identity = {**IDENTITY_STAGE_NONE, **(state.get("identity") or {})}
     question = normalize(state["question"])
+    signals = state.get("care_signals")
+    caring = bool(signals and signals.get("enabled"))
+    care_state = care.copy_care_state(state.get("care"))
+    playbook = load_care()
+    reason = decision.get("scope_reason") or "off_topic"
+    citations: list[dict[str, Any]] = []
     if state.get("profile_query"):
         answer = profile_answer(stored, profile_from_turns(state.get("turns") or []))
+    elif caring and route == "direct" and signals.get("complaint_only"):
+        answer, citations = care.compose_complaint(signals, playbook, care_state)
+    elif caring and route == "direct" and signals.get("satisfied_only"):
+        answer = care.pick(playbook, "satisfied", care_state)
     elif route == "direct":
         if FAREWELL.search(question):
             # Oferta de recordar: una vez por visita y solo a un visitante anónimo (FR-007).
@@ -454,11 +527,35 @@ def reply_node(state: ChatState) -> dict[str, Any]:
             answer = conduct("greeting_named", name=stored["name"])
         else:
             answer = conduct("greeting")
+    elif route == "out_of_scope" and caring and reason == "crisis":
+        answer = care.crisis_reply(playbook, care_state)
+    elif route == "out_of_scope" and caring and reason in CARE_REASONS:
+        answer, citations = care.compose_out_of_scope(signals, decision, playbook, care_state)
+    elif route == "out_of_scope" and caring and reason == "abuse":
+        # Nivel 1: el texto de la spec 018; después, un límite más firme sin cortar la atención.
+        level = int(signals.get("hostility_level") or 1)
+        answer = (
+            conduct("abuse")
+            if level <= 1
+            else care.pick(playbook, f"hostility.{level}", care_state)
+        )
     elif route == "out_of_scope":
-        answer = conduct(decision.get("scope_reason") or "off_topic")
+        answer = conduct(reason)
+    elif caring:
+        answer, citations = care.compose_clarify(signals, playbook, care_state)
     else:
         answer = conduct("clarify")
-    return {"answer": answer, "citations": [], "fallback": False, "identity": identity}
+    return {
+        "answer": answer,
+        "citations": citations,
+        "fallback": False,
+        "identity": identity,
+        "care": care_state,
+        "care_signals": signals,
+    }
+
+
+CARE_REASONS = frozenset({"off_topic", "advice", "unattainable"})
 
 
 # ---------------------------------------------------------------- identidad (spec 018)
@@ -473,6 +570,7 @@ TURN_RESET: dict[str, Any] = {
     "citations": [],
     "fallback": False,
     "retrievals": 0,
+    "care_signals": None,
 }
 
 
@@ -646,10 +744,37 @@ def _finalize_node(deps: GraphDeps):
         citations = state.get("citations") or []
         answer = state.get("answer", "")
         notices: list[str] = []
+        decision = state["decision"]
+        signals = state.get("care_signals")
+        care_state = care.copy_care_state(state.get("care"))
+        playbook = load_care()
+        action = bool(state.get("intent"))
+        retrieval = decision.get("route") not in NO_RETRIEVAL_ROUTES and not action
+        if retrieval:
+            # Spec 019 (FR-018): ningún teléfono ni correo fuera de los canales citados.
+            invented = care.invented_contacts(answer, playbook, state.get("context") or "")
+            if invented:
+                answer = care.replace_contacts(answer, invented)
+                notices.append("invented_contact")
+        before, before_notices = care.prefixes(signals, decision, playbook, care_state)
+        after, after_notices = care.suffixes(
+            signals, decision, playbook, care_state, retrieval=retrieval
+        )
+        answer = " ".join(piece for piece in [*before, answer, *after] if piece).strip()
+        notices.extend(before_notices + after_notices)
         if SENSITIVE_NOTICES & set(state.get("pii_notice") or []):
             # Spec 018 (FR-020): aviso determinista si el visitante compartió datos sensibles.
             notices.append("sensitive_data")
             answer = f"{conduct('sensitive_notice')}\n\n{answer}".strip()
+        contact = care.update_contact(
+            state.get("contact"),
+            signals=signals,
+            decision=decision,
+            citations=citations,
+            fallback=state.get("fallback", False),
+            care_state=care_state,
+            action=action,
+        )
         turn = Turn(
             turn_id=len(turns) + 1,
             question=state["question"],
@@ -676,6 +801,9 @@ def _finalize_node(deps: GraphDeps):
             "summarized": summarized,
             "notices": notices,
             "identity_event": None,
+            "care": care_state,
+            "care_signals": care.strip_texts(signals),
+            "contact": contact,
         }
 
     return finalize
@@ -713,13 +841,18 @@ def _retrieve_node(deps: GraphDeps):
         if decision.route in {"documental", "mixed"}:
             if deps.retriever is None:
                 raise ChatUnavailableError("El índice de recuperación no está disponible.")
-            found, guarded = search_documents_impl(
-                deps.retriever, query, top_k=top_k, neutralize=deps.neutralize
-            )
+            parts = care.manuelita_parts(state.get("care_signals"))
+            if len(parts) >= 2:
+                found, guarded, searches = _search_parts(deps, parts, top_k)
+            else:
+                found, guarded = search_documents_impl(
+                    deps.retriever, query, top_k=top_k, neutralize=deps.neutralize
+                )
+                searches = 1
             fragments = found
             # Los hechos llevan F#; los fragmentos, U#: en la ruta mixta conviven ambos.
             documents = [*documents, *guarded]
-            retrievals += 1
+            retrievals += searches
         fragment_rows, fact_rows, evidence = collect_evidence(fragments, facts)
         return {
             "decision": decision.model_dump(mode="json"),
@@ -731,6 +864,42 @@ def _retrieve_node(deps: GraphDeps):
         }
 
     return retrieve
+
+
+def _search_parts(
+    deps: GraphDeps, parts: Sequence[care.RequestPart], top_k: int
+) -> tuple[list[RetrievedFragment], list[GuardedDocument], int]:
+    """Una búsqueda por solicitud de Manuelita, sin duplicados y con etiquetas ``U#`` globales."""
+    assert deps.retriever is not None
+    per_part = max(2, top_k // len(parts))
+    fragments: list[RetrievedFragment] = []
+    documents: list[GuardedDocument] = []
+    seen: set[str] = set()
+    for part in parts:
+        text = part["text"]
+        query = text if COMPANY.search(normalize(text)) else f"Manuelita {text}"
+        found, guarded = search_documents_impl(
+            deps.retriever, query, top_k=per_part, neutralize=deps.neutralize
+        )
+        for fragment, document in zip(found, guarded, strict=True):
+            if fragment.unit_id in seen:
+                continue
+            seen.add(fragment.unit_id)
+            fragments.append(fragment)
+            label = f"U{len(documents) + 1}"
+            documents.append(GuardedDocument(label, document.source, document.text))
+    return fragments, documents, len(parts)
+
+
+def care_brief(state: ChatState) -> str:
+    """Brief de atención del turno (spec 019, contracts/care-skills.md)."""
+    turns = state.get("turns") or []
+    previous: str | None = None
+    if turns:
+        last = turns[-1]
+        route = (last.get("route") or {}).get("route")
+        previous = "fallback" if last.get("fallback") else (str(route) if route else None)
+    return care.brief(state.get("care_signals"), care.copy_care_state(state.get("care")), previous)
 
 
 def _chain_user_message(state: ChatState, deps: GraphDeps) -> str:
@@ -746,6 +915,9 @@ def _chain_user_message(state: ChatState, deps: GraphDeps) -> str:
             "<historial>\n" + "\n\n".join(render_turn(t) for t in recent) + "\n</historial>"
         )
     parts.append(f"<evidencia>\n{state.get('context', '')}\n</evidencia>")
+    attention = care_brief(state)
+    if attention:
+        parts.append(f"<atencion>\n{attention}\n</atencion>")
     parts.append(f"<pregunta>{state['question']}</pregunta>")
     return "\n\n".join(parts)
 
@@ -907,6 +1079,9 @@ def _agent_node(deps: GraphDeps):
         ]
 
         hint = route_hint(state)
+        attention = care_brief(state)
+        if attention:
+            hint = f"{hint}\n\n{attention}"
 
         @dynamic_prompt
         def personalized_prompt(_request: ModelRequest) -> str:

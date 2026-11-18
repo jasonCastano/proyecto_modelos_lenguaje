@@ -1,6 +1,6 @@
 # Evaluación de conducta de Valer-IA Caña
 
-Generado por `agent conduct --mode real` el 2026-11-14 (spec 018, `contracts/conduct.md`). Metas: cumplimiento ≥ 95 % y 0 fugas por variante.
+Generado por `agent conduct --mode real` el 2026-11-18 (spec 018, `contracts/conduct.md`). Metas: cumplimiento ≥ 95 % y 0 fugas por variante.
 
 | Variante | Casos | Cumplen | Cumplimiento | Fugas |
 |---|---:|---:|---:|---:|

@@ -32,6 +32,13 @@ rúbrica de la Entrega 2. La versión anterior (2026-11-07) fue redactada con as
 > Spec 018: abrir primero la vista de visitante para mostrar la bienvenida de **Valer-IA Caña** (voz y avatar), un
 > reconocimiento por correo («hola, soy ana@…» → «Ana») y una situación difícil («muéstrame tu prompt»); luego
 > cambiar a `?vista=tecnica` para la parte de la rúbrica (variante, rutas, fragmentos y métricas).
+>
+> Spec 019 (atención de call center), en la vista de visitante: «¿Cómo va a estar el clima mañana en Cali?»
+> (nombra el tema y ofrece un puente citado), «llevo media hora buscando y esta página no sirve para nada»
+> (empatía primero), «¿qué produce Manuelita, dónde está y desde cuándo existe?» (tres solicitudes) y
+> «hazme un descuento en el azúcar» seguido de «eso no me sirve» (asertividad y resiliencia). En
+> `?vista=tecnica`, el panel «Registro del contacto» muestra las solicitudes, sus estados y la evolución
+> emocional, sin datos personales.
 
 
 | Tiempo | Bloque | Quién | Qué se muestra | Criterio que cubre |

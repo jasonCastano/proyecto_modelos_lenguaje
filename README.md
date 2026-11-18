@@ -137,6 +137,11 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
   - **Valer-IA Caña**: la asistente se presenta al entrar, atiende con tono profesional, reconoce de forma
     opcional a un cliente que vuelve por su correo (sin guardar el correo en claro) y maneja con reglas las
     preguntas fuera de tema, la extracción del prompt, los datos de terceros, los insultos y los pedidos dañinos.
+  - **Atención de call center**: Valer-IA nombra el tema cuando le preguntan algo ajeno a Manuelita y ofrece
+    un puente citado; reconoce la frustración o el enojo antes de responder; pone límites cordiales ante
+    insultos; atiende varias preguntas en un mismo mensaje; no promete precios ni descuentos y solo menciona
+    canales oficiales del corpus; ante una crisis remite a la Línea 106 y al 123. Cada conversación deja un
+    registro del contacto sin datos personales, visible en la vista técnica.
   - **Avatar con sincronización de labios**: una asistente ilustrada junto al chat mueve la boca con el audio de
     la voz (análisis local en el navegador), parpadea y muestra cuándo está pensando; se puede ocultar.
 - **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores;
@@ -711,6 +716,11 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
   `uv run python -m proyecto_modelos_lenguaje.agent conduct --mode demo|real`
   (`docs/evaluacion_conducta.md`). Define `MANUELITA_IDENTITY_KEY` en `.env` para fijar la clave del
   reconocimiento por correo.
+- Habilidades de atención (spec 019, ADR 0023): guiones en `prompts/care.md` y `[care]` en
+  `config/agent.toml` (`enabled = false` vuelve a las respuestas fijas). En la vista técnica aparece el
+  panel «Registro del contacto». Se miden con
+  `uv run python -m proyecto_modelos_lenguaje.agent care --mode demo|real [--baseline]`
+  (`docs/evaluacion_atencion.md`).
 - Avatar (spec 017, ADR 0021): junto al chat, la boca sigue el audio de la voz con un analizador de Web Audio, sin
   servicios externos. «Ocultar avatar» lo esconde y la preferencia se recuerda. Con `?avatarDebug=1` en la URL,
   la tarjeta muestra la forma y la apertura de la boca para calibrarla.

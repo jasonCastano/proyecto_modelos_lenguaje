@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -109,3 +110,110 @@ def load_conduct(project_root: Path | None = None) -> dict[str, str]:
             "invalid_config", f"prompts/conduct.md sin secciones: {detail}.", task="conduct"
         )
     return sections
+
+
+# ---------------------------------------------------------------- spec 019: guiones de atención
+
+CARE_PLACEHOLDERS = frozenset({"topic", "bridge", "channel", "options"})
+CARE_SINGLE_VARIANT = frozenset({"crisis", "best_guess.suffix", "language.other"})
+CARE_REQUIRED = (
+    "opener.frustrated",
+    "opener.angry",
+    "opener.confused",
+    "opener.concern",
+    "ack.off_topic",
+    "ack.advice",
+    "boundary.off_topic",
+    "boundary.advice",
+    "boundary.pricing",
+    "boundary.commitment",
+    "boundary.human",
+    "offer.positive",
+    "bridge.default",
+    "channel.website",
+    "channel.ethics_line",
+    "channel.data_protection",
+    "close",
+    "hostility.1",
+    "hostility.2",
+    "hostility.3",
+    "rejection.rephrase",
+    "rejection.related_topics",
+    "rejection.official_channel",
+    "complaint.help",
+    "complaint.escalation",
+    "clarify.intro",
+    "clarify.options.default",
+    "best_guess.suffix",
+    "crisis",
+    "decline.part",
+    "truncated",
+    "satisfied",
+    "language.other",
+)
+PLACEHOLDER_PATTERN = re.compile(r"\{([a-z_]+)\}")
+
+
+@dataclass(frozen=True, slots=True)
+class CareCitation:
+    unit_id: str
+    url: str
+    title: str
+
+
+@dataclass(frozen=True, slots=True)
+class CarePlaybook:
+    """Guiones de atención (``prompts/care.md``): variantes por sección y citas al oro."""
+
+    version: str
+    sha256: str
+    variants: dict[str, tuple[str, ...]]
+    citations: dict[str, CareCitation]
+
+
+def _parse_care_section(key: str, body: str) -> tuple[tuple[str, ...], CareCitation | None]:
+    variants: list[str] = []
+    citation: CareCitation | None = None
+    for raw in body.splitlines():
+        line = raw.strip()
+        if line.startswith("- "):
+            variants.append(line[2:].strip())
+        elif line.startswith("cite:"):
+            parts = [part.strip() for part in line[len("cite:") :].split("|")]
+            if len(parts) != 3 or not all(parts):
+                raise ValueError(f"care.md [{key}]: la cita debe ser «unit_id | url | título».")
+            citation = CareCitation(*parts)
+    for variant in variants:
+        unknown = set(PLACEHOLDER_PATTERN.findall(variant)) - CARE_PLACEHOLDERS
+        if unknown:
+            raise ValueError(f"care.md [{key}]: placeholder no permitido {sorted(unknown)}.")
+    minimum = 1 if key in CARE_SINGLE_VARIANT else 2
+    if not minimum <= len(variants) <= 4:
+        raise ValueError(f"care.md [{key}]: debe tener entre {minimum} y 4 variantes.")
+    if (key.startswith("bridge.") or key.startswith("channel.")) and citation is None:
+        raise ValueError(f"care.md [{key}]: los puentes y canales deben declarar su cita.")
+    return tuple(variants), citation
+
+
+@lru_cache(maxsize=4)
+def load_care(project_root: Path | None = None) -> CarePlaybook:
+    """Lee y valida ``prompts/care.md`` (spec 019, FR-019)."""
+    version, sections = load_sections("care", project_root=project_root)
+    missing = [key for key in CARE_REQUIRED if key not in sections]
+    if missing:
+        raise ValueError(f"care.md sin secciones: {', '.join(missing)}.")
+    variants: dict[str, tuple[str, ...]] = {}
+    citations: dict[str, CareCitation] = {}
+    for key, body in sections.items():
+        parsed, citation = _parse_care_section(key, body)
+        variants[key] = parsed
+        if citation is not None:
+            citations[key] = citation
+    root = Path(project_root) if project_root is not None else PROJECT_ROOT
+    text = (root / "prompts" / "care.md").read_text(encoding="utf-8")
+    return CarePlaybook(
+        version=version,
+        sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        variants=variants,
+        citations=citations,
+    )

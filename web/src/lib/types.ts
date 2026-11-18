@@ -175,7 +175,55 @@ export interface ChatRoute {
     | "prompt_extraction"
     | "advice"
     | "identity"
+    | "crisis"
+    | "unattainable"
     | null;
+  /** Spec 019: tema ajeno saneado, emoción propuesta por el enrutador y tipo de pedido no atendible. */
+  topic?: string | null;
+  sentiment?: Sentiment | null;
+  kind?: "pricing" | "commitment" | "human" | null;
+}
+
+/** Spec 019: emoción del visitante en un turno. */
+export type Sentiment = "neutral" | "satisfied" | "confused" | "frustrated" | "angry" | "distressed";
+
+export type ContactCategory =
+  | "manuelita"
+  | "off_topic"
+  | "advice"
+  | "complaint"
+  | "unattainable"
+  | "crisis"
+  | "conduct"
+  | "other";
+
+export type ContactStatus =
+  | "resolved"
+  | "out_of_scope"
+  | "not_attainable"
+  | "needs_clarification"
+  | "referred"
+  | "no_evidence";
+
+export interface ContactRequest {
+  turn: number;
+  category: ContactCategory;
+  topic: string;
+  status: ContactStatus;
+}
+
+/** Spec 019: registro del contacto (CRM) sin datos personales; solo en la vista técnica. */
+export interface ContactRecord {
+  version: "1.0";
+  opened_at: string;
+  updated_at: string;
+  turns: number;
+  requests: ContactRequest[];
+  sentiments: Sentiment[];
+  motive: string[];
+  resolved: boolean;
+  hostile_turns: number;
+  crisis: boolean;
 }
 
 export interface ChatFragment extends RetrievalFragment {
@@ -245,6 +293,8 @@ export interface ChatResponse {
   /** Spec 018: cliente activo tras el turno (reconocimiento o reinicio). */
   client?: ClientInfo | null;
   notices?: string[];
+  /** Spec 019: registro del contacto tras el turno. */
+  contact?: ContactRecord | null;
 }
 
 export interface ClientInfo {
@@ -277,6 +327,7 @@ export interface ThreadView {
   status: "idle" | "pending_approval";
   pending_action: PendingAction | null;
   actions?: Array<PendingAction & { decided_at?: string }>;
+  contact?: ContactRecord | null;
 }
 
 export interface MemoryItem {

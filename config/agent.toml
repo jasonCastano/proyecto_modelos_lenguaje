@@ -18,5 +18,11 @@ preference_ttl_days = 30
 [structured]
 path = "data/module2/structured"   # vista derivada del oro; solo la escribe el CLI
 
+[care]                     # habilidades de atención de Valer-IA (spec 019)
+enabled = true            # false: respuestas fijas de prompts/conduct.md (línea base)
+max_requests = 5          # solicitudes atendidas por mensaje
+hostility_levels = 3      # niveles del límite cordial ante insultos
+complaint_escalation = 3  # quejas seguidas antes de ofrecer el canal oficial
+
 [state]
 env_var = "MANUELITA_STATE_DIR"    # checkpointer y Store, siempre fuera del repositorio

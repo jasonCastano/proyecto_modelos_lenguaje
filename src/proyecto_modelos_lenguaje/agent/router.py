@@ -18,8 +18,9 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -38,19 +39,6 @@ SMALLTALK = frozenset(
         *("listo", "genial", "excelente", "muy", "amable", "bien", "entendido", "y", "usted"),
         *("como", "esta", "estas", "un", "saludo", "nos", "vemos"),
     }
-)
-OUT_OF_SCOPE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
-    (
-        "finanzas_externas",
-        re.compile(r"\b(dolar|euro|bitcoin|tasa de cambio|trm|bolsa de valores)\b"),
-    ),
-    ("clima", re.compile(r"\b(clima|llover|lluvia|temperatura|pronostico del tiempo)\b")),
-    ("deportes", re.compile(r"\b(futbol|mundial|liga|partido de|seleccion colombia)\b")),
-    ("politica", re.compile(r"\b(elecciones|presidente de (colombia|estados unidos)|congreso)\b")),
-    (
-        "programacion",
-        re.compile(r"\b(python|javascript|sql|codigo|programa en|funcion en|script)\b"),
-    ),
 )
 # Spec 018: motivos de conducta de Valer-IA (texto normalizado: minúsculas, sin tildes).
 # Se evalúan antes que los temas ajenos; las palabras de la industria («quema de caña», «demanda de
@@ -130,8 +118,19 @@ COMPANY = re.compile(r"\b(manuelita|fundacion|palmar|altamira|laredo|oceanos|mej
 
 
 OUT_OF_SCOPE_REASONS = frozenset(
-    {"off_topic", "abuse", "harmful", "third_party", "prompt_extraction", "advice"}
+    {
+        "off_topic",
+        "abuse",
+        "harmful",
+        "third_party",
+        "prompt_extraction",
+        "advice",
+        "crisis",
+        "unattainable",
+    }
 )
+SENTIMENTS = frozenset({"neutral", "satisfied", "confused", "frustrated", "angry", "distressed"})
+UNATTAINABLE_KINDS = frozenset({"pricing", "commitment", "human"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,22 +143,40 @@ def _words(text: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", normalize(text))
 
 
-def rule_decision(message: str) -> RouteDecision | None:
-    """Etapa 1: decide sin modelo cuando el caso es inequívoco; si no, ``None``."""
+def rule_decision(message: str, signals: Mapping[str, Any] | None = None) -> RouteDecision | None:
+    """Etapa 1: decide sin modelo cuando el caso es inequívoco; si no, ``None``.
+
+    Con ``signals`` (spec 019, ``care.analyze``) la crisis va primero, el insulto solo decide si
+    no hay consulta y los mensajes sin partes de Manuelita se atienden sin buscar.
+    """
+    from . import care
+
     words = _words(message)
     if not words:
         return RouteDecision(
             route="clarify", confidence=0.3, reason="mensaje vacío", decided_by="rules"
         )
     text = " ".join(words)
+    if signals and signals.get("crisis"):
+        return RouteDecision(
+            route="out_of_scope",
+            confidence=1.0,
+            reason="atención: mensaje de angustia o crisis",
+            decided_by="rules",
+            scope_reason="crisis",
+        )
     for reason, pattern in CONDUCT_PATTERNS:
+        if reason == "abuse" and signals is not None and not signals.get("hostile_only"):
+            continue
         if pattern.search(text):
+            spec = care.match_topic(text) if reason == "advice" else None
             return RouteDecision(
                 route="out_of_scope",
                 confidence=0.95,
                 reason=f"conducta: {reason.replace('_', ' ')}",
                 decided_by="rules",
                 scope_reason=reason,
+                topic=spec.key if spec and spec.kind == "advice" else None,
             )
     if AI_QUESTION.search(text):
         return RouteDecision(
@@ -175,15 +192,51 @@ def rule_decision(message: str) -> RouteDecision | None:
             reason="saludo, agradecimiento o despedida",
             decided_by="rules",
         )
-    for name, pattern in OUT_OF_SCOPE_PATTERNS:
-        if pattern.search(text) and not COMPANY.search(text):
+    if signals is not None:
+        return _care_decision(signals)
+    spec = care.match_topic(text)
+    if spec is not None and not COMPANY.search(text):
+        return RouteDecision(
+            route="out_of_scope",
+            confidence=0.9,
+            reason=f"tema ajeno a Manuelita ({spec.key.replace('_', ' ')})",
+            decided_by="rules",
+            scope_reason=spec.kind,
+            topic=spec.key,
+        )
+    return None
+
+
+def _care_decision(signals: Mapping[str, Any]) -> RouteDecision | None:
+    """Spec 019: quejas sin consulta, satisfacción y mensajes sin partes de Manuelita."""
+    parts = list(signals.get("requests") or [])
+    if signals.get("complaint_only") or signals.get("satisfied_only"):
+        what = "queja o rechazo" if signals.get("complaint_only") else "agradecimiento"
+        return RouteDecision(
+            route="direct",
+            confidence=0.9,
+            reason=f"atención: {what} sin consulta",
+            decided_by="rules",
+        )
+    if parts and all(part.get("kind") != "manuelita" for part in parts):
+        first = parts[0]
+        if first.get("kind") == "unattainable":
             return RouteDecision(
                 route="out_of_scope",
                 confidence=0.9,
-                reason=f"tema ajeno a Manuelita ({name.replace('_', ' ')})",
+                reason=f"pedido no atendible ({first.get('unattainable_kind')})",
                 decided_by="rules",
-                scope_reason="off_topic",
+                scope_reason="unattainable",
+                kind=first.get("unattainable_kind"),
             )
+        return RouteDecision(
+            route="out_of_scope",
+            confidence=0.9,
+            reason=f"tema ajeno a Manuelita ({str(first.get('topic_key')).replace('_', ' ')})",
+            decided_by="rules",
+            scope_reason=first.get("kind"),
+            topic=first.get("topic_key"),
+        )
     return None
 
 
@@ -252,6 +305,12 @@ def llm_decision(
     scope = payload.get("scope_reason") if route == "out_of_scope" else None
     if route == "out_of_scope" and scope not in OUT_OF_SCOPE_REASONS:
         scope = "off_topic"
+    if scope == "crisis":
+        scope = "off_topic"  # la crisis solo la decide la regla determinista (spec 019, R5)
+    from .care import sanitize_topic
+
+    sentiment = payload.get("sentiment")
+    kind = payload.get("kind")
     return RouteDecision.model_validate(
         {
             "route": route,
@@ -260,6 +319,9 @@ def llm_decision(
             "decided_by": "llm",
             "alternative": payload.get("alternative"),
             "scope_reason": scope,
+            "topic": sanitize_topic(str(payload.get("topic") or "")),
+            "sentiment": sentiment if sentiment in SENTIMENTS else None,
+            "kind": kind if kind in UNATTAINABLE_KINDS else None,
         }
     )
 
@@ -271,9 +333,10 @@ def route_message(
     model: BaseChatModel | None = None,
     min_confidence: float = 0.6,
     temperature: float = 0.0,
+    signals: Mapping[str, Any] | None = None,
 ) -> RouterResult:
     """Decide la ruta efectiva de un mensaje (reglas → LLM o heurística → umbral)."""
-    ruled = rule_decision(message)
+    ruled = rule_decision(message, signals)
     if ruled is not None:
         return RouterResult(ruled.effective(min_confidence), model_calls=0)
     if model is None:

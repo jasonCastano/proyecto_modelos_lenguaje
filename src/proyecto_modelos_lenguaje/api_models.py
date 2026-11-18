@@ -211,7 +211,24 @@ class ShowcaseResponse(BaseModel):
 
 Route = Literal["direct", "documental", "structured", "mixed", "out_of_scope", "clarify"]
 ScopeReason = Literal[
-    "off_topic", "abuse", "harmful", "third_party", "prompt_extraction", "advice", "identity"
+    "off_topic",
+    "abuse",
+    "harmful",
+    "third_party",
+    "prompt_extraction",
+    "advice",
+    "identity",
+    "crisis",
+    "unattainable",
+]
+# Spec 019: emoción del visitante, pedidos no atendibles y registro del contacto (CRM).
+Sentiment = Literal["neutral", "satisfied", "confused", "frustrated", "angry", "distressed"]
+UnattainableKind = Literal["pricing", "commitment", "human"]
+ContactCategory = Literal[
+    "manuelita", "off_topic", "advice", "complaint", "unattainable", "crisis", "conduct", "other"
+]
+ContactStatus = Literal[
+    "resolved", "out_of_scope", "not_attainable", "needs_clarification", "referred", "no_evidence"
 ]
 ChatStatus = Literal["answered", "fallback", "clarify", "pending_approval"]
 
@@ -239,6 +256,9 @@ class RouteModel(BaseModel):
     alternative: Route | None = None
     fallback_route: Literal["documental"] | None = None
     scope_reason: ScopeReason | None = None
+    topic: str | None = Field(default=None, max_length=40)
+    sentiment: Sentiment | None = None
+    kind: UnattainableKind | None = None
 
 
 class TurnMetricsModel(BaseModel):
@@ -347,6 +367,34 @@ class WelcomeResponse(BaseModel):
     citations: list[WelcomeCitation] = Field(default_factory=list)
 
 
+class ContactRequestModel(BaseModel):
+    """Una solicitud del contacto: categoría, tema controlado y estado (spec 019)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    turn: int = Field(ge=1)
+    category: ContactCategory
+    topic: str = Field(max_length=40)
+    status: ContactStatus
+
+
+class ContactRecordModel(BaseModel):
+    """Registro del contacto (CRM) sin datos personales; solo lo muestra la vista técnica."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version: Literal["1.0"] = "1.0"
+    opened_at: str
+    updated_at: str
+    turns: int = Field(ge=0)
+    requests: list[ContactRequestModel] = Field(default_factory=list)
+    sentiments: list[Sentiment] = Field(default_factory=list)
+    motive: list[str] = Field(default_factory=list, max_length=5)
+    resolved: bool = True
+    hostile_turns: int = Field(default=0, ge=0)
+    crisis: bool = False
+
+
 class ChatResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -358,6 +406,7 @@ class ChatResponse(BaseModel):
     # spec 018: cliente activo (reconocimiento o reinicio) y avisos del turno
     client: ClientInfo | None = None
     notices: list[str] = Field(default_factory=list)
+    contact: ContactRecordModel | None = None  # spec 019
 
 
 class ThreadView(BaseModel):
@@ -370,6 +419,7 @@ class ThreadView(BaseModel):
     status: Literal["idle", "pending_approval"] = "idle"
     pending_action: dict[str, object] | None = None
     actions: list[dict[str, object]] = Field(default_factory=list)
+    contact: ContactRecordModel | None = None  # spec 019
 
 
 class MemoryItemModel(BaseModel):

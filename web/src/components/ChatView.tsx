@@ -20,6 +20,7 @@ import {
   type ChatStreamEvent,
   type ChatTurn,
   type ChatVariant,
+  type ContactRecord,
   type Citation,
   type MemoryItem,
   type Mode,
@@ -31,6 +32,7 @@ import { useVoice } from "../lib/useVoice";
 import { adoptUser, resetVisit, viewMode, visitUser } from "../lib/session";
 import { AgentAvatar } from "./AgentAvatar";
 import { ApprovalCard } from "./ApprovalCard";
+import { ContactRecordPanel } from "./ContactRecordPanel";
 import { RetrievedFragments } from "./RetrievedFragments";
 import { QuickReplies } from "./QuickReplies";
 import { SourceList } from "./SourceList";
@@ -385,6 +387,8 @@ export function ChatView({ mode }: { mode: Mode }) {
   const [live, setLive] = useState<LiveTurn | null>(null);
   const [recent, setRecent] = useState<RecentThread[]>(() => readRecent());
   const [observability, setObservability] = useState<ObservabilityStatus | null>(null);
+  // Spec 019: registro del contacto (CRM) del hilo; solo se muestra en la vista técnica.
+  const [contact, setContact] = useState<ContactRecord | null>(null);
   const userId = useRef(visitUser());
   // Spec 018: vista de visitante (normal) o de sustentación (técnica, con ?vista=tecnica).
   const technical = useRef(viewMode() === "tecnica").current;
@@ -436,6 +440,7 @@ export function ChatView({ mode }: { mode: Mode }) {
         setVariant(view.variant);
         setTurns(view.turns);
         setAction(view.pending_action);
+        setContact(view.contact ?? null);
         writeThreadHash(saved.id);
         refreshPreferences();
       })
@@ -461,6 +466,7 @@ export function ChatView({ mode }: { mode: Mode }) {
       setThreadId(entry.id);
       setTurns(view.turns);
       setAction(view.pending_action);
+      setContact(view.contact ?? null);
       setActionQuestion("");
       writeSession(THREAD_KEY, JSON.stringify({ id: entry.id, variant: view.variant }));
       writeThreadHash(entry.id);
@@ -485,6 +491,7 @@ export function ChatView({ mode }: { mode: Mode }) {
     setThreadId(null);
     setTurns([]);
     setAction(null);
+    setContact(null);
     setError(null);
   }
 
@@ -512,6 +519,7 @@ export function ChatView({ mode }: { mode: Mode }) {
         adoptUser(response.client.user_id);
       }
       setTurns((previous) => [...previous, response.turn]);
+      if (response.contact) setContact(response.contact);
       setAction(response.status === "pending_approval" ? response.pending_action : null);
       refreshPreferences();
     } catch (caught) {
@@ -592,6 +600,7 @@ export function ChatView({ mode }: { mode: Mode }) {
         adoptUser(response.client.user_id);
       }
       setThreadId(response.thread_id);
+      if (response.contact) setContact(response.contact);
       voice.finishLive(response.turn.answer, response.thread_id);
       if (voiceKey) setVoiceKeys((previous) => ({ ...previous, [response.turn.turn_id]: voiceKey }));
       writeSession(THREAD_KEY, JSON.stringify({ id: response.thread_id, variant }));
@@ -738,6 +747,8 @@ export function ChatView({ mode }: { mode: Mode }) {
           </button>
         </div>
       ) : null}
+
+      {technical && contact ? <ContactRecordPanel record={contact} /> : null}
 
       <div className={`chat-layout${avatarHidden ? "" : " chat-layout--avatar"}`}>
         {avatarHidden ? null : (

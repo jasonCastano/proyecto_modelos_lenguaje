@@ -1843,3 +1843,43 @@ button.chip:disabled {
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+
+/* Spec 019: registro del contacto (CRM), solo en la vista técnica. */
+.contact-record {
+  margin: 0.5rem 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--forest-soft);
+  border-radius: 0.75rem;
+  font-size: var(--step--1);
+  color: var(--ink-soft);
+}
+
+.contact-record-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--forest-deep);
+}
+
+.contact-record-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.35rem 0;
+}
+
+.contact-record-requests {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.contact-record-requests li[data-status="no_evidence"],
+.contact-record-requests li[data-status="needs_clarification"] {
+  color: var(--forest-deep);
+}
+
+.contact-record-turn {
+  font-family: var(--font-display);
+  font-weight: 600;
+}

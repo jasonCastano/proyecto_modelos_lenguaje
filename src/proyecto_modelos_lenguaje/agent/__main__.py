@@ -100,7 +100,51 @@ def build_parser() -> argparse.ArgumentParser:
     )
     conduct.add_argument("--cases", default=None, help="JSONL de casos (conduct_cases.jsonl).")
     conduct.add_argument("--json-out", default=None, help="Informe JSON (por defecto en real).")
+    care_cmd = sub.add_parser(
+        "care", help="Evalúa las habilidades de atención de Valer-IA (spec 019)."
+    )
+    care_cmd.add_argument("--mode", choices=("demo", "real"), default="demo")
+    care_cmd.add_argument(
+        "--variants", nargs="+", choices=("chain", "agent"), default=["chain", "agent"]
+    )
+    care_cmd.add_argument("--cases", default=None, help="JSONL de casos (care_cases.jsonl).")
+    care_cmd.add_argument(
+        "--baseline", action="store_true", help="Mide además la latencia sin las habilidades."
+    )
+    care_cmd.add_argument("--json-out", default=None, help="Informe JSON (por defecto en real).")
     return parser
+
+
+def _care(args: argparse.Namespace) -> int:
+    """``agent care``: 0 si cumple las metas, 1 si falla un criterio, 2 por configuración."""
+    with contextlib.suppress(AttributeError, ValueError):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    from .care_eval import CASES_FILE, REPORT_JSON, render_markdown, run_care, write_reports
+
+    try:
+        report = run_care(
+            mode=args.mode,
+            variants=tuple(args.variants),
+            cases_path=Path(args.cases) if args.cases else CASES_FILE,
+            baseline=args.baseline,
+        )
+    except Exception as exc:
+        print(f"error de configuración: {exc}", file=sys.stderr)
+        return 2
+    for variant, row in report["summary"].items():
+        print(f"{variant}: {row['passed']}/{row['cases']} casos cumplen")
+    if args.json_out:
+        Path(args.json_out).write_text(
+            json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+    if args.mode == "real":
+        write_reports(report)
+        print(f"informe: {REPORT_JSON} y su Markdown")
+    else:
+        print(render_markdown(report))
+    if not report["meets_strict"]:
+        return 1
+    return 0 if report["meets_targets"] else 1
 
 
 def _conduct(args: argparse.Namespace) -> int:
@@ -428,6 +472,8 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
         return _shield(args, root)
     if args.command == "conduct":
         return _conduct(args)
+    if args.command == "care":
+        return _care(args)
     return _chat(args, root)
 
 

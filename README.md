@@ -759,7 +759,9 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
   defecto. Para probarlo, cada integrante pone su propia `TYPESAFE_API_KEY` en `.env` (https://console.typesafe.ai)
   y activa `[jev].enabled` en `config/agent.toml` o `MANUELITA_JEV_ENABLED=1`. Sin clave todo funciona igual.
   `uv run python -m proyecto_modelos_lenguaje.agent jev --check|--validate|--compare`
-  (`docs/evaluacion_jev.md`). En la vista técnica, «Decidió: Jev (System One)».
+  (`docs/evaluacion_jev.md`). En la vista técnica, el chip «Jev: activo · jev-1.14.0» (o desactivado, sin
+  clave, simulado) viene de `GET /api/observability` (campo `gatekeeper`), y la traza de cada turno dice si Jev
+  decidió («Jev: Documentos 0,93 · 212 ms»), si solo sugirió («… → decidió el LLM») o si no estuvo disponible.
 - Avatar (spec 017, ADR 0021): junto al chat, la boca sigue el audio de la voz con un analizador de Web Audio, sin
   servicios externos. «Ocultar avatar» lo esconde y la preferencia se recuerda. Con `?avatarDebug=1` en la URL,
   la tarjeta muestra la forma y la apertura de la boca para calibrarla.

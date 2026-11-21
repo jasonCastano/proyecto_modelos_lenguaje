@@ -203,6 +203,15 @@ export interface ObservabilityStatus {
   adversarial_corpus?: boolean;
   /** Búsqueda vectorial por modo: «Búsqueda vectorial en Qdrant …» o «Respaldo numpy: …». */
   vector_store?: Record<string, string>;
+  /** Spec 021: estado del gatekeeper Jev (sin secretos). */
+  gatekeeper?: GatekeeperStatus;
+}
+
+export interface GatekeeperStatus {
+  state: "disabled" | "simulated" | "no_key" | "active";
+  model?: string;
+  route_threshold?: number;
+  signals?: string[];
 }
 
 export function getObservability(mode?: "demo" | "real"): Promise<ObservabilityStatus> {

@@ -496,6 +496,8 @@ class ObservabilityStatus(BaseModel):
     adversarial_corpus: bool = False
     # spec 016: estado resumido de la voz del agente
     voice: dict[str, Any] = Field(default_factory=dict)
+    # spec 021: estado del gatekeeper Jev (disabled, simulated, no_key o active), modelo y umbral
+    gatekeeper: dict[str, Any] = Field(default_factory=dict)
 
 
 class PendingForget(BaseModel):

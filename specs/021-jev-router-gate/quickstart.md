@@ -48,7 +48,7 @@ gatekeeper se deja desactivado y se documenta en el ADR.
 ## Escenario 5 — Decisión con gatekeeper en una conversación real (US1)
 
 ```bash
-MANUELITA_JEV_ENABLED=1 uv run python -m proyecto_modelos_lenguaje.agent chat --mode real --thread j1 \
+MANUELITA_JEV_ENABLED=1 uv run python -m proyecto_modelos_lenguaje.agent chat --mode real \
   "¿Cuánto azúcar produjo Manuelita en 2021 frente a lo que dice el informe de sostenibilidad?"
 ```
 
@@ -59,8 +59,8 @@ MANUELITA_JEV_ENABLED=1 uv run python -m proyecto_modelos_lenguaje.agent chat --
 ## Escenario 6 — Fallo del servicio (US2)
 
 ```bash
-TYPESAFE_API_KEY=sk-invalida MANUELITA_JEV_ENABLED=1 uv run python -m proyecto_modelos_lenguaje.agent chat \
-  --mode real --thread j2 "¿Qué certificaciones tiene Manuelita?"
+TYPESAFE_API_KEY=clave-invalida MANUELITA_JEV_ENABLED=1 uv run python -m proyecto_modelos_lenguaje.agent chat \
+  --mode real "¿Qué certificaciones tiene Manuelita?"
 ```
 
 **Esperado**: respuesta normal decidida por `llm`; el registro anota `jev.status = "failed"` y `reason = "http_401"`.

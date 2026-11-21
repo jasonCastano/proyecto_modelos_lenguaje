@@ -77,6 +77,35 @@ describe("ChatTurnCard", () => {
     expect(screen.getByTestId("turn-trace")).toHaveTextContent("Decidió: Jev (System One)");
   });
 
+  it("muestra lo que hizo Jev en la traza: decidir, sugerir o fallar (spec 021)", () => {
+    const base = makeTurn();
+    const { unmount } = renderTurn(
+      makeTurn({
+        route: { ...base.route, decided_by: "jev", confidence: 0.93 },
+        jev: { status: "ok", route: "documental", confidence: 0.93, accepted: true, latency_ms: 212 },
+      }),
+    );
+    expect(screen.getByTestId("turn-jev")).toHaveTextContent("Jev: Documentos 0,93 · 212 ms");
+    unmount();
+
+    const suggested = renderTurn(
+      makeTurn({
+        jev: { status: "ok", route: "structured", confidence: 0.62, accepted: false, latency_ms: 198 },
+      }),
+    );
+    expect(screen.getByTestId("turn-jev")).toHaveTextContent(
+      "Jev sugirió Datos estructurados (0,62) · 198 ms → decidió el LLM",
+    );
+    suggested.unmount();
+
+    const failed = renderTurn(makeTurn({ jev: { status: "failed", reason: "timeout", latency_ms: 2000 } }));
+    expect(screen.getByTestId("turn-jev")).toHaveTextContent("Jev no disponible (timeout) → decidió el LLM");
+    failed.unmount();
+
+    renderTurn(makeTurn({ jev: { status: "skipped", reason: "smalltalk" } }));
+    expect(screen.queryByTestId("turn-jev")).not.toBeInTheDocument();
+  });
+
   it("un turno de aclaración no muestra fragmentos ni fuentes", () => {
     renderTurn(
       makeTurn({
@@ -468,9 +497,14 @@ describe("ChatView", () => {
     const fetchMock = routedFetch((url) => {
       if (url.endsWith("/chat/stream")) return sse(answered);
       if (url.includes("/threads/")) return new Response(JSON.stringify(thread), { status: 200 });
-      if (url.endsWith("/observability")) {
+      if (url.includes("/observability")) {
         return new Response(
-          JSON.stringify({ langsmith: false, project: null, structured_log: "turns.jsonl" }),
+          JSON.stringify({
+            langsmith: false,
+            project: null,
+            structured_log: "turns.jsonl",
+            gatekeeper: { state: "simulated", model: "jev-1.14.0", route_threshold: 0.75 },
+          }),
           { status: 200 },
         );
       }
@@ -481,6 +515,7 @@ describe("ChatView", () => {
 
     render(<ChatView mode="demo" />);
     expect(await screen.findByTestId("observability")).toHaveTextContent("log JSON por turno");
+    expect(screen.getByTestId("gatekeeper")).toHaveTextContent("Jev: simulado (demo)");
     await user.click(screen.getByRole("button", { name: "Dato estructurado" }));
     expect(screen.getByTestId("chat-input")).toHaveValue("¿Cuántas filiales tiene Manuelita?");
     await user.click(screen.getByTestId("chat-send"));

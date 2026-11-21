@@ -87,5 +87,14 @@ Ningún comando imprime la clave. Sin clave, el mensaje indica añadir `TYPESAFE
 
 ## 6. API y web
 
-- `POST /api/chat`: sin cambios de forma; `route.decided_by` puede valer `"jev"`.
-- `web/src/lib/types.ts`: `decided_by: "rules" | "llm" | "demo" | "jev"`; etiqueta «Jev» en `ChatView`.
+- `POST /api/chat` y `/api/chat/stream`: sin cambios de forma; `route.decided_by` puede valer `"jev"`, cada turno
+  trae `metrics.gate_calls` y el bloque `jev` (`status`, `reason`, `route`, `confidence`, `alternative`,
+  `accepted`, `latency_ms`, `cost`, `model`), sin texto del visitante ni clave.
+- `GET /api/observability`: campo `gatekeeper` con `state` (`disabled`, `simulated`, `no_key` o `active`),
+  `model`, `route_threshold` y `signals`. Nunca incluye la clave ni indica su valor.
+- Web (vista técnica):
+  - chip «Jev: activo · jev-1.14.0» / «desactivado» / «sin clave (desactivado)» / «simulado (demo)»;
+  - en la traza del turno: «Jev: <ruta> <confianza> · <ms>» si decidió, «Jev sugirió <ruta> (<confianza>) →
+    decidió el LLM» si no alcanzó el umbral, y «Jev no disponible (<motivo>) → decidió el LLM» si falló;
+  - `decided_by: "rules" | "llm" | "demo" | "jev"` con la etiqueta «Jev (System One)».
+- La activación nunca se controla desde la web: solo `[jev].enabled` o `MANUELITA_JEV_ENABLED` en el servidor.

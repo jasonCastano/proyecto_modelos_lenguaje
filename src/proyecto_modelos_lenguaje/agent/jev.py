@@ -627,6 +627,30 @@ def build_gate(
     return gate
 
 
+def gate_status_info(
+    config: JevConfig, *, demo: bool = False, environ: Mapping[str, str] | None = None
+) -> dict[str, Any]:
+    """Estado del gatekeeper para ``/api/observability`` (sin la clave ni su existencia parcial).
+
+    ``state``: ``disabled`` (configuración), ``simulated`` (modo demo), ``no_key`` (activo sin
+    clave, funciona como desactivado) o ``active``.
+    """
+    if not config.enabled:
+        state = "disabled"
+    elif demo:
+        state = "simulated"
+    elif read_api_key(environ) is None:
+        state = "no_key"
+    else:
+        state = "active"
+    return {
+        "state": state,
+        "model": config.model,
+        "route_threshold": config.route_threshold,
+        "signals": list(config.signals),
+    }
+
+
 def gate_status(config: JevConfig, environ: Mapping[str, str] | None = None) -> str:
     """Texto corto del estado para el CLI y la API."""
     if not config.enabled:

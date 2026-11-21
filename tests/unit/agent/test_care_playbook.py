@@ -14,7 +14,7 @@ from proyecto_modelos_lenguaje.agent.welcome import gold_units_path
 
 def test_playbook_structure() -> None:
     playbook = load_care()
-    assert playbook.version == "1.1"
+    assert playbook.version == "1.2"
     for key in CARE_REQUIRED:
         assert playbook.variants[key], key
     for spec in care.TOPICS:
@@ -72,3 +72,17 @@ def test_citations_exist_in_gold_and_back_every_contact() -> None:
         for variant in playbook.variants[key]:
             for contact in CONTACT.findall(variant):
                 assert contact.lower().rstrip(".") in source, f"{key}: {contact}"
+
+
+def test_sentence_delivery_sections() -> None:
+    """Spec 021 (T003): cierre breve y frases exigidas para la entrega por frases."""
+    playbook = load_care()
+    assert playbook.variants["close.short"]
+    expected = {
+        "required.valeria": "Valer-IA Caña",
+        "required.ai": "inteligencia artificial",
+        "required.professional": "profesional",
+        "required.manuelita": "Manuelita",
+    }
+    for key, phrase in expected.items():
+        assert all(phrase in variant for variant in playbook.variants[key]), key

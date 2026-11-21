@@ -153,6 +153,18 @@ function sse(response: ChatResponse): Response {
   return new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
 }
 
+/** Spec 021: la misma respuesta entregada en frases revisadas (evento `sentence`). */
+function sseSentences(response: ChatResponse, sentences: string[]): Response {
+  const events: Array<Record<string, unknown>> = [
+    { event: "start", thread_id: response.thread_id },
+    { event: "route", route: response.turn.route },
+    ...sentences.map((text, index) => ({ event: "sentence", text, index })),
+    { event: "done", response },
+  ];
+  const body = events.map((event) => `event: ${event.event}\ndata: ${JSON.stringify(event)}\n\n`).join("");
+  return new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } });
+}
+
 type Handler = (url: string, init?: RequestInit) => Response | undefined;
 
 /** `fetch` simulado por ruta; la memoria responde vacía salvo que un handler diga otra cosa. */
@@ -179,6 +191,29 @@ describe("ChatView", () => {
     window.sessionStorage.clear();
     window.localStorage.clear();
     window.history.replaceState(null, "", "/");
+  });
+
+  it("spec 021: muestra la respuesta entregada en frases revisadas", async () => {
+    const response: ChatResponse = {
+      thread_id: "8f6c1e0a-0000-4000-8000-000000000009",
+      turn: makeTurn({ answer: "Manuelita produce azúcar [U1]. También energía [U1]." }),
+      status: "answered",
+      pending_action: null,
+      anomalies: [],
+    };
+    const fetchMock = routedFetch((url) =>
+      url.endsWith("/chat/stream")
+        ? sseSentences(response, ["Manuelita produce azúcar [U1].", " También energía [U1]."])
+        : undefined,
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<ChatView mode="demo" />);
+    const user = userEvent.setup();
+    await user.type(screen.getByTestId("chat-input"), "¿Qué produce Manuelita?");
+    await user.click(screen.getByTestId("chat-send"));
+    const turn = await screen.findByTestId("chat-turn");
+    expect(turn).toHaveTextContent("Manuelita produce azúcar");
+    expect(turn).toHaveTextContent("También energía");
   });
 
   it("envía el mensaje en streaming, conserva el hilo y lo reutiliza en la repregunta", async () => {

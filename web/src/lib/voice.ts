@@ -112,6 +112,11 @@ export class SentenceSegmenter {
     return sentences.flatMap((sentence) => this.split(sentence));
   }
 
+  /** Spec 021: una oración ya cerrada por el servidor; solo se parte si es muy larga. */
+  sentence(text: string): string[] {
+    return this.split(text);
+  }
+
   /** Devuelve lo pendiente al terminar el turno. */
   flush(): string[] {
     const rest = this.buffer;
@@ -361,6 +366,13 @@ export class VoicePlayer {
     const session = this.session;
     if (!session || session.finished) return;
     for (const sentence of session.segmenter.push(chunk)) this.enqueue(session, sentence);
+  }
+
+  /** Spec 021: oración revisada (evento ``sentence``); se encola sin esperar texto nuevo. */
+  pushSentence(text: string): void {
+    const session = this.session;
+    if (!session || session.finished) return;
+    for (const part of session.segmenter.sentence(text)) this.enqueue(session, part);
   }
 
   /**

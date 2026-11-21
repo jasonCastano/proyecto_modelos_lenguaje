@@ -18,10 +18,12 @@ Desviación del plan: el checkpointer vive en el grafo exterior y el agente se i
 
 from __future__ import annotations
 
+import queue
 import re
+import threading
 import time
 import zlib
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from contextvars import copy_context
@@ -49,7 +51,8 @@ from langchain_core.messages.utils import count_tokens_approximately, trim_messa
 from langchain_core.outputs import LLMResult
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable, RunnableConfig, RunnablePassthrough
-from langgraph.config import get_store
+from langchain_core.runnables.config import merge_configs
+from langgraph.config import get_store, get_stream_writer
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.store.base import BaseStore
@@ -94,11 +97,15 @@ from .plan import TurnPlan, build_plan
 from .privacy import build_pii_middleware
 from .prompts import load_agent_prompt, load_care, load_conduct, load_converse
 from .review import (
+    LOCAL_CHECKS,
     RETRIEVAL_CHECKS,
+    ReviewVerdict,
     correction_note,
     drop_flagged_sentences,
     evidence_text,
+    missing_required,
     review,
+    review_sentence,
     similarity,
     trim_sentences,
 )
@@ -109,6 +116,7 @@ from .router import (
     contextual_query,
     route_message,
 )
+from .sentences import SentenceGate, SentenceSplitter, split_all
 from .series import SeriesTable, series_intent
 from .structured import StructuredFact, StructuredStore, normalize
 from .tools import (
@@ -192,6 +200,10 @@ class ChatState(TypedDict, total=False):
     reviewed: str
     bridged: dict[str, Any] | None
     turn_notices: list[str]
+    # spec 021: frases previas, frases entregadas por el nodo que genera y frases descartadas
+    lead: list[str]
+    delivered: list[str]
+    discarded: int
 
 
 @dataclass(slots=True)
@@ -389,7 +401,11 @@ def _route_node(deps: GraphDeps):
             plan["node"] = (
                 "converse" if _goes_to_converse(decision, profile_query) else decision.route
             )
+        lead, lead_notices = _lead(deps, state, signals, decision, care_state, plan)
         return {
+            "lead": lead,
+            "delivered": [],
+            "discarded": 0,
             "care": care_state,
             "care_signals": signals,
             "intent": intent.to_dict() if intent else None,
@@ -397,7 +413,7 @@ def _route_node(deps: GraphDeps):
             "plan": plan,
             "reviewed": "show",
             "bridged": None,
-            "turn_notices": [],
+            "turn_notices": lead_notices,
             "decision": decision.model_dump(mode="json"),
             "fragments": [],
             "structured_rows": [],
@@ -410,6 +426,34 @@ def _route_node(deps: GraphDeps):
         }
 
     return route
+
+
+def _lead(
+    deps: GraphDeps,
+    state: ChatState,
+    signals: care.CareSignals | None,
+    decision: RouteDecision,
+    care_state: care.CareState,
+    plan: dict[str, Any] | None,
+) -> tuple[list[str], list[str]]:
+    """Frases que van antes del texto del modelo en la entrega por frases (spec 021, R8).
+
+    Solo en los turnos que genera el modelo (``converse`` o búsqueda); en los demás, ``finalize``
+    arma la respuesta completa como antes.
+    """
+    generated = plan is not None and (
+        plan.get("node") == "converse" or decision.route in RETRIEVAL_ROUTES
+    )
+    if not deps.config.conversation.sentences or not generated:
+        return [], []
+    texts, notices = care.prefixes(
+        signals, decision.model_dump(mode="json"), load_care(), care_state, guided=True
+    )
+    lead = list(texts)
+    if SENSITIVE_NOTICES & set(state.get("pii_notice") or []):
+        lead.insert(0, conduct("sensitive_notice"))
+        notices = [*notices, "sensitive_data"]
+    return lead, list(notices)
 
 
 def routed_text(question: str, signals: care.CareSignals | None) -> str:
@@ -624,11 +668,102 @@ def _converse_messages(
     return messages
 
 
+# ---------------------------------------------------------------- spec 021: entrega por frases
+
+TERMINAL = re.compile(r"[.!?…»)\]]\s*$")
+
+
+class Emitter:
+    """Entrega frases al cliente (evento ``sentence``) y lleva el texto del turno.
+
+    Cada frase conserva su separador; la primera del turno no lleva ninguno. Lo entregado nunca se
+    retira: la respuesta final es ``"".join(pieces)``.
+    """
+
+    def __init__(self, writer: Any, pieces: Sequence[str] = ()) -> None:
+        self.writer = writer
+        self.pieces: list[str] = list(pieces)
+        self.next_separator: str | None = None
+
+    @property
+    def text(self) -> str:
+        return "".join(self.pieces)
+
+    def emit(self, text: str, *, separator_after: str | None = None) -> None:
+        if not text or not text.strip():
+            return
+        if not self.pieces:
+            text = text.lstrip()
+        elif not text[:1].isspace():
+            text = (self.next_separator or " ") + text
+        self.next_separator = separator_after
+        self.pieces.append(text)
+        self.writer({"sentence": text, "index": len(self.pieces) - 1})
+
+
+def _writer() -> Any:
+    """Escritor de eventos propios de LangGraph; fuera de un flujo es una función vacía."""
+    try:
+        return get_stream_writer()
+    except Exception:
+        return lambda _payload: None
+
+
+def _emit_lead(out: Emitter, state: ChatState) -> None:
+    """Frases previas calculadas en ``route`` (aviso de datos sensibles y límite por hostilidad)."""
+    for item in state.get("lead") or []:
+        notice = item == conduct("sensitive_notice")
+        out.emit(item, separator_after="\n\n" if notice else None)
+
+
+def _stream_chunks(
+    runnable: Runnable,
+    messages: Any,
+    config: RunnableConfig,
+    first_timeout: float,
+    idle_timeout: float,
+) -> Iterator[str]:
+    """Texto del modelo a medida que llega, con tiempo máximo al inicio y entre fragmentos."""
+    channel: queue.Queue[tuple[str, Any]] = queue.Queue()
+    stop = threading.Event()
+    context = copy_context()
+
+    def worker() -> None:
+        try:
+            for chunk in runnable.stream(messages, config):
+                if stop.is_set():
+                    break
+                channel.put(("chunk", message_text(chunk)))
+            channel.put(("end", None))
+        except Exception as exc:  # se reenvía al consumidor
+            channel.put(("error", exc))
+
+    threading.Thread(target=lambda: context.run(worker), daemon=True).start()
+    waited_first = True
+    try:
+        while True:
+            try:
+                kind, value = channel.get(timeout=first_timeout if waited_first else idle_timeout)
+            except queue.Empty as exc:
+                raise TimeoutError("el modelo no respondió a tiempo") from exc
+            if kind == "end":
+                return
+            if kind == "error":
+                raise value
+            if value:
+                waited_first = False
+                yield value
+    finally:
+        stop.set()
+
+
 def _converse_node(deps: GraphDeps):
     from .demo import DemoChatModel, demo_converse
 
     def converse(state: ChatState, config: RunnableConfig) -> dict[str, Any]:
         """Redacción guiada con revisión y respaldo (C §4): nada llega sin revisar."""
+        if deps.config.conversation.sentences:
+            return _converse_by_sentences(deps, state, config, DemoChatModel, demo_converse)
         settings = deps.config.conversation
         plan = TurnPlan.from_state(state.get("plan"))
         assert plan is not None
@@ -725,6 +860,179 @@ def _converse_node(deps: GraphDeps):
         }
 
     return converse
+
+
+def _converse_by_sentences(
+    deps: GraphDeps,
+    state: ChatState,
+    config: RunnableConfig,
+    demo_model: type,
+    demo_converse: Any,
+) -> dict[str, Any]:
+    """Spec 021: la conversación se entrega frase por frase, cada una revisada (C §3).
+
+    - Primera frase rechazada (nada mostrado): se regenera o se usa el respaldo.
+    - Frase posterior rechazada: se corta y la respuesta cierra con lo aprobado.
+    - Error o tiempo vencido después de mostrar algo: se conserva lo mostrado y se cierra.
+    """
+    settings = deps.config.conversation
+    plan = TurnPlan.from_state(state.get("plan"))
+    assert plan is not None
+    memory = care.copy_conversation(state.get("conversation"))
+    playbook = load_care()
+    care_state = care.copy_care_state(state.get("care"))
+    evidence = _bridge_evidence(plan)
+    bridge_text = f"{plan.bridge.text}\n{plan.bridge.title}" if plan.bridge else ""
+    names = [memory["thread_name"]] if memory["thread_name"] else []
+    stored = _registered_name(get_store(), state.get("user_id"))
+    if stored:
+        names.append(stored)
+    recent = _recent_answers(state, settings.recent_window)
+    demo = isinstance(deps.model, demo_model)
+    messages = (
+        []
+        if demo
+        else _converse_messages(state, deps, plan, memory, seed=_thread_seed(config, plan.turn, 0))
+    )
+    out = Emitter(_writer())
+    _emit_lead(out, state)
+    lead_count = len(out.pieces)
+
+    def check(sentence: str, is_first: bool) -> list[str]:
+        return review_sentence(
+            sentence,
+            plan,
+            is_first=is_first,
+            evidence=bridge_text,
+            labels=evidence.keys(),
+            names=names,
+            playbook=playbook,
+            recent_answers=recent,
+            threshold=settings.repetition_threshold,
+        ).issues
+
+    notices: list[str] = []
+    discarded = 0
+    error = False
+    gate: SentenceGate | None = None
+    for attempt in range(settings.max_regenerations + 1):
+        gate = SentenceGate(
+            "conversation",
+            check,
+            SentenceSplitter(settings.sentence_max_chars, settings.first_fragment_chars),
+            max_sentences=2 if plan.length == "short" else None,
+        )
+        try:
+            if demo:
+                chunks: Any = [
+                    demo_converse(
+                        plan,
+                        playbook=playbook,
+                        seed=_thread_seed(config, plan.turn, attempt),
+                        name=memory["thread_name"] or stored,
+                    )
+                ]
+            else:
+                chunks = _converse_stream(deps, plan, messages, config)
+            for chunk in chunks:
+                for decision in gate.push(chunk):
+                    if decision.kind == "deliver":
+                        out.emit(decision.text)
+                if gate.stopped or gate.first_check_failed:
+                    break
+            else:
+                for decision in gate.close():
+                    if decision.kind == "deliver":
+                        out.emit(decision.text)
+        except Exception:
+            error = True  # error o tiempo vencido: sin mensaje técnico (FR-009)
+            # La última frase completa que esperaba texto siguiente también se revisa y entrega;
+            # un fragmento cortado a mitad nunca se muestra.
+            if gate.delivered and TERMINAL.search(gate.splitter.buffer.strip()):
+                for decision in gate.close():
+                    if decision.kind == "deliver":
+                        out.emit(decision.text)
+        discarded += len(gate.discarded)
+        if gate.first_check_failed and not error and attempt < settings.max_regenerations:
+            notices.append("review_retry")
+            if not demo:
+                verdict = ReviewVerdict(ok=False, issues=list(gate.discarded[-1:]))
+                messages = [*messages, HumanMessage(content=correction_note(verdict, plan))]
+            continue
+        break
+    assert gate is not None
+    citations: list[dict[str, Any]] = []
+    if not gate.delivered:
+        # Nada del modelo llegó al visitante: respaldo de la spec 019, también por frases.
+        result = _scripted_reply(state, bridge=plan.bridge)
+        for sentence in split_all(
+            str(result["answer"]), settings.sentence_max_chars, settings.first_fragment_chars
+        ):
+            out.emit(sentence)
+        bridged = None
+        if plan.bridge is not None and any(
+            c.get("unit_id") == plan.bridge.unit_id for c in result["citations"]
+        ):
+            bridged = plan.bridge.to_dict()
+        return {
+            "answer": out.text.strip(),
+            "citations": result["citations"],
+            "fallback": False,
+            "identity": result.get("identity"),
+            "care": result.get("care", care_state),
+            "reviewed": "fallback",
+            "bridged": bridged,
+            "delivered": out.pieces,
+            "discarded": discarded,
+            "turn_notices": [*(state.get("turn_notices") or []), *notices, "review_fallback"],
+        }
+    if gate.stopped and gate.discarded:
+        notices.append("sentence_discarded")
+    last = out.pieces[-1] if len(out.pieces) > lead_count else ""
+    if error or (gate.stopped and gate.discarded and not TERMINAL.search(last)):
+        out.emit(care.pick(playbook, "close.short", care_state))
+    if evidence and "[U1]" in out.text:
+        citations = [evidence["U1"]]
+    return {
+        "answer": out.text.strip(),
+        "citations": citations,
+        "fallback": False,
+        "care": care_state,
+        "reviewed": "retry" if "review_retry" in notices else "show",
+        "bridged": plan.bridge.to_dict() if citations and plan.bridge else None,
+        "delivered": out.pieces,
+        "discarded": discarded,
+        "turn_notices": [*(state.get("turn_notices") or []), *notices],
+    }
+
+
+def _converse_stream(
+    deps: GraphDeps, plan: TurnPlan, messages: list[BaseMessage], config: RunnableConfig
+) -> Iterator[str]:
+    """Stream de ``converse``; si el proveedor rechaza las penalizaciones, sigue sin ellas."""
+    settings = deps.config.conversation
+    yielded = False
+    try:
+        for chunk in _stream_chunks(
+            _converse_model(deps, plan.length, plan.act),
+            messages,
+            config,
+            min(settings.stream_first_timeout_seconds, settings.converse_timeout_seconds),
+            settings.stream_idle_timeout_seconds,
+        ):
+            yielded = True
+            yield chunk
+    except Exception as exc:
+        if yielded or "penalty" not in str(exc).lower() or not _PENALTIES_SUPPORTED["value"]:
+            raise
+        _PENALTIES_SUPPORTED["value"] = False
+        yield from _stream_chunks(
+            _converse_model(deps, plan.length, plan.act),
+            messages,
+            config,
+            min(settings.stream_first_timeout_seconds, settings.converse_timeout_seconds),
+            settings.stream_idle_timeout_seconds,
+        )
 
 
 def system_with_preferences(system: str, deps: GraphDeps, state: ChatState) -> str:
@@ -908,6 +1216,9 @@ TURN_RESET: dict[str, Any] = {
     "reviewed": "show",
     "bridged": None,
     "turn_notices": [],
+    "lead": [],
+    "delivered": [],
+    "discarded": 0,
 }
 
 
@@ -1091,43 +1402,46 @@ def _finalize_node(deps: GraphDeps):
         plan = TurnPlan.from_state(state.get("plan"))
         guided = plan is not None
         identity = {**IDENTITY_STAGE_NONE, **(state.get("identity") or {})}
-        if retrieval:
-            # Spec 019 (FR-018): ningún teléfono ni correo fuera de los canales citados.
-            invented = care.invented_contacts(answer, playbook, state.get("context") or "")
-            if invented:
-                answer = care.replace_contacts(answer, invented)
-                notices.append("invented_contact")
-            if guided and not fallback:
-                # Spec 020 (R11): cifras, nombres, promesas u opiniones sin respaldo.
-                answer, citations, fallback, reviewed = _review_retrieval(
-                    answer, citations, state, playbook
-                )
-                if reviewed:
-                    notices.append(reviewed)
-        # Sin evidencia el modelo no redacta apertura: el guion la antepone (spec 019).
-        before, before_notices = care.prefixes(
-            signals, decision, playbook, care_state, guided=guided and not fallback
-        )
-        after, after_notices = care.suffixes(
-            signals, decision, playbook, care_state, retrieval=retrieval, guided=guided
-        )
-        answer = " ".join(piece for piece in [*before, answer, *after] if piece).strip()
-        notices.extend(before_notices + after_notices)
-        notices.extend(state.get("turn_notices") or [])
-        if guided and plan.act == "closing" and plan.reason is None:
-            # Spec 018 (FR-007) en el modo guiado: la oferta de recordar va en el cierre, una vez
-            # por visita y solo a visitantes anónimos.
-            anonymous = (
-                not _registered_name(get_store(), state.get("user_id"))
-                and identity.get("stage") != "recognized"
+        delivered = list(state.get("delivered") or [])
+        settings = deps.config.conversation
+        if delivered:
+            # Spec 021 (R8): el nodo que generó ya entregó lead + frases revisadas; aquí solo se
+            # entrega lo que va después (tail). Nada de lo mostrado se retira ni se reemplaza.
+            answer, tail_notices = _deliver_tail(
+                Emitter(_writer(), delivered),
+                state,
+                plan,
+                signals,
+                decision,
+                playbook,
+                care_state,
+                identity,
+                retrieval=retrieval,
             )
-            if anonymous and not identity.get("offered"):
-                identity["offered"] = True
-                answer = f"{answer} {conduct('remember_offer')}".strip()
-        if SENSITIVE_NOTICES & set(state.get("pii_notice") or []):
-            # Spec 018 (FR-020): aviso determinista si el visitante compartió datos sensibles.
-            notices.append("sensitive_data")
-            answer = f"{conduct('sensitive_notice')}\n\n{answer}".strip()
+            notices.extend(tail_notices)
+        else:
+            answer, fallback, citations = _assemble_answer(
+                deps,
+                state,
+                answer,
+                citations,
+                fallback,
+                notices,
+                plan,
+                signals,
+                decision,
+                playbook,
+                care_state,
+                identity,
+                retrieval=retrieval,
+            )
+            if settings.sentences and deps.config.care.enabled:
+                # Respuestas fijas o sin generación: se entregan completas como frases (G4).
+                out = Emitter(_writer())
+                for sentence in split_all(
+                    answer, settings.sentence_max_chars, settings.first_fragment_chars
+                ):
+                    out.emit(sentence)
         bridged = state.get("bridged") if guided else None
         conversation = state.get("conversation")
         act_entry = None
@@ -1147,6 +1461,7 @@ def _finalize_node(deps: GraphDeps):
                 "act": plan.act,
                 "bridged": bool(bridged),
                 "reviewed": state.get("reviewed") or "show",
+                "discarded": int(state.get("discarded") or 0),
             }
         elif deps.config.care.enabled and deps.config.conversation.guided:
             # Turnos sin plan (acciones con aprobación): solo el nombre dado en el hilo (FR-018).
@@ -1199,6 +1514,104 @@ def _finalize_node(deps: GraphDeps):
         }
 
     return finalize
+
+
+def _remember_offer(
+    state: ChatState, plan: TurnPlan | None, identity: dict[str, Any]
+) -> str | None:
+    """Spec 018 (FR-007) en el modo guiado: la oferta de recordar va en el cierre, una vez por
+    visita y solo a visitantes anónimos."""
+    if plan is None or plan.act != "closing" or plan.reason is not None:
+        return None
+    anonymous = (
+        not _registered_name(get_store(), state.get("user_id"))
+        and identity.get("stage") != "recognized"
+    )
+    if anonymous and not identity.get("offered"):
+        identity["offered"] = True
+        return conduct("remember_offer")
+    return None
+
+
+def _assemble_answer(
+    deps: GraphDeps,
+    state: ChatState,
+    answer: str,
+    citations: list[dict[str, Any]],
+    fallback: bool,
+    notices: list[str],
+    plan: TurnPlan | None,
+    signals: care.CareSignals | None,
+    decision: dict[str, Any],
+    playbook: Any,
+    care_state: care.CareState,
+    identity: dict[str, Any],
+    *,
+    retrieval: bool,
+) -> tuple[str, bool, list[dict[str, Any]]]:
+    """Respuesta completa (specs 019 y 020): antepuestos, sufijos y avisos alrededor del texto."""
+    guided = plan is not None
+    if retrieval:
+        # Spec 019 (FR-018): ningún teléfono ni correo fuera de los canales citados.
+        invented = care.invented_contacts(answer, playbook, state.get("context") or "")
+        if invented:
+            answer = care.replace_contacts(answer, invented)
+            notices.append("invented_contact")
+        if guided and not fallback:
+            # Spec 020 (R11): cifras, nombres, promesas u opiniones sin respaldo.
+            answer, citations, fallback, reviewed = _review_retrieval(
+                answer, citations, state, playbook
+            )
+            if reviewed:
+                notices.append(reviewed)
+    # Sin evidencia el modelo no redacta apertura: el guion la antepone (spec 019).
+    before, before_notices = care.prefixes(
+        signals, decision, playbook, care_state, guided=guided and not fallback
+    )
+    after, after_notices = care.suffixes(
+        signals, decision, playbook, care_state, retrieval=retrieval, guided=guided
+    )
+    answer = " ".join(piece for piece in [*before, answer, *after] if piece).strip()
+    notices.extend(before_notices + after_notices)
+    notices.extend(state.get("turn_notices") or [])
+    offer = _remember_offer(state, plan, identity)
+    if offer:
+        answer = f"{answer} {offer}".strip()
+    if SENSITIVE_NOTICES & set(state.get("pii_notice") or []):
+        # Spec 018 (FR-020): aviso determinista si el visitante compartió datos sensibles.
+        notices.append("sensitive_data")
+        answer = f"{conduct('sensitive_notice')}\n\n{answer}".strip()
+    return answer, fallback, citations
+
+
+def _deliver_tail(
+    out: Emitter,
+    state: ChatState,
+    plan: TurnPlan | None,
+    signals: care.CareSignals | None,
+    decision: dict[str, Any],
+    playbook: Any,
+    care_state: care.CareState,
+    identity: dict[str, Any],
+    *,
+    retrieval: bool,
+) -> tuple[str, list[str]]:
+    """Spec 021 (R8): frases que van después del texto del modelo (``tail``)."""
+    after, notices = care.suffixes(
+        signals, decision, playbook, care_state, retrieval=retrieval, guided=True
+    )
+    for text in after:
+        out.emit(text)
+    notices = [*notices, *(state.get("turn_notices") or [])]
+    offer = _remember_offer(state, plan, identity)
+    if offer:
+        out.emit(offer)
+    converse = (state.get("plan") or {}).get("node") == "converse"
+    if plan is not None and converse and state.get("reviewed") != "fallback":
+        # Frases que el plan exige y el modelo no dijo: se agregan al final (FR-008).
+        for section in missing_required(out.text, plan):
+            out.emit(care.pick(playbook, section, care_state))
+    return out.text.strip(), notices
 
 
 def _review_retrieval(
@@ -1381,6 +1794,8 @@ def _answer_node(deps: GraphDeps):
 
     def answer(state: ChatState, config: RunnableConfig) -> dict[str, Any]:
         evidence = state.get("evidence") or {}
+        if deps.config.conversation.sentences and state.get("plan"):
+            return _answer_by_sentences(deps, state, config, system)
         if not evidence:
             return {"answer": FALLBACK_ANSWER, "citations": [], "fallback": True}
         personalized = system_with_preferences(system, deps, state)
@@ -1400,6 +1815,109 @@ def _answer_node(deps: GraphDeps):
         return {"answer": text, "citations": citations, "fallback": fallback}
 
     return answer
+
+
+def _fallback_opener(state: ChatState, playbook: Any, care_state: care.CareState) -> str:
+    """Apertura empática antes del mensaje de evidencia insuficiente (el modelo no la redactó)."""
+    signals = state.get("care_signals") or {}
+    sentiment = signals.get("sentiment")
+    if sentiment in care.NEGATIVE and not signals.get("hostile"):
+        return care.pick(playbook, f"opener.{sentiment}", care_state)
+    if signals.get("concern"):
+        return care.pick(playbook, "opener.concern", care_state)
+    return ""
+
+
+def retrieval_checker(
+    state: ChatState, evidence: dict[str, dict[str, Any]], context: str, system: str
+) -> Any:
+    """Revisión por frase de las respuestas con búsqueda (spec 021, R3 y R6)."""
+    plan = TurnPlan.from_state(state.get("plan"))
+    playbook = load_care()
+    text = evidence_text(evidence, context)
+
+    def check(sentence: str, _is_first: bool) -> list[str]:
+        if leaks_prompt(sentence, system) or is_model_fallback(sentence):
+            return ["citation"]
+        return review_sentence(
+            sentence,
+            plan,
+            is_first=False,
+            evidence=text,
+            labels=evidence.keys(),
+            playbook=playbook,
+            checks=LOCAL_CHECKS,
+        ).issues
+
+    return check
+
+
+def cited(text: str, evidence: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    labels = list(dict.fromkeys(LABEL_PATTERN.findall(text)))
+    return [evidence[label] for label in labels if label in evidence]
+
+
+def _answer_by_sentences(
+    deps: GraphDeps, state: ChatState, config: RunnableConfig, system: str
+) -> dict[str, Any]:
+    """Spec 021: respuesta con búsqueda entregada por frases citadas y revisadas (R6)."""
+    settings = deps.config.conversation
+    evidence = state.get("evidence") or {}
+    playbook = load_care()
+    care_state = care.copy_care_state(state.get("care"))
+    out = Emitter(_writer())
+    _emit_lead(out, state)
+    discarded = 0
+    gate: SentenceGate | None = None
+    if evidence:
+        personalized = system_with_preferences(system, deps, state)
+        check = retrieval_checker(state, evidence, state.get("context") or "", system)
+        runnable = build_answer_chain(deps, facts_model(deps, state))
+        for attempt in range(2):
+            instruction = personalized if attempt == 0 else f"{personalized}\n\n{STRICT_REMINDER}"
+            gate = SentenceGate(
+                "retrieval",
+                check,
+                SentenceSplitter(settings.sentence_max_chars, settings.first_fragment_chars),
+            )
+            raw = ""
+            for chunk in runnable.stream({"state": state, "system": instruction}, config):
+                piece = message_text(chunk)
+                raw += piece
+                for decision in gate.push(piece):
+                    if decision.kind == "deliver":
+                        out.emit(decision.text)
+            for decision in gate.close():
+                if decision.kind == "deliver":
+                    out.emit(decision.text)
+            discarded += len(gate.discarded)
+            # Sin ninguna frase citada y sin nada mostrado: un reintento estricto, como antes.
+            if gate.delivered or is_model_fallback(raw) or attempt == 1:
+                break
+    notices = ["sentence_discarded"] if discarded else []
+    if gate is None or not gate.delivered:
+        opener = _fallback_opener(state, playbook, care_state)
+        if opener:
+            out.emit(opener)
+        out.emit(FALLBACK_ANSWER)
+        return {
+            "answer": out.text.strip(),
+            "citations": [],
+            "fallback": True,
+            "care": care_state,
+            "delivered": out.pieces,
+            "discarded": discarded,
+            "turn_notices": [*(state.get("turn_notices") or []), *notices],
+        }
+    return {
+        "answer": out.text.strip(),
+        "citations": cited(out.text, evidence),
+        "fallback": False,
+        "care": care_state,
+        "delivered": out.pieces,
+        "discarded": discarded,
+        "turn_notices": [*(state.get("turn_notices") or []), *notices],
+    }
 
 
 def build_chain_graph(
@@ -1554,9 +2072,26 @@ def _agent_node(deps: GraphDeps):
                 ModelCallLimitMiddleware(run_limit=limits.model_call_limit),
             ],
         )
-        result = runnable.invoke({"messages": _agent_messages(state, deps)}, config)
+        sentences = deps.config.conversation.sentences and bool(state.get("plan"))
+        handler: _AgentSentences | None = None
+        run_config = config
+        if sentences and not state.get("intent"):
+            handler = _AgentSentences(deps, state, trace, system)
+            run_config = merge_configs(config, {"callbacks": [handler]})
+        result = runnable.invoke({"messages": _agent_messages(state, deps)}, run_config)
         fragment_rows, fact_rows, evidence = collect_evidence(trace.fragments, trace.facts)
         final = _final_answer(result["messages"])
+        if handler is not None and not executed:
+            tool_text = [message_text(m) for m in result["messages"] if isinstance(m, ToolMessage)]
+            delivered = handler.finish(final, evidence)
+            return {
+                "fragments": fragment_rows,
+                "structured_rows": fact_rows,
+                "evidence": evidence,
+                "context": "\n\n".join(tool_text),
+                **delivered,
+                "retrievals": trace.calls,
+            }
         if state.get("intent") or executed:
             # Turno de escritura: responde con el resultado de la acción, sin exigir citas.
             text = final or _last_tool_text(result["messages"]) or REJECTED_ANSWER
@@ -1576,6 +2111,154 @@ def _agent_node(deps: GraphDeps):
         }
 
     return agent
+
+
+class _AgentSentences(BaseCallbackHandler):
+    """Spec 021 (R7): frases revisadas de la variante agente, por cada llamada al modelo.
+
+    Si una llamada termina pidiendo herramientas, su texto se descarta sin mostrarse. La primera
+    frase de cada llamada se retiene hasta la segunda o hasta que la llamada termine sin
+    herramientas, para no mostrar texto de una llamada que después pide buscar.
+    """
+
+    raise_error = False
+
+    def __init__(self, deps: GraphDeps, state: ChatState, trace: ToolTrace, system: str) -> None:
+        self.deps = deps
+        self.state = state
+        self.trace = trace
+        self.system = system
+        settings = deps.config.conversation
+        self.max_chars = settings.sentence_max_chars
+        self.first_chars = settings.first_fragment_chars
+        self.out = Emitter(_writer())
+        _emit_lead(self.out, state)
+        self.lead_count = len(self.out.pieces)
+        self.gate: SentenceGate | None = None
+        self.pending: list[str] = []
+        self.released = False
+        self.tool = False
+        self.streamed = False
+        self.discarded = 0
+        self.retracted = False
+
+    # -- evidencia disponible en el momento de revisar cada frase
+    def _evidence(self) -> tuple[dict[str, dict[str, Any]], str]:
+        _rows, _facts, evidence = collect_evidence(self.trace.fragments, self.trace.facts)
+        texts: list[str] = []
+        units = getattr(self.deps.retriever, "units_by_id", {}) or {}
+        for fragment in self.trace.fragments:
+            unit = units.get(fragment.unit_id)
+            if unit is not None:
+                texts.append(unit.text)
+        for index, fact in enumerate(self.trace.facts, start=1):
+            texts.append(fact_document(f"F{index}", fact).text)
+        return evidence, "\n".join(texts)
+
+    def _new_gate(self) -> SentenceGate:
+        def check(sentence: str, is_first: bool) -> list[str]:
+            evidence, context = self._evidence()
+            return retrieval_checker(self.state, evidence, context, self.system)(sentence, is_first)
+
+        return SentenceGate("retrieval", check, SentenceSplitter(self.max_chars, self.first_chars))
+
+    def _reset(self) -> None:
+        if self.gate is not None:
+            self.discarded += len(self.gate.discarded)
+        self.gate = self._new_gate()
+        self.pending = []
+        self.released = False
+        self.tool = False
+
+    def on_chat_model_start(self, *_args: Any, **_kwargs: Any) -> None:
+        self._reset()
+
+    def on_llm_start(self, *_args: Any, **_kwargs: Any) -> None:
+        self._reset()
+
+    def _queue(self, text: str) -> None:
+        if self.released:
+            self.out.emit(text)
+            return
+        self.pending.append(text)
+        if len(self.pending) >= 2:
+            self._release()
+
+    def _release(self) -> None:
+        self.released = True
+        for text in self.pending:
+            self.out.emit(text)
+        self.pending = []
+
+    def on_llm_new_token(self, token: str, *, chunk: Any = None, **_kwargs: Any) -> None:
+        if self.gate is None or self.tool:
+            return
+        message = getattr(chunk, "message", None)
+        if message is not None and getattr(message, "tool_call_chunks", None):
+            self.tool = True
+            self.pending = []
+            return
+        if not token:
+            return
+        self.streamed = True
+        for decision in self.gate.push(token):
+            if decision.kind == "deliver":
+                self._queue(decision.text)
+
+    def on_llm_end(self, response: LLMResult, **_kwargs: Any) -> None:
+        if self.gate is None:
+            return
+        calls_tools = self.tool or any(
+            getattr(getattr(generation, "message", None), "tool_calls", None)
+            for generations in response.generations
+            for generation in generations
+        )
+        if calls_tools:
+            self.retracted = self.retracted or self.released
+            self.pending = []
+        else:
+            for decision in self.gate.close():
+                if decision.kind == "deliver":
+                    self._queue(decision.text)
+            self._release()
+        self.discarded += len(self.gate.discarded)
+        self.gate = None
+
+    def finish(self, final: str, evidence: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        """Cierra el turno: sin streaming, revisa la respuesta final completa por frases."""
+        if not self.streamed and final:
+            self._reset()
+            assert self.gate is not None
+            for decision in [*self.gate.push(final), *self.gate.close()]:
+                if decision.kind == "deliver":
+                    self.out.emit(decision.text)
+            self.discarded += len(self.gate.discarded)
+            self.gate = None
+        notices = ["sentence_discarded"] if self.discarded else []
+        care_state = care.copy_care_state(self.state.get("care"))
+        if len(self.out.pieces) == self.lead_count:
+            opener = _fallback_opener(self.state, load_care(), care_state)
+            if opener:
+                self.out.emit(opener)
+            self.out.emit(FALLBACK_ANSWER)
+            return {
+                "answer": self.out.text.strip(),
+                "citations": [],
+                "fallback": True,
+                "care": care_state,
+                "delivered": self.out.pieces,
+                "discarded": self.discarded,
+                "turn_notices": [*(self.state.get("turn_notices") or []), *notices],
+            }
+        return {
+            "answer": self.out.text.strip(),
+            "citations": cited(self.out.text, evidence),
+            "fallback": False,
+            "care": care_state,
+            "delivered": self.out.pieces,
+            "discarded": self.discarded,
+            "turn_notices": [*(self.state.get("turn_notices") or []), *notices],
+        }
 
 
 def build_agent_graph(

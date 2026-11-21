@@ -1263,6 +1263,7 @@ def update_contact(
             "act": str(act.get("act") or "smalltalk"),
             "bridged": bool(act.get("bridged")),
             "reviewed": str(act.get("reviewed") or "show"),
+            "discarded": min(20, max(0, int(act.get("discarded") or 0))),
         }
         current["acts"] = [*(current.get("acts") or []), entry][-MAX_CONTACT_ACTS:]
     return current

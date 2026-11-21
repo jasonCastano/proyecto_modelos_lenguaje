@@ -161,3 +161,20 @@ def test_conversation_values_out_of_range_name_the_key(
     path = _write(tmp_path, f"{VALID_TOML}\n[conversation]\n{line}\n")
     with pytest.raises(AgentConfigError, match=message):
         load_agent_config(path, project_root=tmp_path)
+
+
+def test_delivery_settings_and_validation(tmp_path: Path) -> None:
+    """Spec 021 (T002): entrega por frases, con límites validados."""
+    repo = load_agent_config()
+    assert repo.conversation.delivery == "sentences" and repo.conversation.sentences
+    for line, message in [
+        ('delivery = "tokens"', "conversation.delivery"),
+        ("sentence_max_chars = 50", "conversation.sentence_max_chars"),
+        ("first_fragment_chars = 300\nsentence_max_chars = 200", "first_fragment_chars"),
+        ("stream_idle_timeout_seconds = 0.5", "conversation.stream_idle_timeout_seconds"),
+    ]:
+        path = _write(tmp_path, f"{VALID_TOML}\n[conversation]\n{line}\n")
+        with pytest.raises(AgentConfigError, match=message):
+            load_agent_config(path, project_root=tmp_path)
+    scripted = _write(tmp_path, f'{VALID_TOML}\n[conversation]\nmode = "scripted"\n')
+    assert not load_agent_config(scripted, project_root=tmp_path).conversation.sentences

@@ -393,6 +393,53 @@ Baterías existentes en el modo guiado, con el modelo real (después de recargar
 
 Pendiente: la calificación humana (SC-007) de los integrantes.
 
+### 3.19 Entrega por frases: `care.md` 1.2 (2026-11-20, spec 021)
+
+| Prompt | Versión | SHA-256 (12) | Cambio |
+| --- | --- | --- | --- |
+| `prompts/care.md` | 1.1 → 1.2 | `3f54b24ebc88` | Cierre breve `close.short` (cuando se corta una frase rechazada o el modelo falla después de mostrar texto) y frases exigidas `required.valeria`, `required.ai`, `required.professional` y `required.manuelita`, que se añaden al final si la respuesta entregada por frases no las dijo. |
+| `prompts/converse.md` | 1.0 (sin cambios) | `7654d6df2c05` | — |
+
+La revisión por frase (`review_sentence`) aplica las comprobaciones locales de la spec 020 a cada frase antes de
+mostrarla. En los turnos `about_assistant` también rechaza «(no) soy una persona» (`human_claim`, con nota de
+corrección propia): la primera corrida real de conducta dio 23/24 en el agente porque esa garantía, que antes
+venía de la comprobación `required` sobre la respuesta completa, se había perdido en la revisión por frase.
+
+Evaluación real (`agent converse --mode real --baseline --baseline-delivery --simulate --repeats 10`,
+`docs/evaluacion_conversacion.md`, 4279 s). Percentiles en milisegundos, frente a la entrega completa de la misma corrida:
+
+| Variante | Turnos | 1.ª frase p50 / p90 | Completa p50 / p90 | Base (completa) p50 / p90 |
+| --- | --- | --- | --- | --- |
+| cadena, conversación | 75 | 1797 / 3584 | 2075 / 3796 | 2092 / 4282 |
+| cadena, con búsqueda | 32 | 6276 / 8924 | 6947 / 9220 | 5528 / 7328 (1.ª palabra) |
+| agente, conversación | 76 | 1833 / 3925 | 2116 / 4199 | 2405 / 4736 |
+| agente, con búsqueda | 31 | 7590 / 15450 | 7917 / 19421 | 8360 / 14024 (1.ª palabra) |
+
+- La conversación baja de 5.9–6.3 s (spec 020, SC-011) a 3.6–3.9 s en el p90 y a ~1.8 s en la mediana, pero E-SC-001
+  (p90 < 3 s) **no se cumple**. El perfil por nodo muestra la causa: los mensajes sociales que las reglas no
+  clasifican («parce, ¿qué más?», «uy qué calor tan berraco hoy», «¿y qué tal el tráfico en Cali?») pasan por el
+  clasificador LLM del enrutador (1.5–2.1 s) antes de generar. El primer token de DeepSeek tarda 1.8 s de mediana
+  (p90 2.3 s) con un prompt corto.
+- Con búsqueda, la primera frase citada llega 1.4–1.6 s después que la primera palabra de la entrega completa
+  (E-SC-002 pide ≤ 1 s): las frases sin cita se retienen hasta la primera citada. En el agente, el tiempo total
+  sube más del 10 % (E-SC-006).
+- E-SC-003 (texto retirado) marcó 3–4 turnos por un error del evaluador: `scrub_name` reemplazaba el nombre en la
+  respuesta final pero no en el texto mostrado. Se corrigió; el contraste de `shown` contra la respuesta en los
+  turnos de demo y real da 0 retiros.
+- SC-005 / E-SC-004 marcó un hecho externo en el agente: la respuesta citaba `[F1]` (serie anual) y repetía la ruta
+  del PDF citado. El evaluador ahora acepta la URL de la cita como evidencia; las cifras (55.575 y 46.933 millones)
+  sí están en la unidad citada.
+- SC-002 (variedad entre hilos ≥ 0.8) quedó en 0.7 en ambas variantes («¿eres una persona?», «jaja»); la entrega
+  completa de la misma corrida dio 0.6 (cadena) y 0.9 (agente), así que es variación del muestreo en respuestas muy
+  acotadas, no un efecto de la entrega por frases.
+- Juez: cadena 3.77 / 3.86 / 4.33, agente 3.84 / 3.90 / 4.43.
+
+Baterías con el modelo real: `agent care` 34/36 (cadena) y 35/36 (agente), código 0; `agent conduct` 24/24 en
+ambas variantes tras la corrección `human_claim`.
+
+Pendiente: reducir la latencia del enrutador para la charla social (vocabulario de reglas o un clasificador más
+rápido) y volver a correr la evaluación de conversación con las correcciones de esta sección.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

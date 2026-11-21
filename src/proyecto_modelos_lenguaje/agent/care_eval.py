@@ -319,7 +319,7 @@ def _run(
                     first: float | None = None
                     final: dict[str, Any] | None = None
                     for event in events:
-                        if event["event"] == "token" and first is None:
+                        if event["event"] in {"token", "sentence"} and first is None:
                             first = time.perf_counter() - started
                         elif event["event"] == "done":
                             final = event["response"]

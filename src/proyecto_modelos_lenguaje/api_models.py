@@ -401,6 +401,7 @@ class ContactTurnModel(BaseModel):
     act: DialogueAct
     bridged: bool = False
     reviewed: Literal["show", "retry", "fallback"] = "show"
+    discarded: int = Field(default=0, ge=0, le=20)  # spec 021: frases descartadas en el turno
 
 
 class ContactRecordModel(BaseModel):

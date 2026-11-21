@@ -66,13 +66,25 @@ class ConversationConfig:
     converse_max_tokens: int = 220
     converse_timeout_seconds: float = 8.0
     review_llm: bool = False
+    # Spec 021: entrega por frases revisadas.
+    delivery: str = "sentences"
+    sentence_max_chars: int = 220
+    first_fragment_chars: int = 160
+    stream_first_timeout_seconds: float = 8.0
+    stream_idle_timeout_seconds: float = 6.0
 
     @property
     def guided(self) -> bool:
         return self.mode == "guided"
 
+    @property
+    def sentences(self) -> bool:
+        """Entrega por frases: solo en la conversación guiada (en ``scripted`` vale la spec 019)."""
+        return self.delivery == "sentences" and self.guided
+
 
 CONVERSATION_MODES = ("guided", "scripted")
+DELIVERY_MODES = ("sentences", "complete")
 
 
 @dataclass(frozen=True, slots=True)
@@ -208,6 +220,15 @@ def _conversation_config(section: object) -> ConversationConfig:
     mode = section.get("mode", "guided")
     if mode not in CONVERSATION_MODES:
         raise AgentConfigError("conversation.mode debe ser «guided» o «scripted».")
+    delivery = section.get("delivery", "sentences")
+    if delivery not in DELIVERY_MODES:
+        raise AgentConfigError("conversation.delivery debe ser «sentences» o «complete».")
+    sentence_max_chars = _bounded(section, "sentence_max_chars", 220, 80, 600, integer=True)
+    first_fragment_chars = _bounded(section, "first_fragment_chars", 160, 40, 400, integer=True)
+    if first_fragment_chars > sentence_max_chars:
+        raise AgentConfigError(
+            "conversation.first_fragment_chars debe ser <= conversation.sentence_max_chars."
+        )
     review_llm = section.get("review_llm", False)
     if not isinstance(review_llm, bool):
         raise AgentConfigError("conversation.review_llm debe ser booleano.")
@@ -228,6 +249,15 @@ def _conversation_config(section: object) -> ConversationConfig:
         converse_max_tokens=_bounded(section, "converse_max_tokens", 220, 50, 600, integer=True),
         converse_timeout_seconds=_bounded(section, "converse_timeout_seconds", 8.0, 1.0, 30.0),
         review_llm=review_llm,
+        delivery=str(delivery),
+        sentence_max_chars=sentence_max_chars,
+        first_fragment_chars=first_fragment_chars,
+        stream_first_timeout_seconds=_bounded(
+            section, "stream_first_timeout_seconds", 8.0, 1.0, 30.0
+        ),
+        stream_idle_timeout_seconds=_bounded(
+            section, "stream_idle_timeout_seconds", 6.0, 1.0, 30.0
+        ),
     )
 
 

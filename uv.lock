@@ -1856,6 +1856,7 @@ dependencies = [
     { name = "cryptography" },
     { name = "fastapi" },
     { name = "fastembed" },
+    { name = "httpx" },
     { name = "langchain" },
     { name = "langchain-core" },
     { name = "langchain-openai" },
@@ -1884,7 +1885,6 @@ asr = [
 [package.dev-dependencies]
 dev = [
     { name = "fpdf2" },
-    { name = "httpx" },
     { name = "jsonschema" },
     { name = "playwright" },
     { name = "pre-commit" },
@@ -1899,6 +1899,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.162.0" },
     { name = "fastembed", specifier = ">=0.9.1" },
     { name = "faster-whisper", marker = "extra == 'asr'", specifier = ">=1.2.1" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "langchain", specifier = ">=1.4.7" },
     { name = "langchain-core", specifier = ">=1.7.3" },
     { name = "langchain-openai", specifier = ">=1.0" },
@@ -1922,7 +1923,6 @@ provides-extras = ["asr"]
 [package.metadata.requires-dev]
 dev = [
     { name = "fpdf2", specifier = ">=2.9.0" },
-    { name = "httpx", specifier = ">=0.28.1" },
     { name = "jsonschema", specifier = ">=4.26.0" },
     { name = "playwright", specifier = ">=1.64" },
     { name = "pre-commit", specifier = ">=4.7.0" },

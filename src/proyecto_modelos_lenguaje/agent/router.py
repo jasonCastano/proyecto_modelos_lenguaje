@@ -20,7 +20,7 @@ import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -30,6 +30,9 @@ from .models import RouteDecision
 from .prompts import load_agent_prompt
 from .series import series_intent
 from .structured import normalize
+
+if TYPE_CHECKING:
+    from .jev import GateOutcome
 
 SMALLTALK = frozenset(
     {
@@ -137,6 +140,28 @@ UNATTAINABLE_KINDS = frozenset({"pricing", "commitment", "human"})
 class RouterResult:
     decision: RouteDecision
     model_calls: int = 0
+    gate: GateOutcome | None = None  # spec 021: resultado del gatekeeper (usado o descartado)
+
+
+def is_smalltalk(message: str) -> bool:
+    """Saludo, agradecimiento o despedida: solo palabras de ``SMALLTALK`` (spec 021, R4)."""
+    words = _words(message)
+    return bool(words) and all(word in SMALLTALK for word in words)
+
+
+def gate_decision(gate: GateOutcome | None, threshold: float) -> RouteDecision | None:
+    """Decisión del gatekeeper Jev si alcanza el umbral (inclusivo); si no, ``None``."""
+    if gate is None or not gate.accepted(threshold) or gate.decision is None:
+        return None
+    decision = gate.decision
+    return RouteDecision(
+        route=decision.route,
+        confidence=decision.confidence,
+        reason=f"gatekeeper Jev ({decision.confidence:.2f})",
+        decided_by="jev",
+        alternative=decision.alternative,
+        scope_reason=decision.scope_reason if decision.route == "out_of_scope" else None,
+    )
 
 
 def _words(text: str) -> list[str]:
@@ -365,13 +390,25 @@ def route_message(
     min_confidence: float = 0.6,
     temperature: float = 0.0,
     signals: Mapping[str, Any] | None = None,
+    gate: GateOutcome | None = None,
+    gate_threshold: float = 0.75,
 ) -> RouterResult:
-    """Decide la ruta efectiva de un mensaje (reglas → LLM o heurística → umbral)."""
+    """Decide la ruta efectiva: reglas → gatekeeper Jev → LLM o heurística → umbral.
+
+    Spec 021: ``gate`` es la respuesta ya obtenida del gatekeeper (una consulta por turno, en el
+    nodo ``route``). Las reglas siempre ganan; Jev decide si su probabilidad alcanza
+    ``gate_threshold`` y, si no, decide el clasificador como siempre.
+    """
     ruled = rule_decision(message, signals)
     if ruled is not None:
-        return RouterResult(ruled.effective(min_confidence), model_calls=0)
+        return RouterResult(ruled.effective(min_confidence), model_calls=0, gate=gate)
+    gated = gate_decision(gate, gate_threshold)
+    if gated is not None:
+        return RouterResult(gated.effective(min_confidence), model_calls=0, gate=gate)
     if model is None:
-        return RouterResult(heuristic_decision(message, history).effective(min_confidence))
+        return RouterResult(
+            heuristic_decision(message, history).effective(min_confidence), gate=gate
+        )
     try:
         decision = llm_decision(message, history, model, temperature=temperature)
     except ValueError, ValidationError, json.JSONDecodeError:
@@ -379,7 +416,7 @@ def route_message(
         decision = fallback.model_copy(
             update={"reason": f"salida del enrutador inválida; {fallback.reason}"[:200]}
         )
-    return RouterResult(decision.effective(min_confidence), model_calls=1)
+    return RouterResult(decision.effective(min_confidence), model_calls=1, gate=gate)
 
 
 FOLLOW_UP_MAX_WORDS = 8

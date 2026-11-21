@@ -67,6 +67,7 @@ const DECIDED_LABEL: Record<ChatRoute["decided_by"], string> = {
   rules: "reglas",
   llm: "LLM",
   demo: "heurística demo",
+  jev: "Jev (System One)",
 };
 
 /** Mensajes de los casos de la rúbrica del Módulo 2 (docs/rubrica_modulo2.md). */

@@ -164,7 +164,7 @@ export interface ChatRoute {
   route: ChatRouteName;
   confidence: number;
   reason: string;
-  decided_by: "rules" | "llm" | "demo";
+  decided_by: "rules" | "llm" | "demo" | "jev";
   alternative?: ChatRouteName | null;
   fallback_route?: "documental" | null;
   scope_reason?:
@@ -280,6 +280,7 @@ export interface TurnMetrics {
   tool_calls: number;
   input_tokens: number;
   output_tokens: number;
+  gate_calls?: number;
 }
 
 export interface ChatTurn {

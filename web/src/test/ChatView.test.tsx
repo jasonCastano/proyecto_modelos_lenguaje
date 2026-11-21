@@ -70,6 +70,13 @@ describe("ChatTurnCard", () => {
     expect(screen.getByTestId("chat-turn")).toHaveAttribute("data-kind", "answered");
   });
 
+  it("muestra cuando decidió el gatekeeper Jev (spec 021)", () => {
+    const base = makeTurn();
+    renderTurn(makeTurn({ route: { ...base.route, decided_by: "jev", confidence: 0.93 } }));
+
+    expect(screen.getByTestId("turn-trace")).toHaveTextContent("Decidió: Jev (System One)");
+  });
+
   it("un turno de aclaración no muestra fragmentos ni fuentes", () => {
     renderTurn(
       makeTurn({

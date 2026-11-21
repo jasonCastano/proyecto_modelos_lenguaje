@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.12.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-20
+**Versión**: 1.13.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-21
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -287,6 +287,13 @@ uv.lock
   son opcionales, con cuota, citadas y sin repetirse en el hilo. Las respuestas de crisis, datos de terceros,
   extracción de instrucciones, daño, insulto solo, identidad y perfil conservan su texto fijo.
   `[conversation] mode = "scripted"` restablece los guiones de la spec 019 como línea base.
+- Gatekeeper System One (spec 021, ADR 0025): el enrutador puede consultar a **Jev** (TypeSafe) entre las reglas y el
+  clasificador LLM, con **una** solicitud por turno y versión fija (`jev-1.14.0`). Las reglas siempre ganan; Jev
+  decide la ruta solo si su probabilidad alcanza `[jev].route_threshold`. Cualquier fallo de Jev DEBE resolverse con
+  el clasificador sin afectar la respuesta. Jev puede **sumar** una crisis a la detección determinista, nunca
+  quitarla. El texto enviado se enmascara (correos, teléfonos, documentos) y la clave `TYPESAFE_API_KEY` solo vive
+  en `.env`. Está **desactivado por defecto** (`[jev].enabled = false`) mientras no cumpla la tolerancia de
+  exactitud de su spec; las instrucciones viven en `prompts/jev.md`.
 - Un mensaje de angustia grave o de autolesión DEBE recibir primero una respuesta de apoyo con la Línea 106
   (salud mental, Ministerio de Salud) y el 123, sin contenido comercial, por encima de cualquier otra regla.
 - El registro del contacto (CRM) de cada conversación guarda solo etiquetas controladas (categoría, tema,
@@ -592,8 +599,9 @@ exacto. El mapa de evidencias y el guion están en `docs/rubrica_modulo2.md`.
 13. **Prompts** nuevos (enrutador, agente, resumen de memoria) versionados en `prompts/` y `docs/prompt_log.md`.
 14. **Informe y demo** actualizados; tag `v0.2.0-modulo2`.
 
-**Opcionales que suman**: puerta System One (Jev `Noul`/`Choice`) para screening/routing; exportar el oro como
-bundle Open Knowledge Format (LLM Wiki).
+**Opcionales que suman**: puerta System One (Jev `Noul`/`Choice`) para screening/routing — implementada en la
+spec 021 (Choice, Score y Noul; desactivada por defecto, evidencia en `docs/evaluacion_jev.md`); exportar el oro
+como bundle Open Knowledge Format (LLM Wiki).
 
 **Puerta de la Fase 2**:
 
@@ -975,4 +983,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.12.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-20
+**Versión**: 1.13.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-21

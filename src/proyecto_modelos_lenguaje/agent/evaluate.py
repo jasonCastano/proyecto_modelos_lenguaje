@@ -8,12 +8,15 @@ from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from langchain_core.language_models import BaseChatModel
 
 from .models import Route
-from .router import route_message
+from .router import is_smalltalk, route_message
+
+if TYPE_CHECKING:
+    from .jev import JevGate
 
 ROUTES: tuple[Route, ...] = (
     "direct",
@@ -48,6 +51,13 @@ class RouterReport:
     misses: list[dict[str, Any]] = field(default_factory=list)
     no_search_ok: int = 0
     no_search_total: int = 0
+    # Spec 021: gatekeeper Jev (consultas, decisiones aceptadas, fallos, latencia y costo).
+    latencies: list[float] = field(default_factory=list)
+    gate_calls: int = 0
+    gate_decided: int = 0
+    gate_failed: int = 0
+    gate_latency_ms: list[int] = field(default_factory=list)
+    gate_cost: float = 0.0
 
     @property
     def accuracy(self) -> float:
@@ -63,9 +73,27 @@ class RouterReport:
             "model_calls": self.model_calls,
             "latency_ms_mean": round(self.latency_ms, 1),
             "no_search": {"ok": self.no_search_ok, "total": self.no_search_total},
+            "latency_ms_p95": _p95(self.latencies),
+            "gate": {
+                "calls": self.gate_calls,
+                "decided": self.gate_decided,
+                "decided_share": round(self.gate_decided / self.cases, 4) if self.cases else 0.0,
+                "failed": self.gate_failed,
+                "latency_ms_mean": round(sum(self.gate_latency_ms) / len(self.gate_latency_ms), 1)
+                if self.gate_latency_ms
+                else 0.0,
+                "cost": round(self.gate_cost, 8),
+            },
             "confusion": {route: dict(counter) for route, counter in self.confusion.items()},
             "misses": self.misses,
         }
+
+
+def _p95(values: Sequence[float]) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    return round(float(ordered[max(0, round(0.95 * (len(ordered) - 1)))]), 1)
 
 
 def load_router_cases(path: str | Path) -> list[RouterCase]:
@@ -92,16 +120,32 @@ def evaluate_router(
     min_confidence: float,
     run_id: str,
     mode: str,
+    gate: JevGate | None = None,
+    gate_threshold: float = 0.75,
 ) -> RouterReport:
+    """Exactitud del enrutador; con ``gate`` mide reglas → Jev → LLM (spec 021, research R14)."""
     confusion = {route: Counter() for route in ROUTES}
     report = RouterReport(run_id, mode, len(cases), 0, 0, 0.0, confusion)
-    latencies: list[float] = []
+    latencies = report.latencies
     for case in cases:
         started = time.perf_counter()
+        outcome = None
+        if gate is not None and not is_smalltalk(case.question):
+            outcome = gate.assess(case.question, case.history)
+            report.gate_calls += 1
+            report.gate_latency_ms.append(outcome.latency_ms)
+            report.gate_cost += outcome.cost or 0.0
+            report.gate_failed += outcome.status == "failed"
         result = route_message(
-            case.question, history=case.history, model=model, min_confidence=min_confidence
+            case.question,
+            history=case.history,
+            model=model,
+            min_confidence=min_confidence,
+            gate=outcome,
+            gate_threshold=gate_threshold,
         )
         latencies.append((time.perf_counter() - started) * 1000)
+        report.gate_decided += result.decision.decided_by == "jev"
         predicted = result.decision.route
         report.model_calls += result.model_calls
         confusion[case.expected][predicted] += 1

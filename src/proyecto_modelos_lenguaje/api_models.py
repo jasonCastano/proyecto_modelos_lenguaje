@@ -266,7 +266,7 @@ class RouteModel(BaseModel):
     route: Route
     confidence: float = Field(ge=0.0, le=1.0)
     reason: str
-    decided_by: Literal["rules", "llm", "demo"]
+    decided_by: Literal["rules", "llm", "demo", "jev"]  # "jev": spec 021
     alternative: Route | None = None
     fallback_route: Literal["documental"] | None = None
     scope_reason: ScopeReason | None = None
@@ -284,6 +284,7 @@ class TurnMetricsModel(BaseModel):
     tool_calls: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    gate_calls: int = 0  # spec 021: consultas al gatekeeper Jev
 
 
 class ChatFragmentModel(BaseModel):
@@ -340,6 +341,7 @@ class TurnModel(BaseModel):
     sources: list[str] = Field(default_factory=list)
     fallback: bool = False
     metrics: TurnMetricsModel = Field(default_factory=TurnMetricsModel)
+    jev: dict[str, Any] | None = None  # spec 021: traza del gatekeeper (vista técnica)
 
 
 class AnomalyModel(BaseModel):

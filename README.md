@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-687%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-1388%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/M%C3%B3dulo%202-v0.2.0-brightgreen)](CONSTITUTION.md)
 
@@ -26,6 +26,18 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
+> **Estado al 2026-11-21 (constitución v1.13.0)**: después de la sustentación del Módulo 2 se sumaron:
+> - **Voz** (spec 016) y **avatar con sincronización de labios** (spec 017), ambos locales.
+> - **Valer-IA Caña** (spec 018): asistente para visitantes con identidad opcional por correo y conducta por reglas.
+> - **Atención de call center** (spec 019) y **conversación natural guiada** (spec 020), con sus baterías reales
+>   (`docs/evaluacion_atencion.md`: todos los criterios en ambas variantes; `docs/evaluacion_conversacion.md`).
+> - **Gatekeeper System One Jev** (spec 021, ADR 0025): reglas → Jev → LLM en el enrutador. Evita el 73–77 % de
+>   las llamadas al LLM del enrutador y sube el agente a 97,7 % de respuestas en menos de 10 s, pero su exactitud
+>   de ruta (93,2 %) queda por debajo del clasificador LLM (97,7 %), así que está **desactivado por defecto**
+>   (`docs/evaluacion_jev.md`).
+> - **Calificación humana a ciegas** de los Módulos 1 y 2 preparada (`docs/calificacion_m1/`,
+>   `docs/calificacion_m2/`), pendiente de que el equipo llene las planillas.
+>
 > **Correcciones de la evaluación docente (2026-11-14, constitución v1.7.0)**: respuesta a
 > `evaluación/evaluacion_modulo2_docente.md` (nota parcial 4,18/5,0):
 > - **2.1**: CSV curado y versionado `data/curated/series_anuales.csv` (74 cifras anuales con fuente y
@@ -148,6 +160,9 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
     vez en cuando y sin repetirlos, recuerda lo conversado en el hilo y responde en el idioma del visitante.
   - **Avatar con sincronización de labios**: una asistente ilustrada junto al chat mueve la boca con el audio de
     la voz (análisis local en el navegador), parpadea y muestra cuándo está pensando; se puede ocultar.
+  - **Gatekeeper System One (Jev)**, opcional: entre las reglas y el clasificador LLM, el enrutador puede
+    preguntar a Jev de TypeSafe la ruta (Choice), la molestia del visitante (Score) y si hay una crisis (Noul) en
+    una sola consulta de ~0,2 s; si Jev no está seguro o falla, decide el LLM. Viene desactivado por defecto.
 - **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores;
   en el Módulo 2, Recall@10/nDCG@10/MRR, acierto del enrutador y comparación cadena vs. agente con juez LLM.
 - **Interfaz web propia** (React + FastAPI, sin Streamlit) con hero editorial, consola RAG, conversación en
@@ -187,7 +202,8 @@ de interrupción Human-in-the-Loop:
 
 *Diagrama interactivo (Archify): [`docs/diagramas/memoria.html`](docs/diagramas/memoria.html).*
 
-**Herramientas y router**:
+**Herramientas y router**. Las reglas deciden sin llamar al modelo; el gatekeeper Jev (opcional, desactivado por
+defecto) decide si su probabilidad llega a 0,75; si no, decide el router LLM:
 
 [![Herramientas y router](docs/capturas/diagramas/herramientas-router.png)](docs/diagramas/herramientas-router.html)
 
@@ -195,7 +211,8 @@ de interrupción Human-in-the-Loop:
 
 **Trazas**: cada turno lleva `run_name`, etiquetas y metadatos para LangSmith (`LANGSMITH_TRACING`,
 `LANGSMITH_API_KEY` y `LANGSMITH_PROJECT`). También se registra como JSON en
-`$MANUELITA_STATE_DIR/logs/turns.jsonl` (ruta, quién decidió, herramientas, latencia y tokens).
+`$MANUELITA_STATE_DIR/logs/turns.jsonl` (ruta, quién decidió, herramientas, latencia, tokens y, si está activo,
+el bloque `jev` con estado, confianza, latencia y costo del gatekeeper).
 
 [![Trazas de un turno: SSE, LangSmith y turns.jsonl](docs/capturas/diagramas/trazas.png)](docs/diagramas/trazas.html)
 
@@ -244,8 +261,8 @@ Si la copia global de la skill está incompleta, clona
 [`tt-a1i/archify`](https://github.com/tt-a1i/archify) y usa `archify/bin/archify.mjs`.
 
 El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → Qdrant, recuperación híbrida y
-tabla estructurada → enrutador (con ruta mixta) y grafos LangGraph (cadena, agente, HITL) → experiencia web y
-memoria (hilos, perfil y preferencias)**. En GitHub, el enlace abre el código del HTML; para verlo interactivo,
+tabla estructurada → enrutador (reglas, gatekeeper Jev opcional y LLM, con ruta mixta) y grafos LangGraph
+(cadena, agente, HITL) → experiencia web y memoria (hilos, perfil y preferencias)**. En GitHub, el enlace abre el código del HTML; para verlo interactivo,
 clona el repositorio y abre `docs/arquitectura.html` en el navegador.
 
 ## Capturas
@@ -284,25 +301,31 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Deduplicación y versionado | ✅ | `content_hash`, `url_versions` + MinHash/LSH en plata y Jaccard en oro |
 | Reanudación e idempotencia | ✅ | Pruebas de integración de bronce, plata y oro |
 | Cuarentena y auditoría | ✅ | 26.347 artefactos retirados y purgados (2026-11-13), 26.347 auditorías |
-| Pruebas | ✅ | 687 pruebas offline (658 Python + 29 web) y E2E de la conversación |
+| Pruebas | ✅ | 1.388 pruebas offline (1.283 Python + 105 web) y E2E de la conversación; 13 más con red o voz (`network`, `voice`) |
 | Calidad de código | ✅ | Ruff limpio |
 | Modelo y entorno | ✅ | DeepSeek por API, `config/llm.toml`, modo demo offline |
 | App web + LangChain | ✅ | Frontend React + API FastAPI; hero, consola RAG y showcase del Módulo 1 |
 | Auditoría E2E | ✅ | Playwright: 360–1920 px, demo, fallback y foco; `make e2e` |
 | Evaluación de 40 preguntas | 🟡 | Tres ejecuciones reales con DeepSeek (2026-11-14, media ± desviación); calificación humana a ciegas preparada en `docs/calificacion_m1/`, pendiente de completar |
-| Informe del Módulo 1 | 🟡 | Borrador en `docs/informe_modulo1.md`; resultados pendientes de M1-08 |
+| Informe del Módulo 1 | 🟡 | `docs/informe_modulo1.md` con los resultados de las tres ejecuciones (§5.4); el análisis de errores espera la calificación humana |
 | Tag `v0.1.0-modulo1` | 🟡 | Pendiente de cerrar la puerta de la Fase 1 |
 | Módulo 2 — recuperación semántica (spec 013) | ✅ | PR #34 fusionado; `docs/evaluacion_modulo2.md` (ver hallazgos en `docs/revision_pr34.md`) |
-| Módulo 2 — memoria, enrutador y agente (spec 014) | ✅ | Cadena y agente con memoria por hilo, enrutador 35/36, HITL y preferencias; PRs #44–#51; `docs/informe_modulo2.md` |
-| Módulo 2 — cadena vs. agente | ✅ | Citas 100 % en ambas; < 10 s: cadena 100 %, agente 94 %; `docs/evaluacion_modulo2.md` |
+| Módulo 2 — memoria, enrutador y agente (spec 014) | ✅ | Cadena y agente con memoria por hilo, enrutador 43/44 (97,7 %, con 5 casos mixtos), HITL y preferencias; PRs #44–#51; `docs/informe_modulo2.md` |
+| Módulo 2 — cadena vs. agente | 🟡 | Citas 100 % en ambas; < 10 s: cadena 95 % y agente 91 % (2026-11-14, SC-007 por poco); con Jev, 97,7 % en ambas (2026-11-21); `docs/evaluacion_modulo2.md` |
 | Módulo 2 — Recall@10, nDCG@10 y abstención fuera de corpus | ✅ | Semántico/híbrido > léxico (también sobre Qdrant); la abstención 4/4 la logra el **enrutador**, la recuperación sola no se abstiene (0/4); `docs/evaluacion_modulo2.md` |
 | Módulo 2 — repreguntas (SC-006) y fidelidad del juez | 🟡 | Métrica estricta 3/6 (cadena) y 4/6 (agente); fidelidad del juez 0,819 y 0,842 (2026-11-14); calificación humana a ciegas preparada en `docs/calificacion_m2/`, pendiente de completar |
 | Módulo 2 — rúbrica de sustentación | ✅ | 13 ítems con evidencia en `docs/rubrica_modulo2.md`; los cinco casos verificados con DeepSeek (PR #57) |
 | Módulo 2 — Qdrant | ✅ | Colección `manuelita_fragments` (15.211 puntos, coseno, HNSW `m=16`); modo local embebido, servidor con `QDRANT_URL` (sin probar en vivo) |
 | Módulo 2 — memoria de largo plazo | ✅ | Perfil y preferencias en el Store, con aprobación humana; recuperados en otro hilo con `search()` |
 | Módulo 2 — streaming y trazas | ✅ | `POST /api/chat/stream` (SSE); `turns.jsonl` por turno; LangSmith al definir la clave |
+| Voz del agente (spec 016) | ✅ | Phonon local en español, por oraciones; `voice --check`; ADR 0020 |
+| Avatar con labios (spec 017) | ✅ | Web Audio local, sin servicios externos; ADR 0021 |
+| Valer-IA Caña (spec 018) | ✅ | Bienvenida, identidad opcional por huella del correo y conducta por reglas; ADR 0022 |
+| Atención de call center (spec 019) | ✅ | 36 casos reales: sin hechos externos, crisis con Línea 106 y 123, 0 registros con datos personales; `docs/evaluacion_atencion.md`, ADR 0023 |
+| Conversación guiada (spec 020) | ✅ | Respuestas redactadas y revisadas; similitud máxima en un hilo ≤ 0,5 frente a 1,0 con guiones; `docs/evaluacion_conversacion.md`, ADR 0024 |
+| Gatekeeper System One Jev (spec 021) | 🟡 | Implementado y probado: español 24/24, 73–77 % menos llamadas al LLM del enrutador, crisis 100 %; exactitud 93,2 % frente a 97,7 % ⇒ desactivado por defecto; `docs/evaluacion_jev.md`, ADR 0025 |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
-| CI y Pull Requests | 🟡 | 60 PRs fusionados al 2026-11-14 (51 del equipo y 9 de Dependabot, anteriores a la v1.6.0); solo 12 PRs del equipo tienen aprobación formal y 16 alguna revisión. CI con `test`, `web` y `autoria` |
+| CI y Pull Requests | 🟡 | 72 PRs fusionados al 2026-11-21 (63 del equipo y 9 de Dependabot, anteriores a la v1.6.0); 13 PRs del equipo tienen aprobación formal y 17 alguna revisión. CI con `test`, `web` y `autoria` |
 | Protección de `main` | ✅ | PR con 1 aprobación y checks `test` y `web`; sin push directo ni force-push |
 | Gobernanza del repositorio | ✅ | PR/issue templates, labels, pre-commit y Makefile |
 | Autoría de commits | ✅ | Solo `jasonCastano` y `Robertto48`, sin bots ni asistentes; hook `commit-msg` y job `autoria`; historial sin coautores de IA ni commits de bots (ADR 0017) |
@@ -328,9 +351,10 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Oro | 0,20 GB |
 | Cuarentena | 0 GB (purgada el 2026-11-13; 8,93 GB liberados) |
 | Datos totales | 0,59 GB (límite: 10 GB) |
-| Pruebas offline | 687 |
+| Pruebas offline | 1.388 (1.283 Python + 105 web) |
 | Consultas etiquetadas (Módulo 2) | 44 por ruta (18 con etiqueta de recuperación puntuable) |
-| Acierto del enrutador | 97 % (35/36) |
+| Acierto del enrutador | 97,7 % (43/44); con Jev, 93,2 % (41/44) |
+| Decisiones del enrutador sin LLM con Jev | 57–59 % de las consultas; ~0,2 s por consulta a Jev |
 | Hechos en la tabla estructurada | 381 (15 entidades, 477 citas; exportada a CSV/JSON) |
 | Puntos en Qdrant | 15.211 (384 d, coseno) |
 
@@ -730,6 +754,12 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
   contacto. Se mide con
   `uv run python -m proyecto_modelos_lenguaje.agent converse --mode demo|real [--baseline] [--simulate]`
   (`docs/evaluacion_conversacion.md`); `agent care --conversation-mode guided|scripted` elige el modo.
+- Gatekeeper System One (spec 021, ADR 0025): el enrutador puede consultar a **Jev** de TypeSafe entre las reglas y
+  el clasificador LLM (Choice para la ruta, Score para la molestia y Noul para la crisis). Está desactivado por
+  defecto. Para probarlo, cada integrante pone su propia `TYPESAFE_API_KEY` en `.env` (https://console.typesafe.ai)
+  y activa `[jev].enabled` en `config/agent.toml` o `MANUELITA_JEV_ENABLED=1`. Sin clave todo funciona igual.
+  `uv run python -m proyecto_modelos_lenguaje.agent jev --check|--validate|--compare`
+  (`docs/evaluacion_jev.md`). En la vista técnica, «Decidió: Jev (System One)».
 - Avatar (spec 017, ADR 0021): junto al chat, la boca sigue el audio de la voz con un analizador de Web Audio, sin
   servicios externos. «Ocultar avatar» lo esconde y la preferencia se recuerda. Con `?avatarDebug=1` en la URL,
   la tarjeta muestra la forma y la apertura de la boca para calibrarla.
@@ -976,7 +1006,10 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - Qdrant corre en modo local embebido (búsqueda exacta, una sola instancia por carpeta); el índice HNSW
   real requiere un servidor (`QDRANT_URL`), que no se ha probado en vivo.
 - LangSmith requiere definir la clave en `.env`; sin ella, las trazas quedan en `turns.jsonl`.
-- No están implementados el gatekeeper Jev (System One), el *time travel* de hilos ni el despliegue.
+- El gatekeeper Jev (System One, spec 021) está implementado pero **desactivado por defecto**: acelera el
+  enrutador, pero su exactitud de ruta (93,2 %) queda por debajo de la del clasificador LLM (97,7 %). Si se activa,
+  los mensajes enmascarados también se envían a TypeSafe (EE. UU.).
+- No están implementados el *time travel* de hilos ni el despliegue.
 
 ## Documentación
 
@@ -1033,12 +1066,33 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Decisión de arquitectura del agente RAG con LangGraph](docs/decisions/0016-rag-agent-langgraph.md)
 - [Decisión de autoría de commits](docs/decisions/0017-autoria-commits.md)
 - [Decisión: Qdrant, memoria de perfil, ruta mixta y streaming](docs/decisions/0018-qdrant-y-rubrica-modulo2.md)
+- [Decisión: blindaje con el modelo real](docs/decisions/0019-blindaje-modelo-real.md) ·
+  [especificación 015](specs/015-rag-injection-shield-real/spec.md)
+- [Decisión: voz con Phonon](docs/decisions/0020-voz-phonon.md) ·
+  [especificación 016](specs/016-agent-voice-tts/spec.md)
+- [Decisión: avatar local](docs/decisions/0021-avatar-local.md) ·
+  [especificación 017](specs/017-avatar-lipsync/spec.md)
+- [Decisión: Valer-IA Caña](docs/decisions/0022-valeria-asistente.md) ·
+  [especificación 018](specs/018-valeria-assistant/spec.md)
+- [Decisión: atención de call center](docs/decisions/0023-atencion-call-center.md) ·
+  [especificación 019](specs/019-callcenter-skills/spec.md)
+- [Decisión: conversación guiada](docs/decisions/0024-conversacion-guiada.md) ·
+  [especificación 020](specs/020-natural-conversation/spec.md)
+- [Decisión: gatekeeper System One (Jev)](docs/decisions/0025-jev-gatekeeper.md) ·
+  [especificación 021](specs/021-jev-router-gate/spec.md)
 - [Rúbrica de sustentación del Módulo 2: cumplimiento y guion](docs/rubrica_modulo2.md)
 - [Política de memoria y privacidad](docs/memoria.md)
 - [Informe del Módulo 2](docs/informe_modulo2.md)
 - [Informe del Módulo 1 (borrador)](docs/informe_modulo1.md)
 - [Guion de demo 12+3](docs/demo.md)
 - [Evaluación del Módulo 2 (recuperación, enrutador, cadena vs. agente)](docs/evaluacion_modulo2.md)
+- [Evaluación del blindaje con el modelo real](docs/evaluacion_blindaje.md)
+- [Evaluación de la atención de Valer-IA](docs/evaluacion_atencion.md)
+- [Evaluación de la conversación guiada](docs/evaluacion_conversacion.md)
+- [Evaluación del gatekeeper System One (Jev)](docs/evaluacion_jev.md)
+- [Evaluación del Módulo 1 (40 preguntas)](docs/evaluacion_modulo1.md)
+- [Calificación humana a ciegas: Módulo 1](docs/calificacion_m1/INSTRUCCIONES.md) y
+  [Módulo 2](docs/calificacion_m2/INSTRUCCIONES.md)
 - [Revisión del PR #34](docs/revision_pr34.md)
 - [Prompt log](docs/prompt_log.md)
 - [Arquitectura interactiva (Archify)](docs/arquitectura.html)
@@ -1080,7 +1134,8 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [x] Tag `v0.2.0-modulo2`.
 - [x] Rúbrica de sustentación: Qdrant, perfil en el Store, ruta mixta, streaming SSE y trazas (PR #57).
 - [ ] Ensayo de la sustentación del 14 de noviembre con los cinco casos en vivo.
-- [ ] Opcionales: Qdrant con servidor HNSW, gatekeeper Jev y *time travel* de hilos.
+- [x] Opcional: gatekeeper Jev (System One), spec 021, desactivado por defecto.
+- [ ] Opcionales: Qdrant con servidor HNSW y *time travel* de hilos.
 
 ### Fase 3 — Módulo 3: productización y despliegue (40 %)
 

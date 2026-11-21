@@ -39,5 +39,15 @@ converse_max_tokens = 220
 converse_timeout_seconds = 8
 review_llm = false        # juez LLM en línea (desactivado por latencia)
 
+[jev]                      # gatekeeper System One (spec 021); la clave va en .env: TYPESAFE_API_KEY
+enabled = false           # MANUELITA_JEV_ENABLED=1|0 lo sobrescribe
+base_url = "https://api.typesafe.ai"
+model = "jev-1.14.0"      # versión fija, nunca un alias «latest» (FR-012)
+route_threshold = 0.75    # probabilidad mínima de la ruta para decidir sin el clasificador LLM
+crisis_threshold = 0.5    # P(crisis) que suma una crisis a la detección determinista
+timeout_seconds = 2.0     # sin reintentos dentro del turno
+max_input_chars = 4000    # texto enviado (mensaje + historial, se recorta primero el historial)
+signals = ["route", "scope", "annoyance", "crisis"]
+
 [state]
 env_var = "MANUELITA_STATE_DIR"    # checkpointer y Store, siempre fuera del repositorio

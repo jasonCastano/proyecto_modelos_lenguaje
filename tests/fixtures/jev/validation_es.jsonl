@@ -1,0 +1,24 @@
+{"query_id": "v01", "question": "Buenas noches, ¿cómo estás?", "history": [], "expected_route": "direct"}
+{"query_id": "v02", "question": "Mil gracias, me sirvió mucho", "history": ["¿Qué produce Manuelita?"], "expected_route": "direct"}
+{"query_id": "v03", "question": "Bueno, eso era todo, que tengas buen día", "history": ["¿Dónde queda el ingenio?"], "expected_route": "direct"}
+{"query_id": "v04", "question": "¿Tú eres un robot o una persona?", "history": [], "expected_route": "direct"}
+{"query_id": "v05", "question": "¿Cómo nació Manuelita y quién la fundó?", "history": [], "expected_route": "documental"}
+{"query_id": "v06", "question": "¿Qué hace la Fundación Manuelita por las comunidades del Valle?", "history": [], "expected_route": "documental"}
+{"query_id": "v07", "question": "Explícame cómo cultiva Manuelita la palma de aceite en los Llanos", "history": [], "expected_route": "documental"}
+{"query_id": "v08", "question": "¿Qué compromisos ambientales tiene la empresa con el agua?", "history": [], "expected_route": "documental"}
+{"query_id": "v09", "question": "¿En qué año se fundó Manuelita?", "history": [], "expected_route": "structured"}
+{"query_id": "v10", "question": "¿Cuántas toneladas de azúcar produjo Manuelita en 2022?", "history": [], "expected_route": "structured"}
+{"query_id": "v11", "question": "¿Qué filiales tiene el Grupo Manuelita en Chile?", "history": [], "expected_route": "structured"}
+{"query_id": "v12", "question": "¿Cuál fue el promedio de ventas entre 2020 y 2023?", "history": [], "expected_route": "structured"}
+{"query_id": "v13", "question": "¿La producción de bioetanol de 2023 cumple la meta que describe el informe de sostenibilidad?", "history": [], "expected_route": "mixed"}
+{"query_id": "v14", "question": "Compara las ventas de 2021 con lo que cuenta el informe sobre ese año", "history": [], "expected_route": "mixed"}
+{"query_id": "v15", "question": "¿Qué explica el informe sobre la caída de la utilidad y cuánto fue esa utilidad?", "history": [], "expected_route": "mixed"}
+{"query_id": "v16", "question": "Relaciona la cifra de empleos con lo que dice la empresa sobre su programa de inclusión", "history": [], "expected_route": "mixed"}
+{"query_id": "v17", "question": "¿Quién ganó el partido de la selección anoche?", "history": [], "expected_route": "out_of_scope"}
+{"query_id": "v18", "question": "Ayúdame a resolver mi tarea de química sobre ácidos y bases", "history": [], "expected_route": "out_of_scope"}
+{"query_id": "v19", "question": "Dame el teléfono personal del gerente de la planta", "history": [], "expected_route": "out_of_scope"}
+{"query_id": "v20", "question": "¿En qué acciones debería invertir mis ahorros este año?", "history": [], "expected_route": "out_of_scope"}
+{"query_id": "v21", "question": "¿Y eso cuánto cuesta?", "history": [], "expected_route": "clarify"}
+{"query_id": "v22", "question": "¿Y allá qué más hay?", "history": [], "expected_route": "clarify"}
+{"query_id": "v23", "question": "Lo de la otra vez, ¿cómo sigue?", "history": [], "expected_route": "clarify"}
+{"query_id": "v24", "question": "¿Cuál de los dos conviene más?", "history": [], "expected_route": "clarify"}

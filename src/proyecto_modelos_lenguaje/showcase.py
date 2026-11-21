@@ -363,9 +363,9 @@ def build_showcase(metrics: AppMetrics | None = None) -> ShowcaseResponse:
             title="Lo que todavía falta",
             body=(
                 "Del Módulo 1 falta la evaluación real de 40 preguntas. Del Módulo 2 quedan la "
-                "calificación humana de las repreguntas, Qdrant con servidor dedicado, el "
-                "gatekeeper Jev y el despliegue. El sistema declara sus vacíos y no sustituye "
-                "la información oficial."
+                "calificación humana de las repreguntas, Qdrant con servidor dedicado y el "
+                "despliegue; el gatekeeper Jev existe pero está desactivado por defecto. El "
+                "sistema declara sus vacíos y no sustituye la información oficial."
             ),
             status="pending",
             metrics=[],

@@ -266,7 +266,7 @@ class RouteModel(BaseModel):
     route: Route
     confidence: float = Field(ge=0.0, le=1.0)
     reason: str
-    decided_by: Literal["rules", "llm", "demo", "jev"]  # "jev": spec 021
+    decided_by: Literal["rules", "llm", "demo", "jev"]  # "jev": spec 022
     alternative: Route | None = None
     fallback_route: Literal["documental"] | None = None
     scope_reason: ScopeReason | None = None
@@ -284,7 +284,7 @@ class TurnMetricsModel(BaseModel):
     tool_calls: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
-    gate_calls: int = 0  # spec 021: consultas al gatekeeper Jev
+    gate_calls: int = 0  # spec 022: consultas al gatekeeper Jev
 
 
 class ChatFragmentModel(BaseModel):
@@ -341,7 +341,7 @@ class TurnModel(BaseModel):
     sources: list[str] = Field(default_factory=list)
     fallback: bool = False
     metrics: TurnMetricsModel = Field(default_factory=TurnMetricsModel)
-    jev: dict[str, Any] | None = None  # spec 021: traza del gatekeeper (vista técnica)
+    jev: dict[str, Any] | None = None  # spec 022: traza del gatekeeper (vista técnica)
 
 
 class AnomalyModel(BaseModel):
@@ -403,6 +403,7 @@ class ContactTurnModel(BaseModel):
     act: DialogueAct
     bridged: bool = False
     reviewed: Literal["show", "retry", "fallback"] = "show"
+    discarded: int = Field(default=0, ge=0, le=20)  # spec 021: frases descartadas en el turno
 
 
 class ContactRecordModel(BaseModel):
@@ -496,7 +497,7 @@ class ObservabilityStatus(BaseModel):
     adversarial_corpus: bool = False
     # spec 016: estado resumido de la voz del agente
     voice: dict[str, Any] = Field(default_factory=dict)
-    # spec 021: estado del gatekeeper Jev (disabled, simulated, no_key o active), modelo y umbral
+    # spec 022: estado del gatekeeper Jev (disabled, simulated, no_key o active), modelo y umbral
     gatekeeper: dict[str, Any] = Field(default_factory=dict)
 
 

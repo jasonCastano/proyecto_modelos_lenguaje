@@ -1,4 +1,4 @@
-"""Gatekeeper Jev en los dos grafos, en modo demo y sin red (spec 021, US1–US3)."""
+"""Gatekeeper Jev en los dos grafos, en modo demo y sin red (spec 022, US1–US3)."""
 
 from __future__ import annotations
 

@@ -80,3 +80,29 @@ def test_clean_title_discards_pdf_headings() -> None:
 def test_social_topics_guess_a_key() -> None:
     signals = {"requests": [{"text": "qué calor hace", "tier": "social", "topic_key": None}]}
     assert bridges.topic_of(signals) == ("qué calor hace", "clima")
+
+
+def test_bridge_search_is_cached_per_topic(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Spec 021 (R17): la búsqueda del puente se hace una vez por tema."""
+    calls: list[str] = []
+    original = bridges.search_documents_impl
+
+    def counting(retriever, query, **kwargs):  # type: ignore[no-untyped-def]
+        calls.append(query)
+        return original(retriever, query, **kwargs)
+
+    monkeypatch.setattr(bridges, "search_documents_impl", counting)
+    monkeypatch.setattr(bridges, "_CACHE", {})
+    monkeypatch.setattr(bridges, "_WARMING", set())
+    playbook = load_care()
+    retriever = demo_retriever()
+    first = bridges.candidates("qué calor", "clima", playbook, retriever, CONFIG)
+    second = bridges.candidates("¿lloverá mañana?", "clima", playbook, retriever, CONFIG)
+    assert first == second and len(calls) == 1
+    bridges.candidates("partido", "deportes", playbook, retriever, CONFIG)
+    assert len(calls) == 2
+    thread = bridges.warm_up(playbook, retriever, CONFIG)
+    assert thread is not None
+    thread.join(timeout=30)
+    assert bridges.warm_up(playbook, retriever, CONFIG) is None  # una sola vez por buscador
+    assert ("Manuelita " + " ".join(playbook.angles["salud"].keywords))[:300] in calls

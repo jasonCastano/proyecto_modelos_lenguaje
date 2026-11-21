@@ -203,7 +203,7 @@ export interface ObservabilityStatus {
   adversarial_corpus?: boolean;
   /** Búsqueda vectorial por modo: «Búsqueda vectorial en Qdrant …» o «Respaldo numpy: …». */
   vector_store?: Record<string, string>;
-  /** Spec 021: estado del gatekeeper Jev (sin secretos). */
+  /** Spec 022: estado del gatekeeper Jev (sin secretos). */
   gatekeeper?: GatekeeperStatus;
 }
 

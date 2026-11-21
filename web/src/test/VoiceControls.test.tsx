@@ -19,6 +19,7 @@ function control(overrides: Partial<VoiceControl> = {}): VoiceControl {
     resume: vi.fn(),
     startLive: vi.fn(() => null),
     pushToken: vi.fn(),
+    pushSentence: vi.fn(),
     finishLive: vi.fn(),
     speak: vi.fn(() => null),
     analyser: vi.fn(() => null),

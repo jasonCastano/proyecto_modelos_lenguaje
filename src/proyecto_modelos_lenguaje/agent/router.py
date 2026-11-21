@@ -140,11 +140,11 @@ UNATTAINABLE_KINDS = frozenset({"pricing", "commitment", "human"})
 class RouterResult:
     decision: RouteDecision
     model_calls: int = 0
-    gate: GateOutcome | None = None  # spec 021: resultado del gatekeeper (usado o descartado)
+    gate: GateOutcome | None = None  # spec 022: resultado del gatekeeper (usado o descartado)
 
 
 def is_smalltalk(message: str) -> bool:
-    """Saludo, agradecimiento o despedida: solo palabras de ``SMALLTALK`` (spec 021, R4)."""
+    """Saludo, agradecimiento o despedida: solo palabras de ``SMALLTALK`` (spec 022, R4)."""
     words = _words(message)
     return bool(words) and all(word in SMALLTALK for word in words)
 
@@ -395,7 +395,7 @@ def route_message(
 ) -> RouterResult:
     """Decide la ruta efectiva: reglas → gatekeeper Jev → LLM o heurística → umbral.
 
-    Spec 021: ``gate`` es la respuesta ya obtenida del gatekeeper (una consulta por turno, en el
+    Spec 022: ``gate`` es la respuesta ya obtenida del gatekeeper (una consulta por turno, en el
     nodo ``route``). Las reglas siempre ganan; Jev decide si su probabilidad alcanza
     ``gate_threshold`` y, si no, decide el clasificador como siempre.
     """

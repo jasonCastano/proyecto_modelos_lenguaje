@@ -1,4 +1,4 @@
-"""Comparación sin/con gatekeeper Jev, offline (spec 021, US4)."""
+"""Comparación sin/con gatekeeper Jev, offline (spec 022, US4)."""
 
 from __future__ import annotations
 

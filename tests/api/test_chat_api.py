@@ -46,7 +46,7 @@ def test_chat_creates_a_thread_and_returns_the_turn(client: TestClient) -> None:
         "tool_calls",
         "input_tokens",
         "output_tokens",
-        "gate_calls",  # spec 021: consultas al gatekeeper Jev
+        "gate_calls",  # spec 022: consultas al gatekeeper Jev
     }
     assert turn["metrics"]["gate_calls"] == 0  # [jev].enabled = false por defecto
     assert turn["jev"] is None

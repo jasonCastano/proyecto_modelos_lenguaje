@@ -52,11 +52,15 @@ export const ACT_LABEL: Record<DialogueAct, string> = {
   clarify: "aclaración",
 };
 
-/** «saludo → charla ◆ → mínimo ↺»: ◆ marca un puente y ↺ una respuesta de respaldo. */
+/**
+ * «saludo → charla ◆ → mínimo ↺ → fuera de tema ✂1»: ◆ marca un puente, ↺ una respuesta de respaldo
+ * y ✂N las frases descartadas en la revisión (spec 021).
+ */
 export function actsTrail(acts: ContactTurn[]): string {
   return acts
     .map((turn) => {
-      const marks = `${turn.bridged ? " ◆" : ""}${turn.reviewed === "fallback" ? " ↺" : ""}`;
+      const cut = turn.discarded ? ` ✂${turn.discarded}` : "";
+      const marks = `${turn.bridged ? " ◆" : ""}${turn.reviewed === "fallback" ? " ↺" : ""}${cut}`;
       return `${ACT_LABEL[turn.act] ?? turn.act}${marks}`;
     })
     .join(" → ");

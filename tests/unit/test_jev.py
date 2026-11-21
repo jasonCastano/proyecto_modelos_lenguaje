@@ -1,4 +1,4 @@
-"""Pruebas offline del gatekeeper Jev (spec 021): configuración, cliente, simulación y señales."""
+"""Pruebas offline del gatekeeper Jev (spec 022): configuración, cliente, simulación y señales."""
 
 from __future__ import annotations
 

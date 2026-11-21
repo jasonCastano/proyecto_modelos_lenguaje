@@ -63,7 +63,7 @@ const ROUTE_LABEL: Record<ChatRouteName, string> = {
   clarify: "Aclaración",
 };
 
-/** Spec 021: resumen de lo que hizo el gatekeeper Jev en el turno (vista técnica). */
+/** Spec 022: resumen de lo que hizo el gatekeeper Jev en el turno (vista técnica). */
 export function jevSummary(jev: ChatTurn["jev"]): string | null {
   if (!jev || jev.status === "skipped") return null;
   if (jev.status === "failed") return `Jev no disponible (${jev.reason ?? "error"}) → decidió el LLM`;
@@ -374,6 +374,7 @@ function liveStage(event: ChatStreamEvent, current: LiveTurn): LiveTurn {
         stage: `${event.fragments} fragmentos · ${event.structured_rows} filas · generando…`,
       };
     case "token":
+    case "sentence":
       return { ...current, stage: "Escribiendo…", text: current.text + event.text };
     default:
       return current;
@@ -606,6 +607,7 @@ export function ChatView({ mode }: { mode: Mode }) {
             current = liveStage(event, current);
             setLive(current);
             if (event.event === "token") voice.pushToken(event.text);
+            if (event.event === "sentence") voice.pushSentence(event.text.trim());
           },
           abort.signal,
         );

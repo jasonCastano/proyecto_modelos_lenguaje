@@ -1,4 +1,4 @@
-"""Validación en español y comparación del gatekeeper Jev (spec 021, US4).
+"""Validación en español y comparación del gatekeeper Jev (spec 022, US4).
 
 - ``validate``: 24 consultas nuevas (``tests/fixtures/jev/validation_es.jsonl``), distintas de las
   44 de evaluación; fija el umbral de ruta (research R5, R10; SC-009).
@@ -304,7 +304,7 @@ def render_report(data: dict[str, Any]) -> str:
     lines = [
         "# Evaluación del gatekeeper System One (Jev)",
         "",
-        f"Generado por `agent jev --compare` el {meta['created_at'][:10]} (spec 021). Ejecución "
+        f"Generado por `agent jev --compare` el {meta['created_at'][:10]} (spec 022). Ejecución "
         f"`{meta['run_id']}`, commit `{meta['commit']}`, modelo `{meta['model']}`, umbral de ruta "
         f"{meta['route_threshold']} y de crisis {meta['crisis_threshold']}. Costo total de Jev: "
         f"{data['cost_usd']:.4f} USD.",
@@ -432,7 +432,7 @@ def module2_section(data: dict[str, Any]) -> str:
     return "\n".join(
         [
             SECTION_START,
-            "## Gatekeeper System One (Jev, spec 021)",
+            "## Gatekeeper System One (Jev, spec 022)",
             "",
             f"Ejecución `{data['meta']['run_id']}` (detalle en `docs/evaluacion_jev.md`): "
             f"exactitud de ruta {_pct(base['accuracy'])} sin Jev y {_pct(jev['accuracy'])} con "

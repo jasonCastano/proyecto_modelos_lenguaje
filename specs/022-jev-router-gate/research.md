@@ -1,6 +1,6 @@
 # Research: Gatekeeper System One (Jev) para el enrutador de Valer-IA
 
-**Feature**: `021-jev-router-gate` | **Fecha**: 2026-11-20 | **Spec**: [spec.md](./spec.md)
+**Feature**: `022-jev-router-gate` | **Fecha**: 2026-11-20 | **Spec**: [spec.md](./spec.md)
 
 Las fuentes sobre la API de Jev son guías y blogs de terceros (septiembre–octubre de 2026); la documentación oficial
 (`docs.typesafe.ai`) no se pudo leer. Cada decisión que depende de un detalle de la API se **verifica en la tarea de

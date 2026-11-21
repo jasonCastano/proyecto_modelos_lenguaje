@@ -1,6 +1,6 @@
 # Evaluación del gatekeeper System One (Jev)
 
-Generado por `agent jev --compare` el 2026-11-21 (spec 021). Ejecución `jev-real-2026-11-21b`, commit `8f9d0b4`, modelo `jev-1.14.0`, umbral de ruta 0.75 y de crisis 0.5. Costo total de Jev: 0.0051 USD.
+Generado por `agent jev --compare` el 2026-11-21 (spec 022). Ejecución `jev-real-2026-11-21b`, commit `8f9d0b4`, modelo `jev-1.14.0`, umbral de ruta 0.75 y de crisis 0.5. Costo total de Jev: 0.0051 USD.
 
 ## Validación en español (SC-009)
 

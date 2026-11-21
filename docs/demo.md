@@ -47,6 +47,10 @@ rúbrica de la Entrega 2. La versión anterior (2026-11-07) fue redactada con as
 > refería a la energía» (sin pedir aclaración) → «listo, gracias, eso era todo» (despedida con resumen). En
 > `?vista=tecnica`, la línea «Actos» del registro marca los puentes (◆) y los respaldos (↺). Repetir «¿cómo va a
 > estar el clima mañana?» en hilos nuevos muestra respuestas distintas.
+>
+> Spec 021 (entrega por frases): en cualquiera de esos turnos la respuesta aparece frase por frase, sin esperar a
+> que esté completa, y la voz empieza a leer con la primera frase. En `?vista=tecnica`, la marca `✂N` de la línea
+> «Actos» indica las frases que la revisión descartó (nunca se mostraron).
 
 
 | Tiempo | Bloque | Quién | Qué se muestra | Criterio que cubre |

@@ -319,7 +319,7 @@ def _run(
                     first: float | None = None
                     final: dict[str, Any] | None = None
                     for event in events:
-                        if event["event"] == "token" and first is None:
+                        if event["event"] in {"token", "sentence"} and first is None:
                             first = time.perf_counter() - started
                         elif event["event"] == "done":
                             final = event["response"]
@@ -349,7 +349,7 @@ def _run(
                 row.update(
                     answer=answers[-1] if answers else "",
                     scope_reason=outcome.turn.route.scope_reason if outcome else None,
-                    # Spec 021: quién decidió la ruta y traza del gatekeeper Jev (si está activo).
+                    # Spec 022: quién decidió la ruta y traza del gatekeeper Jev (si está activo).
                     decided_by=outcome.turn.route.decided_by if outcome else None,
                     jev=outcome.turn.jev if outcome else None,
                     citations=len(outcome.turn.citations) if outcome else 0,

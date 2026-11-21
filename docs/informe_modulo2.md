@@ -142,7 +142,7 @@ Fuente: `docs/evaluacion_modulo2.md` (sección «Enrutador»), `docs/evaluacion_
 Único error: r32 «¿Cuánto bioetanol produce allá al año?», etiquetada documental y enviada a estructurada; si la
 tabla no tiene el dato, la ruta cae a documental y lo registra (`fallback_route`).
 
-**Gatekeeper System One (Jev, spec 021, ADR 0025).** Entre las reglas y el clasificador, el enrutador puede consultar
+**Gatekeeper System One (Jev, spec 022, ADR 0026).** Entre las reglas y el clasificador, el enrutador puede consultar
 a Jev (TypeSafe): una solicitud por turno con cuatro preguntas tipadas (ruta, motivo de fuera de alcance, molestia y
 crisis). Fuente: `docs/evaluacion_jev.md`, ejecución del 2026-11-21 sobre las 44 consultas actuales:
 
@@ -240,7 +240,7 @@ respuesta sobre sostenibilidad llegó en viñetas con citas en ambas variantes, 
 7. **Ragas** no instala en Python 3.14; se reemplazó por un juez propio con sus definiciones.
 8. **Calificación humana** de la muestra de 20 respuestas (control del juez) preparada y pendiente de
    completar (`module2_grading`).
-9. **Gatekeeper Jev** (spec 021): exactitud de ruta 93,2 % frente a 97,7 % sin él; mejora la latencia (agente
+9. **Gatekeeper Jev** (spec 022): exactitud de ruta 93,2 % frente a 97,7 % sin él; mejora la latencia (agente
    97,7 % < 10 s) pero queda desactivado por defecto. Mejorarlo exige un conjunto de validación más difícil, nunca
    ajustar con las 44 consultas de evaluación. Añade un proveedor externo en EE. UU. cuando se activa.
 
@@ -250,7 +250,7 @@ respuesta sobre sostenibilidad llegó en viñetas con citas en ambas variantes, 
 - Decisiones: `docs/decisions/0014-semantic-rag.md`, `docs/decisions/0015-module2-scope.md`,
   `docs/decisions/0016-rag-agent-langgraph.md`
 - Evaluación: `docs/evaluacion_modulo2.md`, `docs/evaluacion_enrutador.json`, `docs/evaluacion_variantes.json`,
-  `docs/evaluacion_jev.{md,json}` (gatekeeper Jev, spec 021, ADR 0025)
+  `docs/evaluacion_jev.{md,json}` (gatekeeper Jev, spec 022, ADR 0026)
 - Prompts y ejecuciones: `prompts/`, `docs/prompt_log.md`
 - Memoria y privacidad: `docs/memoria.md`
 - Arquitectura: `docs/arquitectura.html` (fuente `docs/arquitectura.json`)

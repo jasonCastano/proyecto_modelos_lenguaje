@@ -1,4 +1,4 @@
-# Quickstart: validar el gatekeeper Jev (spec 021)
+# Quickstart: validar el gatekeeper Jev (spec 022)
 
 ## Requisitos
 

@@ -1,4 +1,4 @@
-"""Orden reglas → gatekeeper Jev → clasificador LLM en ``route_message`` (spec 021, US1)."""
+"""Orden reglas → gatekeeper Jev → clasificador LLM en ``route_message`` (spec 022, US1)."""
 
 from __future__ import annotations
 

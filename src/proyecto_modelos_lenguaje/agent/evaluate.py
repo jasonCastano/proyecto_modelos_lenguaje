@@ -51,7 +51,7 @@ class RouterReport:
     misses: list[dict[str, Any]] = field(default_factory=list)
     no_search_ok: int = 0
     no_search_total: int = 0
-    # Spec 021: gatekeeper Jev (consultas, decisiones aceptadas, fallos, latencia y costo).
+    # Spec 022: gatekeeper Jev (consultas, decisiones aceptadas, fallos, latencia y costo).
     latencies: list[float] = field(default_factory=list)
     gate_calls: int = 0
     gate_decided: int = 0
@@ -123,7 +123,7 @@ def evaluate_router(
     gate: JevGate | None = None,
     gate_threshold: float = 0.75,
 ) -> RouterReport:
-    """Exactitud del enrutador; con ``gate`` mide reglas → Jev → LLM (spec 021, research R14)."""
+    """Exactitud del enrutador; con ``gate`` mide reglas → Jev → LLM (spec 022, research R14)."""
     confusion = {route: Counter() for route in ROUTES}
     report = RouterReport(run_id, mode, len(cases), 0, 0, 0.0, confusion)
     latencies = report.latencies

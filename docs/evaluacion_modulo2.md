@@ -327,7 +327,7 @@ coinciden, sección «Reevaluación sobre Qdrant»).
   la evidencia esperada en documentales (67 % frente a 50 %).
 
 <!-- jev:start -->
-## Gatekeeper System One (Jev, spec 021)
+## Gatekeeper System One (Jev, spec 022)
 
 Ejecución `jev-real-2026-11-21b` (detalle en `docs/evaluacion_jev.md`): exactitud de ruta 97,7 % sin Jev y 93,2 % con Jev; Jev decide 59,1 % de las consultas y las llamadas al LLM del enrutador bajan de 34 a 8. Validación en español 100,0 %; costo 0.0051 USD.
 <!-- jev:end -->

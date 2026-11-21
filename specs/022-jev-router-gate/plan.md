@@ -1,8 +1,8 @@
 # Implementation Plan: Gatekeeper System One (Jev) para el enrutador de Valer-IA
 
-**Branch**: `021-jev-router-gate` | **Date**: 2026-11-20 | **Spec**: [spec.md](./spec.md)
+**Branch**: `022-jev-router-gate` | **Date**: 2026-11-20 | **Spec**: [spec.md](./spec.md)
 
-**Input**: Feature specification from `/specs/021-jev-router-gate/spec.md`
+**Input**: Feature specification from `/specs/022-jev-router-gate/spec.md`
 
 ## Summary
 
@@ -61,7 +61,7 @@ detección de crisis puede perderse; costo de evaluación < 1 USD.
 | V. Simplicidad | Cliente HTTP propio de ~100 líneas en lugar de SDK; una solicitud por turno; reutiliza `evaluate_router`, `agent care`, `agent converse` y `redact_pii`. Sin circuito abierto ni reintentos hasta que la evaluación lo justifique. Dependencia: solo se declara `httpx`, ya presente. | ✅ |
 | Secretos (Restricciones técnicas) | `TYPESAFE_API_KEY` solo en el entorno; nunca en logs, respuestas ni web (FR-019, SC-008). | ✅ |
 | Pruebas sin red | `FakeJevGate` y transporte simulado; real solo con `network`. | ✅ |
-| `CONSTITUTION.md` (canónica) | Cambio tecnológico (nuevo proveedor externo) ⇒ actualizar §3.5/§3.6 y la sección de la Fase 2 en el mismo PR, más ADR 0025. Prompts nuevos ⇒ `docs/prompt_log.md`. | ✅ (tarea en el plan) |
+| `CONSTITUTION.md` (canónica) | Cambio tecnológico (nuevo proveedor externo) ⇒ actualizar §3.5/§3.6 y la sección de la Fase 2 en el mismo PR, más ADR 0026. Prompts nuevos ⇒ `docs/prompt_log.md`. | ✅ (tarea en el plan) |
 | Autoría (§4.3, ADR 0017) | Commits y PR a nombre del integrante; sin coautores ni firmas de asistentes. | ✅ |
 
 **Resultado**: sin violaciones; Complexity Tracking vacío.
@@ -74,7 +74,7 @@ detección de crisis puede perderse; costo de evaluación < 1 USD.
 ### Documentation (this feature)
 
 ```text
-specs/021-jev-router-gate/
+specs/022-jev-router-gate/
 ├── plan.md              # este archivo
 ├── research.md          # Phase 0: R1–R14
 ├── data-model.md        # Phase 1
@@ -114,7 +114,7 @@ tests/contract/test_jev_contract.py     # NUEVO: [jev] en TOML, prompts, .env.ex
 tests/integration/test_jev_real.py      # NUEVO: @pytest.mark.network
 web/src/test/ChatView.test.tsx          # etiqueta «Jev»
 
-docs/decisions/0025-jev-gatekeeper.md   # NUEVO ADR
+docs/decisions/0026-jev-gatekeeper.md   # NUEVO ADR
 docs/evaluacion_jev.{md,json}           # NUEVO (generado)
 docs/evaluacion_modulo2.md, docs/informe_modulo2.md, docs/rubrica_modulo2.md, docs/prompt_log.md,
 docs/data_card.md, README.md, CONSTITUTION.md   # actualizaciones

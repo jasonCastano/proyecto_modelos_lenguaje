@@ -1,6 +1,6 @@
 # Data Model: Gatekeeper System One (Jev)
 
-**Feature**: `021-jev-router-gate` | **Fecha**: 2026-11-20
+**Feature**: `022-jev-router-gate` | **Fecha**: 2026-11-20
 
 Todas las entidades viven en memoria durante el turno; lo único que persiste es el bloque `jev` del registro del turno
 (`$MANUELITA_STATE_DIR/logs/turns.jsonl`) y los informes de evaluación en `docs/`.

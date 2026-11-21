@@ -110,6 +110,15 @@ describe("ContactRecordPanel", () => {
     );
   });
 
+  it("spec 021: marca ✂N en los turnos con frases descartadas", () => {
+    expect(
+      actsTrail([
+        { act: "smalltalk", bridged: false, reviewed: "show", discarded: 1 },
+        { act: "off_topic", bridged: true, reviewed: "retry", discarded: 0 },
+      ]),
+    ).toBe("charla ✂1 → fuera de tema ◆");
+  });
+
   it("spec 020: sin actos (modo de guiones) no hay línea «Actos»", () => {
     render(<ContactRecordPanel record={RECORD} />);
     expect(screen.queryByTestId("contact-acts")).not.toBeInTheDocument();

@@ -1,10 +1,10 @@
-# ADR 0025 — Gatekeeper System One (Jev) en el enrutador
+# ADR 0026 — Gatekeeper System One (Jev) en el enrutador
 
 - **Estado**: aceptada (gatekeeper desactivado por defecto)
 - **Fecha**: 2026-11-21
 - **Autor**: Roberto José Guerrero
 - **Relacionadas**: ADR 0016 (agente LangGraph y enrutador), ADR 0015 (alcance del Módulo 2, Jev opcional);
-  `specs/021-jev-router-gate/` (spec, plan, research R1–R14, contrato, tasks).
+  `specs/022-jev-router-gate/` (spec, plan, research R1–R14, contrato, tasks).
 
 ## Contexto
 

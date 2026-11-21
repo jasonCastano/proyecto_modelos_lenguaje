@@ -1,4 +1,4 @@
-"""Gatekeeper Jev contra el servicio real de TypeSafe (spec 021). Requiere ``TYPESAFE_API_KEY``.
+"""Gatekeeper Jev contra el servicio real de TypeSafe (spec 022). Requiere ``TYPESAFE_API_KEY``.
 
 Excluida por defecto y en CI (marcador ``network``)::
 

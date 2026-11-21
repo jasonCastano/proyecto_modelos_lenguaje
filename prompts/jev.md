@@ -2,7 +2,7 @@
 
 # Gatekeeper System One (Jev) — Valer-IA Caña
 
-Preguntas tipadas que el enrutador envía a Jev (spec 021). Jev no redacta: elige una opción, ubica el mensaje en una
+Preguntas tipadas que el enrutador envía a Jev (spec 022). Jev no redacta: elige una opción, ubica el mensaje en una
 escala o responde sí/no con una probabilidad. Cada sección `##` es una pregunta; la línea `instrucciones:` es la
 consigna y cada viñeta `` - `clave`: descripción `` es una opción (Choice) o un nivel, en orden (Score). El estado
 que recibe Jev tiene `mensaje` (último mensaje del visitante) e `historial` (preguntas previas del hilo), con los

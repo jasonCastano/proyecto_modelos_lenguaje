@@ -26,12 +26,14 @@ Universidad Autónoma de Occidente, 2026-2S.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
 
-> **Estado al 2026-11-21 (constitución v1.13.0)**: después de la sustentación del Módulo 2 se sumaron:
+> **Estado al 2026-11-21 (constitución v1.14.0)**: después de la sustentación del Módulo 2 se sumaron:
 > - **Voz** (spec 016) y **avatar con sincronización de labios** (spec 017), ambos locales.
 > - **Valer-IA Caña** (spec 018): asistente para visitantes con identidad opcional por correo y conducta por reglas.
 > - **Atención de call center** (spec 019) y **conversación natural guiada** (spec 020), con sus baterías reales
 >   (`docs/evaluacion_atencion.md`: todos los criterios en ambas variantes; `docs/evaluacion_conversacion.md`).
-> - **Gatekeeper System One Jev** (spec 021, ADR 0025): reglas → Jev → LLM en el enrutador. Evita el 73–77 % de
+> - **Entrega por frases revisadas** (spec 021, ADR 0025): el chat recibe la respuesta frase por frase, cada una
+>   revisada antes de mostrarse.
+> - **Gatekeeper System One Jev** (spec 022, ADR 0026): reglas → Jev → LLM en el enrutador. Evita el 73–77 % de
 >   las llamadas al LLM del enrutador y sube el agente a 97,7 % de respuestas en menos de 10 s, pero su exactitud
 >   de ruta (93,2 %) queda por debajo del clasificador LLM (97,7 %), así que está **desactivado por defecto**
 >   (`docs/evaluacion_jev.md`).
@@ -158,6 +160,8 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
     modelo según un plan del turno y la revisa antes de mostrarla (sin hechos externos, contactos ni promesas);
     acompaña la charla social, declina con sus palabras los datos externos, sugiere temas de Manuelita solo de
     vez en cuando y sin repetirlos, recuerda lo conversado en el hilo y responde en el idioma del visitante.
+  - **Respuesta por frases revisadas**: la respuesta aparece frase por frase mientras se genera, y cada frase se
+    revisa antes de mostrarse; nunca se retira texto ya visto y la voz empieza a leer con la primera frase.
   - **Avatar con sincronización de labios**: una asistente ilustrada junto al chat mueve la boca con el audio de
     la voz (análisis local en el navegador), parpadea y muestra cuándo está pensando; se puede ocultar.
   - **Gatekeeper System One (Jev)**, opcional: entre las reglas y el clasificador LLM, el enrutador puede
@@ -323,7 +327,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Valer-IA Caña (spec 018) | ✅ | Bienvenida, identidad opcional por huella del correo y conducta por reglas; ADR 0022 |
 | Atención de call center (spec 019) | ✅ | 36 casos reales: sin hechos externos, crisis con Línea 106 y 123, 0 registros con datos personales; `docs/evaluacion_atencion.md`, ADR 0023 |
 | Conversación guiada (spec 020) | ✅ | Respuestas redactadas y revisadas; similitud máxima en un hilo ≤ 0,5 frente a 1,0 con guiones; `docs/evaluacion_conversacion.md`, ADR 0024 |
-| Gatekeeper System One Jev (spec 021) | 🟡 | Implementado y probado: español 24/24, 73–77 % menos llamadas al LLM del enrutador, crisis 100 %; exactitud 93,2 % frente a 97,7 % ⇒ desactivado por defecto; `docs/evaluacion_jev.md`, ADR 0025 |
+| Gatekeeper System One Jev (spec 022) | 🟡 | Implementado y probado: español 24/24, 73–77 % menos llamadas al LLM del enrutador, crisis 100 %; exactitud 93,2 % frente a 97,7 % ⇒ desactivado por defecto; `docs/evaluacion_jev.md`, ADR 0026 |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
 | CI y Pull Requests | 🟡 | 72 PRs fusionados al 2026-11-21 (63 del equipo y 9 de Dependabot, anteriores a la v1.6.0); 13 PRs del equipo tienen aprobación formal y 17 alguna revisión. CI con `test`, `web` y `autoria` |
 | Protección de `main` | ✅ | PR con 1 aprobación y checks `test` y `web`; sin push directo ni force-push |
@@ -754,7 +758,10 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
   contacto. Se mide con
   `uv run python -m proyecto_modelos_lenguaje.agent converse --mode demo|real [--baseline] [--simulate]`
   (`docs/evaluacion_conversacion.md`); `agent care --conversation-mode guided|scripted` elige el modo.
-- Gatekeeper System One (spec 021, ADR 0025): el enrutador puede consultar a **Jev** de TypeSafe entre las reglas y
+- Entrega por frases (spec 021, ADR 0025): `[conversation] delivery = "sentences"` (por defecto) o `"complete"`
+  (spec 020). El flujo SSE envía eventos `sentence` ya revisados en lugar de tokens. Se mide con
+  `agent converse --baseline-delivery` (sección «Entrega» del informe).
+- Gatekeeper System One (spec 022, ADR 0026): el enrutador puede consultar a **Jev** de TypeSafe entre las reglas y
   el clasificador LLM (Choice para la ruta, Score para la molestia y Noul para la crisis). Está desactivado por
   defecto. Para probarlo, cada integrante pone su propia `TYPESAFE_API_KEY` en `.env` (https://console.typesafe.ai)
   y activa `[jev].enabled` en `config/agent.toml` o `MANUELITA_JEV_ENABLED=1`. Sin clave todo funciona igual.
@@ -1008,7 +1015,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - Qdrant corre en modo local embebido (búsqueda exacta, una sola instancia por carpeta); el índice HNSW
   real requiere un servidor (`QDRANT_URL`), que no se ha probado en vivo.
 - LangSmith requiere definir la clave en `.env`; sin ella, las trazas quedan en `turns.jsonl`.
-- El gatekeeper Jev (System One, spec 021) está implementado pero **desactivado por defecto**: acelera el
+- El gatekeeper Jev (System One, spec 022) está implementado pero **desactivado por defecto**: acelera el
   enrutador, pero su exactitud de ruta (93,2 %) queda por debajo de la del clasificador LLM (97,7 %). Si se activa,
   los mensajes enmascarados también se envían a TypeSafe (EE. UU.).
 - No están implementados el *time travel* de hilos ni el despliegue.
@@ -1080,8 +1087,10 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   [especificación 019](specs/019-callcenter-skills/spec.md)
 - [Decisión: conversación guiada](docs/decisions/0024-conversacion-guiada.md) ·
   [especificación 020](specs/020-natural-conversation/spec.md)
-- [Decisión: gatekeeper System One (Jev)](docs/decisions/0025-jev-gatekeeper.md) ·
-  [especificación 021](specs/021-jev-router-gate/spec.md)
+- [Decisión: entrega por frases](docs/decisions/0025-entrega-por-frases.md) ·
+  [especificación 021](specs/021-sentence-streaming/spec.md)
+- [Decisión: gatekeeper System One (Jev)](docs/decisions/0026-jev-gatekeeper.md) ·
+  [especificación 022](specs/022-jev-router-gate/spec.md)
 - [Rúbrica de sustentación del Módulo 2: cumplimiento y guion](docs/rubrica_modulo2.md)
 - [Política de memoria y privacidad](docs/memoria.md)
 - [Informe del Módulo 2](docs/informe_modulo2.md)
@@ -1136,7 +1145,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [x] Tag `v0.2.0-modulo2`.
 - [x] Rúbrica de sustentación: Qdrant, perfil en el Store, ruta mixta, streaming SSE y trazas (PR #57).
 - [ ] Ensayo de la sustentación del 14 de noviembre con los cinco casos en vivo.
-- [x] Opcional: gatekeeper Jev (System One), spec 021, desactivado por defecto.
+- [x] Opcional: gatekeeper Jev (System One), spec 022, desactivado por defecto.
 - [ ] Opcionales: Qdrant con servidor HNSW y *time travel* de hilos.
 
 ### Fase 3 — Módulo 3: productización y despliegue (40 %)

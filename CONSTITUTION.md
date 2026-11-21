@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.13.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-21
+**Versión**: 1.14.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-21
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -287,7 +287,11 @@ uv.lock
   son opcionales, con cuota, citadas y sin repetirse en el hilo. Las respuestas de crisis, datos de terceros,
   extracción de instrucciones, daño, insulto solo, identidad y perfil conservan su texto fijo.
   `[conversation] mode = "scripted"` restablece los guiones de la spec 019 como línea base.
-- Gatekeeper System One (spec 021, ADR 0025): el enrutador puede consultar a **Jev** (TypeSafe) entre las reglas y el
+- Entrega por frases revisadas (spec 021, ADR 0025): las respuestas redactadas por el modelo (conversación y
+  búsqueda) se entregan frase por frase, y cada frase DEBE pasar la revisión antes de mostrarse. Lo mostrado NO
+  DEBE retirarse ni reemplazarse: la respuesta final es la secuencia de frases entregadas, más las frases de cierre
+  que haga falta agregar. `[conversation] delivery = "complete"` restablece la entrega completa de la spec 020.
+- Gatekeeper System One (spec 022, ADR 0026): el enrutador puede consultar a **Jev** (TypeSafe) entre las reglas y el
   clasificador LLM, con **una** solicitud por turno y versión fija (`jev-1.14.0`). Las reglas siempre ganan; Jev
   decide la ruta solo si su probabilidad alcanza `[jev].route_threshold`. Cualquier fallo de Jev DEBE resolverse con
   el clasificador sin afectar la respuesta. Jev puede **sumar** una crisis a la detección determinista, nunca
@@ -600,7 +604,7 @@ exacto. El mapa de evidencias y el guion están en `docs/rubrica_modulo2.md`.
 14. **Informe y demo** actualizados; tag `v0.2.0-modulo2`.
 
 **Opcionales que suman**: puerta System One (Jev `Noul`/`Choice`) para screening/routing — implementada en la
-spec 021 (Choice, Score y Noul; desactivada por defecto, evidencia en `docs/evaluacion_jev.md`); exportar el oro
+spec 022 (Choice, Score y Noul; desactivada por defecto, evidencia en `docs/evaluacion_jev.md`); exportar el oro
 como bundle Open Knowledge Format (LLM Wiki).
 
 **Puerta de la Fase 2**:
@@ -983,4 +987,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.13.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-21
+**Versión**: 1.14.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-21

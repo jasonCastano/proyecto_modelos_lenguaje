@@ -5,7 +5,7 @@ description: "Tareas de implementación del gatekeeper System One (Jev) para el 
 
 # Tasks: Gatekeeper System One (Jev) para el enrutador de Valer-IA
 
-**Input**: Documentos de diseño en `specs/021-jev-router-gate/`
+**Input**: Documentos de diseño en `specs/022-jev-router-gate/`
 
 **Prerequisites**: [plan.md](./plan.md), [spec.md](./spec.md), [research.md](./research.md),
 [data-model.md](./data-model.md), [contracts/jev-gate.md](./contracts/jev-gate.md), [quickstart.md](./quickstart.md)
@@ -51,7 +51,7 @@ integración y se salta directo a T046–T048 (documentar como descartado, SC-00
 - [X] T011 Implementar en `src/proyecto_modelos_lenguaje/agent/jev.py` `FakeJevGate` determinista (ruta desde `router.heuristic_decision()` con probabilidad configurable, crisis desde `care.detect_crisis()`, molestia desde `care.detect_sentiment()`, y respuestas o fallos inyectables para las pruebas) y `build_gate(config, *, demo=False) -> JevGate | None` (devuelve `None` si `enabled` es falso o falta la clave y registra el motivo una sola vez; `FakeJevGate` en demo) (research R9, R12)
 - [X] T012 [P] Escribir pruebas del cliente en `tests/unit/test_jev.py` con `httpx.MockTransport`: cuerpo de la solicitud (modelo fijo, preguntas según `signals`), enmascaramiento de correo, teléfono y documento, recorte del historial, respuesta válida → `ok` con confianza y alternativa correctas, y cada fallo (`timeout`, red, 401, 402, 422, 429, 5xx, sin `answers`, opción desconocida, `refusal`, probabilidades que no suman 1) → `failed` con su `reason`; ninguna excepción escapa y la clave no aparece en `repr()` ni en los mensajes
 - [X] T013 Añadir el subcomando `jev` con `--validate [--json]` en `src/proyecto_modelos_lenguaje/agent/__main__.py`: envía `tests/fixtures/jev/validation_es.jsonl` al gatekeeper real y reporta exactitud, cobertura y exactitud por umbral (0,60; 0,70; 0,75; 0,80; 0,90) y matriz de confusión; sin clave termina con código 2 y el mensaje «añade TYPESAFE_API_KEY a .env» (contrato §5, FR-024)
-- [X] T014 **Puerta**: ejecutar `uv run python -m proyecto_modelos_lenguaje.agent jev --validate` con la clave real; confirmar la forma real de la API (ajustar `contracts/jev-gate.md` y T010 si difiere), la versión disponible (si 1.14 no está, fijar 1.13 y anotarlo) y el umbral; registrar el resultado en `specs/021-jev-router-gate/research.md` (R5, R10) y fijar `route_threshold` en `config/agent.toml`. Exactitud < 80 % ⇒ detener y pasar a T046–T048 (SC-009)
+- [X] T014 **Puerta**: ejecutar `uv run python -m proyecto_modelos_lenguaje.agent jev --validate` con la clave real; confirmar la forma real de la API (ajustar `contracts/jev-gate.md` y T010 si difiere), la versión disponible (si 1.14 no está, fijar 1.13 y anotarlo) y el umbral; registrar el resultado en `specs/022-jev-router-gate/research.md` (R5, R10) y fijar `route_threshold` en `config/agent.toml`. Exactitud < 80 % ⇒ detener y pasar a T046–T048 (SC-009)
 
 **Checkpoint**: gatekeeper validado en español, cliente probado offline y umbral congelado.
 
@@ -153,7 +153,7 @@ métricas, enlazado desde la evaluación y el informe del Módulo 2 (quickstart,
 
 **Purpose**: documentación, gobernanza y verificación final
 
-- [X] T039 [P] Escribir `docs/decisions/0025-jev-gatekeeper.md`: contexto (ítem 2.3 de la rúbrica, SC-007), decisión (TypeSafe directo, cliente `httpx`, versión fija, una solicitud por turno, crisis como unión), alternativas (SDK, OpenRouter, Vercel, Cloudflare), consecuencias, privacidad (segundo proveedor en EE. UU.) y resultados de T014 y T037 — Renumerado a 0025: el 0022 ya era `0022-valeria-asistente.md` (spec 018).
+- [X] T039 [P] Escribir `docs/decisions/0026-jev-gatekeeper.md`: contexto (ítem 2.3 de la rúbrica, SC-007), decisión (TypeSafe directo, cliente `httpx`, versión fija, una solicitud por turno, crisis como unión), alternativas (SDK, OpenRouter, Vercel, Cloudflare), consecuencias, privacidad (segundo proveedor en EE. UU.) y resultados de T014 y T037 — Renumerado a 0025: el 0022 ya era `0022-valeria-asistente.md` (spec 018).
 - [X] T040 [P] Actualizar `CONSTITUTION.md` en el mismo PR: §3.5 (proveedor auxiliar Jev, versión fija, desactivado por defecto), §3.6 (`prompts/jev.md`), estado de la Fase 2 (gatekeeper System One) y la versión semántica y fecha de enmienda
 - [X] T041 [P] Registrar `prompts/jev.md` (versión y hash) y el umbral elegido en `docs/prompt_log.md`
 - [X] T042 [P] Añadir a `docs/data_card.md` el envío de mensajes enmascarados a TypeSafe (EE. UU.) cuando el gatekeeper está activo
@@ -161,7 +161,7 @@ métricas, enlazado desde la evaluación y el informe del Módulo 2 (quickstart,
 - [X] T044 [P] Actualizar `README.md`: cómo activar Jev (`TYPESAFE_API_KEY`, `[jev].enabled`, `agent jev --check`), resultados de `docs/evaluacion_jev.md`, la lista de pendientes («gatekeeper Jev» deja de estar pendiente) y la limitación de privacidad; actualizar los textos de límites de `src/proyecto_modelos_lenguaje/showcase.py`, `web/src/data/showcase.ts` y `web/src/components/LimitsNote.tsx` que dicen que falta el gatekeeper
 - [X] T045 Ejecutar `make check` completo (ruff, pytest, vitest, build web) y todo el `quickstart.md`; confirmar que `git grep -n "sk-"` no muestra ninguna clave — Hecho el 2026-11-21: sin claves en archivos versionados.
 - [ ] T046 (solo si T014 < 80 %) Escribir `docs/evaluacion_jev.md` con los resultados de la validación en español y la conclusión «evaluado y descartado» — **No aplica**: T014 dio 24/24 (100 %).
-- [ ] T047 (solo si T014 < 80 %) Registrar en `docs/decisions/0025-jev-gatekeeper.md` la decisión de no integrar, con las cifras — **No aplica**: T014 dio 24/24 (100 %).
+- [ ] T047 (solo si T014 < 80 %) Registrar en `docs/decisions/0026-jev-gatekeeper.md` la decisión de no integrar, con las cifras — **No aplica**: T014 dio 24/24 (100 %).
 - [ ] T048 (solo si T014 < 80 %) Actualizar `docs/rubrica_modulo2.md` y `README.md` con el gatekeeper como evaluado y descartado, y dejar `enabled = false` — **No aplica**: T014 dio 24/24 (100 %).
 
 ---

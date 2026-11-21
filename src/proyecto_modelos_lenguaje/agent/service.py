@@ -52,11 +52,19 @@ FORGET_MESSAGE = "Olvida mis preferencias guardadas"
 STREAMED_NODES = frozenset({"answer", "model"})
 
 
-def stream_event(item: Any) -> dict[str, Any] | None:
-    """Traduce un elemento de ``graph.stream(..., subgraphs=True)`` a un evento del cliente."""
+def stream_event(item: Any, *, sentences: bool = False) -> dict[str, Any] | None:
+    """Traduce un elemento de ``graph.stream(..., subgraphs=True)`` a un evento del cliente.
+
+    Con ``sentences`` (spec 021) el texto llega solo como frases revisadas (evento ``sentence``,
+    modo ``custom``) y nunca como tokens crudos del modelo.
+    """
     if not isinstance(item, tuple) or len(item) != 3:
         return None
     namespace, kind, data = item
+    if kind == "custom" and isinstance(data, dict) and "sentence" in data:
+        return {"event": "sentence", "text": str(data["sentence"]), "index": int(data["index"])}
+    if kind == "messages" and sentences:
+        return None
     if kind == "updates" and namespace and isinstance(data, dict) and "tools" in data:
         # Dentro del agente (subgrafo): una herramienta terminó; se anuncia antes de responder.
         messages = (data["tools"] or {}).get("messages") or []
@@ -209,13 +217,19 @@ def build_deps(mode: Mode, config: AgentConfig, retriever: HybridRetriever | Non
 
     store = open_store(config)
     series = default_series()
-    # Spec 021: gatekeeper Jev solo si [jev].enabled; en demo, simulado y sin red.
+    # Spec 022: gatekeeper Jev solo si [jev].enabled; en demo, simulado y sin red.
     gate = build_gate(config.jev, demo=mode == "demo")
     if mode == "demo":
         return GraphDeps(config, retriever, store, DemoChatModel(), series=series, gate=gate)
     from ..llm import build_chat_model, load_llm_config
 
     model = build_chat_model(load_llm_config())
+    if config.conversation.guided:
+        # Spec 021 (R17): los puentes se buscan una vez por tema, en segundo plano.
+        from .bridges import warm_up
+        from .prompts import load_care
+
+        warm_up(load_care(), retriever, config.conversation)
     return GraphDeps(
         config,
         retriever,
@@ -396,11 +410,13 @@ class ChatService:
         config = self._config(thread_id, handler, variant=variant, mode=mode)
         yield {"event": "start", "thread_id": thread_id}
         try:
+            sentences = self.config.conversation.sentences and self.config.care.enabled
+            modes = ["updates", "messages", "custom"] if sentences else ["updates", "messages"]
             stream = self.graph(variant, mode).stream(
-                state, config, stream_mode=["updates", "messages"], subgraphs=True
+                state, config, stream_mode=modes, subgraphs=True
             )
             for item in stream:
-                event = stream_event(item)
+                event = stream_event(item, sentences=sentences)
                 if event is not None:
                     yield event
             outcome = self._log(self._current(thread_id), variant, mode)

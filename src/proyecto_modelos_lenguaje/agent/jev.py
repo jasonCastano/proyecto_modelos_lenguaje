@@ -1,4 +1,4 @@
-"""Gatekeeper System One (Jev de TypeSafe) para el enrutador (spec 021).
+"""Gatekeeper System One (Jev de TypeSafe) para el enrutador (spec 022).
 
 Jev no redacta: responde preguntas tipadas (Choice, Score, Noul) con probabilidades. El enrutador
 lo consulta **una vez por turno** entre las reglas y el clasificador LLM (``research.md`` R3, R4):

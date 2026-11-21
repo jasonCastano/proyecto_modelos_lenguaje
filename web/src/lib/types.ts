@@ -205,6 +205,8 @@ export interface ContactTurn {
   act: DialogueAct;
   bridged: boolean;
   reviewed: "show" | "retry" | "fallback";
+  /** Spec 021: frases descartadas en la revisión (solo el conteo). */
+  discarded?: number;
 }
 
 /** Spec 019: emoción del visitante en un turno. */
@@ -294,7 +296,7 @@ export interface ChatTurn {
   sources: string[];
   fallback: boolean;
   metrics: TurnMetrics;
-  /** Spec 021: traza del gatekeeper Jev del turno (null si está desactivado). */
+  /** Spec 022: traza del gatekeeper Jev del turno (null si está desactivado). */
   jev?: JevTrace | null;
 }
 
@@ -396,6 +398,8 @@ export type ChatStreamEvent =
   | { event: "retrieval"; fragments: number; structured_rows: number; tool_calls: number }
   | { event: "tool"; tools: string[] }
   | { event: "token"; text: string }
+  /** Spec 021: frase revisada, en orden; el texto trae su separador inicial. */
+  | { event: "sentence"; text: string; index: number }
   | { event: "done"; response: ChatResponse }
   | { event: "error"; error: { code: string; message: string } };
 

@@ -1,4 +1,4 @@
-"""Contrato del gatekeeper Jev (spec 021): configuración, prompts y secretos (SC-008)."""
+"""Contrato del gatekeeper Jev (spec 022): configuración, prompts y secretos (SC-008)."""
 
 from __future__ import annotations
 

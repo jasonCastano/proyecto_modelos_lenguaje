@@ -1,6 +1,6 @@
 # Feature Specification: Gatekeeper System One (Jev) para el enrutador de Valer-IA
 
-**Feature Branch**: `021-jev-router-gate`
+**Feature Branch**: `022-jev-router-gate`
 
 **Created**: 2026-11-20
 

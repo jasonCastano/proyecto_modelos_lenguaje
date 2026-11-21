@@ -9,7 +9,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Route = Literal["direct", "documental", "structured", "mixed", "out_of_scope", "clarify"]
-# Spec 021: "jev" = gatekeeper System One de TypeSafe.
+# Spec 022: "jev" = gatekeeper System One de TypeSafe.
 DecidedBy = Literal["rules", "llm", "demo", "jev"]
 WriteTool = Literal[
     "forget_memory", "save_preference", "save_profile", "export_conversation", "remember_client"
@@ -112,7 +112,7 @@ class TurnMetrics(BaseModel):
     tool_calls: int = Field(default=0, ge=0)
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
-    # Spec 021: consultas al gatekeeper Jev (no cuentan como model_calls, que mide el LLM).
+    # Spec 022: consultas al gatekeeper Jev (no cuentan como model_calls, que mide el LLM).
     gate_calls: int = Field(default=0, ge=0)
 
 
@@ -143,5 +143,5 @@ class Turn(BaseModel):
     sources: list[str] = Field(default_factory=list)
     fallback: bool = False
     metrics: TurnMetrics = Field(default_factory=TurnMetrics)
-    # Spec 021: traza del gatekeeper Jev (estado, ruta, confianza, latencia, costo); sin texto.
+    # Spec 022: traza del gatekeeper Jev (estado, ruta, confianza, latencia, costo); sin texto.
     jev: dict[str, Any] | None = None

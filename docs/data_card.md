@@ -323,6 +323,10 @@ El código del proyecto se distribuye bajo **MIT** (`LICENSE`, 2026).
 11. **Sin OCR, LLM, embeddings ni traducción** en la construcción del corpus.
 12. **Fechas**: la captura es del 27 al 30 de octubre de 2026; las fechas de publicación son variables y
     no siempre están disponibles.
+13. **Proveedores externos de la aplicación**: las preguntas de los visitantes se envían a DeepSeek (modelo de
+    lenguaje) y, si el gatekeeper Jev está activo (`[jev].enabled`, spec 022), a TypeSafe en EE. UU. A Jev solo
+    llegan el último mensaje y hasta tres preguntas previas, con correos, teléfonos y documentos enmascarados; el
+    corpus no se envía. Jev está desactivado por defecto.
 
 ---
 
@@ -366,6 +370,7 @@ uv sync
 | 1.0 | 2026-10-30 | Ficha inicial con el corpus de referencia: 557 activos, 404 canónicos, 3.810 fragmentos, 15.211 unidades y 24/24 ítems |
 | 1.1 | 2026-10-30 | Bronce, plata y oro versionados en Git LFS; cuarentena y cachés excluidos |
 | 1.2 | 2026-11-13 | Cuarentena purgada (corrida `2026-10-curation-01`): 26.347 artefactos y 8,93 GB eliminados; el catálogo los marca `purged` |
+| 1.3 | 2026-11-21 | Limitación 13: envío de mensajes enmascarados al gatekeeper Jev de TypeSafe cuando está activo (spec 022) |
 
 ---
 

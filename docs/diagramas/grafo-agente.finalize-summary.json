@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\grafo-agente.json",
-    "sha256": "969b0da72a93796020bc36f55bb838e9d9ce6f090fe62df92f623a0d0ce0539c",
-    "bytes": 6846
+    "sha256": "cb23ab4d4b7578895b9dcc99198701be9ac27a950122792dde61401c70a3dfb9",
+    "bytes": 6582
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\grafo-agente.html",
-    "sha256": "88f8a9ab8e7086db217bddf93a623c8b6805ea7f2d099685827aa98db27da38e",
-    "bytes": 849414
+    "sha256": "40eb59137682fe2f32514c693882b593d73b28d469523f74d8e4af4553418330",
+    "bytes": 848965
   },
   "gates": {
     "validate": "pass",
@@ -28,22 +28,12 @@
     "truncated": false
   },
   "evidence": {
-    "receipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\grafo-agente-final11\\grafo-agente.finalize.json",
-    "summaryReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\grafo-agente-final11\\grafo-agente.finalize-summary.json",
-    "browserCheckReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\grafo-agente-final11\\grafo-agente.browser-check.json"
-  },
-  "update": {
-    "status": "current",
-    "installedVersion": "3.2.0",
-    "availableVersion": "3.2.0",
-    "releaseNotes": null,
-    "checkedAt": "2026-11-14T04:14:03.185Z",
-    "source": "cache",
-    "noticeRequired": false,
-    "noticeText": null
+    "receipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\grafo-agente-jev2\\grafo-agente.finalize.json",
+    "summaryReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\grafo-agente-jev2\\grafo-agente.finalize-summary.json",
+    "browserCheckReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\grafo-agente-jev2\\grafo-agente.browser-check.json"
   },
   "visualReview": "not-requested",
-  "durationMs": 32514,
+  "durationMs": 78955,
   "browserCheck": {
     "requested": true,
     "ran": true

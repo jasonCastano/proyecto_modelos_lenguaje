@@ -142,6 +142,23 @@ Fuente: `docs/evaluacion_modulo2.md` (sección «Enrutador»), `docs/evaluacion_
 Único error: r32 «¿Cuánto bioetanol produce allá al año?», etiquetada documental y enviada a estructurada; si la
 tabla no tiene el dato, la ruta cae a documental y lo registra (`fallback_route`).
 
+**Gatekeeper System One (Jev, spec 022, ADR 0026).** Entre las reglas y el clasificador, el enrutador puede consultar
+a Jev (TypeSafe): una solicitud por turno con cuatro preguntas tipadas (ruta, motivo de fuera de alcance, molestia y
+crisis). Fuente: `docs/evaluacion_jev.md`, ejecución del 2026-11-21 sobre las 44 consultas actuales:
+
+| Métrica | Sin Jev | Con Jev |
+|---|---:|---:|
+| Exactitud de ruta | 97,7 % (43/44) | 93,2 % (41/44) |
+| Llamadas al LLM del enrutador por consulta | 0,77 | 0,18–0,20 |
+| Latencia media de enrutamiento | 1,3 s | 0,5 s |
+| Agente: respuestas < 10 s / p95 (extremo a extremo) | 90,9 % / 15,6 s | 97,7 % / 10,6 s |
+| Cadena: respuestas < 10 s / p95 (extremo a extremo) | 100 % / 7,8 s | 97,7 % / 10,1 s |
+
+Validación previa en español con 24 consultas nuevas: 24/24. Las crisis se detectan al 100 % con y sin Jev (Jev solo
+puede sumar crisis). Los tres errores son preguntas documentales de «¿dónde?», «¿desde cuándo?» y «¿cuánto … al
+año?» que Jev envía a `structured` (la última también la falla el LLM). Por no cumplir la tolerancia de exactitud de
+su spec (−2 puntos), Jev queda **desactivado por defecto**.
+
 ### 5.3 Cadena vs. agente (US1, SC-003, SC-006, SC-007)
 
 Fuente: `docs/evaluacion_modulo2.md` (sección «Cadena vs. agente»), `docs/evaluacion_variantes.json`; ejecución
@@ -223,13 +240,17 @@ respuesta sobre sostenibilidad llegó en viñetas con citas en ambas variantes, 
 7. **Ragas** no instala en Python 3.14; se reemplazó por un juez propio con sus definiciones.
 8. **Calificación humana** de la muestra de 20 respuestas (control del juez) preparada y pendiente de
    completar (`module2_grading`).
+9. **Gatekeeper Jev** (spec 022): exactitud de ruta 93,2 % frente a 97,7 % sin él; mejora la latencia (agente
+   97,7 % < 10 s) pero queda desactivado por defecto. Mejorarlo exige un conjunto de validación más difícil, nunca
+   ajustar con las 44 consultas de evaluación. Añade un proveedor externo en EE. UU. cuando se activa.
 
 ## 7. Referencias a archivos
 
 - Especificación, plan y tareas: `specs/014-rag-agent-memory-router/`
 - Decisiones: `docs/decisions/0014-semantic-rag.md`, `docs/decisions/0015-module2-scope.md`,
   `docs/decisions/0016-rag-agent-langgraph.md`
-- Evaluación: `docs/evaluacion_modulo2.md`, `docs/evaluacion_enrutador.json`, `docs/evaluacion_variantes.json`
+- Evaluación: `docs/evaluacion_modulo2.md`, `docs/evaluacion_enrutador.json`, `docs/evaluacion_variantes.json`,
+  `docs/evaluacion_jev.{md,json}` (gatekeeper Jev, spec 022, ADR 0026)
 - Prompts y ejecuciones: `prompts/`, `docs/prompt_log.md`
 - Memoria y privacidad: `docs/memoria.md`
 - Arquitectura: `docs/arquitectura.html` (fuente `docs/arquitectura.json`)

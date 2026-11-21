@@ -1,0 +1,513 @@
+{
+  "meta": {
+    "run_id": "jev-real-2026-11-21b",
+    "created_at": "2026-11-21T09:38:00+00:00",
+    "model": "jev-1.14.0",
+    "route_threshold": 0.75,
+    "crisis_threshold": 0.5,
+    "signals": [
+      "route",
+      "scope",
+      "annoyance",
+      "crisis"
+    ],
+    "commit": "8f9d0b4"
+  },
+  "validation": {
+    "total": 24,
+    "answered": 24,
+    "correct": 24,
+    "accuracy": 1.0,
+    "meets_minimum": true,
+    "failures": {},
+    "confusion": {
+      "direct": {
+        "direct": 4
+      },
+      "documental": {
+        "documental": 4
+      },
+      "structured": {
+        "structured": 4
+      },
+      "mixed": {
+        "mixed": 4
+      },
+      "out_of_scope": {
+        "out_of_scope": 4
+      },
+      "clarify": {
+        "clarify": 4
+      }
+    },
+    "by_threshold": [
+      {
+        "threshold": 0.6,
+        "coverage": 1.0,
+        "accuracy": 1.0,
+        "decided": 24
+      },
+      {
+        "threshold": 0.7,
+        "coverage": 1.0,
+        "accuracy": 1.0,
+        "decided": 24
+      },
+      {
+        "threshold": 0.75,
+        "coverage": 1.0,
+        "accuracy": 1.0,
+        "decided": 24
+      },
+      {
+        "threshold": 0.8,
+        "coverage": 1.0,
+        "accuracy": 1.0,
+        "decided": 24
+      },
+      {
+        "threshold": 0.9,
+        "coverage": 0.9167,
+        "accuracy": 1.0,
+        "decided": 22
+      }
+    ],
+    "latency_ms_mean": 203.9,
+    "latency_ms_p95": 222.0,
+    "cost": 0.00125252,
+    "model": "jev-1.14.0",
+    "rows": [
+      {
+        "query_id": "v01",
+        "expected": "direct",
+        "predicted": "direct",
+        "confidence": 1.0,
+        "alternative": null,
+        "correct": true,
+        "latency_ms": 276
+      },
+      {
+        "query_id": "v02",
+        "expected": "direct",
+        "predicted": "direct",
+        "confidence": 0.99,
+        "alternative": "documental",
+        "correct": true,
+        "latency_ms": 203
+      },
+      {
+        "query_id": "v03",
+        "expected": "direct",
+        "predicted": "direct",
+        "confidence": 0.97,
+        "alternative": "documental",
+        "correct": true,
+        "latency_ms": 197
+      },
+      {
+        "query_id": "v04",
+        "expected": "direct",
+        "predicted": "direct",
+        "confidence": 1.0,
+        "alternative": null,
+        "correct": true,
+        "latency_ms": 194
+      },
+      {
+        "query_id": "v05",
+        "expected": "documental",
+        "predicted": "documental",
+        "confidence": 0.96,
+        "alternative": "structured",
+        "correct": true,
+        "latency_ms": 183
+      },
+      {
+        "query_id": "v06",
+        "expected": "documental",
+        "predicted": "documental",
+        "confidence": 0.99,
+        "alternative": "clarify",
+        "correct": true,
+        "latency_ms": 204
+      },
+      {
+        "query_id": "v07",
+        "expected": "documental",
+        "predicted": "documental",
+        "confidence": 0.98,
+        "alternative": "out_of_scope",
+        "correct": true,
+        "latency_ms": 216
+      },
+      {
+        "query_id": "v08",
+        "expected": "documental",
+        "predicted": "documental",
+        "confidence": 1.0,
+        "alternative": null,
+        "correct": true,
+        "latency_ms": 207
+      },
+      {
+        "query_id": "v09",
+        "expected": "structured",
+        "predicted": "structured",
+        "confidence": 0.98,
+        "alternative": "documental",
+        "correct": true,
+        "latency_ms": 205
+      },
+      {
+        "query_id": "v10",
+        "expected": "structured",
+        "predicted": "structured",
+        "confidence": 1.0,
+        "alternative": null,
+        "correct": true,
+        "latency_ms": 182
+      },
+      {
+        "query_id": "v11",
+        "expected": "structured",
+        "predicted": "structured",
+        "confidence": 0.99,
+        "alternative": "documental",
+        "correct": true,
+        "latency_ms": 181
+      },
+      {
+        "query_id": "v12",
+        "expected": "structured",
+        "predicted": "structured",
+        "confidence": 0.98,
+        "alternative": "clarify",
+        "correct": true,
+        "latency_ms": 195
+      },
+      {
+        "query_id": "v13",
+        "expected": "mixed",
+        "predicted": "mixed",
+        "confidence": 0.97,
+        "alternative": "clarify",
+        "correct": true,
+        "latency_ms": 193
+      },
+      {
+        "query_id": "v14",
+        "expected": "mixed",
+        "predicted": "mixed",
+        "confidence": 0.85,
+        "alternative": "structured",
+        "correct": true,
+        "latency_ms": 219
+      },
+      {
+        "query_id": "v15",
+        "expected": "mixed",
+        "predicted": "mixed",
+        "confidence": 0.87,
+        "alternative": "clarify",
+        "correct": true,
+        "latency_ms": 186
+      },
+      {
+        "query_id": "v16",
+        "expected": "mixed",
+        "predicted": "mixed",
+        "confidence": 0.97,
+        "alternative": "clarify",
+        "correct": true,
+        "latency_ms": 208
+      },
+      {
+        "query_id": "v17",
+        "expected": "out_of_scope",
+        "predicted": "out_of_scope",
+        "confidence": 0.96,
+        "alternative": "clarify",
+        "correct": true,
+        "latency_ms": 220
+      },
+      {
+        "query_id": "v18",
+        "expected": "out_of_scope",
+        "predicted": "out_of_scope",
+        "confidence": 1.0,
+        "alternative": null,
+        "correct": true,
+        "latency_ms": 222
+      },
+      {
+        "query_id": "v19",
+        "expected": "out_of_scope",
+        "predicted": "out_of_scope",
+        "confidence": 0.98,
+        "alternative": "structured",
+        "correct": true,
+        "latency_ms": 211
+      },
+      {
+        "query_id": "v20",
+        "expected": "out_of_scope",
+        "predicted": "out_of_scope",
+        "confidence": 1.0,
+        "alternative": null,
+        "correct": true,
+        "latency_ms": 201
+      },
+      {
+        "query_id": "v21",
+        "expected": "clarify",
+        "predicted": "clarify",
+        "confidence": 1.0,
+        "alternative": null,
+        "correct": true,
+        "latency_ms": 194
+      },
+      {
+        "query_id": "v22",
+        "expected": "clarify",
+        "predicted": "clarify",
+        "confidence": 0.98,
+        "alternative": "documental",
+        "correct": true,
+        "latency_ms": 196
+      },
+      {
+        "query_id": "v23",
+        "expected": "clarify",
+        "predicted": "clarify",
+        "confidence": 1.0,
+        "alternative": null,
+        "correct": true,
+        "latency_ms": 206
+      },
+      {
+        "query_id": "v24",
+        "expected": "clarify",
+        "predicted": "clarify",
+        "confidence": 1.0,
+        "alternative": null,
+        "correct": true,
+        "latency_ms": 194
+      }
+    ]
+  },
+  "router": {
+    "baseline": {
+      "run_id": "jev-real-2026-11-21b",
+      "mode": "real",
+      "cases": 44,
+      "correct": 43,
+      "accuracy": 0.9773,
+      "model_calls": 34,
+      "latency_ms_mean": 1321.1,
+      "no_search": {
+        "ok": 10,
+        "total": 10
+      },
+      "latency_ms_p95": 3072.1,
+      "gate": {
+        "calls": 0,
+        "decided": 0,
+        "decided_share": 0.0,
+        "failed": 0,
+        "latency_ms_mean": 0.0,
+        "cost": 0.0
+      },
+      "confusion": {
+        "direct": {
+          "direct": 6
+        },
+        "documental": {
+          "documental": 17,
+          "structured": 1
+        },
+        "structured": {
+          "structured": 9
+        },
+        "mixed": {
+          "mixed": 5
+        },
+        "out_of_scope": {
+          "out_of_scope": 4
+        },
+        "clarify": {
+          "clarify": 2
+        }
+      },
+      "misses": [
+        {
+          "query_id": "r32",
+          "question": "¿Cuánto bioetanol produce allá al año?",
+          "expected": "documental",
+          "predicted": "structured",
+          "confidence": 0.9,
+          "decided_by": "llm",
+          "reason": "pide la cifra anual de producción de bioetanol en Brasil, dato tabulable"
+        }
+      ]
+    },
+    "jev": {
+      "run_id": "jev-real-2026-11-21b",
+      "mode": "real",
+      "cases": 44,
+      "correct": 41,
+      "accuracy": 0.9318,
+      "model_calls": 8,
+      "latency_ms_mean": 500.0,
+      "no_search": {
+        "ok": 10,
+        "total": 10
+      },
+      "latency_ms_p95": 2226.2,
+      "gate": {
+        "calls": 38,
+        "decided": 26,
+        "decided_share": 0.5909,
+        "failed": 0,
+        "latency_ms_mean": 200.7,
+        "cost": 0.00198752
+      },
+      "confusion": {
+        "direct": {
+          "direct": 6
+        },
+        "documental": {
+          "documental": 15,
+          "structured": 3
+        },
+        "structured": {
+          "structured": 9
+        },
+        "mixed": {
+          "mixed": 5
+        },
+        "out_of_scope": {
+          "out_of_scope": 4
+        },
+        "clarify": {
+          "clarify": 2
+        }
+      },
+      "misses": [
+        {
+          "query_id": "r10",
+          "question": "¿En qué región de Chile cultiva mejillones la empresa?",
+          "expected": "documental",
+          "predicted": "structured",
+          "confidence": 0.77,
+          "decided_by": "jev",
+          "reason": "gatekeeper Jev (0.77)"
+        },
+        {
+          "query_id": "r32",
+          "question": "¿Cuánto bioetanol produce allá al año?",
+          "expected": "documental",
+          "predicted": "structured",
+          "confidence": 0.98,
+          "decided_by": "jev",
+          "reason": "gatekeeper Jev (0.98)"
+        },
+        {
+          "query_id": "r36",
+          "question": "¿Desde cuándo vende esa energía?",
+          "expected": "documental",
+          "predicted": "structured",
+          "confidence": 0.8,
+          "decided_by": "jev",
+          "reason": "gatekeeper Jev (0.80)"
+        }
+      ]
+    }
+  },
+  "care": {
+    "variant": "chain",
+    "baseline": {
+      "cases": 36,
+      "passed": 32,
+      "crisis": 1.0,
+      "cordial": 1.0,
+      "decided_by_jev": 0,
+      "gate_calls": 0,
+      "gate_failed": 0,
+      "gate_cost": 0,
+      "first_word_ms": 3028.3,
+      "failed_cases": [
+        "a06 (rules)",
+        "l03 (llm)",
+        "m01 (llm)",
+        "m02 (llm)"
+      ]
+    },
+    "jev": {
+      "cases": 36,
+      "passed": 31,
+      "crisis": 1.0,
+      "cordial": 1.0,
+      "decided_by_jev": 9,
+      "gate_calls": 36,
+      "gate_failed": 0,
+      "gate_cost": 0.00187085,
+      "first_word_ms": 2971.4,
+      "failed_cases": [
+        "e05 (rules)",
+        "l04 (jev)",
+        "m01 (jev)",
+        "m02 (jev)",
+        "m03 (jev)"
+      ]
+    }
+  },
+  "cost_usd": 0.005111,
+  "end_to_end": {
+    "baseline": {
+      "run_id": "variants-real-sinjev-2026-11-21",
+      "variants": {
+        "chain": {
+          "latency_ms_mean": 3960,
+          "latency_ms_p95": 7817,
+          "under_10s": 1.0,
+          "model_calls_mean": 1.75,
+          "tokens_mean": 5010
+        },
+        "agent": {
+          "latency_ms_mean": 5700,
+          "latency_ms_p95": 15601,
+          "under_10s": 0.9090909090909091,
+          "model_calls_mean": 2.73,
+          "tokens_mean": 11394
+        }
+      }
+    },
+    "jev": {
+      "run_id": "variants-real-jev-2026-11-21",
+      "variants": {
+        "chain": {
+          "latency_ms_mean": 3498,
+          "latency_ms_p95": 10140,
+          "under_10s": 0.9772727272727273,
+          "model_calls_mean": 1.2,
+          "tokens_mean": 3880
+        },
+        "agent": {
+          "latency_ms_mean": 4674,
+          "latency_ms_p95": 10597,
+          "under_10s": 0.9772727272727273,
+          "model_calls_mean": 2.05,
+          "tokens_mean": 9681
+        }
+      }
+    }
+  },
+  "previous_runs": [
+    {
+      "run_id": "jev-real-2026-11-21",
+      "accuracy": 0.9318,
+      "decided_share": 0.5682,
+      "saved": 0.7352941176470589
+    }
+  ]
+}

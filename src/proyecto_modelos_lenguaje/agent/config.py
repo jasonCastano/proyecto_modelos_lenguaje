@@ -86,6 +86,30 @@ class ConversationConfig:
 CONVERSATION_MODES = ("guided", "scripted")
 DELIVERY_MODES = ("sentences", "complete")
 
+JEV_SIGNALS = ("route", "scope", "annoyance", "crisis")
+JEV_ENABLED_ENV = "MANUELITA_JEV_ENABLED"
+
+
+@dataclass(frozen=True, slots=True)
+class JevConfig:
+    """Gatekeeper System One de TypeSafe (spec 022, ``data-model.md``).
+
+    La clave (``TYPESAFE_API_KEY``) no forma parte de la configuración: se lee del entorno al
+    construir el cliente y nunca se serializa (FR-019).
+    """
+
+    enabled: bool = False
+    base_url: str = "https://api.typesafe.ai"
+    model: str = "jev-1.14.0"
+    route_threshold: float = 0.75
+    crisis_threshold: float = 0.5
+    timeout_seconds: float = 2.0
+    max_input_chars: int = 4000
+    signals: tuple[str, ...] = JEV_SIGNALS
+
+    def uses(self, signal: str) -> bool:
+        return signal in self.signals
+
 
 @dataclass(frozen=True, slots=True)
 class AgentConfig:
@@ -97,6 +121,7 @@ class AgentConfig:
     source: Path
     care: CareConfig = CareConfig()
     conversation: ConversationConfig = ConversationConfig()
+    jev: JevConfig = JevConfig()
 
 
 def _section(document: dict[str, Any], key: str, source: Path) -> dict[str, Any]:
@@ -186,6 +211,7 @@ def load_agent_config(
         source=source,
         care=_care_config(document.get("care")),
         conversation=_conversation_config(document.get("conversation")),
+        jev=jev_config(document.get("jev")),
     )
 
 
@@ -258,6 +284,66 @@ def _conversation_config(section: object) -> ConversationConfig:
         stream_idle_timeout_seconds=_bounded(
             section, "stream_idle_timeout_seconds", 6.0, 1.0, 30.0
         ),
+    )
+
+
+def _jev_number(
+    section: dict[str, Any], key: str, default: float, low: float, high: float
+) -> float:
+    value = section.get(key, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise AgentConfigError(f"jev.{key} debe ser un número.")
+    if not low <= value <= high:
+        raise AgentConfigError(f"jev.{key} debe estar en [{low}, {high}].")
+    return float(value)
+
+
+def jev_config(section: object, *, environ: dict[str, str] | None = None) -> JevConfig:
+    """Sección ``[jev]`` opcional (spec 022); ``MANUELITA_JEV_ENABLED`` sobrescribe ``enabled``."""
+    env = os.environ if environ is None else environ
+    defaults = JevConfig()
+    if section is None:
+        section = {}
+    if not isinstance(section, dict):
+        raise AgentConfigError("[jev] debe ser una tabla.")
+    enabled = section.get("enabled", False)
+    if not isinstance(enabled, bool):
+        raise AgentConfigError("jev.enabled debe ser booleano.")
+    override = env.get(JEV_ENABLED_ENV, "").strip().lower()
+    if override in {"1", "true", "si", "sí", "yes", "on"}:
+        enabled = True
+    elif override in {"0", "false", "no", "off"}:
+        enabled = False
+    base_url = str(section.get("base_url", defaults.base_url)).strip()
+    if not base_url.startswith("https://") or base_url.endswith("/"):
+        raise AgentConfigError("jev.base_url debe empezar por https:// y no terminar en «/».")
+    model = section.get("model", defaults.model)
+    if not isinstance(model, str) or not model.strip():
+        raise AgentConfigError("jev.model debe ser un texto no vacío.")
+    if model.strip().lower().endswith("latest"):
+        raise AgentConfigError("jev.model debe ser una versión fija, no un alias «latest».")
+    max_chars = section.get("max_input_chars", defaults.max_input_chars)
+    if isinstance(max_chars, bool) or not isinstance(max_chars, int):
+        raise AgentConfigError("jev.max_input_chars debe ser un entero.")
+    if not 500 <= max_chars <= 30_000:
+        raise AgentConfigError("jev.max_input_chars debe estar en [500, 30000].")
+    signals = section.get("signals", list(JEV_SIGNALS))
+    if not isinstance(signals, list) or not all(isinstance(s, str) for s in signals):
+        raise AgentConfigError("jev.signals debe ser una lista de textos.")
+    unknown = sorted(set(signals) - set(JEV_SIGNALS))
+    if unknown:
+        raise AgentConfigError(f"jev.signals tiene señales desconocidas: {', '.join(unknown)}.")
+    if "route" not in signals:
+        raise AgentConfigError("jev.signals debe incluir «route».")
+    return JevConfig(
+        enabled=enabled,
+        base_url=base_url,
+        model=model.strip(),
+        route_threshold=_jev_number(section, "route_threshold", 0.75, 0.5, 1.0),
+        crisis_threshold=_jev_number(section, "crisis_threshold", 0.5, 0.1, 0.9),
+        timeout_seconds=_jev_number(section, "timeout_seconds", 2.0, 0.2, 10.0),
+        max_input_chars=max_chars,
+        signals=tuple(s for s in JEV_SIGNALS if s in signals),
     )
 
 

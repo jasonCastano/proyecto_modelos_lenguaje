@@ -213,10 +213,14 @@ def open_store(config: AgentConfig) -> StructuredStore | None:
 
 def build_deps(mode: Mode, config: AgentConfig, retriever: HybridRetriever | None) -> GraphDeps:
     """Dependencias por modo: demo determinista sin red, o DeepSeek con la configuración del LLM."""
+    from .jev import build_gate
+
     store = open_store(config)
     series = default_series()
+    # Spec 022: gatekeeper Jev solo si [jev].enabled; en demo, simulado y sin red.
+    gate = build_gate(config.jev, demo=mode == "demo")
     if mode == "demo":
-        return GraphDeps(config, retriever, store, DemoChatModel(), series=series)
+        return GraphDeps(config, retriever, store, DemoChatModel(), series=series, gate=gate)
     from ..llm import build_chat_model, load_llm_config
 
     model = build_chat_model(load_llm_config())
@@ -227,7 +231,14 @@ def build_deps(mode: Mode, config: AgentConfig, retriever: HybridRetriever | Non
 
         warm_up(load_care(), retriever, config.conversation)
     return GraphDeps(
-        config, retriever, store, model, router_model=model, summary_model=model, series=series
+        config,
+        retriever,
+        store,
+        model,
+        router_model=model,
+        summary_model=model,
+        series=series,
+        gate=gate,
     )
 
 

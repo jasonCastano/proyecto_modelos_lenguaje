@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "65e80cd800c8509024ff2932af26771f98cd1afed3f321e1d516e83ac8e4ef25",
-    "bytes": 11807
+    "sha256": "192301e9eb8a076498804f0d6bd3e8c917a411a21814441baa7d0c505caec5cc",
+    "bytes": 11953
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "8f92e693b43c9f0d52bad041bce4cb83f7af46f9d0828607879b05754583e43f",
-    "bytes": 862750
+    "sha256": "dd326d613f5af70dd5ff9fead1e847c436e852bc28cb85042a42b6e6a320a5cd",
+    "bytes": 863021
   },
   "gates": {
     "validate": "pass",
@@ -28,12 +28,12 @@
     "truncated": false
   },
   "evidence": {
-    "receipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize.json",
-    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize-summary.json",
-    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+    "receipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\arquitectura-jev2\\arquitectura.finalize.json",
+    "summaryReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\arquitectura-jev2\\arquitectura.finalize-summary.json",
+    "browserCheckReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\arquitectura-jev2\\arquitectura.browser-check.json"
   },
   "visualReview": "not-requested",
-  "durationMs": 48885,
+  "durationMs": 79715,
   "browserCheck": {
     "requested": true,
     "ran": true

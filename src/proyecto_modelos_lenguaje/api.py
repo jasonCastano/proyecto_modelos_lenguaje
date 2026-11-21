@@ -508,6 +508,12 @@ def observability(mode: Literal["demo", "real"] | None = None) -> ObservabilityS
         voice_info = {"available": voice.available, "state": voice.state, "voice": voice.voice}
     except Exception:
         voice_info = {"available": False, "state": "unavailable", "voice": None}
+    try:
+        from .agent.jev import gate_status_info
+
+        gatekeeper = gate_status_info(load_agent_config().jev, demo=mode == "demo")
+    except Exception:
+        gatekeeper = {"state": "disabled"}
     return ObservabilityStatus(
         langsmith=bool(status.get("langsmith")),
         project=status.get("project"),
@@ -515,6 +521,7 @@ def observability(mode: Literal["demo", "real"] | None = None) -> ObservabilityS
         vector_store=vector_store,
         adversarial_corpus=adversarial_enabled(),
         voice=voice_info,
+        gatekeeper=gatekeeper,
     )
 
 

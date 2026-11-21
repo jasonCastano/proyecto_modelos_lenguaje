@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 
 from fastapi.testclient import TestClient
@@ -100,6 +101,22 @@ def test_adversarial_corpus_flag_is_off_by_default(monkeypatch, tmp_path) -> Non
     # Assert
     assert health["adversarial_corpus"] is False
     assert observability["adversarial_corpus"] is False
+
+
+def test_observability_reports_the_gatekeeper_without_secrets(monkeypatch, tmp_path) -> None:
+    # Arrange
+    monkeypatch.setenv("MANUELITA_STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.setenv("TYPESAFE_API_KEY", "sk-secreta-123456789")
+    monkeypatch.delenv("MANUELITA_JEV_ENABLED", raising=False)
+    # Act
+    default = client.get("/api/observability").json()
+    monkeypatch.setenv("MANUELITA_JEV_ENABLED", "1")
+    active = client.get("/api/observability?mode=demo").json()
+    # Assert
+    assert default["gatekeeper"]["state"] == "disabled"
+    assert active["gatekeeper"]["state"] == "simulated"
+    assert active["gatekeeper"]["model"] == "jev-1.14.0"
+    assert "sk-secreta" not in json.dumps(active)
 
 
 def test_adversarial_corpus_flag_reports_the_server_option(monkeypatch, tmp_path) -> None:

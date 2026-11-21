@@ -63,10 +63,33 @@ const ROUTE_LABEL: Record<ChatRouteName, string> = {
   clarify: "Aclaración",
 };
 
+/** Spec 022: resumen de lo que hizo el gatekeeper Jev en el turno (vista técnica). */
+export function jevSummary(jev: ChatTurn["jev"]): string | null {
+  if (!jev || jev.status === "skipped") return null;
+  if (jev.status === "failed") return `Jev no disponible (${jev.reason ?? "error"}) → decidió el LLM`;
+  const confidence = (jev.confidence ?? 0).toLocaleString("es-CO", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const route = jev.route ? ROUTE_LABEL[jev.route] : "—";
+  const latency = jev.latency_ms !== undefined ? ` · ${jev.latency_ms} ms` : "";
+  return jev.accepted
+    ? `Jev: ${route} ${confidence}${latency}`
+    : `Jev sugirió ${route} (${confidence})${latency} → decidió el LLM`;
+}
+
+const GATEKEEPER_LABEL: Record<string, string> = {
+  active: "activo",
+  simulated: "simulado (demo)",
+  no_key: "sin clave (desactivado)",
+  disabled: "desactivado",
+};
+
 const DECIDED_LABEL: Record<ChatRoute["decided_by"], string> = {
   rules: "reglas",
   llm: "LLM",
   demo: "heurística demo",
+  jev: "Jev (System One)",
 };
 
 /** Mensajes de los casos de la rúbrica del Módulo 2 (docs/rubrica_modulo2.md). */
@@ -306,6 +329,12 @@ export function ChatTurnCard({
                 maximumFractionDigits: 1,
               })} s`
             : ""}
+          {jevSummary(turn.jev) ? (
+            <span data-kind={turn.jev?.status} data-testid="turn-jev">
+              {" "}
+              · {jevSummary(turn.jev)}
+            </span>
+          ) : null}
         </p>
         ) : null}
         {onListen && turn.answer ? (
@@ -685,6 +714,23 @@ export function ChatView({ mode }: { mode: Mode }) {
             {observability.vector_store[mode].startsWith("Respaldo")
               ? "⚠ Respaldo numpy (sin Qdrant)"
               : observability.vector_store[mode].replace("Búsqueda vectorial en ", "Vectores: ")}
+          </span>
+        ) : null}
+        {technical && observability?.gatekeeper?.state ? (
+          <span
+            className="fragments-badge"
+            data-kind={observability.gatekeeper.state === "no_key" ? "warning" : "ok"}
+            data-testid="gatekeeper"
+            title={
+              observability.gatekeeper.model
+                ? `${observability.gatekeeper.model} · umbral ${observability.gatekeeper.route_threshold ?? "—"}`
+                : undefined
+            }
+          >
+            Jev: {GATEKEEPER_LABEL[observability.gatekeeper.state] ?? observability.gatekeeper.state}
+            {observability.gatekeeper.state === "active" && observability.gatekeeper.model
+              ? ` · ${observability.gatekeeper.model}`
+              : ""}
           </span>
         ) : null}
       </div>

@@ -164,7 +164,7 @@ export interface ChatRoute {
   route: ChatRouteName;
   confidence: number;
   reason: string;
-  decided_by: "rules" | "llm" | "demo";
+  decided_by: "rules" | "llm" | "demo" | "jev";
   alternative?: ChatRouteName | null;
   fallback_route?: "documental" | null;
   scope_reason?:
@@ -282,6 +282,7 @@ export interface TurnMetrics {
   tool_calls: number;
   input_tokens: number;
   output_tokens: number;
+  gate_calls?: number;
 }
 
 export interface ChatTurn {
@@ -295,6 +296,20 @@ export interface ChatTurn {
   sources: string[];
   fallback: boolean;
   metrics: TurnMetrics;
+  /** Spec 022: traza del gatekeeper Jev del turno (null si está desactivado). */
+  jev?: JevTrace | null;
+}
+
+export interface JevTrace {
+  status: "ok" | "failed" | "skipped";
+  reason?: string | null;
+  route?: ChatRouteName | null;
+  confidence?: number | null;
+  alternative?: ChatRouteName | null;
+  accepted?: boolean;
+  latency_ms?: number;
+  cost?: number | null;
+  model?: string | null;
 }
 
 export interface PendingAction {

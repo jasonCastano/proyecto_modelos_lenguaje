@@ -79,6 +79,7 @@ from .identity import (
     looks_like_name,
     names_match,
 )
+from .jev import GateOutcome, JevGate, merge_signals
 from .memory import (
     PROFILE_KEYS,
     PROFILE_LABELS,
@@ -114,6 +115,7 @@ from .router import (
     COMPANY,
     apply_structured_fallback,
     contextual_query,
+    is_smalltalk,
     route_message,
 )
 from .sentences import SentenceGate, SentenceSplitter, split_all
@@ -200,6 +202,8 @@ class ChatState(TypedDict, total=False):
     reviewed: str
     bridged: dict[str, Any] | None
     turn_notices: list[str]
+    # spec 022: traza del gatekeeper Jev del turno (sin texto del visitante)
+    jev: dict[str, Any] | None
     # spec 021: frases previas, frases entregadas por el nodo que genera y frases descartadas
     lead: list[str]
     delivered: list[str]
@@ -218,6 +222,7 @@ class GraphDeps:
     summary_model: BaseChatModel | None = None
     neutralize: bool = True  # spec 015: neutraliza instrucciones embebidas (False = línea base)
     series: SeriesTable | None = None
+    gate: JevGate | None = None  # spec 022: gatekeeper System One (None = desactivado)
 
 
 class TurnMetricsHandler(BaseCallbackHandler):
@@ -367,6 +372,12 @@ def _route_node(deps: GraphDeps):
             care.update_counters(signals, care_state, care_config)
         intent = detect_write_intent(state["question"], deps.router_model)
         profile_query = intent is None and is_profile_question(state["question"])
+        history = [t["question"] for t in (state.get("turns") or [])[-ROUTER_HISTORY_TURNS:]]
+        gate_outcome = _consult_gate(
+            deps, state["question"], signals, history, intent, profile_query
+        )
+        if gate_outcome is not None and deps.gate is not None:
+            signals = merge_signals(signals, gate_outcome, deps.gate.config)  # type: ignore[assignment]
         if intent is not None:
             decision = RouteDecision(
                 route="direct",
@@ -382,7 +393,6 @@ def _route_node(deps: GraphDeps):
                 decided_by="rules",
             )
         else:
-            history = [t["question"] for t in (state.get("turns") or [])[-ROUTER_HISTORY_TURNS:]]
             decision = route_message(
                 routed_text(state["question"], signals),
                 history=history,
@@ -390,6 +400,8 @@ def _route_node(deps: GraphDeps):
                 min_confidence=deps.config.router.min_confidence,
                 temperature=deps.config.router.llm_temperature,
                 signals=signals,
+                gate=gate_outcome,
+                gate_threshold=deps.config.jev.route_threshold,
             ).decision
             decision = _apply_care(decision, signals, care_state)
         plan: dict[str, Any] | None = None
@@ -414,6 +426,7 @@ def _route_node(deps: GraphDeps):
             "reviewed": "show",
             "bridged": None,
             "turn_notices": lead_notices,
+            "jev": gate_outcome.trace(deps.config.jev.route_threshold) if gate_outcome else None,
             "decision": decision.model_dump(mode="json"),
             "fragments": [],
             "structured_rows": [],
@@ -426,6 +439,24 @@ def _route_node(deps: GraphDeps):
         }
 
     return route
+
+
+def _consult_gate(
+    deps: GraphDeps,
+    question: str,
+    signals: care.CareSignals | None,
+    history: list[str],
+    intent: Any,
+    profile_query: bool,
+) -> GateOutcome | None:
+    """Una consulta al gatekeeper por turno, tras ``care.analyze`` (spec 022, research R4)."""
+    if deps.gate is None:
+        return None
+    if intent is not None or profile_query:
+        return GateOutcome.skipped("write_intent")
+    if is_smalltalk(question):
+        return GateOutcome.skipped("smalltalk")
+    return deps.gate.assess(routed_text(question, signals), history)
 
 
 def _lead(
@@ -1388,6 +1419,9 @@ def _finalize_node(deps: GraphDeps):
         handler = find_metrics_handler(config)
         retrievals = state.get("retrievals", 0)
         metrics = handler.snapshot(retrievals) if handler else TurnMetrics(tool_calls=retrievals)
+        gate_trace = state.get("jev")
+        if gate_trace and gate_trace.get("status") in {"ok", "failed"}:
+            metrics = metrics.model_copy(update={"gate_calls": 1})
         turns = list(state.get("turns") or [])
         citations = state.get("citations") or []
         answer = state.get("answer", "")
@@ -1491,6 +1525,7 @@ def _finalize_node(deps: GraphDeps):
             sources=list(dict.fromkeys(c["url"] for c in citations if c.get("url"))),
             fallback=fallback,
             metrics=metrics,
+            jev=gate_trace,
         )
         turns.append(turn.model_dump(mode="json"))
         summary, summarized = compact_history(

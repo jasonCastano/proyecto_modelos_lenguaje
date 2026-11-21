@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "c2f66bbe-3c9b-49b0-bf38-4601cd65630d",
+  "deliveryReceiptId": "3bed5db4-08b7-4a97-8718-5fa389e93bcc",
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.html",
-    "sha256": "a4fef6a630d25e81a75145047ffe233cfc9c18d35a8a8530511387fd783db7a4",
-    "bytes": 854154
+    "sha256": "f798254631a0a6edd447d51a7a0b3610f21526e2cad4a25ee9e81fb62e035f46",
+    "bytes": 857957
   },
   "state": {
     "detail": "read",
@@ -32,7 +32,7 @@
         "innerWidth": 1440,
         "innerHeight": 900,
         "scrollWidth": 1440,
-        "scrollHeight": 1322,
+        "scrollHeight": 1511,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -47,9 +47,9 @@
           "bodyPaddingPx": 12,
           "headerPx": 52,
           "diagramChromePx": 78,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -80,6 +80,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -90,7 +101,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -103,7 +114,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -115,14 +126,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -145,7 +156,7 @@
         "innerWidth": 1600,
         "innerHeight": 1000,
         "scrollWidth": 1600,
-        "scrollHeight": 1388,
+        "scrollHeight": 1577,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -160,9 +171,9 @@
           "bodyPaddingPx": 64,
           "headerPx": 60,
           "diagramChromePx": 84,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -193,6 +204,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -203,7 +225,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -216,7 +238,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -228,14 +250,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -258,7 +280,7 @@
         "innerWidth": 1920,
         "innerHeight": 1080,
         "scrollWidth": 1920,
-        "scrollHeight": 1387,
+        "scrollHeight": 1577,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -273,9 +295,9 @@
           "bodyPaddingPx": 64,
           "headerPx": 60,
           "diagramChromePx": 84,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -306,6 +328,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -316,7 +349,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -329,7 +362,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -341,14 +374,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -371,7 +404,7 @@
         "innerWidth": 2048,
         "innerHeight": 1320,
         "scrollWidth": 2048,
-        "scrollHeight": 1405,
+        "scrollHeight": 1595,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -386,9 +419,9 @@
           "bodyPaddingPx": 64,
           "headerPx": 68,
           "diagramChromePx": 94,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -419,6 +452,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -429,7 +473,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -442,7 +486,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -454,14 +498,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -537,7 +581,7 @@
         "innerWidth": 1440,
         "innerHeight": 900,
         "scrollWidth": 1440,
-        "scrollHeight": 1322,
+        "scrollHeight": 1511,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -552,9 +596,9 @@
           "bodyPaddingPx": 12,
           "headerPx": 52,
           "diagramChromePx": 78,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -585,6 +629,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -595,7 +650,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -608,7 +663,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -620,14 +675,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -650,7 +705,7 @@
         "innerWidth": 1600,
         "innerHeight": 1000,
         "scrollWidth": 1600,
-        "scrollHeight": 1388,
+        "scrollHeight": 1577,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -665,9 +720,9 @@
           "bodyPaddingPx": 64,
           "headerPx": 60,
           "diagramChromePx": 84,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -698,6 +753,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -708,7 +774,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -721,7 +787,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -733,14 +799,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -763,7 +829,7 @@
         "innerWidth": 1920,
         "innerHeight": 1080,
         "scrollWidth": 1920,
-        "scrollHeight": 1387,
+        "scrollHeight": 1577,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -778,9 +844,9 @@
           "bodyPaddingPx": 64,
           "headerPx": 60,
           "diagramChromePx": 84,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -811,6 +877,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -821,7 +898,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -834,7 +911,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -846,14 +923,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -876,7 +953,7 @@
         "innerWidth": 2048,
         "innerHeight": 1320,
         "scrollWidth": 2048,
-        "scrollHeight": 1405,
+        "scrollHeight": 1595,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -891,9 +968,9 @@
           "bodyPaddingPx": 64,
           "headerPx": 68,
           "diagramChromePx": 94,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -924,6 +1001,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -934,7 +1022,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -947,7 +1035,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -959,14 +1047,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -994,7 +1082,7 @@
         "innerWidth": 1440,
         "innerHeight": 900,
         "scrollWidth": 1440,
-        "scrollHeight": 1322,
+        "scrollHeight": 1511,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -1009,9 +1097,9 @@
           "bodyPaddingPx": 12,
           "headerPx": 52,
           "diagramChromePx": 78,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -1042,6 +1130,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -1052,7 +1151,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -1065,7 +1164,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -1077,14 +1176,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -1107,7 +1206,7 @@
         "innerWidth": 1600,
         "innerHeight": 1000,
         "scrollWidth": 1600,
-        "scrollHeight": 1388,
+        "scrollHeight": 1577,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -1122,9 +1221,9 @@
           "bodyPaddingPx": 64,
           "headerPx": 60,
           "diagramChromePx": 84,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -1155,6 +1254,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -1165,7 +1275,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -1178,7 +1288,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -1190,14 +1300,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -1220,7 +1330,7 @@
         "innerWidth": 1920,
         "innerHeight": 1080,
         "scrollWidth": 1920,
-        "scrollHeight": 1387,
+        "scrollHeight": 1577,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -1235,9 +1345,9 @@
           "bodyPaddingPx": 64,
           "headerPx": 60,
           "diagramChromePx": 84,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -1268,6 +1378,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -1278,7 +1399,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -1291,7 +1412,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -1303,14 +1424,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -1333,7 +1454,7 @@
         "innerWidth": 2048,
         "innerHeight": 1320,
         "scrollWidth": 2048,
-        "scrollHeight": 1405,
+        "scrollHeight": 1595,
         "overflowX": false,
         "overflowY": true,
         "verticalScrollAccepted": true,
@@ -1348,9 +1469,9 @@
           "bodyPaddingPx": 64,
           "headerPx": 68,
           "diagramChromePx": 94,
-          "svgPx": 1179,
+          "svgPx": 1368,
           "cardsPx": 0,
-          "viewBoxHeight": 786
+          "viewBoxHeight": 912
         },
         "viewBoxWidth": 846,
         "workflowLanes": [
@@ -1381,6 +1502,17 @@
           {
             "frameId": "lane-2",
             "heightPx": 159,
+            "nodeCount": 1,
+            "nodeIds": [
+              "jev"
+            ],
+            "nodeSpanPx": 102,
+            "spaceAboveNodesPx": 51,
+            "spaceBelowNodesPx": 6
+          },
+          {
+            "frameId": "lane-3",
+            "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
               "llm",
@@ -1391,7 +1523,7 @@
             "spaceBelowNodesPx": 6
           },
           {
-            "frameId": "lane-3",
+            "frameId": "lane-4",
             "heightPx": 159,
             "nodeCount": 3,
             "nodeIds": [
@@ -1404,7 +1536,7 @@
             "spaceBelowNodesPx": 18
           },
           {
-            "frameId": "lane-4",
+            "frameId": "lane-5",
             "heightPx": 159,
             "nodeCount": 2,
             "nodeIds": [
@@ -1416,14 +1548,14 @@
             "spaceBelowNodesPx": 18
           }
         ],
-        "minimumProjectedNodeTextPx": 7,
-        "minimumProjectedNonEdgeTextPx": 7,
+        "minimumProjectedNodeTextPx": 6.6,
+        "minimumProjectedNonEdgeTextPx": 6.6,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "pregunta + historial",
+        "minimumProjectedNodeText": "Choice · Score · Noul",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "msg"
+          "id": "jev"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -1447,7 +1579,7 @@
     "contactSheet": null
   },
   "sidecars": {
-    "directory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\herramientas-router-final2",
+    "directory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\hr-jev1",
     "receipt": "herramientas-router.browser-check.json",
     "files": []
   }

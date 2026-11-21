@@ -349,6 +349,9 @@ def _run(
                 row.update(
                     answer=answers[-1] if answers else "",
                     scope_reason=outcome.turn.route.scope_reason if outcome else None,
+                    # Spec 022: quién decidió la ruta y traza del gatekeeper Jev (si está activo).
+                    decided_by=outcome.turn.route.decided_by if outcome else None,
+                    jev=outcome.turn.jev if outcome else None,
                     citations=len(outcome.turn.citations) if outcome else 0,
                     contact=outcome.contact if outcome else None,
                     contact_pii=contact_has_personal_data(

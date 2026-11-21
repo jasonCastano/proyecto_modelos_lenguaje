@@ -11,7 +11,8 @@ export function LimitsNote() {
             El corpus cubre información pública y el sistema cita o declara vacíos; no es asesoría
             oficial de Manuelita. Del Módulo 1 faltan la evaluación real de las 40 preguntas y el
             ensayo de la demo. Del Módulo 2 faltan la calificación humana de las repreguntas, Qdrant
-            con servidor dedicado (hoy corre embebido), el gatekeeper Jev y el despliegue; además,
+            con servidor dedicado (hoy corre embebido) y el despliegue; el gatekeeper Jev está
+            desactivado por defecto; además,
             el agente supera los 10 s en el 6 % de las consultas.
           </p>
           <p>

@@ -440,6 +440,26 @@ ambas variantes tras la corrección `human_claim`.
 Pendiente: reducir la latencia del enrutador para la charla social (vocabulario de reglas o un clasificador más
 rápido) y volver a correr la evaluación de conversación con las correcciones de esta sección.
 
+### 3.20 Gatekeeper System One: `jev.md` 1.0 (2026-11-21, spec 022)
+
+Preguntas tipadas que el enrutador envía a Jev (TypeSafe, `jev-1.14.0` fijo) una vez por turno, entre las reglas y el
+clasificador LLM (ADR 0026). Jev no redacta: elige una opción o da una probabilidad. Parámetros en `[jev]`:
+`route_threshold` 0.75 (inclusivo), `crisis_threshold` 0.5, `timeout_seconds` 2, sin reintentos, y
+`max_input_chars` 4000.
+
+| Prompt | Versión | SHA-256 (12 primeros) | Cambio |
+|--------|---------|-----------------------|--------|
+| `prompts/jev.md` | 1.0 (nuevo) | `9ff62e4a07e5` | Cuatro preguntas: `route` (Choice entre las seis rutas, descripciones tomadas de `router.md`), `scope` (Choice entre seis motivos de fuera de alcance), `annoyance` (Score de 4 niveles) y `crisis` (Noul). |
+
+**Resultado observado**: validación en español con 24 consultas nuevas (`tests/fixtures/jev/validation_es.jsonl`):
+24/24 rutas correctas, latencia media de unos 215 ms y ~1.250 tokens de entrada por consulta. En las 44 consultas
+etiquetadas del Módulo 2, Jev decide el 57 % de las rutas y evita el 73 % de las llamadas al LLM del enrutador, pero
+confunde `documental` con `structured` en preguntas de «¿dónde?» y «¿desde cuándo?» (detalle en
+`docs/evaluacion_jev.md`).
+
+**Decisión**: se versiona la 1.0 y el gatekeeper queda **desactivado por defecto**. El umbral se fijó con el conjunto
+de validación y no se ajustó con las 44 consultas de evaluación (principio II).
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

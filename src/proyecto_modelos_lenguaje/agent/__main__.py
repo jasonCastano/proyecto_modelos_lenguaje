@@ -142,7 +142,60 @@ def build_parser() -> argparse.ArgumentParser:
     converse_cmd.add_argument(
         "--json-out", default=None, help="Informe JSON (por defecto en real)."
     )
+    jev_cmd = sub.add_parser(
+        "jev", help="Gatekeeper System One Jev (spec 022): chequeo, validación y comparación."
+    )
+    jev_action = jev_cmd.add_mutually_exclusive_group(required=True)
+    jev_action.add_argument("--check", action="store_true", help="Verifica clave, red y versión.")
+    jev_action.add_argument(
+        "--validate", action="store_true", help="Validación en español (24 consultas nuevas)."
+    )
+    jev_action.add_argument(
+        "--compare", action="store_true", help="Compara el enrutador sin y con gatekeeper."
+    )
+    jev_cmd.add_argument("--json", action="store_true", help="Imprime el resultado en JSON.")
+    jev_cmd.add_argument("--cases", default=None, help="JSONL de validación alternativo.")
+    jev_cmd.add_argument("--run-id", default="")
     return parser
+
+
+def _jev(args: argparse.Namespace, root: Path) -> int:
+    """``agent jev``: 0 si todo va bien, 1 si no cumple el mínimo, 2 sin clave o configuración."""
+    with contextlib.suppress(AttributeError, ValueError):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    from dataclasses import replace
+
+    from .jev import API_KEY_ENV, TypeSafeJevGate, health_check, read_api_key
+
+    try:
+        config = replace(load_agent_config(project_root=root).jev, enabled=True)
+    except AgentConfigError as exc:
+        print(f"error de configuración: {exc}", file=sys.stderr)
+        return 2
+    if args.check:
+        result = health_check(config)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0 if result["ok"] else 2
+    api_key = read_api_key()
+    if api_key is None:
+        print(
+            f"Falta {API_KEY_ENV}: añádela a .env (https://console.typesafe.ai) y repite.",
+            file=sys.stderr,
+        )
+        return 2
+    gate = TypeSafeJevGate(config, api_key)
+    if args.validate:
+        from .jev_eval import MIN_ACCURACY, load_validation_cases, render_validation, validate
+
+        report = validate(gate, load_validation_cases(args.cases))
+        if args.json:
+            print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
+        else:
+            print(render_validation(report, config))
+        return 0 if report.accuracy >= MIN_ACCURACY else 1
+    from .jev_eval import run_compare
+
+    return run_compare(gate, config, root=root, run_id=args.run_id, as_json=args.json)
 
 
 def _care(args: argparse.Namespace) -> int:
@@ -545,6 +598,8 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
         return _care(args)
     if args.command == "converse":
         return _converse(args)
+    if args.command == "jev":
+        return _jev(args, root)
     return _chat(args, root)
 
 

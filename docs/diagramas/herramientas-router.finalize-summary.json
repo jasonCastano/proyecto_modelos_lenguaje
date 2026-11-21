@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.json",
-    "sha256": "0f7f1a789dc1938118c826c8cac4cca2025e46326501f5fc229074e4bfe82ae9",
-    "bytes": 7690
+    "sha256": "92e631551aee132a1a1f6ec6b24e29c2e572a2eedef361d914256afaa3a44b9a",
+    "bytes": 8719
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.html",
-    "sha256": "a4fef6a630d25e81a75145047ffe233cfc9c18d35a8a8530511387fd783db7a4",
-    "bytes": 854154
+    "sha256": "f798254631a0a6edd447d51a7a0b3610f21526e2cad4a25ee9e81fb62e035f46",
+    "bytes": 857957
   },
   "gates": {
     "validate": "pass",
@@ -28,22 +28,12 @@
     "truncated": false
   },
   "evidence": {
-    "receipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\herramientas-router-final2\\herramientas-router.finalize.json",
-    "summaryReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\herramientas-router-final2\\herramientas-router.finalize-summary.json",
-    "browserCheckReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\herramientas-router-final2\\herramientas-router.browser-check.json"
-  },
-  "update": {
-    "status": "current",
-    "installedVersion": "3.2.0",
-    "availableVersion": "3.2.0",
-    "releaseNotes": null,
-    "checkedAt": "2026-11-14T04:14:03.185Z",
-    "source": "cache",
-    "noticeRequired": false,
-    "noticeText": null
+    "receipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\hr-jev1\\herramientas-router.finalize.json",
+    "summaryReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\hr-jev1\\herramientas-router.finalize-summary.json",
+    "browserCheckReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\hr-jev1\\herramientas-router.browser-check.json"
   },
   "visualReview": "not-requested",
-  "durationMs": 23725,
+  "durationMs": 82181,
   "browserCheck": {
     "requested": true,
     "ran": true

@@ -75,6 +75,7 @@ def make_service(
     store: Any = None,
     retriever: HybridRetriever | None = None,
     series: Any = None,
+    gate: Any = None,
 ) -> ChatService:
     config = config or agent_config()
     retriever = retriever or demo_retriever()
@@ -88,6 +89,7 @@ def make_service(
             model or DemoChatModel(),
             summary_model=summary_model,
             series=series,
+            gate=gate,
         ),
         store=store if store is not None else memory_store(),
     )

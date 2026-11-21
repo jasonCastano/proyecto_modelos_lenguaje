@@ -110,6 +110,29 @@ def demo_answer(
     return lead + "Según los documentos públicos de Manuelita: " + " ".join(parts)
 
 
+EXTERNAL_LINE = re.compile(r"- Externo: declina con naturalidad «([^»]+)»")
+
+
+def guided_answer(answer: str, guide: str) -> str:
+    """Spec 020: el modo demo sigue el brief guiado como lo haría el modelo real.
+
+    Abre reconociendo la emoción (``Sentimiento:``), anuncia el inglés (``Idioma: en``) y declina
+    en una frase las partes externas (``Externo:``), todo en la misma respuesta.
+    """
+    if answer == FALLBACK_ANSWER or "Atención:" not in guide:
+        return answer
+    lead = ""
+    if "- Sentimiento:" in guide:
+        lead = "Entiendo cómo te sientes y quiero ayudarte. "
+    if "- Idioma: en" in guide:
+        lead += "Here is what the public documents of Manuelita say about it. "
+    tail = [
+        f"Sobre {label} no tengo información, porque lo mío es Manuelita."
+        for label in EXTERNAL_LINE.findall(guide)
+    ]
+    return " ".join([f"{lead}{answer}", *tail]).strip()
+
+
 class DemoChatModel(BaseChatModel):
     """Modelo determinista para el modo demo: busca una vez y responde de forma extractiva.
 
@@ -166,14 +189,13 @@ class DemoChatModel(BaseChatModel):
                 system = " ".join(str(m.content) for m in messages if isinstance(m, SystemMessage))
                 human = str(messages[last_human].content) if last_human >= 0 else ""
                 guide = f"{system}\n{human}"
-                message = AIMessage(
-                    content=demo_answer(
-                        evidence,
-                        bullets=BULLETS_HINT in system,
-                        requests=attention_requests(guide),
-                        rephrase=REPHRASE_HINT in guide,
-                    )
+                answer = demo_answer(
+                    evidence,
+                    bullets=BULLETS_HINT in system,
+                    requests=attention_requests(guide),
+                    rephrase=REPHRASE_HINT in guide,
                 )
+                message = AIMessage(content=guided_answer(answer, guide))
         return ChatResult(generations=[ChatGeneration(message=message)])
 
     def _part_calls(self, requests: Sequence[str]) -> list[dict[str, Any]]:
@@ -240,3 +262,182 @@ class DemoChatModel(BaseChatModel):
             if run_manager is not None:
                 run_manager.on_llm_new_token(piece, chunk=chunk)
             yield chunk
+
+
+# ---------------------------------------------------------------- spec 020: conversación guiada
+
+DEMO_POOLS: dict[str, dict[str, tuple[str, ...]]] = {
+    "es": {
+        "greeting_first": (
+            "¡Hola! Soy Valer-IA Caña, la asistente virtual de Manuelita. ¿Qué te gustaría saber?",
+            "¡Qué gusto saludarte! Soy Valer-IA Caña y te acompaño con la información pública "
+            "de Manuelita.",
+            "¡Hola, bienvenido! Te habla Valer-IA Caña; cuéntame qué quieres conocer de Manuelita.",
+        ),
+        "greeting": (
+            "¡Hola de nuevo! ¿En qué te ayudo?",
+            "¡Qué bueno leerte otra vez! Cuéntame.",
+            "¡Hola! Aquí sigo para lo que necesites.",
+        ),
+        "smalltalk": (
+            "¡Qué bien que me lo cuentes!",
+            "Te entiendo perfectamente.",
+            "¡Uy, sí, a veces pasa!",
+            "Gracias por compartirlo conmigo.",
+            "Me alegra que conversemos un rato.",
+        ),
+        "smalltalk_follow": (
+            "Si en algún momento quieres saber algo de Manuelita, aquí estoy.",
+            "Cuando quieras, te cuento sobre la historia o los negocios de Manuelita.",
+            "Y si te da curiosidad algo de Manuelita, me avisas.",
+            "",
+        ),
+        "minimal": (
+            "¡Listo!",
+            "¡Jaja, qué bien!",
+            "Perfecto.",
+            "¡Dale! Aquí sigo.",
+            "Entendido.",
+        ),
+        "minimal_follow": ("Aquí estoy si necesitas algo.", "Cuando quieras seguimos.", "", ""),
+        "about_assistant": (
+            "Soy Valer-IA Caña, una asistente virtual con inteligencia artificial. Te ayudo con la "
+            "información pública de Manuelita.",
+            "Te cuento: soy Valer-IA Caña, una asistente de inteligencia artificial y no un canal "
+            "oficial, pero conozco la información pública de Manuelita.",
+            "Soy Valer-IA Caña, una asistente virtual con inteligencia artificial que responde "
+            "sobre Manuelita con fuentes públicas.",
+        ),
+        "thanks": (
+            "¡Con mucho gusto!",
+            "¡A ti por escribir!",
+            "Para eso estoy, con gusto.",
+        ),
+        "closing_open": (
+            "¡Fue un gusto conversar contigo{name}!",
+            "¡Gracias por la charla{name}!",
+            "¡Qué bueno haber conversado{name}!",
+        ),
+        "closing_summary": ("Hoy hablamos de {topics}.", "Repasamos {topics}."),
+        "closing_end": ("Que tengas un excelente día.", "Aquí estaré cuando quieras volver."),
+        "decline_open": (
+            "Ahí sí no te puedo ayudar, porque no tengo esa información.",
+            "Ese dato no lo tengo, así que prefiero no inventarlo.",
+            "Me encantaría ayudarte con eso, pero no tengo esa información.",
+            "No tengo datos confiables para darte.",
+        ),
+        "decline_scope": (
+            "Lo mío es la información pública de Manuelita.",
+            "Yo te acompaño con lo que tiene que ver con Manuelita.",
+            "Mi especialidad es Manuelita y su información pública.",
+        ),
+        "bridge_lead": ("Por cierto,", "Si te sirve,", "Y ya que estamos,"),
+        "complaint": (
+            "Qué pena que te haya pasado eso.",
+            "Lamento la molestia, de verdad.",
+            "Entiendo que es frustrante.",
+        ),
+    },
+    "en": {
+        "greeting_first": ("Hi! I am Valer-IA Caña, an AI assistant about Manuelita.",),
+        "greeting": ("Hi again! How can I help?",),
+        "smalltalk": ("Thanks for sharing that!", "I hear you."),
+        "smalltalk_follow": ("If you want to know about Manuelita, just ask.", ""),
+        "minimal": ("Sure!", "Got it."),
+        "minimal_follow": ("", "I am here if you need anything."),
+        "about_assistant": (
+            "I am Valer-IA Caña, an AI assistant. I can tell you about Manuelita using its public "
+            "information.",
+        ),
+        "thanks": ("You are welcome!",),
+        "closing_open": ("It was a pleasure talking with you{name}!",),
+        "closing_summary": ("We talked about {topics}.",),
+        "closing_end": ("Have a great day.",),
+        "decline_open": ("I do not have that information.", "That is outside what I know."),
+        "decline_scope": ("I can help you with public information about Manuelita.",),
+        "bridge_lead": ("By the way,",),
+        "complaint": ("I am sorry about that.",),
+    },
+}
+
+
+UNATTAINABLE_BY_LABEL = {
+    "precios y descuentos": "pricing",
+    "compromisos en nombre de la empresa": "commitment",
+    "hablar con una persona": "human",
+}
+
+
+def _choose(rng: Any, options: Sequence[str]) -> str:
+    return options[rng.randrange(len(options))] if options else ""
+
+
+def demo_converse(plan: Any, *, playbook: Any, seed: int, name: str | None = None) -> str:
+    """Respuesta guiada determinista para el modo demo (spec 020, R14).
+
+    Compone frases variadas según el plan con una semilla del hilo y del turno, sin afirmar hechos
+    externos: los datos de Manuelita solo aparecen en el puente, con su etiqueta ``[U1]``.
+    """
+    import random
+
+    rng = random.Random(seed)
+    lang = "en" if plan.language == "en" else "es"
+    pool = DEMO_POOLS[lang]
+    act = plan.act
+    sentences: list[str] = []
+    if plan.sentiment in {"frustrated", "angry", "distressed"} and act != "complaint":
+        sentences.append(_choose(rng, pool["complaint"]))
+    if act == "greeting":
+        sentences.append(_choose(rng, pool["greeting_first" if plan.turn == 1 else "greeting"]))
+    elif act == "about_assistant":
+        sentences.append(_choose(rng, pool["about_assistant"]))
+    elif act == "minimal":
+        sentences.append(_choose(rng, pool["minimal"]))
+        sentences.append(_choose(rng, pool["minimal_follow"]))
+    elif act == "thanks":
+        sentences.append(_choose(rng, pool["thanks"]))
+    elif act == "closing":
+        suffix = f", {name}" if name else ""
+        sentences.append(_choose(rng, pool["closing_open"]).format(name=suffix))
+        if plan.summary_topics:
+            topics = " y ".join(t.replace("_", " ") for t in plan.summary_topics[-2:])
+            sentences.append(_choose(rng, pool["closing_summary"]).format(topics=topics))
+        sentences.append(_choose(rng, pool["closing_end"]))
+    elif act == "complaint":
+        sentences.append(_choose(rng, pool["complaint"]))
+        sentences.append(_choose(rng, playbook.variants["complaint.help"]))
+    elif act == "clarify":
+        options = _choose(rng, playbook.variants["clarify.options.default"])
+        intro = _choose(rng, playbook.variants["clarify.intro"])
+        sentences.append(intro.replace("{options}", options))
+    elif plan.reason == "unattainable":
+        kind = UNATTAINABLE_BY_LABEL.get(plan.topic or "", "commitment")
+        sentences.append(_choose(rng, playbook.variants[f"boundary.{kind}"]))
+        sentences.append("Para eso, el canal es el sitio oficial www.manuelita.com.")
+    elif plan.reason == "advice":
+        advice = _choose(rng, playbook.variants["boundary.advice"])
+        if plan.topic and lang == "es":
+            advice = f"Sobre {plan.topic}: {advice[:1].lower()}{advice[1:]}"
+        sentences.append(advice)
+    elif act == "off_topic":
+        opening = _choose(rng, pool["decline_open"])
+        if plan.topic and lang == "es":
+            opening = f"Sobre {plan.topic}, {opening[:1].lower()}{opening[1:]}"
+        sentences.append(opening)
+        sentences.append(_choose(rng, pool["decline_scope"]))
+    else:  # smalltalk
+        sentences.append(_choose(rng, pool["smalltalk"]))
+        if plan.bridge is None:
+            sentences.append(_choose(rng, pool["smalltalk_follow"]))
+    if plan.bridge is not None:
+        bridge = plan.bridge
+        lead = _choose(rng, pool["bridge_lead"])
+        if bridge.source == "curated":
+            text = bridge.text.rstrip(".")
+            text = text[:1].lower() + text[1:]
+            sentences.append(f"{lead} {text} [U1].")
+        else:
+            sentences.append(f"{lead} puedo contarte sobre «{bridge.title}» [U1].")
+    if plan.length == "short":
+        sentences = [s for s in sentences if s][:2]
+    return " ".join(sentence for sentence in sentences if sentence).strip()

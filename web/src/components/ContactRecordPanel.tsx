@@ -1,4 +1,11 @@
-import type { ContactCategory, ContactRecord, ContactStatus, Sentiment } from "../lib/types";
+import type {
+  ContactCategory,
+  ContactRecord,
+  ContactStatus,
+  ContactTurn,
+  DialogueAct,
+  Sentiment,
+} from "../lib/types";
 
 /** Etiquetas en español del registro del contacto (spec 019, contracts/api-changes.md). */
 export const CATEGORY_LABEL: Record<ContactCategory, string> = {
@@ -29,6 +36,31 @@ export const SENTIMENT_LABEL: Record<Sentiment, string> = {
   angry: "molesto",
   distressed: "angustiado",
 };
+
+/** Spec 020: actos de diálogo en español. */
+export const ACT_LABEL: Record<DialogueAct, string> = {
+  greeting: "saludo",
+  smalltalk: "charla",
+  off_topic: "fuera de tema",
+  manuelita: "Manuelita",
+  complaint: "queja",
+  correction: "corrección",
+  minimal: "mínimo",
+  about_assistant: "sobre la asistente",
+  closing: "cierre",
+  thanks: "gracias",
+  clarify: "aclaración",
+};
+
+/** «saludo → charla ◆ → mínimo ↺»: ◆ marca un puente y ↺ una respuesta de respaldo. */
+export function actsTrail(acts: ContactTurn[]): string {
+  return acts
+    .map((turn) => {
+      const marks = `${turn.bridged ? " ◆" : ""}${turn.reviewed === "fallback" ? " ↺" : ""}`;
+      return `${ACT_LABEL[turn.act] ?? turn.act}${marks}`;
+    })
+    .join(" → ");
+}
 
 /** Evolución emocional sin repeticiones seguidas: «frustrado → satisfecho». */
 export function sentimentTrail(sentiments: Sentiment[]): string {
@@ -69,6 +101,11 @@ export function ContactRecordPanel({ record }: { record: ContactRecord }) {
         <span data-testid="contact-sentiments">Emoción: {sentimentTrail(record.sentiments)}</span>
         {record.motive.length > 0 ? <span>Motivo: {record.motive.join(", ")}</span> : null}
       </p>
+      {record.acts && record.acts.length > 0 ? (
+        <p className="contact-record-line" data-testid="contact-acts">
+          <span>Actos: {actsTrail(record.acts)}</span>
+        </p>
+      ) : null}
       <ul className="contact-record-requests">
         {record.requests.map((request, index) => (
           <li data-status={request.status} key={`${request.turn}-${index}`}>

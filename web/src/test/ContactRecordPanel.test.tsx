@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ChatView } from "../components/ChatView";
-import { ContactRecordPanel, sentimentTrail } from "../components/ContactRecordPanel";
+import { actsTrail, ContactRecordPanel, sentimentTrail } from "../components/ContactRecordPanel";
 import type { ChatResponse, ChatTurn, ContactRecord } from "../lib/types";
 
 // Registro del contacto (spec 019, US5): solo en la vista técnica y sin datos personales.
@@ -90,6 +90,30 @@ describe("ContactRecordPanel", () => {
     expect(panel).toHaveTextContent("Resuelta");
     expect(panel).toHaveTextContent("Resuelto");
     expect(screen.getByTestId("contact-sentiments")).toHaveTextContent("frustrado → satisfecho");
+  });
+
+  it("spec 020: muestra la línea «Actos» con puentes (◆) y respaldos (↺)", () => {
+    render(
+      <ContactRecordPanel
+        record={{
+          ...RECORD,
+          acts: [
+            { act: "greeting", bridged: false, reviewed: "show" },
+            { act: "smalltalk", bridged: true, reviewed: "show" },
+            { act: "off_topic", bridged: false, reviewed: "fallback" },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByTestId("contact-acts")).toHaveTextContent(
+      "Actos: saludo → charla ◆ → fuera de tema ↺",
+    );
+  });
+
+  it("spec 020: sin actos (modo de guiones) no hay línea «Actos»", () => {
+    render(<ContactRecordPanel record={RECORD} />);
+    expect(screen.queryByTestId("contact-acts")).not.toBeInTheDocument();
+    expect(actsTrail([])).toBe("");
   });
 
   it("resume la evolución sin repetir emociones seguidas", () => {

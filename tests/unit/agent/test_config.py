@@ -129,3 +129,35 @@ def test_default_state_dir_is_outside_repository(monkeypatch: pytest.MonkeyPatch
     # Assert
     assert resolved.name == "manuelita-rag"
     assert PROJECT_ROOT.resolve() not in resolved.parents
+
+
+def test_conversation_section_defaults_and_repository_values(tmp_path: Path) -> None:
+    """Spec 020 (T002): sin ``[conversation]`` valen los defectos; el repositorio usa ``guided``."""
+    config = load_agent_config(_write(tmp_path, VALID_TOML), project_root=tmp_path)
+    assert config.conversation.mode == "guided" and config.conversation.guided
+    assert config.conversation.temperature_social == 0.8
+    assert config.conversation.bridge_every == 2
+    repo = load_agent_config()
+    assert repo.conversation.mode == "guided"
+    assert repo.conversation.max_regenerations == 1
+
+
+@pytest.mark.parametrize(
+    ("line", "message"),
+    [
+        ('mode = "libre"', "conversation.mode"),
+        ("temperature_social = 1.5", "conversation.temperature_social"),
+        ("repetition_threshold = 1.0", "conversation.repetition_threshold"),
+        ("recent_window = 11", "conversation.recent_window"),
+        ("max_regenerations = 3", "conversation.max_regenerations"),
+        ("converse_max_tokens = 10", "conversation.converse_max_tokens"),
+        ("bridge_every = 0", "conversation.bridge_every"),
+        ("review_llm = 1", "conversation.review_llm"),
+    ],
+)
+def test_conversation_values_out_of_range_name_the_key(
+    tmp_path: Path, line: str, message: str
+) -> None:
+    path = _write(tmp_path, f"{VALID_TOML}\n[conversation]\n{line}\n")
+    with pytest.raises(AgentConfigError, match=message):
+        load_agent_config(path, project_root=tmp_path)

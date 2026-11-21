@@ -1,4 +1,4 @@
-<!-- prompt_version: 1.1 -->
+<!-- prompt_version: 1.2 -->
 # Valer-IA Caña — respuestas de conducta e identidad
 
 Respuestas deterministas de Valer-IA Caña (spec 018, `contracts/conduct.md` y `contracts/identity-flow.md`). No
@@ -24,6 +24,10 @@ Fue un gusto ayudarte. Si tienes otra pregunta sobre Manuelita, aquí estaré.
 ## farewell_offer
 
 Fue un gusto ayudarte. Si quieres que te reconozca en tu próxima visita, puedes compartirme tu correo cuando gustes; es opcional.
+
+## remember_offer
+
+Si quieres que te reconozca en tu próxima visita, puedes compartirme tu correo cuando gustes; es opcional.
 
 ## clarify
 

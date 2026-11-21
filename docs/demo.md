@@ -39,6 +39,14 @@ rúbrica de la Entrega 2. La versión anterior (2026-11-07) fue redactada con as
 > «hazme un descuento en el azúcar» seguido de «eso no me sirve» (asertividad y resiliencia). En
 > `?vista=tecnica`, el panel «Registro del contacto» muestra las solicitudes, sus estados y la evolución
 > emocional, sin datos personales.
+>
+> Spec 020 (conversación guiada), en un mismo hilo: «hola, buen día» → «¡qué calor hace hoy en Cali!»
+> (acompaña sin cifras) → «¿cómo va a estar el clima mañana?» (declina con sus palabras; puede sugerir algo de
+> agua o cuencas con cita) → «¿y quién ganó el partido de anoche?» (no repite la sugerencia) → «no me interesa
+> nada de eso» (deja de sugerir) → «jaja ok» (respuesta breve) → «¿qué produce Manuelita?» (con citas) → «no, me
+> refería a la energía» (sin pedir aclaración) → «listo, gracias, eso era todo» (despedida con resumen). En
+> `?vista=tecnica`, la línea «Actos» del registro marca los puentes (◆) y los respaldos (↺). Repetir «¿cómo va a
+> estar el clima mañana?» en hilos nuevos muestra respuestas distintas.
 
 
 | Tiempo | Bloque | Quién | Qué se muestra | Criterio que cubre |

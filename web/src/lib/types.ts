@@ -182,6 +182,29 @@ export interface ChatRoute {
   topic?: string | null;
   sentiment?: Sentiment | null;
   kind?: "pricing" | "commitment" | "human" | null;
+  /** Spec 020: acto de diálogo del turno. */
+  act?: DialogueAct | null;
+}
+
+/** Spec 020: acto de diálogo (etiqueta controlada). */
+export type DialogueAct =
+  | "greeting"
+  | "smalltalk"
+  | "off_topic"
+  | "manuelita"
+  | "complaint"
+  | "correction"
+  | "minimal"
+  | "about_assistant"
+  | "closing"
+  | "thanks"
+  | "clarify";
+
+/** Spec 020: etiquetas de un turno del registro del contacto. */
+export interface ContactTurn {
+  act: DialogueAct;
+  bridged: boolean;
+  reviewed: "show" | "retry" | "fallback";
 }
 
 /** Spec 019: emoción del visitante en un turno. */
@@ -224,6 +247,8 @@ export interface ContactRecord {
   resolved: boolean;
   hostile_turns: number;
   crisis: boolean;
+  /** Spec 020: secuencia de actos del hilo (como máximo 50). */
+  acts?: ContactTurn[];
 }
 
 export interface ChatFragment extends RetrievalFragment {

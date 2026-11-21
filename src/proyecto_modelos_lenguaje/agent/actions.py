@@ -227,7 +227,10 @@ def is_profile_question(message: str) -> bool:
     return PROFILE_QUESTION.search(normalize(message)) is not None
 
 
-TOPICS = re.compile(r"\bme interesa(?:n)?\s+(?:mucho\s+)?(?:el|la|los|las)?\s*(.{3,80}?)[.?!]*$")
+# Spec 020: «no me interesa nada de eso» es un rechazo, no una preferencia que guardar.
+TOPICS = re.compile(
+    r"(?<!no )\bme interesa(?:n)?\s+(?:mucho\s+)?(?:el|la|los|las)?\s*(.{3,80}?)[.?!]*$"
+)
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,4 +1,4 @@
-<!-- prompt_version: 1.4 -->
+<!-- prompt_version: 1.5 -->
 
 # Enrutador del agente RAG — Ingenio Manuelita
 
@@ -62,10 +62,17 @@ Conversación previa (puede estar vacía; úsala para resolver referencias como 
 6. Si el mensaje muestra una emoción clara, agrega `sentiment`: `satisfied`, `confused`,
    `frustrated`, `angry` o `distressed` (omítelo si es `neutral`). La emoción no cambia la
    ruta.
+7. Opcionalmente agrega `act`, el acto de diálogo del mensaje: `greeting`, `smalltalk` (comentario
+   social sin pedido de datos), `off_topic`, `manuelita`, `complaint`, `correction` (corrige lo
+   que quiso decir), `minimal` («ok», «jaja», un emoji), `about_assistant` (pregunta por la
+   asistente), `closing`, `thanks` o `clarify`. El acto no cambia la ruta: un comentario social
+   («¡qué calor hace!») es `direct` con `act` `smalltalk`.
 
 Ejemplos:
 
 - «Hola, buenas tardes» → `direct`
+- «¡Qué calor hace hoy!» → `direct` (act `smalltalk`)
+- «¿Qué puedes hacer?» → `direct` (act `about_assistant`)
 - «Muchas gracias, eso es todo» → `direct`
 - «¿Qué hace Manuelita en sostenibilidad?» → `documental`
 - «¿Cómo empezó la historia de Manuelita?» → `documental`
@@ -94,7 +101,7 @@ Responde **solo** con un objeto JSON, sin texto antes ni después y sin bloque d
 
 `alternative` puede ser `null`. Con `out_of_scope`, agrega `"scope_reason"` (por ejemplo
 {"route": "out_of_scope", "confidence": 0.9, "reason": "tema ajeno", "alternative": null, "scope_reason": "off_topic", "topic": "el clima"}).
-`topic`, `kind` y `sentiment` son opcionales y solo se usan en los casos descritos.
+`topic`, `kind`, `sentiment` y `act` son opcionales y solo se usan en los casos descritos.
 
 ## 6. Fallback
 

@@ -50,6 +50,32 @@ class CareConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class ConversationConfig:
+    """Conversación natural guiada (spec 020, ``data-model.md`` §5)."""
+
+    mode: str = "guided"
+    temperature_social: float = 0.8
+    temperature_facts: float = 0.3
+    presence_penalty: float = 0.3
+    frequency_penalty: float = 0.3
+    bridge_every: int = 2
+    bridge_min_score: float = 0.2
+    repetition_threshold: float = 0.5
+    recent_window: int = 10
+    max_regenerations: int = 1
+    converse_max_tokens: int = 220
+    converse_timeout_seconds: float = 8.0
+    review_llm: bool = False
+
+    @property
+    def guided(self) -> bool:
+        return self.mode == "guided"
+
+
+CONVERSATION_MODES = ("guided", "scripted")
+
+
+@dataclass(frozen=True, slots=True)
 class AgentConfig:
     router: RouterConfig
     agent: AgentLimits
@@ -58,6 +84,7 @@ class AgentConfig:
     state_env_var: str
     source: Path
     care: CareConfig = CareConfig()
+    conversation: ConversationConfig = ConversationConfig()
 
 
 def _section(document: dict[str, Any], key: str, source: Path) -> dict[str, Any]:
@@ -146,6 +173,61 @@ def load_agent_config(
         state_env_var=_string(state, "env_var", table="state"),
         source=source,
         care=_care_config(document.get("care")),
+        conversation=_conversation_config(document.get("conversation")),
+    )
+
+
+def _bounded(
+    section: dict[str, Any],
+    key: str,
+    default: float,
+    low: float,
+    high: float,
+    *,
+    integer: bool = False,
+    open_interval: bool = False,
+) -> Any:
+    """Valor numérico opcional de ``[conversation]`` dentro de su rango."""
+    value = section.get(key, default)
+    kind = "un entero" if integer else "un número"
+    if isinstance(value, bool) or not isinstance(value, int if integer else (int, float)):
+        raise AgentConfigError(f"conversation.{key} debe ser {kind}.")
+    inside = low < value < high if open_interval else low <= value <= high
+    if not inside:
+        bounds = f"({low}, {high})" if open_interval else f"[{low}, {high}]"
+        raise AgentConfigError(f"conversation.{key} debe estar en {bounds}.")
+    return int(value) if integer else float(value)
+
+
+def _conversation_config(section: object) -> ConversationConfig:
+    """Sección ``[conversation]`` opcional (spec 020); sin ella valen los defectos."""
+    if section is None:
+        return ConversationConfig()
+    if not isinstance(section, dict):
+        raise AgentConfigError("[conversation] debe ser una tabla.")
+    mode = section.get("mode", "guided")
+    if mode not in CONVERSATION_MODES:
+        raise AgentConfigError("conversation.mode debe ser «guided» o «scripted».")
+    review_llm = section.get("review_llm", False)
+    if not isinstance(review_llm, bool):
+        raise AgentConfigError("conversation.review_llm debe ser booleano.")
+    bridge_every = _bounded(section, "bridge_every", 2, 1, 1_000, integer=True)
+    return ConversationConfig(
+        mode=str(mode),
+        temperature_social=_bounded(section, "temperature_social", 0.8, 0.0, 1.0),
+        temperature_facts=_bounded(section, "temperature_facts", 0.3, 0.0, 1.0),
+        presence_penalty=_bounded(section, "presence_penalty", 0.3, 0.0, 1.0),
+        frequency_penalty=_bounded(section, "frequency_penalty", 0.3, 0.0, 1.0),
+        bridge_every=bridge_every,
+        bridge_min_score=_bounded(section, "bridge_min_score", 0.2, 0.0, 1.0),
+        repetition_threshold=_bounded(
+            section, "repetition_threshold", 0.5, 0.0, 1.0, open_interval=True
+        ),
+        recent_window=_bounded(section, "recent_window", 10, 1, 10, integer=True),
+        max_regenerations=_bounded(section, "max_regenerations", 1, 0, 2, integer=True),
+        converse_max_tokens=_bounded(section, "converse_max_tokens", 220, 50, 600, integer=True),
+        converse_timeout_seconds=_bounded(section, "converse_timeout_seconds", 8.0, 1.0, 30.0),
+        review_llm=review_llm,
     )
 
 

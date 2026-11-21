@@ -32,6 +32,10 @@
     "kind": {
       "description": "Spec 019: tipo de pedido no atendible, solo con unattainable.",
       "enum": ["pricing", "commitment", "human", null]
+    },
+    "act": {
+      "description": "Spec 020: acto de diálogo del turno (etiqueta controlada).",
+      "enum": ["greeting", "smalltalk", "off_topic", "manuelita", "complaint", "correction", "minimal", "about_assistant", "closing", "thanks", "clarify", null]
     }
   }
 }

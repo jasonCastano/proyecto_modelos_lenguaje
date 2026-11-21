@@ -27,6 +27,7 @@ from .graph import GraphDeps
 from .memory import memory_checkpointer, memory_store
 from .prompts import CarePlaybook, load_care, load_conduct
 from .service import ChatService, build_deps
+from .structured import normalize
 
 Mode = Literal["demo", "real"]
 Variant = Literal["chain", "agent"]
@@ -77,13 +78,53 @@ def first_sentence(text: str) -> str:
     return SENTENCE_END.split(text.strip(), maxsplit=1)[0]
 
 
+# Spec 020 (R16): en el modo guiado, las comprobaciones literales pasan a ser de intención.
+SYNONYMS = {
+    "clima": ("clima", "tiempo", "pronóstico", "lluvia"),
+    "cocina": ("cocina", "receta", "postre", "torta"),
+    "deportes": ("deporte", "partido", "fútbol", "resultado"),
+    "mercado financiero": ("mercado", "dólar", "financ", "cotizac"),
+    "entretenimiento": ("entretenimiento", "película", "serie", "cine"),
+    "tareas": ("tarea", "matemátic", "estudio", "escolar"),
+    "profesional": ("profesional", "especialista", "abogad", "médic"),
+    "asistente virtual": ("asistente virtual", "inteligencia artificial", "asistente de ia"),
+}
+EMPATHY = re.compile(
+    r"\b(lamento|lo siento|siento (mucho|la|que)|entiendo|comprendo|qué pena|perdón|disculpa|"
+    r"tranquil|te escucho|es (válida|normal)|gracias por (contarme|plantearlo)|i'?m sorry)",
+    re.IGNORECASE,
+)
+
+
+# «no me invento los ingredientes», «no con marcadores»: nombrar un dato negándolo no lo afirma.
+NEGATION = re.compile(r"\b(no|ni|sin|nunca|tampoco)\b")
+
+
+def _mentions(term: str, lower: str, guided: bool) -> bool:
+    if term.lower() in lower:
+        return True
+    if not guided:
+        return False
+    if term == "español":
+        from .plan import ENGLISH_FUNCTION
+
+        return len(ENGLISH_FUNCTION.findall(lower)) >= 3  # responde en el idioma del visitante
+    return any(s in lower for s in SYNONYMS.get(term, ()))
+
+
 def check(
     case: CareCase,
     answers: list[str],
     outcome: Any,
     playbook: CarePlaybook,
+    guided: bool = False,
 ) -> dict[str, bool]:
-    """Verificaciones del caso sobre la última respuesta (data-model.md, CareCase)."""
+    """Verificaciones del caso sobre la última respuesta (data-model.md, CareCase).
+
+    Con ``guided`` (spec 020, R16) se evalúa la intención: el tema o un sinónimo, una alternativa
+    (puente citado, oferta sobre Manuelita o canal oficial) y la emoción reconocida en las dos
+    primeras frases. Los criterios estrictos no cambian.
+    """
     expect = case.expect
     answer = answers[-1] if answers else ""
     lower = answer.lower()
@@ -98,14 +139,32 @@ def check(
     if "kind" in expect:
         checks["kind"] = route is not None and route.kind == expect["kind"]
     if "mentions" in expect:
-        checks["mentions"] = all(m.lower() in lower for m in expect["mentions"])
+        checks["mentions"] = all(_mentions(m, lower, guided) for m in expect["mentions"])
     if "forbidden" in expect:
-        checks["no_external_facts"] = not any(f.lower() in lower for f in expect["forbidden"])
+        asked = " ".join(case.turns).lower()
+        # En el modo guiado, repetir una palabra del visitante («¿quién ganó?») no afirma nada; en
+        # cambio, la revisión de la spec 020 busca cifras y nombres sin respaldo.
+        forbidden = [f for f in expect["forbidden"] if not (guided and f.lower() in asked)]
+        found = any(
+            f.lower() in sentence and not (guided and NEGATION.search(sentence.split(f.lower())[0]))
+            for f in forbidden
+            for sentence in SENTENCE_END.split(lower)
+        )
+        if guided and outcome is not None and not outcome.turn.citations:
+            from .review import review
+
+            found = found or not review(answer, None, checks={"external_fact"}).ok
+        checks["no_external_facts"] = not found
     if expect.get("cited"):
-        checks["cited"] = outcome is not None and bool(outcome.turn.citations)
+        cited = outcome is not None and bool(outcome.turn.citations)
+        offers = "manuelita" in lower or "www.manuelita.com" in lower
+        checks["cited"] = cited or (guided and offers)
     if expect.get("opener"):
         starts = _prefixes(playbook, "opener", "complaint", "rejection", "hostility", "satisfied")
-        checks["opener"] = any(answer.startswith(start) for start in starts)
+        opening = " ".join(SENTENCE_END.split(answer.strip())[:2])
+        checks["opener"] = any(answer.startswith(start) for start in starts) or (
+            guided and EMPATHY.search(opening) is not None
+        )
     if "no_echo" in expect:
         checks["no_echo"] = not any(word.lower() in lower for word in expect["no_echo"])
     if expect.get("cordial"):
@@ -118,7 +177,8 @@ def check(
     if expect.get("single_question"):
         checks["single_question"] = answer.count("?") == 1
     if "parts" in expect:
-        checks["parts"] = handled_parts(case, answer, playbook) >= int(expect["parts"])
+        handled = handled_parts(case, answer, playbook, guided=guided)
+        checks["parts"] = handled >= int(expect["parts"])
     if expect.get("no_invented_contacts"):
         checks["no_invented_contacts"] = not care.invented_contacts(answer, playbook)
     if expect.get("alternative"):
@@ -145,11 +205,30 @@ def _decline_in(variant: str, answer: str) -> bool:
     )
 
 
-def handled_parts(case: CareCase, answer: str, playbook: CarePlaybook) -> int:
-    """Solicitudes atendidas: líneas numeradas (o una respuesta) más las partes declinadas."""
+def handled_parts(
+    case: CareCase, answer: str, playbook: CarePlaybook, *, guided: bool = False
+) -> int:
+    """Solicitudes atendidas: líneas numeradas (o una respuesta) más las partes declinadas.
+
+    En el modo guiado el modelo declina con sus palabras: cuenta cada tema ajeno nombrado.
+    """
     # Sin numeración, cada párrafo cuenta como una solicitud atendida; las declinaciones de las
     # partes ajenas van al final del último párrafo y se cuentan aparte.
     declined = sum(1 for v in playbook.variants["decline.part"] if _decline_in(v, answer))
+    if guided:
+        lower = answer.lower()
+        declined += sum(1 for spec in care.TOPICS if spec.label.lower() in lower)
+        # Una respuesta fluida cubre cada solicitud de Manuelita que nombra con sus palabras.
+        normalized = normalize(answer)
+        covered = 0
+        for part in care.split_requests(" ".join(case.turns))[0]:
+            words = [
+                w
+                for w in care._content_words(normalize(part))
+                if len(w) >= 4 and w != "manuelita" and not care.match_topic(w)
+            ]
+            covered += bool(words) and any(w[:5] in normalized for w in words)
+        return max(1, len(NUMBERED.findall(answer)), covered) + declined
     paragraphs = [block for block in PARAGRAPH_BREAK.split(answer) if block.strip()]
     return max(1, len(NUMBERED.findall(answer)), len(paragraphs)) + declined
 
@@ -167,10 +246,17 @@ def run_care(
     config: AgentConfig | None = None,
     deps_factory: Callable[[Mode], GraphDeps] | None = None,
     baseline: bool = False,
+    conversation_mode: str | None = None,
 ) -> dict[str, Any]:
-    """Ejecuta la batería; con ``baseline`` mide además la latencia sin las habilidades."""
+    """Ejecuta la batería; con ``baseline`` mide además la latencia sin las habilidades.
+
+    ``conversation_mode`` (spec 020) fuerza ``guided`` o ``scripted``; si no, vale la
+    configuración.
+    """
     cases = load_cases(cases_path)
     config = config or load_agent_config()
+    if conversation_mode:
+        config = replace(config, conversation=replace(config.conversation, mode=conversation_mode))
     playbook = load_care()
     if deps_factory is None:
         from ..api import _retriever  # importación tardía: evita el ciclo api → agente
@@ -192,7 +278,12 @@ def run_care(
         rows = _run(cases, mode, variants, plain, factory_for(plain), playbook, collect=False)
         latency_baseline = _mean_latency(rows)
     report = summarize(results, playbook, latency_baseline)
-    return {"mode": mode, "created_at": datetime.now(UTC).isoformat(), **report}
+    return {
+        "mode": mode,
+        "conversation_mode": config.conversation.mode,
+        "created_at": datetime.now(UTC).isoformat(),
+        **report,
+    }
 
 
 def _run(
@@ -251,7 +342,8 @@ def _run(
                 "error": error,
             }
             if collect:
-                checks = check(case, answers, outcome, playbook)
+                guided = config.conversation.guided and config.care.enabled
+                checks = check(case, answers, outcome, playbook, guided=guided)
                 if error:
                     checks["no_error"] = False
                 row.update(
@@ -263,7 +355,12 @@ def _run(
                         outcome.contact if outcome else None, user_id
                     ),
                     expected_parts=case.expect.get("parts"),
-                    handled_parts=handled_parts(case, answers[-1], playbook)
+                    handled_parts=handled_parts(
+                        case,
+                        answers[-1],
+                        playbook,
+                        guided=config.conversation.guided and config.care.enabled,
+                    )
                     if answers and "parts" in case.expect
                     else None,
                     checks=checks,
@@ -430,7 +527,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         "# Evaluación de atención de Valer-IA Caña",
         "",
         f"Generado por `agent care --mode {report['mode']}` el {report['created_at'][:10]} "
-        f"(spec 019, guiones `prompts/care.md` v{report['playbook_version']}).",
+        f"(spec 019, guiones `prompts/care.md` v{report['playbook_version']}; modo de "
+        f"conversación `{report.get('conversation_mode', 'scripted')}`, spec 020).",
         "",
         "## Métricas",
         "",

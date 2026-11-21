@@ -1,0 +1,73 @@
+# Perfiles de visitante simulado (spec 020, FR-031).
+# En modo real, prompts/visitor_sim.md usa `goal` y `tone` para que DeepSeek escriba cada turno.
+# En modo demo se usan los `turns` guionados, sin red.
+
+[curioso]
+goal = "Conocer la historia, los negocios y la fundación de Manuelita, con algún comentario personal en medio."
+tone = "amable, preguntón, frases completas"
+turns = [
+  "hola, ¿cómo estás?",
+  "¿qué es Manuelita?",
+  "qué interesante, no sabía",
+  "¿y desde cuándo existe?",
+  "¿qué hace la fundación?",
+  "¿y cómo va a estar el clima este fin de semana?",
+  "jaja ok",
+  "listo, gracias por todo",
+]
+
+[molesto]
+goal = "No encuentra lo que busca y se queja; pide cosas que la asistente no puede dar."
+tone = "impaciente, cortante, a veces sarcástico"
+turns = [
+  "esta página no sirve para nada",
+  "llevo rato buscando cómo comprar azúcar al por mayor",
+  "hazme un descuento entonces",
+  "no me interesa nada de eso",
+  "quiero hablar con una persona",
+  "¿qué produce Manuelita?",
+  "ok",
+  "chao",
+]
+
+[bromista]
+goal = "Bromea, cambia de tema y pone a prueba a la asistente."
+tone = "informal, con risas y emojis"
+turns = [
+  "jajaja hola robot",
+  "¿eres humana o una tostadora?",
+  "😂",
+  "¿quién gana el mundial?",
+  "¿y tú tomas tinto?",
+  "bueno ya, ¿qué vende Manuelita?",
+  "jaja bacano",
+  "chao 👋",
+]
+
+[estudiante]
+goal = "Hace una tarea sobre una empresa colombiana y necesita datos con fuentes."
+tone = "formal pero cercano"
+turns = [
+  "buenas tardes",
+  "estoy haciendo una tarea sobre una empresa del Valle",
+  "¿qué produce Manuelita?",
+  "no, me refería a la energía",
+  "¿qué programas de educación tiene la fundación?",
+  "¿me ayudas con la introducción del ensayo?",
+  "gracias",
+  "eso era todo",
+]
+
+[disperso]
+goal = "Salta de un tema a otro y mezcla charla con preguntas."
+tone = "coloquial, mensajes cortos"
+turns = [
+  "qué calor tan berraco",
+  "¿viste el partido?",
+  "¿y Manuelita tiene palma?",
+  "uy y el dólar cómo va",
+  "jaja ok",
+  "¿cómo te llamas?",
+  "¿y lo de la palma dónde es?",
+  "listo chao",
+]

@@ -224,6 +224,20 @@ ScopeReason = Literal[
 # Spec 019: emoción del visitante, pedidos no atendibles y registro del contacto (CRM).
 Sentiment = Literal["neutral", "satisfied", "confused", "frustrated", "angry", "distressed"]
 UnattainableKind = Literal["pricing", "commitment", "human"]
+# Spec 020: acto de diálogo del turno (etiqueta controlada).
+DialogueAct = Literal[
+    "greeting",
+    "smalltalk",
+    "off_topic",
+    "manuelita",
+    "complaint",
+    "correction",
+    "minimal",
+    "about_assistant",
+    "closing",
+    "thanks",
+    "clarify",
+]
 ContactCategory = Literal[
     "manuelita", "off_topic", "advice", "complaint", "unattainable", "crisis", "conduct", "other"
 ]
@@ -259,6 +273,7 @@ class RouteModel(BaseModel):
     topic: str | None = Field(default=None, max_length=40)
     sentiment: Sentiment | None = None
     kind: UnattainableKind | None = None
+    act: DialogueAct | None = None  # spec 020
 
 
 class TurnMetricsModel(BaseModel):
@@ -378,6 +393,16 @@ class ContactRequestModel(BaseModel):
     status: ContactStatus
 
 
+class ContactTurnModel(BaseModel):
+    """Etiquetas de un turno (spec 020): acto, si hubo puente y qué hizo la revisión."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    act: DialogueAct
+    bridged: bool = False
+    reviewed: Literal["show", "retry", "fallback"] = "show"
+
+
 class ContactRecordModel(BaseModel):
     """Registro del contacto (CRM) sin datos personales; solo lo muestra la vista técnica."""
 
@@ -393,6 +418,8 @@ class ContactRecordModel(BaseModel):
     resolved: bool = True
     hostile_turns: int = Field(default=0, ge=0)
     crisis: bool = False
+    # Spec 020: secuencia de actos del hilo (como máximo 50; ``turns`` ya es el contador).
+    acts: list[ContactTurnModel] = Field(default_factory=list, max_length=50)
 
 
 class ChatResponse(BaseModel):

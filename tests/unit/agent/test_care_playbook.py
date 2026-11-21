@@ -14,7 +14,7 @@ from proyecto_modelos_lenguaje.agent.welcome import gold_units_path
 
 def test_playbook_structure() -> None:
     playbook = load_care()
-    assert playbook.version == "1.0"
+    assert playbook.version == "1.1"
     for key in CARE_REQUIRED:
         assert playbook.variants[key], key
     for spec in care.TOPICS:
@@ -22,6 +22,19 @@ def test_playbook_structure() -> None:
         assert spec.bridge in playbook.citations, spec.key
     for key in ("channel.website", "channel.ethics_line", "channel.data_protection"):
         assert key in playbook.citations
+
+
+def test_angles_cover_every_catalog_topic() -> None:
+    """Spec 020 (T010): mapa de ángulos de los puentes, con palabras clave y ángulo válido."""
+    from proyecto_modelos_lenguaje.agent.prompts import ANGLES, _parse_angle
+
+    playbook = load_care()
+    for spec in care.TOPICS:
+        assert spec.key in playbook.angles, spec.key
+    assert "default" in playbook.angles
+    assert all(angle.angle in ANGLES and angle.keywords for angle in playbook.angles.values())
+    with pytest.raises(ValueError, match="ángulo desconocido"):
+        _parse_angle("angles.x", "keywords: a, b\nangle: deportes")
 
 
 def test_crisis_has_help_lines_and_no_commercial_content() -> None:

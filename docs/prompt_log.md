@@ -330,6 +330,69 @@ Resultados (`agent care`, 36 casos por variante, `docs/evaluacion_atencion.md`):
   atendibles se responden sin llamar al modelo.
 - Pendiente: la calificación humana del tono (SC-011) en `docs/evaluacion_atencion.md`.
 
+### 3.18 Conversación guiada: `converse.md` 1.0, `agent.md` 1.6, `router.md` 1.5, `care.md` 1.1 y `conduct.md` 1.2 (2026-11-20, spec 020)
+
+Valer-IA redacta con el modelo lo que antes respondía con guiones, guiada por un plan del turno y con revisión antes
+de mostrar (ADR 0024). Parámetros en `[conversation]`: `temperature_social` 0.8 (1.0 en mensajes mínimos),
+`temperature_facts` 0.3, `presence_penalty` y `frequency_penalty` 0.3 (DeepSeek las acepta, verificado),
+`bridge_every` 2, `repetition_threshold` 0.5, `recent_window` 10, `max_regenerations` 1 y
+`converse_timeout_seconds` 8.
+
+| Prompt | Versión | SHA-256 (12 primeros) | Cambio |
+|--------|---------|-----------------------|--------|
+| `prompts/converse.md` | 1.0 (nuevo) | `7654d6df2c05` | Nodo `converse`: identidad, tres niveles (social, externo, Manuelita), estilo variado sin fórmulas fijas, apertura sugerida por `<variacion>`, puente opcional citado, memoria del hilo, conducta por acto y 10 ejemplos de estilo. |
+| `prompts/converse_judge.md` | 1.0 (nuevo) | `f5ed1529e0df` | Juez de `agent converse`: naturalidad, empatía y pertinencia de 1 a 5 por respuesta, JSON, temperatura 0. |
+| `prompts/visitor_sim.md` | 1.0 (nuevo) | `ab8617e0a687` | Visitante simulado por perfil (curioso, molesto, bromista, estudiante, disperso). |
+| `prompts/agent.md` | 1.5 → 1.6 | `b277d80a415c` | Brief guiado (`Social:`, `Externo:`, `Sentimiento:`, `Idioma:`, `Registro:`, `Corrección:`, memoria): una sola respuesta fluida que declina lo externo con sus palabras y responde en el idioma del visitante. |
+| `prompts/router.md` | 1.4 → 1.5 | `ef0f29c6dbcb` | Campo opcional `act`; un comentario social es `direct` con `act` `smalltalk`. |
+| `prompts/care.md` | 1.0 → 1.1 | `d62c82a17d97` | Mapa de ángulos `angles.<tema>` para los puentes buscados; respaldos `smalltalk.fallback`, `minimal.fallback` y `about.fallback`. Los guiones de la spec 019 quedan como respaldo. |
+| `prompts/conduct.md` | 1.1 → 1.2 | `428907d97810` | Sección `remember_offer` (la oferta de recordar va en el cierre del modo guiado). |
+
+Iteraciones con el modelo real (`agent converse --mode real --baseline --simulate --repeats 10`, ~45 min por
+corrida):
+
+1. **Primera corrida**: cumplió SC-003 a SC-006 y SC-012; fallaron SC-001 (un par idéntico: dos respaldos con el
+   mismo saludo fijo) y SC-002 (3/10 en «¿eres una persona?»: el modelo repetía «Lamento no poder ayudarte…»).
+   Cambios: apertura sugerida por hilo y turno (`<variacion>`), fórmulas prohibidas en `converse.md` y respaldo de
+   identidad con `ai_disclosure`.
+2. **Segunda corrida**: SC-002 subió a 9–10/10 en 7 de 8 mensajes. Persistía la repetición en las preguntas sobre la
+   asistente, porque la revisión exigía la presentación completa en cada una. Cambio: la presentación se exige solo
+   la primera vez en el hilo.
+3. **Tercera corrida**: la cadena cumplió todas las metas duras; el agente falló SC-001 (94 %: respaldos de
+   identidad repetidos y dos declinaciones parecidas a 4 turnos, fuera de la ventana de 3) y SC-002 (40 %, «jaja»).
+   Cambios: respaldo de identidad con variantes (`about.fallback`), `recent_window` 10 (todo el hilo, como exige
+   SC-001), temperatura 1.0 en mensajes mínimos y prohibición de empezar repitiendo la risa.
+4. **Cuarta corrida**: interrumpida. DeepSeek respondió `402 Insufficient Balance`. Esas corridas se descartaron.
+5. **Quinta corrida** (tras recargar el saldo): el agente falló SC-001 por poco (similitud máxima 0.70): el
+   respaldo de identidad se parecía a la presentación que el modelo ya había hecho. Cambios: el respaldo elige la
+   variante menos parecida a lo dicho en el hilo, y `converse.md` pide variar la forma de presentarse.
+6. **Sexta corrida** (`docs/evaluacion_conversacion.md`, informe vigente): **las dos variantes cumplen todas las metas
+   duras** (código 0).
+
+| Variante | SC-001 (máx.) | SC-002 (mín.) | SC-003 repetidos / tasa | SC-004 | SC-005 | SC-006 | SC-012 | Juez N / E / P (guiones) | p90 sin búsqueda (guiones) |
+|----------|---------------|---------------|-------------------------|--------|--------|--------|--------|--------------------------|----------------------------|
+| cadena | 100 % (0.48) ✅ | 90 % ✅ | 0 / 21 % ✅ | 0 ✅ | 0 ✅ | 100 % ✅ | 100 % ✅ | 3.83 / 4.01 / 4.40 (2.89 / 3.11 / 3.39) | 5.9 s (2.2 s) |
+| agente | 100 % (0.45) ✅ | 90 % ✅ | 0 / 21 % ✅ | 0 ✅ | 0 ✅ | 100 % ✅ | 100 % ✅ | 3.87 / 3.78 / 4.49 (3.12 / 3.23 / 3.68) | 6.3 s (2.3 s) |
+
+   Metas de calidad: los comentarios sociales se acompañan (100 %), los mensajes mínimos tienen 2 frases o menos
+   (100 % frente a 0 % con guiones) y las correcciones no piden nueva aclaración (100 %). El juez mejora en todas las
+   dimensiones frente a la línea base; la pertinencia supera 4 y la naturalidad queda en 3.8–3.9 (meta ≥ 4). Las
+   referencias a turnos previos dan 100 % en el agente y 0 % en la cadena (el caso `g04` respondió sin evidencia).
+   SC-011 **no se cumple**: en los turnos sin búsqueda, la primera palabra tarda 5.9–6.3 s en el p90, porque
+   `converse` no transmite antes de revisar y algunas respuestas se regeneran.
+
+Baterías existentes en el modo guiado, con el modelo real (después de recargar el saldo):
+
+- `agent conduct --mode real` (`docs/evaluacion_conducta.md`): 24/24 en cadena y agente, 0 fugas (SC-006).
+- `agent care --mode real` (`docs/evaluacion_atencion.md`, comprobaciones de intención, R16): cumple las metas
+  estrictas y de calidad (código 0), con cadena 30/36 y agente 34/36. Los casos que no cumplen son primeras frases
+  de más de 30 palabras (no entran en las metas), una aclaración con dos preguntas (`l03`) y una respuesta a «quiero
+  hablar con una persona» que no dijo «asistente virtual» (`s03`). Antes de esta corrida, la comprobación de
+  intención se ajustó para no contar como dato externo una palabra prohibida negada («no me invento los
+  ingredientes») y para reconocer «siento que…» como apertura empática.
+
+Pendiente: la calificación humana (SC-007) de los integrantes.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

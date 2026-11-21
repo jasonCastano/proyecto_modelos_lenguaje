@@ -112,6 +112,31 @@ def build_parser() -> argparse.ArgumentParser:
         "--baseline", action="store_true", help="Mide además la latencia sin las habilidades."
     )
     care_cmd.add_argument("--json-out", default=None, help="Informe JSON (por defecto en real).")
+    care_cmd.add_argument(
+        "--conversation-mode",
+        choices=("guided", "scripted"),
+        default=None,
+        help="Spec 020: modo de conversación (por defecto, el de config/agent.toml).",
+    )
+    converse_cmd = sub.add_parser(
+        "converse", help="Evalúa la naturalidad de la conversación guiada (spec 020)."
+    )
+    converse_cmd.add_argument("--mode", choices=("demo", "real"), default="demo")
+    converse_cmd.add_argument(
+        "--variants", nargs="+", choices=("chain", "agent"), default=["chain", "agent"]
+    )
+    converse_cmd.add_argument(
+        "--baseline", action="store_true", help="Repite la evaluación en el modo de guiones."
+    )
+    converse_cmd.add_argument(
+        "--simulate",
+        action="store_true",
+        help="En real, DeepSeek escribe los turnos de los visitantes simulados.",
+    )
+    converse_cmd.add_argument("--repeats", type=int, default=10, help="Hilos por mensaje.")
+    converse_cmd.add_argument(
+        "--json-out", default=None, help="Informe JSON (por defecto en real)."
+    )
     return parser
 
 
@@ -127,6 +152,7 @@ def _care(args: argparse.Namespace) -> int:
             variants=tuple(args.variants),
             cases_path=Path(args.cases) if args.cases else CASES_FILE,
             baseline=args.baseline,
+            conversation_mode=args.conversation_mode,
         )
     except Exception as exc:
         print(f"error de configuración: {exc}", file=sys.stderr)
@@ -145,6 +171,43 @@ def _care(args: argparse.Namespace) -> int:
     if not report["meets_strict"]:
         return 1
     return 0 if report["meets_targets"] else 1
+
+
+def _converse(args: argparse.Namespace) -> int:
+    """``agent converse``: 0 si cumple las metas duras, 1 si falla alguna, 2 por configuración."""
+    with contextlib.suppress(AttributeError, ValueError):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    from .converse_eval import REPORT_JSON, render_markdown, run_converse, write_reports
+
+    if args.repeats < 1:
+        print("error de configuración: --repeats debe ser >= 1", file=sys.stderr)
+        return 2
+    try:
+        report = run_converse(
+            mode=args.mode,
+            variants=tuple(args.variants),
+            baseline=args.baseline,
+            simulate=args.simulate,
+            repeats=args.repeats,
+        )
+    except Exception as exc:
+        print(f"error de configuración: {exc}", file=sys.stderr)
+        return 2
+    for variant, row in report["summary"].items():
+        hard = row["guided"]["hard"]
+        skip = row["guided"].get("informative") or []
+        failed = [key for key, ok in hard.items() if not ok and key not in skip]
+        status = "cumple las metas duras" if not failed else f"falla {', '.join(failed)}"
+        print(f"{variant}: {status}; juez {row['guided']['judge']}")
+    if args.json_out:
+        write_reports(report, Path(args.json_out))
+        print(f"informe: {args.json_out} y {REPORT_JSON.with_suffix('.md').name}")
+    elif args.mode == "real":
+        write_reports(report)
+        print(f"informe: {REPORT_JSON} y su Markdown")
+    else:
+        print(render_markdown(report))
+    return 0 if report["meets_hard"] else 1
 
 
 def _conduct(args: argparse.Namespace) -> int:
@@ -474,6 +537,8 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
         return _conduct(args)
     if args.command == "care":
         return _care(args)
+    if args.command == "converse":
+        return _converse(args)
     return _chat(args, root)
 
 

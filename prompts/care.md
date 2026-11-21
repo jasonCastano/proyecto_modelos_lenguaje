@@ -1,4 +1,4 @@
-<!-- prompt_version: 1.0 -->
+<!-- prompt_version: 1.1 -->
 # Valer-IA Caña — guiones de atención
 
 Guiones de atención de Valer-IA Caña (spec 019, `contracts/care-skills.md`). No pasan por el modelo de lenguaje:
@@ -8,6 +8,10 @@ sección es una lista de variantes (`- …`). Los puentes y canales declaran su 
 
 Placeholders permitidos: `{topic}`, `{bridge}`, `{channel}` y `{options}`. Ninguna frase afirma hechos externos: los
 datos de Manuelita salen solo de las unidades citadas.
+
+Spec 020 (v1.1): en el modo `guided`, estos guiones son guía de estilo y respaldo; el nodo `converse` redacta la
+respuesta. Las secciones `angles.<tema>` forman el mapa de ángulos de los puentes: `keywords` amplía la búsqueda en
+el oro y `angle` evita repetir el mismo ángulo en un hilo (`agent/bridges.py`).
 
 ## opener.frustrated
 
@@ -270,6 +274,103 @@ cite: unit_04332ad427df77f2 | https://www.manuelita.com/wp-content/uploads/2017/
 - Me alegra haberte ayudado. ¿Hay algo más en lo que te pueda colaborar?
 - ¡Con mucho gusto! Cuando quieras saber algo más de Manuelita, aquí estaré.
 
+## smalltalk.fallback
+
+- Gracias por contármelo. Si quieres saber algo de Manuelita, aquí estoy.
+- Qué bueno conversar contigo. Cuando quieras, te cuento algo sobre Manuelita.
+- Te leo con gusto. Si te da curiosidad algo de Manuelita, me avisas.
+
+## minimal.fallback
+
+- ¡Listo! Aquí sigo si necesitas algo.
+- Perfecto, cuando quieras seguimos.
+
+## about.fallback
+
+- Como te decía, aquí te atiende Valer-IA Caña: un programa de inteligencia artificial que no reemplaza los canales oficiales de Manuelita.
+- Te cuento: funciono con inteligencia artificial y me llamo Valer-IA Caña; mi tema es la información pública de Manuelita.
+- Valer-IA Caña es mi nombre, y soy un programa de inteligencia artificial que conversa sobre la información pública de Manuelita.
+
 ## language.other
 
 - Te respondo en español, que es el idioma en el que atiendo.
+
+## angles.default
+
+keywords: historia, trapiche, fundación, trayectoria
+angle: historia
+
+## angles.clima
+
+keywords: agua, cuencas, río Cauca, riego, conservación
+angle: agua
+
+## angles.deportes
+
+keywords: Fundación Manuelita, jóvenes, comunidad, Palmira
+angle: comunidad
+
+## angles.politica
+
+keywords: gobierno corporativo, ética, informe de sostenibilidad
+angle: gobierno
+
+## angles.finanzas_externas
+
+keywords: informe de sostenibilidad, resultados, avances económicos
+angle: gobierno
+
+## angles.inversion
+
+keywords: informe de sostenibilidad, avances económicos, prioridades
+angle: sostenibilidad
+
+## angles.programacion
+
+keywords: innovación, tecnología, empaques, procesos
+angle: innovacion
+
+## angles.tecnologia
+
+keywords: innovación, empaques de papel, tecnología
+angle: innovacion
+
+## angles.cocina
+
+keywords: azúcar, productos, marca, consumidores
+angle: productos
+
+## angles.tareas
+
+keywords: educación, Fundación Manuelita, colegio, Educar Uno a Uno
+angle: educacion
+
+## angles.entretenimiento
+
+keywords: historia, 160 años, pionera, azúcar refinada
+angle: historia
+
+## angles.viajes
+
+keywords: Perú, Chile, Brasil, operaciones, frutas y hortalizas
+angle: otro
+
+## angles.otras_empresas
+
+keywords: negocios, plataformas, palma, acuicultura, caña
+angle: productos
+
+## angles.salud
+
+keywords: bienestar, comunidades, vivienda, programas sociales
+angle: comunidad
+
+## angles.legal
+
+keywords: Línea Ética, transparencia, reportar hechos irregulares
+angle: etica
+
+## angles.energia
+
+keywords: energía, bioetanol, cogeneración, biodiésel
+angle: energia

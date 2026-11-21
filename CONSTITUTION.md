@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.11.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-17
+**Versión**: 1.12.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-20
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -279,6 +279,14 @@ uv.lock
   Manuelita con cita. Esas respuestas NO DEBEN aportar hechos externos. La emoción del visitante se reconoce al
   inicio, los insultos reciben un límite cordial sin cerrar la atención y los canales oficiales solo se mencionan
   si están en el corpus con su cita.
+- Conversación guiada (spec 020, ADR 0024): fuera de los casos de seguridad, Valer-IA **redacta** cada respuesta
+  sin búsqueda con el modelo, guiada por un plan del turno determinista, y la respuesta DEBE pasar una revisión
+  por reglas antes de mostrarse (hechos externos, contactos, promesas, citas, repetición y opiniones). Si la
+  revisión falla dos veces o el modelo no responde, se usa la composición de los guiones como respaldo. Esas
+  respuestas NO DEBEN transmitirse token a token antes de revisarse. Las recomendaciones de temas de Manuelita
+  son opcionales, con cuota, citadas y sin repetirse en el hilo. Las respuestas de crisis, datos de terceros,
+  extracción de instrucciones, daño, insulto solo, identidad y perfil conservan su texto fijo.
+  `[conversation] mode = "scripted"` restablece los guiones de la spec 019 como línea base.
 - Un mensaje de angustia grave o de autolesión DEBE recibir primero una respuesta de apoyo con la Línea 106
   (salud mental, Ministerio de Salud) y el 123, sin contenido comercial, por encima de cualquier otra regla.
 - El registro del contacto (CRM) de cada conversación guarda solo etiquetas controladas (categoría, tema,
@@ -749,6 +757,11 @@ Streamlit, Gradio y los notebooks no se aceptan como interfaz. La evidencia de c
   académicos y se citan.
 - El contenido de terceros se atribuye; se atienden solicitudes de retiro.
 - Las respuestas del sistema no deben presentarse como asesoría oficial de Manuelita.
+- **Política de tres niveles** de la asistente (spec 020, ADR 0024): la conversación **social** (saludos,
+  cortesía, empatía, comentarios generales) se permite sin afirmar datos verificables; los **hechos externos
+  verificables** (pronósticos, resultados, precios, noticias, diagnósticos o asesoría profesional) se declinan sin
+  inventarlos; la **información de Manuelita** solo se afirma con evidencia del corpus y su cita. La asistente no
+  da opiniones propias ni institucionales sobre temas polémicos.
 - El uso de asistentes de IA se declara y se verifica; el equipo asume la responsabilidad del código y de las
   afirmaciones. Los asistentes no figuran como autores ni coautores en Git ni en GitHub (§4.3).
 - Los prompts y resultados no se inventan ni se editan para simular éxito.
@@ -962,4 +975,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.11.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-17
+**Versión**: 1.12.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-20

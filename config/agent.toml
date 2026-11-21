@@ -24,5 +24,20 @@ max_requests = 5          # solicitudes atendidas por mensaje
 hostility_levels = 3      # niveles del límite cordial ante insultos
 complaint_escalation = 3  # quejas seguidas antes de ofrecer el canal oficial
 
+[conversation]             # conversación natural guiada (spec 020)
+mode = "guided"           # guided: el modelo redacta y la revisión controla; scripted: guiones de la spec 019
+temperature_social = 0.8  # turnos sin búsqueda (nodo converse)
+temperature_facts = 0.3   # respuestas con evidencia de Manuelita
+presence_penalty = 0.3    # se omiten si el proveedor no las acepta
+frequency_penalty = 0.3
+bridge_every = 2          # como máximo un puente cada dos turnos fuera de tema
+bridge_min_score = 0.2    # puntaje mínimo del retriever para un puente buscado
+repetition_threshold = 0.5  # similitud máxima con las respuestas recientes del hilo
+recent_window = 10        # respuestas del hilo que se comparan (SC-001: todo el hilo)
+max_regenerations = 1     # regeneraciones tras la revisión antes del respaldo
+converse_max_tokens = 220
+converse_timeout_seconds = 8
+review_llm = false        # juez LLM en línea (desactivado por latencia)
+
 [state]
 env_var = "MANUELITA_STATE_DIR"    # checkpointer y Store, siempre fuera del repositorio

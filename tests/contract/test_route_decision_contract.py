@@ -78,3 +78,22 @@ def test_low_confidence_becomes_clarify_and_keeps_alternative() -> None:
     assert effective.route == "clarify"
     assert effective.alternative == "structured"
     assert decision.effective(min_confidence=0.4).route == "structured"
+
+
+def test_dialogue_act_matches_the_contract_and_unknown_acts_are_dropped() -> None:
+    """Spec 020: ``act`` es opcional, con el mismo vocabulario en el modelo y en el contrato."""
+    # Arrange
+    payload = {"route": "direct", "confidence": 0.9, "reason": "charla", "decided_by": "rules"}
+    contract_acts = {act for act in SCHEMA["properties"]["act"]["enum"] if act is not None}
+
+    # Act
+    known = RouteDecision.model_validate({**payload, "act": "smalltalk"})
+    unknown = RouteDecision.model_validate({**payload, "act": "poema"})
+
+    # Assert
+    from proyecto_modelos_lenguaje.agent.models import DIALOGUE_ACTS
+
+    assert contract_acts == set(DIALOGUE_ACTS)
+    assert known.act == "smalltalk"
+    jsonschema.validate(known.model_dump(mode="json"), SCHEMA)
+    assert unknown.act is None

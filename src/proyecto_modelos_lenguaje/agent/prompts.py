@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 
@@ -58,6 +58,7 @@ CONDUCT_SECTIONS = (
     "greeting_named",
     "farewell",
     "farewell_offer",
+    "remember_offer",
     "clarify",
     "ai_disclosure",
     "off_topic",
@@ -161,6 +162,22 @@ class CareCitation:
     title: str
 
 
+ANGLES = frozenset(
+    {
+        *("historia", "sostenibilidad", "agua", "comunidad", "educacion", "productos"),
+        *("energia", "innovacion", "gobierno", "etica", "otro"),
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Angle:
+    """Ángulo de un puente (spec 020): palabras para ampliar la búsqueda y etiqueta."""
+
+    keywords: tuple[str, ...]
+    angle: str
+
+
 @dataclass(frozen=True, slots=True)
 class CarePlaybook:
     """Guiones de atención (``prompts/care.md``): variantes por sección y citas al oro."""
@@ -169,6 +186,23 @@ class CarePlaybook:
     sha256: str
     variants: dict[str, tuple[str, ...]]
     citations: dict[str, CareCitation]
+    angles: dict[str, Angle] = field(default_factory=dict)  # spec 020: angles.<tema>
+
+
+def _parse_angle(key: str, body: str) -> Angle:
+    """Sección ``angles.<tema>``: líneas ``keywords: …`` y ``angle: …``."""
+    values: dict[str, str] = {}
+    for raw in body.splitlines():
+        name, _, value = raw.partition(":")
+        if value.strip() and name.strip() in {"keywords", "angle"}:
+            values[name.strip()] = value.strip()
+    angle = values.get("angle", "")
+    if angle not in ANGLES:
+        raise ValueError(f"care.md [{key}]: ángulo desconocido «{angle}».")
+    keywords = tuple(k.strip() for k in values.get("keywords", "").split(",") if k.strip())
+    if not keywords:
+        raise ValueError(f"care.md [{key}]: faltan las palabras clave.")
+    return Angle(keywords, angle)
 
 
 def _parse_care_section(key: str, body: str) -> tuple[tuple[str, ...], CareCitation | None]:
@@ -204,7 +238,11 @@ def load_care(project_root: Path | None = None) -> CarePlaybook:
         raise ValueError(f"care.md sin secciones: {', '.join(missing)}.")
     variants: dict[str, tuple[str, ...]] = {}
     citations: dict[str, CareCitation] = {}
+    angles: dict[str, Angle] = {}
     for key, body in sections.items():
+        if key.startswith("angles."):
+            angles[key.removeprefix("angles.")] = _parse_angle(key, body)
+            continue
         parsed, citation = _parse_care_section(key, body)
         variants[key] = parsed
         if citation is not None:
@@ -216,4 +254,62 @@ def load_care(project_root: Path | None = None) -> CarePlaybook:
         sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
         variants=variants,
         citations=citations,
+        angles=angles,
     )
+
+
+# ---------------------------------------------------------------- spec 020: conversación guiada
+
+CONVERSE_SECTIONS = ("system", "style", "examples")
+
+
+@dataclass(frozen=True, slots=True)
+class ConversePrompt:
+    """Prompt del nodo ``converse`` (``prompts/converse.md``)."""
+
+    version: str
+    sha256: str
+    system: str
+    style: str
+    examples: str
+
+    def render(self) -> str:
+        sep = chr(10) * 2
+        return sep.join([self.system, "## Estilo", self.style, "## Ejemplos", self.examples])
+
+
+@lru_cache(maxsize=4)
+def load_converse(project_root: Path | None = None) -> ConversePrompt:
+    """Lee y valida ``prompts/converse.md`` (spec 020): secciones system, style y examples."""
+    version, sections = load_sections("converse", project_root=project_root)
+    missing = [key for key in CONVERSE_SECTIONS if not sections.get(key)]
+    if missing:
+        raise TaskError(
+            "invalid_config",
+            f"prompts/converse.md sin secciones: {', '.join(missing)}.",
+            task="converse",
+        )
+    root = Path(project_root) if project_root is not None else PROJECT_ROOT
+    text = (root / "prompts" / "converse.md").read_text(encoding="utf-8")
+    return ConversePrompt(
+        version=version,
+        sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        system=sections["system"],
+        style=sections["style"],
+        examples=sections["examples"],
+    )
+
+
+@lru_cache(maxsize=8)
+def load_plain_prompt(name: str, project_root: Path | None = None) -> tuple[str, str, str]:
+    """Prompt de evaluación con secciones ``## clave`` (``converse_judge``, ``visitor_sim``).
+
+    Devuelve (versión, sha256, texto sin el comentario de versión).
+    """
+    if name not in {"converse_judge", "visitor_sim"}:
+        raise TaskError("invalid_config", f"Prompt desconocido: {name}.", task=name)
+    version, _sections = load_sections(name, project_root=project_root)
+    root = Path(project_root) if project_root is not None else PROJECT_ROOT
+    text = (root / "prompts" / f"{name}.md").read_text(encoding="utf-8")
+    body = PROMPT_VERSION_PATTERN.sub("", text, count=1).strip()
+    return version, hashlib.sha256(text.encode("utf-8")).hexdigest(), body

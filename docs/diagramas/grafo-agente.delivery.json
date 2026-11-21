@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "receiptId": "529d6ffe-8d8d-4251-a8f3-dfbf81d56362",
+  "receiptId": "d39f6568-73f5-4846-8289-778c33458d3c",
   "status": "current",
   "command": "deliver",
   "type": "workflow",
   "input": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\grafo-agente.json",
   "output": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\grafo-agente.html",
   "specification": {
-    "sha256": "969b0da72a93796020bc36f55bb838e9d9ce6f090fe62df92f623a0d0ce0539c",
-    "bytes": 6846
+    "sha256": "cb23ab4d4b7578895b9dcc99198701be9ac27a950122792dde61401c70a3dfb9",
+    "bytes": 6582
   },
   "artifact": {
-    "sha256": "88f8a9ab8e7086db217bddf93a623c8b6805ea7f2d099685827aa98db27da38e",
-    "bytes": 849414
+    "sha256": "40eb59137682fe2f32514c693882b593d73b28d469523f74d8e4af4553418330",
+    "bytes": 848965
   }
 }

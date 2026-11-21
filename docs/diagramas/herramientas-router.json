@@ -9,7 +9,7 @@
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "a0611c326087e92943bb9fb22cb0d240feee6c4e"
+      "revision": "e3c82418968d084408a2a14fb13b9aa0941a0032"
     }
   },
   "lanes": [
@@ -20,6 +20,10 @@
     {
       "id": "rules",
       "label": "Reglas (0 llamadas al modelo)"
+    },
+    {
+      "id": "jevlane",
+      "label": "Gatekeeper Jev (opcional)"
     },
     {
       "id": "llmlane",
@@ -37,6 +41,7 @@
   "mainPath": [
     "msg",
     "rules",
+    "jev",
     "llm",
     "structured",
     "guard",
@@ -53,8 +58,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 299,
-          "end_line": 325
+          "line": 351,
+          "end_line": 427
         }
       ]
     },
@@ -68,13 +73,13 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/router.py",
-          "line": 85,
-          "end_line": 108
+          "line": 171,
+          "end_line": 237
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/actions.py",
-          "line": 213,
-          "end_line": 216
+          "line": 225,
+          "end_line": 278
         }
       ]
     },
@@ -89,8 +94,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 413,
-          "end_line": 435
+          "line": 825,
+          "end_line": 840
         }
       ]
     },
@@ -104,8 +109,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 361,
-          "end_line": 382
+          "line": 773,
+          "end_line": 795
         }
       ]
     },
@@ -120,8 +125,34 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/router.py",
-          "line": 162,
-          "end_line": 204
+          "line": 349,
+          "end_line": 384
+        }
+      ]
+    },
+    {
+      "id": "jev",
+      "lane": "jevlane",
+      "col": 2,
+      "type": "cloud",
+      "label": "Gatekeeper Jev",
+      "sublabel": "Choice · Score · Noul",
+      "tag": "≥ 0,75 decide",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/jev.py",
+          "line": 430,
+          "end_line": 507
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/router.py",
+          "line": 152,
+          "end_line": 165
+        },
+        {
+          "path": "prompts/jev.md",
+          "line": 1,
+          "end_line": 40
         }
       ]
     },
@@ -134,9 +165,9 @@
       "sublabel": "pide precisar",
       "sources": [
         {
-          "path": "src/proyecto_modelos_lenguaje/agent/router.py",
-          "line": 183,
-          "end_line": 204
+          "path": "src/proyecto_modelos_lenguaje/agent/models.py",
+          "line": 100,
+          "end_line": 105
         },
         {
           "path": "config/agent.toml",
@@ -187,11 +218,6 @@
           "path": "src/proyecto_modelos_lenguaje/agent/tools.py",
           "line": 323,
           "end_line": 345
-        },
-        {
-          "path": "src/proyecto_modelos_lenguaje/agent/series.py",
-          "line": 207,
-          "end_line": 265
         }
       ]
     },
@@ -206,7 +232,7 @@
         {
           "path": "src/proyecto_modelos_lenguaje/agent/guard.py",
           "line": 107,
-          "end_line": 160
+          "end_line": 165
         }
       ]
     },
@@ -220,8 +246,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 250,
-          "end_line": 264
+          "line": 302,
+          "end_line": 317
         }
       ]
     }
@@ -246,11 +272,25 @@
       "label": "pregunta sobre el usuario"
     },
     {
-      "id": "rules-llm",
+      "id": "rules-jev",
       "from": "rules",
-      "to": "llm",
+      "to": "jev",
       "label": "resto",
       "variant": "emphasis"
+    },
+    {
+      "id": "jev-llm",
+      "from": "jev",
+      "to": "llm",
+      "label": "< 0,75 · fallo",
+      "variant": "emphasis"
+    },
+    {
+      "id": "jev-search",
+      "from": "jev",
+      "to": "search",
+      "label": "ruta ≥ 0,75",
+      "variant": "dashed"
     },
     {
       "id": "llm-clarify",
@@ -307,6 +347,7 @@
       "title": "Puerta de decisión",
       "items": [
         "Las reglas resuelven saludos, temas ajenos y preguntas sobre el usuario sin llamar al modelo",
+        "Jev (opcional, desactivado por defecto) decide la ruta en ~0,2 s si su probabilidad es ≥ 0,75; si no, o si falla, decide el router LLM",
         "El router LLM devuelve JSON validado con Pydantic; con confianza < 0,6 la ruta efectiva es aclaración"
       ]
     },

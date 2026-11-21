@@ -9,7 +9,7 @@
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "edb4a724e4b0731147d805f9e38c6e278823b354"
+      "revision": "e3c82418968d084408a2a14fb13b9aa0941a0032"
     }
   },
   "stages": [
@@ -142,7 +142,7 @@
         {
           "path": "src/proyecto_modelos_lenguaje/rag/hybrid.py",
           "line": 1,
-          "end_line": 499
+          "end_line": 515
         }
       ]
     },
@@ -157,8 +157,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/tasks.py",
-          "line": 716,
-          "end_line": 825
+          "line": 722,
+          "end_line": 847
         },
         {
           "path": "config/llm.toml",
@@ -179,17 +179,17 @@
         {
           "path": "web/src/components/ChatView.tsx",
           "line": 1,
-          "end_line": 636
+          "end_line": 861
         },
         {
           "path": "web/src/components/ApprovalCard.tsx",
           "line": 1,
-          "end_line": 84
+          "end_line": 85
         },
         {
           "path": "src/proyecto_modelos_lenguaje/api.py",
           "line": 1,
-          "end_line": 594
+          "end_line": 740
         }
       ]
     },
@@ -205,7 +205,7 @@
         {
           "path": "src/proyecto_modelos_lenguaje/rag/vectorstore.py",
           "line": 1,
-          "end_line": 286
+          "end_line": 293
         },
         {
           "path": "src/proyecto_modelos_lenguaje/rag/index.py",
@@ -223,20 +223,25 @@
       "id": "router",
       "type": "backend",
       "label": "Enrutador",
-      "sublabel": "reglas + DeepSeek · ruta mixta",
+      "sublabel": "reglas · Jev opcional · DeepSeek",
       "tag": "Módulo 2",
       "stage": 3,
       "row": 0,
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/router.py",
-          "line": 1,
-          "end_line": 218
+          "line": 385,
+          "end_line": 420
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/jev.py",
+          "line": 430,
+          "end_line": 507
         },
         {
           "path": "prompts/router.md",
           "line": 1,
-          "end_line": 79
+          "end_line": 109
         }
       ]
     },
@@ -268,17 +273,17 @@
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
           "line": 1,
-          "end_line": 714
+          "end_line": 1642
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/actions.py",
           "line": 1,
-          "end_line": 267
+          "end_line": 346
         },
         {
           "path": "prompts/agent.md",
           "line": 1,
-          "end_line": 58
+          "end_line": 97
         }
       ]
     },
@@ -294,7 +299,7 @@
         {
           "path": "src/proyecto_modelos_lenguaje/agent/memory.py",
           "line": 1,
-          "end_line": 331
+          "end_line": 384
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/privacy.py",

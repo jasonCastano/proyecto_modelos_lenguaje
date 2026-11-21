@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "529d6ffe-8d8d-4251-a8f3-dfbf81d56362",
+  "deliveryReceiptId": "d39f6568-73f5-4846-8289-778c33458d3c",
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\grafo-agente.html",
-    "sha256": "88f8a9ab8e7086db217bddf93a623c8b6805ea7f2d099685827aa98db27da38e",
-    "bytes": 849414
+    "sha256": "40eb59137682fe2f32514c693882b593d73b28d469523f74d8e4af4553418330",
+    "bytes": 848965
   },
   "state": {
     "detail": "read",
@@ -102,14 +102,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -202,14 +202,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -302,14 +302,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -402,14 +402,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -555,14 +555,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -655,14 +655,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -755,14 +755,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -855,14 +855,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -960,14 +960,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -1060,14 +1060,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -1160,14 +1160,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -1260,14 +1260,14 @@
             "spaceBelowNodesPx": 6
           }
         ],
-        "minimumProjectedNodeTextPx": 8,
-        "minimumProjectedNonEdgeTextPx": 8,
+        "minimumProjectedNodeTextPx": 7.7,
+        "minimumProjectedNonEdgeTextPx": 7.7,
         "minimumProjectedEdgeTextPx": 8,
-        "minimumProjectedNodeText": "saludo · perfil · aclaración",
+        "minimumProjectedNodeText": "reglas → Jev → LLM",
         "minimumProjectedNodeTextDetail": "context",
         "minimumProjectedNodeTextOwner": {
           "kind": "node",
-          "id": "reply"
+          "id": "route"
         },
         "minimumRequiredNodeTextPx": 6,
         "readabilityOk": true,
@@ -1291,7 +1291,7 @@
     "contactSheet": null
   },
   "sidecars": {
-    "directory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\grafo-agente-final11",
+    "directory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\grafo-agente-jev2",
     "receipt": "grafo-agente.browser-check.json",
     "files": []
   }

@@ -5,16 +5,16 @@
   "status": "pass",
   "type": "dataflow",
   "quality": "showcase",
-  "startedAt": "2026-11-14T04:21:32.471Z",
+  "startedAt": "2026-11-21T14:26:26.233Z",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "65e80cd800c8509024ff2932af26771f98cd1afed3f321e1d516e83ac8e4ef25",
-    "bytes": 11807
+    "sha256": "192301e9eb8a076498804f0d6bd3e8c917a411a21814441baa7d0c505caec5cc",
+    "bytes": 11953
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "8f92e693b43c9f0d52bad041bce4cb83f7af46f9d0828607879b05754583e43f",
-    "bytes": 862750
+    "sha256": "dd326d613f5af70dd5ff9fead1e847c436e852bc28cb85042a42b6e6a320a5cd",
+    "bytes": 863021
   },
   "stages": {
     "validate": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "65e80cd800c8509024ff2932af26771f98cd1afed3f321e1d516e83ac8e4ef25",
-          "bytes": 11807
+          "sha256": "192301e9eb8a076498804f0d6bd3e8c917a411a21814441baa7d0c505caec5cc",
+          "bytes": 11953
         },
         "validation": {
           "checksPassed": 9,
@@ -56,7 +56,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 31102,
+      "durationMs": 41197,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -72,19 +72,19 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "7b512fde-2c5f-456c-8340-dfcb5fbd09ed",
+        "receiptId": "bc4dac16-ee4f-4de5-b2f5-a8cc9889196e",
         "ok": true,
         "command": "deliver",
         "type": "dataflow",
         "input": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
         "output": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "specification": {
-          "sha256": "65e80cd800c8509024ff2932af26771f98cd1afed3f321e1d516e83ac8e4ef25",
-          "bytes": 11807
+          "sha256": "192301e9eb8a076498804f0d6bd3e8c917a411a21814441baa7d0c505caec5cc",
+          "bytes": 11953
         },
         "artifact": {
-          "sha256": "8f92e693b43c9f0d52bad041bce4cb83f7af46f9d0828607879b05754583e43f",
-          "bytes": 862750
+          "sha256": "dd326d613f5af70dd5ff9fead1e847c436e852bc28cb85042a42b6e6a320a5cd",
+          "bytes": 863021
         },
         "validation": {
           "checksPassed": 9,
@@ -97,8 +97,8 @@
         "evidence": {
           "verified": true,
           "repository": "https://github.com/jasonCastano/proyecto_modelos_lenguaje",
-          "revision": "edb4a724e4b0731147d805f9e38c6e278823b354",
-          "references": 26
+          "revision": "e3c82418968d084408a2a14fb13b9aa0941a0032",
+          "references": 27
         },
         "update": {
           "status": "unavailable",
@@ -116,7 +116,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 5188,
+      "durationMs": 10249,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -128,8 +128,8 @@
         "ok": true,
         "file": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "artifact": {
-          "sha256": "8f92e693b43c9f0d52bad041bce4cb83f7af46f9d0828607879b05754583e43f",
-          "bytes": 862750
+          "sha256": "dd326d613f5af70dd5ff9fead1e847c436e852bc28cb85042a42b6e6a320a5cd",
+          "bytes": 863021
         },
         "checks": [
           {
@@ -282,20 +282,22 @@
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "7b512fde-2c5f-456c-8340-dfcb5fbd09ed"
+        "deliveryReceiptId": "bc4dac16-ee4f-4de5-b2f5-a8cc9889196e"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 7289,
+      "durationMs": 22388,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
         "browser-check",
         "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "--json",
-        "--require-provenance"
+        "--require-provenance",
+        "--out-dir",
+        "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\arquitectura-jev2"
       ],
       "execution": "in-process",
       "receipt": {
@@ -306,11 +308,11 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "7b512fde-2c5f-456c-8340-dfcb5fbd09ed",
+        "deliveryReceiptId": "bc4dac16-ee4f-4de5-b2f5-a8cc9889196e",
         "artifact": {
           "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-          "sha256": "8f92e693b43c9f0d52bad041bce4cb83f7af46f9d0828607879b05754583e43f",
-          "bytes": 862750
+          "sha256": "dd326d613f5af70dd5ff9fead1e847c436e852bc28cb85042a42b6e6a320a5cd",
+          "bytes": 863021
         },
         "state": {
           "detail": "read",
@@ -991,6 +993,7 @@
           "contactSheet": null
         },
         "sidecars": {
+          "directory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\arquitectura-jev2",
           "receipt": "arquitectura.browser-check.json",
           "files": []
         }
@@ -1003,13 +1006,13 @@
   },
   "diagnostics": [],
   "evidence": {
-    "receipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize.json",
-    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.finalize-summary.json",
-    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
+    "receipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\arquitectura-jev2\\arquitectura.finalize.json",
+    "summaryReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\arquitectura-jev2\\arquitectura.finalize-summary.json",
+    "browserCheckReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\arquitectura-jev2\\arquitectura.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-11-14T04:22:21.356Z",
-  "durationMs": 48885,
+  "finishedAt": "2026-11-21T14:27:45.963Z",
+  "durationMs": 79715,
   "update": {
     "status": "unavailable",
     "installedVersion": null,

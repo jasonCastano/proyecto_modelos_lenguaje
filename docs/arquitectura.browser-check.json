@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "7b512fde-2c5f-456c-8340-dfcb5fbd09ed",
+  "deliveryReceiptId": "bc4dac16-ee4f-4de5-b2f5-a8cc9889196e",
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "8f92e693b43c9f0d52bad041bce4cb83f7af46f9d0828607879b05754583e43f",
-    "bytes": 862750
+    "sha256": "dd326d613f5af70dd5ff9fead1e847c436e852bc28cb85042a42b6e6a320a5cd",
+    "bytes": 863021
   },
   "state": {
     "detail": "read",
@@ -691,6 +691,7 @@
     "contactSheet": null
   },
   "sidecars": {
+    "directory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\arquitectura-jev2",
     "receipt": "arquitectura.browser-check.json",
     "files": []
   }

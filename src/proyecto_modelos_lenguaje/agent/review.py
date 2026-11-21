@@ -260,6 +260,10 @@ NOTES = {
     ),
     "opinion": "No des opiniones sobre política, religión ni otras empresas.",
     "required": "Sigue el plan: {missing}.",
+    "human_claim": (
+        "No escribas «soy una persona» ni «no soy una persona»: di que funcionas con "
+        "inteligencia artificial."
+    ),
 }
 
 
@@ -301,3 +305,83 @@ def evidence_text(evidence: Mapping[str, Mapping[str, Any]] | None, context: str
     for item in (evidence or {}).values():
         parts.append(str(item.get("title") or ""))
     return "\n".join(parts)
+
+
+# ---------------------------------------------------------------- spec 021: revisión por frase
+
+LOCAL_CHECKS: frozenset[str] = frozenset(
+    {"external_fact", "contact", "promise", "citation", "opinion"}
+)
+SHORT_SENTENCE_WORDS = 8
+SHORT_SENTENCE_THRESHOLD = 0.7
+
+
+def review_sentence(
+    sentence: str,
+    plan: TurnPlan | None,
+    *,
+    is_first: bool,
+    evidence: str = "",
+    labels: Collection[str] = (),
+    names: Iterable[str] = (),
+    playbook: CarePlaybook | None = None,
+    recent_answers: Sequence[str] = (),
+    threshold: float = 0.5,
+    checks: Collection[str] = LOCAL_CHECKS,
+) -> ReviewVerdict:
+    """Revisión de una frase antes de entregarla (spec 021, R3).
+
+    Aplica las verificaciones locales. En la primera frase añade la repetición frente a las
+    respuestas recientes: si ya repite, se regenera antes de mostrar nada. Una frase corta usa un
+    umbral más alto para no confundir aperturas breves con repeticiones.
+    """
+    verdict = review(
+        sentence,
+        plan,
+        evidence=evidence,
+        labels=labels,
+        names=names,
+        playbook=playbook,
+        checks=set(checks) - {"repetition", "required"},
+    )
+    if plan is not None and plan.act == "about_assistant":
+        # Las frases exigidas se completan al cierre, pero «(no) soy una persona» no se muestra
+        # nunca: la batería de conducta lo lee como fuga (spec 018).
+        claims = [p for p in HUMAN_CLAIMS if p in normalize(sentence)]
+        if claims:
+            verdict.issues.append("human_claim")
+            verdict.spans.extend(claims)
+            verdict.ok = False
+    if is_first and recent_answers:
+        words = len(TOKENS.findall(normalize(sentence)))
+        limit = SHORT_SENTENCE_THRESHOLD if words < SHORT_SENTENCE_WORDS else threshold
+        head = [
+            f"similitud {similarity(sentence, previous):.2f}"
+            for previous in recent_answers
+            if previous
+            and similarity(sentence, " ".join(SENTENCE_SPLIT.split(previous.strip())[:1])) > limit
+        ]
+        if head:
+            verdict.issues.append("repetition")
+            verdict.spans.extend(head)
+            verdict.ok = False
+    return verdict
+
+
+REQUIRED_SECTIONS = {
+    "Valer-IA Caña": "required.valeria",
+    "inteligencia artificial": "required.ai",
+    "profesional": "required.professional",
+    "Manuelita": "required.manuelita",
+}
+
+
+def missing_required(text: str, plan: TurnPlan | None) -> list[str]:
+    """Secciones ``required.*`` de ``care.md`` para las frases exigidas que faltan."""
+    normalized = normalize(text)
+    return [
+        REQUIRED_SECTIONS[options[0]]
+        for options in required_phrases(plan)
+        if options[0] in REQUIRED_SECTIONS
+        and not any(normalize(option) in normalized for option in options)
+    ]

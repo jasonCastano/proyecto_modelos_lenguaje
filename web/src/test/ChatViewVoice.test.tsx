@@ -65,6 +65,25 @@ function heldSse(final: ChatResponse, streamed: string = final.turn.answer) {
   };
 }
 
+/** Spec 021: SSE con frases revisadas (evento `sentence`); `done` se retiene hasta `release()`. */
+function heldSentences(final: ChatResponse, sentences: string[]) {
+  let release: () => void = () => undefined;
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(block({ event: "start", thread_id: final.thread_id }));
+      sentences.forEach((text, index) => controller.enqueue(block({ event: "sentence", text, index })));
+      release = () => {
+        controller.enqueue(block({ event: "done", response: final }));
+        controller.close();
+      };
+    },
+  });
+  return {
+    response: new Response(body, { status: 200, headers: { "Content-Type": "text/event-stream" } }),
+    release: () => release(),
+  };
+}
+
 /** SSE completo de una vez. */
 function sse(final: ChatResponse): Response {
   const held = heldSse(final);
@@ -214,6 +233,28 @@ describe("ChatView con voz", () => {
     expect(ttsBodies(fetchMock).map((body) => body.segment)).toEqual([0, 1]);
     expect(ttsBodies(fetchMock)[1].thread_id).toBe(spoken.thread_id);
     await waitFor(() => expect(screen.getByTestId("turn-trace")).toHaveTextContent("🔊 primer audio"));
+  });
+
+  it("spec 021: con frases revisadas lee la primera sin esperar texto nuevo", async () => {
+    const held = heldSentences(spoken, ["Manuelita produce azúcar.", " También biocombustibles [U1]."]);
+    const fetchMock = voiceFetch((url) => (url.endsWith("/chat/stream") ? held.response : undefined));
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<ChatView mode="demo" />);
+    await voiceReady();
+    await ask("¿Qué produce Manuelita?");
+
+    // Las dos oraciones ya están cerradas: se piden antes de que termine el turno.
+    await waitFor(() => expect(ttsBodies(fetchMock)).toHaveLength(2));
+    expect(screen.getByTestId("chat-live")).toHaveTextContent("Manuelita produce azúcar.");
+    expect(ttsBodies(fetchMock)[0]).toMatchObject({ text: "Manuelita produce azúcar.", segment: 0 });
+
+    held.release();
+    await screen.findByTestId("chat-turn");
+    await waitFor(() =>
+      expect(FakeAudioContext.played).toEqual(["Manuelita produce azúcar.", "También biocombustibles [U1]."]),
+    );
+    expect(ttsBodies(fetchMock)).toHaveLength(2); // la respuesta final coincide: no se repite
   });
 
   it("si la respuesta final difiere del streaming, corta y lee la final", async () => {

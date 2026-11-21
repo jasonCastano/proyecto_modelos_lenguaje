@@ -43,7 +43,9 @@ def test_stream_emits_route_retrieval_tokens_and_the_final_turn(
     response = _stream(client, "¿Qué produce Manuelita?", variant=variant)
     events = _events(response.text)
     kinds = [event["event"] for event in events]
-    streamed = "".join(str(e["text"]) for e in events if e["event"] == "token")
+    # Spec 021: con la entrega por frases (configuración del repositorio) el texto llega en
+    # eventos ``sentence`` ya revisados, nunca como tokens crudos.
+    streamed = "".join(str(e["text"]) for e in events if e["event"] == "sentence")
     final = events[-1]["response"]
 
     # Assert
@@ -51,8 +53,8 @@ def test_stream_emits_route_retrieval_tokens_and_the_final_turn(
     assert response.headers["content-type"].startswith("text/event-stream")
     assert kinds[0] == "start" and kinds[-1] == "done"
     found = "tool" if variant == "agent" else "retrieval"
-    assert kinds.index("route") < kinds.index(found) < kinds.index("token")
-    assert kinds.count("token") > 1
+    assert kinds.index("route") < kinds.index(found) < kinds.index("sentence")
+    assert kinds.count("sentence") > 1 and "token" not in kinds
     assert final["status"] == "answered" and final["turn"]["citations"]
     assert streamed.strip() == final["turn"]["answer"].strip()
 

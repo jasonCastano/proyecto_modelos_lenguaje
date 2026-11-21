@@ -39,6 +39,8 @@ export interface VoiceControl {
   /** Envío de una pregunta (gesto del usuario): corta lo anterior y abre la sesión en vivo. */
   startLive(threadId: string | null): string | null;
   pushToken(text: string): void;
+  /** Spec 021: oración revisada que llega del servidor (evento ``sentence``). */
+  pushSentence(text: string): void;
   finishLive(finalAnswer: string | null, threadId: string | null): void;
   /** «Escuchar» una respuesta guardada. */
   speak(text: string, threadId: string | null): string | null;
@@ -132,6 +134,13 @@ export function useVoice(options: Pick<VoicePlayerOptions, "createContext" | "fe
     [enabled, player],
   );
 
+  const pushSentence = useCallback(
+    (text: string) => {
+      if (enabled) player.pushSentence(text);
+    },
+    [enabled, player],
+  );
+
   const finishLive = useCallback(
     (finalAnswer: string | null, threadId: string | null) => {
       if (!enabled || !player.activeKey) return;
@@ -169,6 +178,7 @@ export function useVoice(options: Pick<VoicePlayerOptions, "createContext" | "fe
     resume,
     startLive,
     pushToken,
+    pushSentence,
     finishLive,
     speak,
   };

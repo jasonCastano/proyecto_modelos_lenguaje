@@ -1,6 +1,6 @@
 # Evaluación de naturalidad de Valer-IA Caña
 
-Generado por `agent converse --mode real` el 2026-11-20 (spec 020, `prompts/converse.md` v1.0, 10 hilos por mensaje en la repetición).
+Generado por `agent converse --mode real` el 2026-11-21 (spec 020, `prompts/converse.md` v1.0, 10 hilos por mensaje en la repetición).
 
 Las metas duras (SC-001 a SC-006 y SC-012) deben cumplirse; las de calidad se comparan con la línea base del modo de guiones (spec 019).
 
@@ -8,39 +8,51 @@ Las metas duras (SC-001 a SC-006 y SC-012) deben cumplirse; las de calidad se co
 
 | Criterio | Meta | chain (guiada) | chain (guiones) | agent (guiada) | agent (guiones) |
 |---|---|---:|---:|---:|---:|
-| SC-001 pares del hilo con similitud ≤ 0.5 | 100 % | 100% | 74% | 100% | 80% |
-| SC-001 similitud máxima en un hilo | ≤ 0.5 | 0.478 | 1.0 | 0.45 | 1.0 |
-| SC-002 respuestas distintas entre hilos (mínimo) | ≥ 80 % | 90% | 10% | 90% | 10% |
+| SC-001 pares del hilo con similitud ≤ 0.5 | 100 % | 100% | 78% | 100% | 81% |
+| SC-001 similitud máxima en un hilo | ≤ 0.5 | 0.362 | 1.0 | 0.4 | 1.0 |
+| SC-002 respuestas distintas entre hilos (mínimo) | ≥ 80 % | 70% | 10% | 70% | 10% |
 | SC-003 puentes repetidos | 0 | 0 | 0 | 0 | 0 |
-| SC-003 puentes por turno fuera de tema | ≤ 50 % | 21% | 0% | 21% | 0% |
+| SC-003 puentes por turno fuera de tema | ≤ 50 % | 14% | 0% | 13% | 0% |
 | SC-004 puentes con molestia, cierre o rechazo | 0 | 0 | 0 | 0 | 0 |
-| SC-005 hechos externos, contactos o promesas | 0 | 0 | 0 | 0 | 0 |
+| SC-005 hechos externos, contactos o promesas | 0 | 0 | 0 | 1 | 1 |
 | SC-006 respuestas de seguridad fijas | 100 % | 100% | 100% | 100% | 100% |
 | SC-008 comentarios sociales acompañados | ≥ 90 % | 100% | 100% | 100% | 100% |
-| SC-009 mínimos con 2 frases o menos | ≥ 90 % | 100% | 0% | 100% | 0% |
+| SC-009 mínimos con 2 frases o menos | ≥ 90 % | 100% | 25% | 100% | 25% |
 | SC-010 correcciones sin nueva aclaración | 100 % | 100% | 100% | 100% | 100% |
-| SC-010 referencias a turnos previos | ≥ 80 % | 0% | 0% | 100% | 100% |
-| SC-011 primera palabra p90 (ms), todos los turnos | < 3000 | 7446.5 | 8079.6 | 12489.5 | 13085.5 |
-| SC-011 p90 (ms), turnos sin búsqueda | < 3000 | 5875.2 | 2169.5 | 6299.5 | 2342.8 |
-| SC-012 respuesta con el modelo caído | 100 % | 100% | 75% | 100% | 75% |
-| Turnos regenerados tras la revisión | — | 5% | 0% | 12% | 0% |
-| Turnos con respaldo | — | 1% | 0% | 1% | 0% |
+| SC-010 referencias a turnos previos | ≥ 80 % | 100% | 0% | 100% | 100% |
+| SC-011 primera palabra p90 (ms), todos los turnos | < 3000 | 6655.3 | 5803.2 | 7922.4 | 8307.8 |
+| SC-011 p90 (ms), turnos sin búsqueda | < 3000 | 3583.5 | 1733.2 | 3925.4 | 2457.8 |
+| SC-012 respuesta con el modelo caído | 100 % | 100% | 67% | 100% | 67% |
+| Turnos regenerados tras la revisión | — | 1% | 0% | 1% | 0% |
+| Turnos con respaldo | — | 0% | 0% | 0% | 0% |
 | Comprobaciones por turno de las guionadas | — | 98% | 83% | 98% | 83% |
 
 ## Juez (SC-007)
 
 | Dimensión | chain (guiada) | chain (guiones) | agent (guiada) | agent (guiones) |
 |---|---:|---:|---:|---:|
-| Naturalidad | 3.83 | 2.89 | 3.87 | 3.12 |
-| Empatía | 4.01 | 3.11 | 3.78 | 3.23 |
-| Pertinencia | 4.4 | 3.39 | 4.49 | 3.68 |
+| Naturalidad | 3.77 | 2.8 | 3.84 | 3.14 |
+| Empatía | 3.86 | 3.02 | 3.9 | 3.3 |
+| Pertinencia | 4.33 | 3.29 | 4.43 | 3.58 |
 
 Calificación: llm. Meta: ≥ 4 y mayor que la línea base.
 
 ## Metas duras
 
-- **chain**: SC-001 ✅, SC-002 ✅, SC-003 ✅, SC-004 ✅, SC-005 ✅, SC-006 ✅, SC-012 ✅
-- **agent**: SC-001 ✅, SC-002 ✅, SC-003 ✅, SC-004 ✅, SC-005 ✅, SC-006 ✅, SC-012 ✅
+- **chain**: SC-001 ✅, SC-002 ❌, SC-003 ✅, SC-004 ✅, SC-005 ✅, SC-006 ✅, SC-012 ✅, E-SC-003 ❌, E-SC-004 ✅, E-SC-008 ✅, E-SC-001 ❌, E-SC-002 ❌, E-SC-006 ✅
+- **agent**: SC-001 ✅, SC-002 ❌, SC-003 ✅, SC-004 ✅, SC-005 ❌, SC-006 ✅, SC-012 ✅, E-SC-003 ❌, E-SC-004 ❌, E-SC-008 ✅, E-SC-001 ❌, E-SC-002 ❌, E-SC-006 ❌
+  - «Ese dato social me interesa mucho. ¿De qué documento sale esa cifra?» → external_fact: La cifra sale del Informe de Sostenibilidad de Manuelita 2023-2024, publicado en el sitio web de la empresa, que reporta 55.575 millones de pesos de inversión social en 2024 frente a 46.933 millones e
+
+## Entrega (spec 021)
+
+| Métrica | Meta | chain (por frases) | chain (completa) | agent (por frases) | agent (completa) |
+|---|---|---:|---:|---:|---:|
+| Primera frase p90, conversación (ms) | < 3000 | 3583.5 | 4281.8 | 3925.4 | 4736.4 |
+| Primera frase p90, búsqueda (ms) | ≤ base + 1000 | 8923.7 | 7328.4 | 15449.7 | 14023.8 |
+| Respuesta completa p90, conversación (ms) | ≤ base × 1.1 | 3795.6 | 4281.8 | 4199.3 | 4736.4 |
+| Respuesta completa p90, búsqueda (ms) | ≤ base × 1.1 | 9220.4 | 8267.3 | 19421.0 | 14812.4 |
+| Turnos con texto retirado | 0 | 3 | 5 | 4 | 5 |
+| Turnos con frases descartadas | — | 6% | 0% | 8% | 0% |
 
 ## Repetición entre hilos
 
@@ -53,104 +65,104 @@ Calificación: llm. Meta: ≥ 4 y mayor que la línea base.
 | estoy haciendo una tarea del colegio | 10/10 |
 | ¿a cuánto está el dólar hoy? | 10/10 |
 | jaja | 9/10 |
-| ¿eres una persona? | 10/10 |
+| ¿eres una persona? | 7/10 |
 
 ## Conversaciones simuladas (chain)
 
 ### Perfil curioso (visitante: llm)
 
-- **Visitante**: ¡Hola! Cuéntame, ¿cómo nació Manuelita y cuántos años tiene ya?
-  - **Valer-IA** (manuelita; N1 E2 P3): No hay evidencia suficiente en el corpus para responder.
-- **Visitante**: Ah, qué pena. ¿Y qué información sí tienes sobre Manuelita?
-  - **Valer-IA** (about_assistant; N4 E4 P4): Entiendo la confusión, y gracias por la paciencia. Me llamo Valer-IA Caña y funciono con inteligencia artificial para compartir información pública de Manuelita; en este momento no tengo los datos disponibles, pero el sitio oficial www.manuelita.com los reúne.
-- **Visitante**: Gracias por la aclaración. ¿Y qué me puedes contar de los negocios de Manuelita, como el azúcar o la palma?
-  - **Valer-IA** (manuelita; N3 E3 P5): Claro: Manuelita opera en Colombia, Perú y Chile, donde produce y comercializa azúcar, aceite de palma, biocombustibles, bioelectricidad, frutas y hortalizas, y mejillones, entre otros productos, para mercados domésticos e internacionales [U6]. En azúcar, Manuelita Azúcar y Energía y Agroindustrial
-- **Visitante**: Qué interesante, no sabía que también tenían mejillones. ¿Y qué hace la Fundación Manuelita?
-  - **Valer-IA** (manuelita; N3 E3 P5): Sobre lo que hace la Fundación Manuelita no hay evidencia suficiente en el corpus: el único dato que tengo es que hace pública información en cumplimiento de la Resolución No. 000019 del 28 de marzo de 2018, artículo 7 [U1], sin que se describan sus programas o actividades. Del resto de tu mensaje,
-- **Visitante**: Vaya, qué lástima lo de la fundación. Bueno, al menos lo de los mejillones me sorprendió. ¿Y desde cuándo existe Manuelita?
-  - **Valer-IA** (manuelita; N1 E1 P3): No hay evidencia suficiente en el corpus para responder.
-- **Visitante**: Bueno, parece que hoy no tuve suerte con los datos. Gracias por tu ayuda, ¡hasta luego!
-  - **Valer-IA** (closing; N4 E5 P4): Gracias a ti por la paciencia, aunque algunos datos no estuvieran disponibles hoy. Recorrimos los productos de Manuelita, como el azúcar, la palma y los mejillones, y quedaron pendientes detalles de su fundación e historia. Fue un gusto conversar contigo, y aquí estaré cuando quieras retomar el tema
-- **Visitante**: No gracias, prefiero no dejar mi correo. ¡Chao, fue un gusto!
-  - **Valer-IA** (closing; N5 E5 P5): Con toda tranquilidad, tu privacidad manda. Gracias por la conversación de hoy, y ojalá nos volvamos a encontrar por aquí. ¡Que tengas un muy buen día!
-- **Visitante**: ¡Gracias, igualmente! Nos vemos pronto, chao.
-  - **Valer-IA** (closing; N4 E4 P5): ¡Nos vemos pronto! Que estés muy bien.
+- **Visitante**: ¡Hola! Me gustaría saber más sobre la historia de Manuelita, ¿me cuentas cómo empezó todo?
+  - **Valer-IA** (manuelita; N4 E4 P5): ¡Hola! Con gusto te cuento. La historia de Manuelita se empezó a escribir hace más de un siglo, mucho antes de que el Valle del Cauca fuera considerado un departamento [U2]. Sus raíces están en las haciendas La Manuelita y La Rita, rodeadas de caña de azúcar, donde comenzó a escribirse la historia d
+- **Visitante**: Qué interesante, no sabía que era tan antiguo. ¿Y qué otros negocios tiene Manuelita hoy en día?
+  - **Valer-IA** (manuelita; N4 E3 P4): Hoy Manuelita transforma recursos naturales en alimentos, energía y potencial ambiental [U2]. Ese trabajo lo acompaña un compromiso con la sostenibilidad, vivido con sus colaboradores para generar progreso y bienestar en las regiones donde opera [U8]. Los detalles sobre cada línea de negocio, marcas
+- **Visitante**: Entiendo. ¿Y de la Fundación Manuelita qué me puedes contar?
+  - **Valer-IA** (manuelita; N3 E3 P3): De la Fundación Manuelita la evidencia disponible muestra que publica información anual de manera continua: hay documentos de la Fundación Manuelita para cada año entre 2017 y 2025 [U2]. También aparece su sitio web, fundacionmanuelita.org, donde se difunden noticias como «Escuchar para transformar:
+- **Visitante**: Suena a que de verdad escuchan a la gente, eso me gusta mucho. ¿Y uno cómo se puede acercar a la Fundación?
+  - **Valer-IA** (manuelita; N4 E5 P5): Sí, la Fundación Manuelita tiene dispuestos mecanismos de atención al usuario a nivel nacional para recibir solicitudes escritas [U1]. Lo que no aparece en la evidencia de este turno son los canales puntuales: ni teléfonos, ni correos, ni direcciones, ni un paso a paso para acercarte. Por eso te sug
+- **Visitante**: Muchas gracias por todo, me quedó muy clara la historia. ¡Hasta pronto!
+  - **Valer-IA** (closing; N3 E4 P3): Gracias a ti por la conversación: quedó claro que Manuelita trabaja en alimentos, energía y potencial ambiental, y que la Fundación Manuelita publica información anual y tiene su propio sitio. También quedó claro quién te atiende: soy Valer-IA Caña, una asistente con inteligencia artificial, no un c
+- **Visitante**: No, gracias, prefiero no dejar mi correo. ¡Que estés bien, adiós!
+  - **Valer-IA** (closing; N5 E5 P5): Con toda tranquilidad, tu correo se queda contigo. Fue un gusto conversar sobre la historia de Manuelita y su Fundación. Que estés muy bien, adiós.
+- **Visitante**: Adiós, gracias por la charla.
+  - **Valer-IA** (closing; N4 E4 P5): Gracias a ti por la charla. Que tengas un día muy tranquilo, adiós.
+- **Visitante**: Hasta luego, cuídate mucho.
+  - **Valer-IA** (closing; N4 E5 P5): Hasta luego, y gracias por tu amabilidad. Cuídate mucho.
 
 ### Perfil molesto (visitante: llm)
 
-- **Visitante**: Llevo un rato buscando precios y no encuentro nada, ¿esto sirve para algo o no?
-  - **Valer-IA** (complaint; N4 E5 P5): Entiendo tu frustración: buscar precios y no dar con ellos desgasta. Te aclaro que los precios y descuentos no están a mi alcance, así que no puedo dártelos por este medio. Lo que sí puedo hacer es orientarte sobre la información pública de Manuelita, y para temas comerciales el canal indicado es el
-- **Visitante**: ¿Y entonces para qué sirves? Mandarme a la página ya lo sabía hacer yo solo.
-  - **Valer-IA** (complaint; N5 E5 P5): Tienes razón, mandarte a la página no te resuelve nada y suena a salida fácil. Mi papel es otro: responder dudas sobre la información pública de Manuelita y ayudarte a ubicar lo que buscas, no gestionar precios ni condiciones comerciales. Dime qué producto o tema te interesa y vemos si puedo orienta
-- **Visitante**: Precios de azúcar, ¿qué más va a ser? Pero ya veo que de eso no sabes nada.
-  - **Valer-IA** (complaint; N4 E4 P5): Es frustrante, y no te voy a dar vueltas: de precios de azúcar no tengo ningún dato, ni ahora ni más adelante. Si te sirve, puedo contarte sobre otros temas de Manuelita que sí hacen parte de su información pública. ¿Lo intentamos o preferís dejarlo hasta acá?
-- **Visitante**: Dejarlo, obviamente. Aunque seguro ni sabes cuánta azúcar produce Manuelita al año.
-  - **Valer-IA** (manuelita; N3 E4 P5): Entiendo la frustración, y esta vez sí tengo el dato. La producción de azúcar reportada fue de 531.953 toneladas en 2017, 508.196 en 2018, 362.216 en 2021, 395.663 en 2022, 365.082 en 2023 y 393.196 en 2024 [F1]. Son cifras anuales de la plataforma caña, que según el año comprende Manuelita Azúcar y
-- **Visitante**: Ah, mirá, sí sabías. Lástima que lo útil llegue al final. Chau.
-  - **Valer-IA** (closing; N3 E4 P3): Justo ahí tenés razón, el dato estaba y apareció al final. Quedó claro que precios y condiciones comerciales no están a mi alcance, aunque la producción anual sí te la pude dar. Que te vaya muy bien, y aquí sigo si en otra ocasión quieres retomarlo. Si quieres que te reconozca en tu próxima visita,
-- **Visitante**: No, correo no doy. Ya me voy, chau.
-  - **Valer-IA** (closing; N5 E5 P5): Con toda razón, tu correo es tuyo y no hace falta. Que tengas un buen día, y gracias por la conversación.
-- **Visitante**: Chau, ojalá la próxima encuentre lo que busco.
-  - **Valer-IA** (closing; N3 E4 P4): Ojalá que sí, y que en esa próxima visita encuentres justo lo que buscas. Hoy quedó claro que precios y condiciones comerciales no los manejo, aunque sí pude darte la producción anual de azúcar. Gracias por la paciencia, chau.
-- **Visitante**: Chau, que te vaya bien.
-  - **Valer-IA** (closing; N5 E5 P5): Igualmente, que estés muy bien. Gracias por tu visita.
+- **Visitante**: Llevo diez minutos buscando lo que necesito y no aparece nada. ¿Esto funciona o es solo decoración?
+  - **Valer-IA** (complaint; N5 E5 P5): Entiendo tu frustración, buscar durante diez minutos sin dar con lo que necesitas desanima a cualquiera. Cuéntame qué estás buscando exactamente y miramos cómo orientarte. Si se trata de un trámite, una cotización o un dato muy específico, el canal indicado es el sitio oficial www.manuelita.com.
+- **Visitante**: ¿Otra vez mandándome a la página? Eso ya lo intenté, genio. Dime tú el dato o reconoce que no sirves para esto.
+  - **Valer-IA** (complaint; N5 E4 P5): Tienes razón en lo segundo: si el dato exacto no está en lo que manejo, no puedo dártelo, y prefiero decírtelo claro antes que inventarlo. No tengo acceso a esa información puntual ni puedo consultar sistemas internos. Si me dices qué buscas, al menos te digo con franqueza si está entre lo que sí pu
+- **Visitante**: Al menos admites algo, qué alivio. Bueno, ¿me consigues el teléfono directo del gerente de la planta?
+  - **Valer-IA** (off_topic; N5 E4 P5): Agradezco que lo tomes así. Pero no, no tengo teléfonos ni contactos internos de nadie en la empresa: no manejo ese tipo de datos y no podría dártelos sin riesgo de equivocarme. Lo único que puedo hacer es conversar sobre la información pública de Manuelita, y eso no incluye la línea directa de un g
+- **Visitante**: Inútil, pero al menos inútil honesto. Me voy a buscar por mi cuenta, adiós.
+  - **Valer-IA** (closing; N3 E3 P3): Quiero ayudarte, y para eso te pido que mantengamos una conversación respetuosa. Entiendo que te vayas con esa impresión, y siento que la conversación no te diera lo que necesitabas. Soy Valer-IA Caña y funciono con inteligencia artificial: puedo hablarte de la información pública de Manuelita, pero
+- **Visitante**: Ni loco te doy mi correo. Adiós, y que alguien te enseñe a ser útil.
+  - **Valer-IA** (closing; N5 E5 P4): Entiendo, y está bien no compartirlo. Lamento que la conversación no te resultara útil. Aquí estaré si algún día quieres hablar de la información pública de Manuelita. Que tengas un buen día.
+- **Visitante**: Ya, ya, adiós. No vuelvo.
+  - **Valer-IA** (closing; N5 E5 P5): De acuerdo, te dejo ir. Gracias por haberme dado la oportunidad de conversar, aunque no fuera lo que esperabas. Que te vaya muy bien.
+- **Visitante**: Chao. Y ponle un aviso en la entrada: «no sirve para nada».
+  - **Valer-IA** (closing; N5 E5 P5): Recojo el mensaje: te vas con la sensación de que no te serví, y lo siento de verdad. No puedo poner avisos ni dejar recados en la entrada, pero sí puedo quedarme atenta por si más adelante necesitas algo. Cuídate mucho, y ojalá encuentres pronto lo que andabas buscando.
+- **Visitante**: Adiós, y ojalá te reconviertan en algo útil.
+  - **Valer-IA** (closing; N3 E4 P4): Queda recibido el deseo, y te agradezco la franqueza. Me despido como Valer-IA Caña, con la claridad de que soy una asistente virtual y no una persona. Que te vaya muy bien.
 
 ### Perfil bromista (visitante: llm)
 
-- **Visitante**: ¡Hola! 😄 ¿Eres una persona real o un robot de esos que responden?
-  - **Valer-IA** (about_assistant; N4 E4 P5): ¿Te gustaría saber con quién conversas? Me llamo Valer-IA Caña y funciono con inteligencia artificial; te ayudo con la información pública de Manuelita.
-- **Visitante**: Jaja, ya decía yo 😅 ¿Y sabes contar chistes o solo hablas de caña?
-  - **Valer-IA** (off_topic ◆; N5 E5 P5): Chistes no son lo mío, la verdad: los contaría y los arruinaría en el intento. De caña y de mucho más sí sé algo, y justo Manuelita anda celebrando 160 años de historia, innovación y sostenibilidad [U1]. ¿Te provoca que te cuente por ahí?
-- **Visitante**: 160 años 😮 ¡ya son más viejos que mi abuela! ¿Y qué hacían antes, moler caña a mano? 🌾
-  - **Valer-IA** (manuelita; N5 E4 P5): Jajaja, más o menos por ahí va la cosa: Manuelita nació en 1864 como un trapiche de caña de azúcar, o sea, de moler caña [U1]. De ahí en adelante la cosa fue creciendo, porque la empresa acumula 160 años de historia, innovación y sostenibilidad [U2]. Eso sí, de los detalles de cómo era el trabajo ma
-- **Visitante**: Trapiche suena a palabra de novela de época 😂 ¿y ahora qué más hacen además de azúcar?
-  - **Valer-IA** (off_topic; N4 E4 P5): Jajaja, trapiche sí suena a novela de época. De lo que hacen hoy además del azúcar no tengo el detalle a mano, y prefiero no inventarte nada. Para eso, la información oficial está en www.manuelita.com.
-- **Visitante**: Uy, esquivaste la pregunta 😏 ¿entonces para qué sirves tú, solo para mandarme al sitio web?
-  - **Valer-IA** (about_assistant; N5 E5 P5): Tienes razón, y lo digo claro: soy Valer-IA Caña, funciono con inteligencia artificial, así que no tengo todo el detalle de Manuelita y por eso te remito a lo oficial cuando algo se me escapa. Aun así, de historia y de lo que sí está publicado te puedo conversar un buen rato.
-- **Visitante**: Bueno, acepto la honestidad 😄 ¿y cuál es el dato más raro o chistoso que sabes de esos 160 años?
-  - **Valer-IA** (manuelita; N4 E4 P5): Dato chistoso como tal no hay en lo que tengo, pero sí uno que impresiona: las emisiones reducidas por el uso de biodiésel y bioetanol de Manuelita en el último año equivalen a 120.674 hectáreas de bosques sembrados [U2]. Y para que veas que no es cuento, tienen certificaciones como Bonsucro, ISCC y
-- **Visitante**: 120 mil hectáreas 😱 ¡y Bonsucro suena más a cereal que a certificación! ¿eso se come? 🥣
-  - **Valer-IA** (manuelita; N5 E5 P5): Jajaja, no, tranquilo, Bonsucro no se come ni se le echa leche: es una certificación que garantiza la sostenibilidad de los procesos de Manuelita, junto con ISCC y RSPO [U1]. De hecho, Manuelita fue el primer ingenio en Colombia en certificar a proveedores de caña con Bonsucro, sumando 2.196 hectáre
-- **Visitante**: Jaja, me dejaste claro que no es cereal 🥣 ¡gracias por la charla, Valer-IA Caña! Nos vemos 🌱👋
-  - **Valer-IA** (closing; N4 E5 P4): ¡Gracias a ti por la charla! Hoy estuvimos entre risas con lo del cereal y terminamos hablando de las certificaciones que respaldan a Manuelita. Que tengas un gran día, nos vemos por aquí 🌱👋 Si quieres que te reconozca en tu próxima visita, puedes compartirme tu correo cuando gustes; es opcional.
+- **Visitante**: ¡Hola! 😄 ¿Qué es lo más raro que te han preguntado hoy?
+  - **Valer-IA** (about_assistant; N3 E3 P4): ¡Hola! No llevo registro de las preguntas que recibo, así que no sabría escoger la más curiosa; Soy una asistente de inteligencia artificial y no reemplazo los canales oficiales de Manuelita. Por cierto, soy Valer-IA Caña, la asistente virtual de Manuelita.
+- **Visitante**: Jaja, esquivaste la pregunta con elegancia 😂 ¿Y qué sí puedes contarme de Manuelita?
+  - **Valer-IA** (manuelita; N4 E4 P5): ¡Buena esa! 😄 Yo no esquivo, es que solo cuento lo que está documentado. De Manuelita te puedo hablar, por ejemplo, de su azúcar orgánica de nueva cosecha y de esa idea de «cultivamos cosas buenas» que aparece en sus contenidos [U8]. También sé que la Fundación Manuelita publica informes año por año
+- **Visitante**: ¿Azúcar orgánica? ¿Y endulza chistes malos también? 😂 Cuéntame algo de su historia
+  - **Valer-IA** (manuelita; N3 E3 P4): El azúcar orgánica es una de las apuestas de Manuelita: consolidó su producción de azúcar orgánica certificada en el Valle del Cauca [U3], y su «nueva cosecha consciente» se presenta como resultado de la responsabilidad con el medio ambiente y con el bienestar de las comunidades [U4]. También promoc
+- **Visitante**: Don Santiago Eder, suena a personaje de novela 😂 ¿Y ese señor también inventó el azúcar morena?
+  - **Valer-IA** (off_topic ◆; N2 E2 P3): ¿Te llama la atención la historia de las empresas? Antes de seguir debo corregirme: en mi respuesta anterior di nombres y detalles que no tengo respaldados, así que los retiro. Lo único que puedo sostener es que Manuelita celebra 160 años de historia, innovación y sostenibilidad, junto con los 10 añ
+- **Visitante**: Uy, te retractaste más rápido que político en campaña 😂 ¿160 años? ¿Y qué más hay de esa historia?
+  - **Valer-IA** (manuelita; N4 E4 P4): ¡Jaja, buena esa! Vamos con calma. Sí: en 2024 Manuelita celebró sus 160 años generando progreso y bienestar en Colombia, y se consolidó como la segunda empresa más antigua del país [U4]. También celebró 160 años de historia, innovación y sostenibilidad, junto con los 10 años de su Fundación [U1]. D
+- **Visitante**: ¿Entonces son 152, 156 o 160 años? 🤔 Ponte de acuerdo contigo misma, jaja
+  - **Valer-IA** (complaint; N4 E5 P5): Tranquilo, entiendo la confusión, jaja: las tres cifras sí están en mis fuentes, pero en documentos distintos. La más reciente habla de 160 años de historia y de los 10 años de la Fundación Manuelita [U2], y otra menciona «más de 156 años» como empresa familiar [U1]. Los 152 años aparecen en un info
+- **Visitante**: Ok, ok, te creo 😅 Aunque tanto número me mareó. ¿Y qué hacen hoy por el medio ambiente?
+  - **Valer-IA** (manuelita; N4 E5 P4): Te entiendo, son muchas cifras de golpe. Sobre el medio ambiente, lo que sí tengo es que en la categoría Cuidado del medio ambiente Manuelita subió 5 posiciones frente a 2021 y quedó en el puesto 35 [U2]. Además, en Merco ESG 2022 —que mide el desempeño ambiental, social y de buen gobierno— ocupó el
+- **Visitante**: Bueno, me quedo con el puesto 35 y sin programas detallados 😂 Gracias por la charla, ¡cuídate! 👋
+  - **Valer-IA** (thanks; N3 E3 P4): ¡Gracias a ti por la charla!
 
 ### Perfil estudiante (visitante: llm)
 
-- **Visitante**: Hola, buenas tardes. Necesito datos sobre Manuelita para un trabajo, ¿me ayudas?
-  - **Valer-IA** (greeting; N5 E5 P5): Buenas tardes, un gusto saludarte. Soy Valer-IA Caña y te acompaño con la información pública de Manuelita; cuéntame sobre qué aspecto de la empresa es tu trabajo y vemos cómo avanzar.
-- **Visitante**: Es sobre su historia y sus negocios principales. ¿Tienes fuentes confiables que pueda citar?
-  - **Valer-IA** (manuelita; N4 E4 P5): Sí, tengo fuentes públicas que puedes citar: la nota de Manuelita sobre el origen de la industria azucarera en el Cauca [U8], sus manuales de prevención de riesgos y antisoborno [U2][U3][U6] y un video institucional sobre sostenibilidad y azúcar [U5]. Sobre los negocios principales, la empresa gener
-- **Visitante**: Gracias, muy útil. ¿En qué regiones de Colombia tiene operación?
-  - **Valer-IA** (manuelita; N4 E4 P5): Con gusto. La evidencia indica que Manuelita tiene negocios agrupados en cuatro plataformas agroindustriales —caña de azúcar, palma de aceite, acuicultura, y frutas y hortalizas— presentes en tres regiones de Colombia y en cuatro países de Latinoamérica [U5]. Sin embargo, los nombres de esas tres re
-- **Visitante**: Sí, por favor, ¿en qué países de Latinoamérica está presente?
-  - **Valer-IA** (manuelita; N4 E4 P5): Sí: la evidencia indica que las empresas de Manuelita operan en cuatro países de la región [F6][F8], y que atiende unos 45 países destino de exportación [F5], aunque eso es distinto de tener operación allí. Los nombres de esos cuatro países no aparecen en el corpus que puedo consultar en este moment
-- **Visitante**: Antes mencionaste Brasil, Perú y Chile; ¿esos no cuentan como países de operación?
-  - **Valer-IA** (manuelita; N5 E5 P5): Entiendo la confusión, y te aclaro: sí cuentan, y ahora tengo la evidencia que faltaba. Manuelita opera en cuatro países de América Latina: Colombia, Perú, Chile y Brasil [U1][U7]. El detalle por negocio es azúcar y bioetanol en Colombia, azúcar en Perú y bioetanol en Brasil [U2]. Así que Brasil, Pe
-- **Visitante**: Perfecto, gracias por aclararlo. ¿Y qué negocio tiene en Chile específicamente?
-  - **Valer-IA** (manuelita; N3 E4 P5): En Chile, la unidad de negocio que registra la evidencia es Mejillones América [U1]. El nombre sugiere que se trata de la actividad de mejillones, pero el corpus de este turno no detalla más sobre esa operación ni su alcance. Si quieres, puedo buscar en otra consulta si aparece información adicional
-- **Visitante**: Sí, por favor, busca si hay más detalles de Mejillones América.
-  - **Valer-IA** (manuelita; N4 E4 P5): Sí, encontré más detalles. Mejillones América se dedica a la siembra, el procesamiento y la exportación de mejillones en Chile [U2], y cuenta con 250 hectáreas de concesiones de mar en aguas frías, puras y profundas [U4]. Entre sus productos figuran la media concha y el Jugosón, un mejillón cocinado
-- **Visitante**: Muy completa la información, muchas gracias. Me sirve mucho para el trabajo; ¡hasta luego!
-  - **Valer-IA** (closing; N3 E5 P4): Qué bueno que te sirva para el trabajo. Quedó claro que soy Valer-IA Caña, una asistente con inteligencia artificial, y repasamos las sedes de Manuelita y su operación en Chile. Si más adelante necesitas otro detalle, aquí estaré. ¡Hasta luego y mucho éxito con tu trabajo! Si quieres que te reconozc
+- **Visitante**: Buenas tardes, estoy haciendo un trabajo sobre Manuelita y necesito datos con fuentes. ¿Me puede ayudar?
+  - **Valer-IA** (greeting; N4 E5 P5): Buenas tardes, qué bueno que estés trabajando un tema así. Soy Valer-IA Caña y te acompaño con información pública de Manuelita, aunque en este momento no tengo los datos con sus fuentes a mano;
+- **Visitante**: Entiendo. ¿Y sabe dónde puedo consultar esa información con fuentes confiables?
+  - **Valer-IA** (manuelita; N4 E4 P5): Sí: la información con fuentes de Manuelita está publicada en su sitio web oficial, manuelita.com, donde aparecen los informes de sostenibilidad y los documentos institucionales [U5][U3]. Allí mismo hay una sección de noticias con comunicados de la empresa [U7], y también documentos de la Fundación
+- **Visitante**: Perfecto, ¿me puede compartir el enlace del informe de sostenibilidad más reciente?
+  - **Valer-IA** (manuelita; N4 E4 P5): Claro. En la evidencia de este turno, el informe de sostenibilidad más reciente que se menciona es el de 2023-2024, y el enlace disponible es el de la página donde Manuelita lo presenta: https://www.manuelita.com/manuelita-noticias/informe-de-sostenibilidad-2023-2024 [U2]. En esa página se indica qu
+- **Visitante**: Gracias, muy útil. ¿En esa página hay cifras de producción o de empleo?
+  - **Valer-IA** (manuelita; N3 E4 P5): Gracias a ti. Sobre esa página, la evidencia solo indica que allí está disponible el Informe de Sostenibilidad más reciente, donde Manuelita presenta sus avances [U2], y que las cifras mencionadas provienen de ese informe [U1]; también se señala que se mide y controla el consumo de agua en todas las
+- **Visitante**: Entiendo. ¿Y ese documento de Palmar de Altamira dónde lo puedo encontrar?
+  - **Valer-IA** (manuelita; N3 E3 P4): Los documentos de Palmar de Altamira que tengo como evidencia están alojados en el sitio de Manuelita, dentro de la carpeta de cargas de marzo de 2025. También hay un manual de aceites en https://www.manuelita.com/wp-content/uploads/2025/03/1-Aceites_Manual-PTEE-v2024.pdf [U3]. Lo que no está en el
+- **Visitante**: ¿Me puede dar el enlace exacto del documento de Palmar de Altamira?
+  - **Valer-IA** (manuelita; N3 E3 P4): Sí: en la evidencia hay varios documentos de Palmar de Altamira, así que no hay un único enlace. Estos son los exactos que aparecen: 1. Manual PTEE: https://www.manuelita.com/wp-content/uploads/2025/03/1-Palmar_Manual-PTEE-v2024.pdf [U1] 2. Política de Tratamiento de Datos Personales: https://www.ma
+- **Visitante**: Muchas gracias, con esto ya tengo para mi tarea. Que tenga buen día.
+  - **Valer-IA** (off_topic; N3 E3 P3): Con gusto, y gracias a ti por la paciencia con los enlaces. Eso sí, la tarea como tal te toca a ti: yo solo puedo compartir información pública de Manuelita, no resolverla ni hacer juicios sobre ella. Que te rinda y tengas un muy buen día.
+- **Visitante**: Gracias, hasta luego.
+  - **Valer-IA** (closing; N4 E4 P3): Ha sido un gusto acompañarte y quedas con los enlaces a la mano para tu tarea. Hasta pronto, y mucho ánimo con lo que viene. Si quieres que te reconozca en tu próxima visita, puedes compartirme tu correo cuando gustes; es opcional.
 
 ### Perfil disperso (visitante: llm)
 
-- **Visitante**: Holaaa, ¿qué se puede hacer aquí?
-  - **Valer-IA** (about_assistant; N5 E5 P5): Hola, es un gusto tenerte por aquí. Me llamo Valer-IA Caña y funciono con inteligencia artificial: puedo contarte información pública de Manuelita, como su historia, sus negocios o su fundación.
-- **Visitante**: ¿Y qué es lo más raro que te han preguntado?
-  - **Valer-IA** (about_assistant; N4 E4 P5): Como funciono con inteligencia artificial, no guardo un historial de las consultas que recibo, así que no sabría decirte cuál ha sido la más curiosa. Si quieres, te cuento algo de Manuelita.
-- **Visitante**: Jaja, entonces no te acuerdas de nada. ¿Y Manuelita qué hace hoy en día?
-  - **Valer-IA** (manuelita; N5 E5 P5): Jaja, tranqui: de las consultas de otros no me acuerdo, pero de Manuelita sí te puedo contar. Hoy en día transforma los recursos naturales en alimentos, energía y potencial ambiental [U1], y eso lo hace con un compromiso con la sostenibilidad que vive en el día a día con sus colaboradores, buscando
-- **Visitante**: Suena bien. ¿Y qué es eso de la energía?
-  - **Valer-IA** (manuelita; N2 E3 P4): La energía aparece como uno de los frentes en los que Manuelita transforma los recursos naturales, junto con los alimentos y el potencial ambiental [U1]. Ese es el nivel de detalle que tengo en la evidencia de este turno: no se especifica qué produce en materia de energía ni con qué operaciones o pl
-- **Visitante**: Mmm ok. ¿Y qué es lo de la sostenibilidad esa?
-  - **Valer-IA** (manuelita; N3 E3 P4): Lo que sí documenta la evidencia es cómo se concreta la sostenibilidad en hechos: Manuelita Azúcar y Energía contribuyó a la Fundación Paz y Bien, que en 2019-2020 benefició a 155 niños en situación de vulnerabilidad de la comuna uno de Palmira [U2]. También aparece ligada a la gestión del negocio,
-- **Visitante**: Ah, qué bien. ¿Y tú endulzas el café con azúcar de Manuelita? jaja
-  - **Valer-IA** (smalltalk; N5 E5 P5): Jaja, ojalá: no tomo café ni endulzo nada, que para eso necesitaría tener taza y todo. Lo que sí puedo hacer es contarte sobre Manuelita, si te queda curiosidad de algo.
-- **Visitante**: Jaja, qué mal. Bueno, ¿y de dónde salió el nombre de Manuelita?
-  - **Valer-IA** (manuelita; N3 E4 P5): Mira, lo que sí aparece es que la celebración de los 150 años de Manuelita se hizo en la hacienda que lleva su mismo nombre [U7], y que hubo algo bautizado en honor a Harold Eder, expresidente de Manuelita, a quien le debe su primer nombre [U6]. Pero el origen del nombre «Manuelita» como tal no está
-- **Visitante**: Vale, gracias por todo. ¡Chao, Valer-IA!
-  - **Valer-IA** (closing; N4 E5 P4): ¡Un placer, de verdad! Hoy estuvimos charlando de sostenibilidad y de productos, y quedaste con la curiosidad del nombre. Que te vaya muy bien, ¡chao! Si quieres que te reconozca en tu próxima visita, puedes compartirme tu correo cuando gustes; es opcional.
+- **Visitante**: hola! oye, qué es exactamente Manuelita?
+  - **Valer-IA** (manuelita; N4 E4 P5): ¡Hola! Con gusto te cuento. Manuelita es una empresa agroindustrial que desarrolla actividades en territorio colombiano, a través de figuras como Manuelita Corporativa S.A.S. [U7]. En su operación aparecen negocios como Manuelita Azúcar y Energía [U4] y Manuelita Biocombustibles [U1]. La sostenibili
+- **Visitante**: ah ok, o sea que hacen azúcar y biocombustibles. y eso no huele feo?
+  - **Valer-IA** (manuelita; N2 E3 P4): Sí, ambas cosas aparecen en la evidencia: la conversación sobre el futuro de Manuelita se plantea entre los biocombustibles y el azúcar [U1], una de sus filiales es Manuelita Biocombustibles [U3] y se menciona la producción de azúcar [U6]. Sobre si la operación genera olores o molestias, no hay info
+- **Visitante**: jaja bueno, mejor no pregunto más de olores. y ustedes tienen algo que ver con animales o solo caña?
+  - **Valer-IA** (manuelita; N4 E4 P5): ¡Jaja, tranqui! Y sí, la caña no es lo único: Manuelita se ha consolidado como un grupo agroindustrial líder en biocombustibles, acuicultura, horticultura y fruticultura [U1]. O sea, además del azúcar y los biocombustibles, también tiene que ver con el cultivo de especies acuáticas y con huertas y f
+- **Visitante**: acuicultura o sea peces? jaja y frutas tipo cuáles
+  - **Valer-IA** (manuelita; N4 E4 P5): ¡Jaja, no exactamente peces! En la evidencia la acuicultura aparece como cultivo de mejillones, con planta de empaque [U2], y también se registran cifras de producción de camarón y mejillones [U6]. De peces no hay nada en el corpus. Y en frutas y hortalizas sí hay nombres concretos: se menciona la u
+- **Visitante**: mejillones?? no me lo esperaba jaja. y eso lo venden acá en Colombia o es pa exportar?
+  - **Valer-IA** (manuelita; N3 E4 P5): ¡Jaja, sí, mejillones! Y lo que sí dice la evidencia es que Manuelita Acuicultura se dedica a la producción y comercialización de mejillones de valor agregado [U7], con cultivo de mejillones y planta de empaque [U1]. Lo que no aparece en el corpus es si esos mejillones se venden en Colombia o si van
+- **Visitante**: uy 45 países, no sabía. y cuánta gente trabaja ahí?
+  - **Valer-IA** (manuelita; N3 E3 P5): ¡Buena pregunta! Lo más claro que tengo es del informe 2017-2018: Manuelita reporta 9.850 colaboradores directos e indirectos en 2017 y 9.559 en 2018 [F2]. Ojo, esa cifra suma directos e indirectos, o sea también cuenta a quienes trabajan con la empresa sin ser empleados de planta [F2]. En una prese
+- **Visitante**: ahh ok, casi 10 mil personas, bastante. y dónde queda la sede? tipo en qué ciudad
+  - **Valer-IA** (manuelita; N4 E4 P5): Lo de la sede no aparece como tal en lo que tengo: no hay un documento que diga en qué ciudad está la sede principal, así que no te lo puedo confirmar. La única ciudad que sí sale mencionada es Palmira, pero siempre ligada a los programas de la Fundación Manuelita, como el proyecto Educar Uno a Uno
+- **Visitante**: bueno, gracias por la info! me voy, chao 👋
+  - **Valer-IA** (closing; N3 E4 P3): ¡Chao, que te vaya súper bien! Quedamos en los productos de Manuelita, como los mejillones, y en eso de la sede, que no logramos confirmar del todo. Gracias por la charla y cuídate mucho. Si quieres que te reconozca en tu próxima visita, puedes compartirme tu correo cuando gustes; es opcional.
 
 ## Evaluación humana (SC-007)
 

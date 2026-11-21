@@ -65,13 +65,16 @@ def test_chat_response_carries_the_act_and_the_turn_labels(client: TestClient) -
     ChatResponse.model_validate(payload)
     assert payload["turn"]["route"]["act"] == "smalltalk"
     acts = payload["contact"]["acts"]
-    assert acts == [{"act": "smalltalk", "bridged": acts[0]["bridged"], "reviewed": "show"}]
+    assert acts == [
+        {"act": "smalltalk", "bridged": acts[0]["bridged"], "reviewed": "show", "discarded": 0}
+    ]
     thread = client.get(f"/api/threads/{payload['thread_id']}").json()
     assert thread["contact"]["acts"] == acts
 
 
 def test_converse_turn_streams_route_and_done_without_tokens() -> None:
     config = agent_config("guided")
+    config = replace(config, conversation=replace(config.conversation, delivery="complete"))
     service = make_service(model=StreamingModel(), config=config)
     _thread, events = service.open_stream("¡qué calor hace hoy!", variant="chain")
     kinds = [event["event"] for event in events]
@@ -79,8 +82,11 @@ def test_converse_turn_streams_route_and_done_without_tokens() -> None:
     assert "route" in kinds and "token" not in kinds
 
 
-def test_retrieval_turns_keep_streaming_tokens() -> None:
-    service = make_service(config=agent_config("guided"))
+def test_retrieval_turns_keep_streaming_tokens_in_complete_delivery() -> None:
+    """Spec 021: con ``delivery = "complete"`` las respuestas con búsqueda transmiten tokens."""
+    config = agent_config("guided")
+    config = replace(config, conversation=replace(config.conversation, delivery="complete"))
+    service = make_service(config=config)
     _thread, events = service.open_stream("¿Qué produce Manuelita?", variant="chain")
     assert "token" in [event["event"] for event in events]
 

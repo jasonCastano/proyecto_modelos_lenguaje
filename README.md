@@ -146,6 +146,8 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
     modelo según un plan del turno y la revisa antes de mostrarla (sin hechos externos, contactos ni promesas);
     acompaña la charla social, declina con sus palabras los datos externos, sugiere temas de Manuelita solo de
     vez en cuando y sin repetirlos, recuerda lo conversado en el hilo y responde en el idioma del visitante.
+  - **Respuesta por frases revisadas**: la respuesta aparece frase por frase mientras se genera, y cada frase se
+    revisa antes de mostrarse; nunca se retira texto ya visto y la voz empieza a leer con la primera frase.
   - **Avatar con sincronización de labios**: una asistente ilustrada junto al chat mueve la boca con el audio de
     la voz (análisis local en el navegador), parpadea y muestra cuándo está pensando; se puede ocultar.
 - **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores;
@@ -730,6 +732,9 @@ uv run python -m proyecto_modelos_lenguaje.agent evaluate --mode real --compare 
   contacto. Se mide con
   `uv run python -m proyecto_modelos_lenguaje.agent converse --mode demo|real [--baseline] [--simulate]`
   (`docs/evaluacion_conversacion.md`); `agent care --conversation-mode guided|scripted` elige el modo.
+- Entrega por frases (spec 021, ADR 0025): `[conversation] delivery = "sentences"` (por defecto) o `"complete"`
+  (spec 020). El flujo SSE envía eventos `sentence` ya revisados en lugar de tokens. Se mide con
+  `agent converse --baseline-delivery` (sección «Entrega» del informe).
 - Avatar (spec 017, ADR 0021): junto al chat, la boca sigue el audio de la voz con un analizador de Web Audio, sin
   servicios externos. «Ocultar avatar» lo esconde y la preferencia se recuerda. Con `?avatarDebug=1` en la URL,
   la tarjeta muestra la forma y la apertura de la boca para calibrarla.

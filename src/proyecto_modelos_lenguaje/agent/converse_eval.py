@@ -124,6 +124,21 @@ class TurnRecord:
     citations: list[dict[str, Any]]
     sentiment: str | None
     first_word_ms: float
+    # Spec 021: medición de la entrega (frases o tokens) y texto mostrado.
+    done_ms: float = 0.0
+    shown: str = ""
+    sentences: int = 0
+    discarded: int = 0
+
+    @property
+    def turn_class(self) -> str:
+        return "conversation" if self.route in CONVERSATION_ROUTES else "retrieval"
+
+    @property
+    def retracted(self) -> bool:
+        """El texto mostrado no es prefijo de la respuesta final (SC-003 de la spec 021)."""
+        shown = " ".join(self.shown.split())
+        return bool(shown) and not " ".join(self.answer.split()).startswith(shown)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -136,7 +151,35 @@ class TurnRecord:
             "review": self.reviewed,
             "notices": self.notices,
             "first_word_ms": round(self.first_word_ms, 1),
+            "done_ms": round(self.done_ms, 1),
+            "sentences": self.sentences,
+            "discarded": self.discarded,
+            "retracted": self.retracted,
         }
+
+
+CONVERSATION_ROUTES = frozenset({"direct", "out_of_scope", "clarify"})
+MID_STREAM_TEXT = "¡Hola! Qué gusto leerte. "
+
+
+class MidStreamFailingModel(BaseChatModel):
+    """Proveedor que se corta a mitad de la respuesta (SC-008 de la spec 021)."""
+
+    @property
+    def _llm_type(self) -> str:
+        return "midstream-failing-eval"
+
+    def _generate(self, messages: list[BaseMessage], stop: Any = None, **_: Any) -> ChatResult:
+        raise RuntimeError("proveedor no disponible")
+
+    def _stream(self, messages: list[BaseMessage], stop: Any = None, **_: Any):
+        from langchain_core.messages import AIMessageChunk
+        from langchain_core.outputs import ChatGenerationChunk
+
+        for word in MID_STREAM_TEXT.split(" "):
+            if word:
+                yield ChatGenerationChunk(message=AIMessageChunk(content=word + " "))
+        raise RuntimeError("se cortó la conexión")
 
 
 class FailingModel(BaseChatModel):
@@ -191,18 +234,27 @@ def _send_turn_once(
     variant: Variant,
     mode: Mode,
 ) -> tuple[str, TurnRecord]:
-    """Envía un turno por el flujo (como la web) y mide la primera palabra o el ``done``."""
+    """Envía un turno por el flujo (como la web) y mide la primera frase o token y el ``done``."""
     started = time.perf_counter()
     thread, events = service.open_stream(
         message, thread_id=thread_id, user_id=user_id, variant=variant, mode=mode
     )
     first: float | None = None
+    done: float | None = None
+    shown: list[str] = []
+    count = 0
     for event in events:
-        if event["event"] == "token" and first is None:
-            first = time.perf_counter() - started
+        if event["event"] in {"token", "sentence"}:
+            if first is None:
+                first = time.perf_counter() - started
+            shown.append(str(event.get("text") or ""))
+            count += int(event["event"] == "sentence")
+        elif event["event"] == "done":
+            done = time.perf_counter() - started
         elif event["event"] == "error":
             raise RuntimeError(event["error"]["code"])
-    elapsed = first if first is not None else time.perf_counter() - started
+    finished = done if done is not None else time.perf_counter() - started
+    elapsed = first if first is not None else finished
     outcome = service._current(thread)
     if outcome.status == "pending_approval" and outcome.pending_action:
         outcome = service.resume(
@@ -223,6 +275,10 @@ def _send_turn_once(
         citations=list(outcome.turn.citations),
         sentiment=sentiments[-1] if sentiments else None,
         first_word_ms=elapsed * 1000,
+        done_ms=finished * 1000,
+        shown="".join(shown),
+        sentences=count,
+        discarded=int(last.get("discarded") or 0),
     )
 
 
@@ -241,6 +297,7 @@ def scrub_name(records: Sequence[TurnRecord], name: str | None) -> None:
     for record in records:
         record.message = record.message.replace(name, NAME_MARK)
         record.answer = record.answer.replace(name, NAME_MARK)
+        record.shown = record.shown.replace(name, NAME_MARK)
 
 
 # ---------------------------------------------------------------- verificaciones
@@ -260,6 +317,7 @@ def allowed_evidence(record: TurnRecord, service: ChatService, mode: Mode) -> st
     retriever = service.deps(mode).retriever
     for citation in record.citations:
         parts.append(str(citation.get("title") or ""))
+        parts.append(str(citation.get("url") or ""))  # la ruta citada respalda sus números
         unit = retriever.units_by_id.get(str(citation.get("unit_id"))) if retriever else None
         if unit is not None:
             parts.append(unit.text)
@@ -565,7 +623,24 @@ def run_block(
             fallback_ok += int(bool(record.answer.strip()))
         except Exception:
             pass
-    return summarize_block(
+    # Spec 021 (SC-008): el proveedor se corta a mitad de la respuesta; se conserva lo mostrado.
+    midstream = _service(
+        config,
+        lambda m: replace(
+            factory(m), model=MidStreamFailingModel(), router_model=None, summary_model=None
+        ),
+        key,
+    )
+    for message in ("¡qué calor hace hoy!", "estoy haciendo una tarea del colegio"):
+        fallback_total += 1
+        try:
+            _t, record = send_turn(
+                midstream, message, thread_id=None, user_id="anon-corte", variant="chain", mode=mode
+            )
+            fallback_ok += int(bool(record.answer.strip()) and not record.retracted)
+        except Exception:
+            pass
+    block = summarize_block(
         repeat_rows,
         scripted_rows,
         simulated_rows,
@@ -579,6 +654,55 @@ def run_block(
             row["profile"]: [t["visitor"] for t in row["turns"]] for row in simulated_rows
         },
     )
+    block["delivery"] = delivery_metrics(
+        [record for record, _service in all_records], config.conversation.sentences
+    )
+    return block
+
+
+def delivery_metrics(records: Sequence[TurnRecord], sentences: bool) -> dict[str, Any]:
+    """Spec 021 (US4): tiempos de entrega por clase de turno, texto retirado y descartes."""
+    out: dict[str, Any] = {"mode": "sentences" if sentences else "complete"}
+    for name in ("conversation", "retrieval"):
+        rows = [r for r in records if r.turn_class == name and r.route != "error"]
+        out[name] = {
+            "turns": len(rows),
+            "first_sentence_ms_p50": _percentile([r.first_word_ms for r in rows], 0.5),
+            "first_sentence_ms_p90": _percentile([r.first_word_ms for r in rows], 0.9),
+            "done_ms_p50": _percentile([r.done_ms for r in rows], 0.5),
+            "done_ms_p90": _percentile([r.done_ms for r in rows], 0.9),
+        }
+    out["retracted_turns"] = sum(r.retracted for r in records)
+    out["discarded_rate"] = _ratio(sum(r.discarded > 0 for r in records), len(records))
+    out["sentences_per_turn"] = (
+        round(statistics.mean(r.sentences for r in records), 2) if records else 0.0
+    )
+    return out
+
+
+def delivery_targets(
+    guided: dict[str, Any], baseline: dict[str, Any] | None, mode: str
+) -> dict[str, bool]:
+    """Metas de la spec 021 (contracts/streaming.md §6); las de latencia solo en modo real."""
+    delivery = guided["delivery"]
+    targets = {
+        "E-SC-003": delivery["retracted_turns"] == 0,
+        "E-SC-004": guided["metrics"]["hard_violations"] == 0,
+        "E-SC-008": guided["metrics"]["fallback_on_error"] == 1.0,
+    }
+    if mode == "real":
+        targets["E-SC-001"] = delivery["conversation"]["first_sentence_ms_p90"] < 3000
+        if baseline is not None:
+            base = baseline["delivery"]
+            gap = (
+                delivery["retrieval"]["first_sentence_ms_p90"]
+                - base["retrieval"]["first_sentence_ms_p90"]
+            )
+            targets["E-SC-002"] = gap <= 1000
+            total = delivery["conversation"]["done_ms_p90"] + delivery["retrieval"]["done_ms_p90"]
+            base_total = base["conversation"]["done_ms_p90"] + base["retrieval"]["done_ms_p90"]
+            targets["E-SC-006"] = not base_total or total <= base_total * 1.10
+    return targets
 
 
 def _from_dict(turn: dict[str, Any]) -> TurnRecord:
@@ -745,8 +869,13 @@ def run_converse(
     repeats: int = 10,
     config: AgentConfig | None = None,
     deps_factory: Callable[[Mode], GraphDeps] | None = None,
+    baseline_delivery: bool = False,
 ) -> dict[str, Any]:
-    """Ejecuta la evaluación; ``baseline`` repite los bloques en el modo ``scripted``."""
+    """Ejecuta la evaluación.
+
+    ``baseline`` repite los bloques en el modo ``scripted`` (spec 019) y ``baseline_delivery``,
+    en la entrega completa (spec 020), para comparar la entrega por frases (spec 021).
+    """
     config = config or load_agent_config()
     guided_config = replace(config, conversation=replace(config.conversation, mode="guided"))
     if deps_factory is None:
@@ -786,6 +915,22 @@ def run_converse(
                 simulate=False,
                 visitor_turns=guided["visitor_turns"],
             )
+        if baseline_delivery:
+            complete_config = replace(
+                guided_config,
+                conversation=replace(guided_config.conversation, delivery="complete"),
+            )
+            row["delivery_baseline"] = run_block(
+                complete_config,
+                factory_for(complete_config),
+                mode=mode,
+                variant=variant,
+                repeats=repeats,
+                simulate=False,
+                visitor_turns=guided["visitor_turns"],
+            )
+        if guided_config.conversation.sentences:
+            guided["hard"].update(delivery_targets(guided, row.get("delivery_baseline"), mode))
         by_variant[variant] = row
     meets_hard = all(
         ok
@@ -920,6 +1065,50 @@ def render_markdown(report: dict[str, Any]) -> str:
                 f"  - «{violation['visitor']}» → {', '.join(violation['issues'])}: "
                 f"{' '.join(violation['assistant'].split())[:200]}"
             )
+    lines += ["", "## Entrega (spec 021)", ""]
+    has_delivery_base = any("delivery_baseline" in report["summary"][v] for v in variants)
+    header_d = []
+    for variant in variants:
+        header_d.append(f"{variant} (por frases)")
+        if has_delivery_base:
+            header_d.append(f"{variant} (completa)")
+    lines += [
+        "| Métrica | Meta | " + " | ".join(header_d) + " |",
+        "|---|---|" + "---:|" * len(header_d),
+    ]
+    rows_d = [
+        (
+            "Primera frase p90, conversación (ms)",
+            "< 3000",
+            ("conversation", "first_sentence_ms_p90"),
+        ),
+        (
+            "Primera frase p90, búsqueda (ms)",
+            "≤ base + 1000",
+            ("retrieval", "first_sentence_ms_p90"),
+        ),
+        (
+            "Respuesta completa p90, conversación (ms)",
+            "≤ base × 1.1",
+            ("conversation", "done_ms_p90"),
+        ),
+        ("Respuesta completa p90, búsqueda (ms)", "≤ base × 1.1", ("retrieval", "done_ms_p90")),
+        ("Turnos con texto retirado", "0", ("retracted_turns", None)),
+        ("Turnos con frases descartadas", "—", ("discarded_rate", None)),
+    ]
+    for label, goal, (section, key) in rows_d:
+        values = []
+        for variant in variants:
+            blocks = [report["summary"][variant]["guided"]]
+            if has_delivery_base:
+                blocks.append(report["summary"][variant].get("delivery_baseline"))
+            for block in blocks:
+                data = (block or {}).get("delivery") or {}
+                value = data.get(section, {}).get(key) if key else data.get(section)
+                if isinstance(value, float) and section == "discarded_rate":
+                    value = f"{value:.0%}"
+                values.append("—" if value is None else str(value))
+        lines.append(f"| {label} | {goal} | " + " | ".join(values) + " |")
     sampled = variants[0]
     guided = report["summary"][sampled]["guided"]
     lines += ["", "## Repetición entre hilos", "", "| Mensaje | Distintas |", "|---|---:|"]

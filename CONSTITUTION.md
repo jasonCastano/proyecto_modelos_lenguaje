@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.12.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-20
+**Versión**: 1.13.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-20
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -287,6 +287,10 @@ uv.lock
   son opcionales, con cuota, citadas y sin repetirse en el hilo. Las respuestas de crisis, datos de terceros,
   extracción de instrucciones, daño, insulto solo, identidad y perfil conservan su texto fijo.
   `[conversation] mode = "scripted"` restablece los guiones de la spec 019 como línea base.
+- Entrega por frases revisadas (spec 021, ADR 0025): las respuestas redactadas por el modelo (conversación y
+  búsqueda) se entregan frase por frase, y cada frase DEBE pasar la revisión antes de mostrarse. Lo mostrado NO
+  DEBE retirarse ni reemplazarse: la respuesta final es la secuencia de frases entregadas, más las frases de cierre
+  que haga falta agregar. `[conversation] delivery = "complete"` restablece la entrega completa de la spec 020.
 - Un mensaje de angustia grave o de autolesión DEBE recibir primero una respuesta de apoyo con la Línea 106
   (salud mental, Ministerio de Salud) y el 123, sin contenido comercial, por encima de cualquier otra regla.
 - El registro del contacto (CRM) de cada conversación guarda solo etiquetas controladas (categoría, tema,
@@ -975,4 +979,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.12.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-20
+**Versión**: 1.13.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-20

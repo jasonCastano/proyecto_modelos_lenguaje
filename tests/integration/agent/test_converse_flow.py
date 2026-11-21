@@ -282,7 +282,12 @@ def test_us3_closing_summarizes_without_bridge_and_offers_to_remember_once(varia
         "chao",
     )
     closing = outcomes[2]
-    assert closing.contact["acts"][2] == {"act": "closing", "bridged": False, "reviewed": "show"}
+    assert closing.contact["acts"][2] == {
+        "act": "closing",
+        "bridged": False,
+        "reviewed": "show",
+        "discarded": 0,
+    }
     assert load_conduct()["remember_offer"] in closing.turn.answer
     assert load_conduct()["remember_offer"] not in outcomes[3].turn.answer
 
@@ -307,7 +312,12 @@ def test_us3_long_conversation_keeps_offers_and_rejections() -> None:
 def test_us4_minimal_messages_get_short_replies(variant: str, message: str) -> None:
     (outcome,) = chat(variant, message)
     sentences = [s for s in re.split(r"(?<=[.!?])\s+", outcome.turn.answer) if s]
-    assert outcome.contact["acts"][-1] == {"act": "minimal", "bridged": False, "reviewed": "show"}
+    assert outcome.contact["acts"][-1] == {
+        "act": "minimal",
+        "bridged": False,
+        "reviewed": "show",
+        "discarded": 0,
+    }
     assert len(sentences) <= 2
 
 

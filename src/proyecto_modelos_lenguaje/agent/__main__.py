@@ -135,6 +135,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     converse_cmd.add_argument("--repeats", type=int, default=10, help="Hilos por mensaje.")
     converse_cmd.add_argument(
+        "--baseline-delivery",
+        action="store_true",
+        help="Spec 021: repite la evaluación con la entrega completa (spec 020) para comparar.",
+    )
+    converse_cmd.add_argument(
         "--json-out", default=None, help="Informe JSON (por defecto en real)."
     )
     return parser
@@ -189,6 +194,7 @@ def _converse(args: argparse.Namespace) -> int:
             baseline=args.baseline,
             simulate=args.simulate,
             repeats=args.repeats,
+            baseline_delivery=args.baseline_delivery,
         )
     except Exception as exc:
         print(f"error de configuración: {exc}", file=sys.stderr)

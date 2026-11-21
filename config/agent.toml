@@ -38,6 +38,11 @@ max_regenerations = 1     # regeneraciones tras la revisión antes del respaldo
 converse_max_tokens = 220
 converse_timeout_seconds = 8
 review_llm = false        # juez LLM en línea (desactivado por latencia)
+delivery = "sentences"    # spec 021: frases revisadas una por una; complete: respuesta entera (spec 020)
+sentence_max_chars = 220  # fragmento máximo sin cierre de frase
+first_fragment_chars = 160  # el primer fragmento llega antes
+stream_first_timeout_seconds = 8  # espera máxima hasta el primer texto del modelo
+stream_idle_timeout_seconds = 6   # espera máxima sin texto nuevo a mitad de la respuesta
 
 [state]
 env_var = "MANUELITA_STATE_DIR"    # checkpointer y Store, siempre fuera del repositorio

@@ -13,6 +13,7 @@ El puente es opcional: el plan lo permite y el modelo decide si lo usa.
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -111,6 +112,58 @@ def _curated(playbook: CarePlaybook, topic_key: str | None) -> list[BridgeChoice
     return choices
 
 
+# Spec 021 (R17): la búsqueda de puentes tarda ~1.6 s con el buscador híbrido. La consulta usa
+# solo las palabras del ángulo, así que se guarda por (buscador, tema, puntaje mínimo).
+_CACHE: dict[tuple[int, str, float], list[BridgeChoice]] = {}
+_CACHE_LOCK = threading.Lock()
+_WARMING: set[int] = set()
+
+
+def _retrieved(
+    topic_key: str | None,
+    playbook: CarePlaybook,
+    retriever: HybridRetriever,
+    config: ConversationConfig,
+) -> list[BridgeChoice]:
+    angle, keywords = angle_for(playbook, topic_key)
+    if not keywords:
+        return []
+    cache_key = (id(retriever), topic_key or "default", config.bridge_min_score)
+    with _CACHE_LOCK:
+        cached = _CACHE.get(cache_key)
+    if cached is not None:
+        return list(cached)
+    query = f"Manuelita {' '.join(keywords)}"[:300]
+    try:
+        fragments, documents = search_documents_impl(
+            retriever, query, top_k=CANDIDATES_TOP_K, neutralize=True
+        )
+    except Exception:  # el puente es opcional: un fallo del índice no rompe el turno
+        return []
+    found: list[BridgeChoice] = []
+    for fragment, document in zip(fragments, documents, strict=False):
+        if fragment.score < config.bridge_min_score or fragment.anomalous:
+            continue
+        text = _excerpt(document.text)
+        title = clean_title(fragment.title)
+        if not text or not title or not _mentions_angle(f"{title} {text}", keywords):
+            continue
+        found.append(
+            BridgeChoice(
+                unit_id=fragment.unit_id,
+                angle=angle,
+                title=title,
+                url=fragment.url,
+                text=text,
+                source="retrieval",
+                score=round(float(fragment.score), 4),
+            )
+        )
+    with _CACHE_LOCK:
+        _CACHE[cache_key] = found
+    return list(found)
+
+
 def candidates(
     topic_text: str,
     topic_key: str | None,
@@ -118,36 +171,34 @@ def candidates(
     retriever: HybridRetriever | None,
     config: ConversationConfig,
 ) -> list[BridgeChoice]:
-    """Candidatos relacionados con lo que dijo el visitante: buscados en el oro y curados."""
-    angle, keywords = angle_for(playbook, topic_key)
-    found: list[BridgeChoice] = []
-    if retriever is not None and keywords:
-        query = f"Manuelita {' '.join(keywords)} {topic_text}".strip()[:300]
-        try:
-            fragments, documents = search_documents_impl(
-                retriever, query, top_k=CANDIDATES_TOP_K, neutralize=True
-            )
-        except Exception:  # el puente es opcional: un fallo del índice no rompe el turno
-            fragments, documents = [], []
-        for fragment, document in zip(fragments, documents, strict=False):
-            if fragment.score < config.bridge_min_score or fragment.anomalous:
-                continue
-            text = _excerpt(document.text)
-            title = clean_title(fragment.title)
-            if not text or not title or not _mentions_angle(f"{title} {text}", keywords):
-                continue
-            found.append(
-                BridgeChoice(
-                    unit_id=fragment.unit_id,
-                    angle=angle,
-                    title=title,
-                    url=fragment.url,
-                    text=text,
-                    source="retrieval",
-                    score=round(float(fragment.score), 4),
-                )
-            )
+    """Candidatos para el tema del visitante: buscados en el oro (en caché por tema) y curados.
+
+    ``topic_text`` solo sirve para adivinar el tema (``topic_of``); la búsqueda usa las palabras
+    del ángulo, que son las que definen la relación del puente con lo que dijo el visitante.
+    """
+    del topic_text
+    found = _retrieved(topic_key, playbook, retriever, config) if retriever is not None else []
     return [*found, *_curated(playbook, topic_key)]
+
+
+def warm_up(
+    playbook: CarePlaybook, retriever: HybridRetriever | None, config: ConversationConfig
+) -> threading.Thread | None:
+    """Precalienta en segundo plano los puentes de todos los temas (no bloquea el arranque)."""
+    if retriever is None:
+        return None
+    with _CACHE_LOCK:
+        if id(retriever) in _WARMING:
+            return None  # ya se precalentó (o se está precalentando) este buscador
+        _WARMING.add(id(retriever))
+
+    def run() -> None:
+        for key in [None, *playbook.angles]:
+            _retrieved(None if key in {None, "default"} else key, playbook, retriever, config)
+
+    thread = threading.Thread(target=run, name="bridges-warm-up", daemon=True)
+    thread.start()
+    return thread
 
 
 def select(

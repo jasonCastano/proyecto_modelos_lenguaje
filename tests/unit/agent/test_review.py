@@ -131,3 +131,16 @@ def test_trim_and_drop_helpers() -> None:
     assert drop_flagged_sentences(text, ["2099"]) == (
         "Manuelita produce azúcar [U1]. Opera en Colombia [U3]."
     )
+
+
+def test_review_sentence_blocks_human_claims_in_about_assistant() -> None:
+    # Spec 021: la revisión por frase conserva la garantía de la spec 018 («no soy una persona»).
+    from proyecto_modelos_lenguaje.agent.review import review_sentence
+
+    sentence = "No, no soy una persona: soy Valer-IA Caña."
+    verdict = review_sentence(sentence, plan("about_assistant"), is_first=True)
+    assert not verdict.ok and verdict.issues == ["human_claim"]
+    assert "persona" in correction_note(verdict, plan("about_assistant"))
+    assert review_sentence(sentence, plan("smalltalk"), is_first=True).ok
+    ok = "Funciono con inteligencia artificial y me llamo Valer-IA Caña."
+    assert review_sentence(ok, plan("about_assistant"), is_first=True).ok

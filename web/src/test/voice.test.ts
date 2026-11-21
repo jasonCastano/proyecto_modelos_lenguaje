@@ -132,6 +132,22 @@ describe("VoicePlayer", () => {
     expect(fetcher).toHaveBeenCalledTimes(3);
   });
 
+  it("spec 021: pushSentence encola la oración sin esperar el texto siguiente", () => {
+    const { context } = fakeContext();
+    const { fetcher, resolvers } = deferred();
+    const player = new VoicePlayer({ createContext: () => context, fetcher, now: () => 0 });
+
+    player.start("t-1");
+    player.push("Uno.");
+    expect(fetcher).not.toHaveBeenCalled(); // con tokens, un punto final espera más texto
+    player.stop();
+
+    player.start("t-2");
+    player.pushSentence("Uno.");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(resolvers[0].request).toMatchObject({ text: "Uno.", segment: 0, threadId: "t-2" });
+  });
+
   it("salta las oraciones sin audio (204) y los errores puntuales", async () => {
     const { context, sources } = fakeContext();
     const fetcher = vi.fn(async (request: SpeechRequest) => {

@@ -954,7 +954,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         lines.append(f"| simulada · {row['profile']} | | | |")
     for row in guided["scripted"][:5]:
         lines.append(f"| guionada · {row['id']} {row['title']} | | | |")
-    return "\n".join(lines) + "\n"
+    # Sin espacios al final de línea (las respuestas recortadas a 300 caracteres pueden dejarlos).
+    return "\n".join(line.rstrip() for line in lines) + "\n"
 
 
 def write_reports(report: dict[str, Any], json_path: Path = REPORT_JSON) -> None:

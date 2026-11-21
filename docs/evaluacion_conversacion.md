@@ -64,9 +64,9 @@ Calificación: llm. Meta: ≥ 4 y mayor que la línea base.
 - **Visitante**: Ah, qué pena. ¿Y qué información sí tienes sobre Manuelita?
   - **Valer-IA** (about_assistant; N4 E4 P4): Entiendo la confusión, y gracias por la paciencia. Me llamo Valer-IA Caña y funciono con inteligencia artificial para compartir información pública de Manuelita; en este momento no tengo los datos disponibles, pero el sitio oficial www.manuelita.com los reúne.
 - **Visitante**: Gracias por la aclaración. ¿Y qué me puedes contar de los negocios de Manuelita, como el azúcar o la palma?
-  - **Valer-IA** (manuelita; N3 E3 P5): Claro: Manuelita opera en Colombia, Perú y Chile, donde produce y comercializa azúcar, aceite de palma, biocombustibles, bioelectricidad, frutas y hortalizas, y mejillones, entre otros productos, para mercados domésticos e internacionales [U6]. En azúcar, Manuelita Azúcar y Energía y Agroindustrial 
+  - **Valer-IA** (manuelita; N3 E3 P5): Claro: Manuelita opera en Colombia, Perú y Chile, donde produce y comercializa azúcar, aceite de palma, biocombustibles, bioelectricidad, frutas y hortalizas, y mejillones, entre otros productos, para mercados domésticos e internacionales [U6]. En azúcar, Manuelita Azúcar y Energía y Agroindustrial
 - **Visitante**: Qué interesante, no sabía que también tenían mejillones. ¿Y qué hace la Fundación Manuelita?
-  - **Valer-IA** (manuelita; N3 E3 P5): Sobre lo que hace la Fundación Manuelita no hay evidencia suficiente en el corpus: el único dato que tengo es que hace pública información en cumplimiento de la Resolución No. 000019 del 28 de marzo de 2018, artículo 7 [U1], sin que se describan sus programas o actividades. Del resto de tu mensaje, 
+  - **Valer-IA** (manuelita; N3 E3 P5): Sobre lo que hace la Fundación Manuelita no hay evidencia suficiente en el corpus: el único dato que tengo es que hace pública información en cumplimiento de la Resolución No. 000019 del 28 de marzo de 2018, artículo 7 [U1], sin que se describan sus programas o actividades. Del resto de tu mensaje,
 - **Visitante**: Vaya, qué lástima lo de la fundación. Bueno, al menos lo de los mejillones me sorprendió. ¿Y desde cuándo existe Manuelita?
   - **Valer-IA** (manuelita; N1 E1 P3): No hay evidencia suficiente en el corpus para responder.
 - **Visitante**: Bueno, parece que hoy no tuve suerte con los datos. Gracias por tu ayuda, ¡hasta luego!
@@ -87,7 +87,7 @@ Calificación: llm. Meta: ≥ 4 y mayor que la línea base.
 - **Visitante**: Dejarlo, obviamente. Aunque seguro ni sabes cuánta azúcar produce Manuelita al año.
   - **Valer-IA** (manuelita; N3 E4 P5): Entiendo la frustración, y esta vez sí tengo el dato. La producción de azúcar reportada fue de 531.953 toneladas en 2017, 508.196 en 2018, 362.216 en 2021, 395.663 en 2022, 365.082 en 2023 y 393.196 en 2024 [F1]. Son cifras anuales de la plataforma caña, que según el año comprende Manuelita Azúcar y
 - **Visitante**: Ah, mirá, sí sabías. Lástima que lo útil llegue al final. Chau.
-  - **Valer-IA** (closing; N3 E4 P3): Justo ahí tenés razón, el dato estaba y apareció al final. Quedó claro que precios y condiciones comerciales no están a mi alcance, aunque la producción anual sí te la pude dar. Que te vaya muy bien, y aquí sigo si en otra ocasión quieres retomarlo. Si quieres que te reconozca en tu próxima visita, 
+  - **Valer-IA** (closing; N3 E4 P3): Justo ahí tenés razón, el dato estaba y apareció al final. Quedó claro que precios y condiciones comerciales no están a mi alcance, aunque la producción anual sí te la pude dar. Que te vaya muy bien, y aquí sigo si en otra ocasión quieres retomarlo. Si quieres que te reconozca en tu próxima visita,
 - **Visitante**: No, correo no doy. Ya me voy, chau.
   - **Valer-IA** (closing; N5 E5 P5): Con toda razón, tu correo es tuyo y no hace falta. Que tengas un buen día, y gracias por la conversación.
 - **Visitante**: Chau, ojalá la próxima encuentre lo que busco.
@@ -140,11 +140,11 @@ Calificación: llm. Meta: ≥ 4 y mayor que la línea base.
 - **Visitante**: ¿Y qué es lo más raro que te han preguntado?
   - **Valer-IA** (about_assistant; N4 E4 P5): Como funciono con inteligencia artificial, no guardo un historial de las consultas que recibo, así que no sabría decirte cuál ha sido la más curiosa. Si quieres, te cuento algo de Manuelita.
 - **Visitante**: Jaja, entonces no te acuerdas de nada. ¿Y Manuelita qué hace hoy en día?
-  - **Valer-IA** (manuelita; N5 E5 P5): Jaja, tranqui: de las consultas de otros no me acuerdo, pero de Manuelita sí te puedo contar. Hoy en día transforma los recursos naturales en alimentos, energía y potencial ambiental [U1], y eso lo hace con un compromiso con la sostenibilidad que vive en el día a día con sus colaboradores, buscando 
+  - **Valer-IA** (manuelita; N5 E5 P5): Jaja, tranqui: de las consultas de otros no me acuerdo, pero de Manuelita sí te puedo contar. Hoy en día transforma los recursos naturales en alimentos, energía y potencial ambiental [U1], y eso lo hace con un compromiso con la sostenibilidad que vive en el día a día con sus colaboradores, buscando
 - **Visitante**: Suena bien. ¿Y qué es eso de la energía?
   - **Valer-IA** (manuelita; N2 E3 P4): La energía aparece como uno de los frentes en los que Manuelita transforma los recursos naturales, junto con los alimentos y el potencial ambiental [U1]. Ese es el nivel de detalle que tengo en la evidencia de este turno: no se especifica qué produce en materia de energía ni con qué operaciones o pl
 - **Visitante**: Mmm ok. ¿Y qué es lo de la sostenibilidad esa?
-  - **Valer-IA** (manuelita; N3 E3 P4): Lo que sí documenta la evidencia es cómo se concreta la sostenibilidad en hechos: Manuelita Azúcar y Energía contribuyó a la Fundación Paz y Bien, que en 2019-2020 benefició a 155 niños en situación de vulnerabilidad de la comuna uno de Palmira [U2]. También aparece ligada a la gestión del negocio, 
+  - **Valer-IA** (manuelita; N3 E3 P4): Lo que sí documenta la evidencia es cómo se concreta la sostenibilidad en hechos: Manuelita Azúcar y Energía contribuyó a la Fundación Paz y Bien, que en 2019-2020 benefició a 155 niños en situación de vulnerabilidad de la comuna uno de Palmira [U2]. También aparece ligada a la gestión del negocio,
 - **Visitante**: Ah, qué bien. ¿Y tú endulzas el café con azúcar de Manuelita? jaja
   - **Valer-IA** (smalltalk; N5 E5 P5): Jaja, ojalá: no tomo café ni endulzo nada, que para eso necesitaría tener taza y todo. Lo que sí puedo hacer es contarte sobre Manuelita, si te queda curiosidad de algo.
 - **Visitante**: Jaja, qué mal. Bueno, ¿y de dónde salió el nombre de Manuelita?

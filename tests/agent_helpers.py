@@ -53,8 +53,14 @@ def demo_retriever(fixture: str = "default") -> HybridRetriever:
     )
 
 
-def agent_config(**memory: Any) -> AgentConfig:
+def agent_config(conversation_mode: str = "scripted", **memory: Any) -> AgentConfig:
+    """Configuración de pruebas.
+
+    Spec 020 (R13): las pruebas de las specs 014 a 019 verifican texto literal y corren en el modo
+    ``scripted``; las de la conversación guiada piden ``conversation_mode="guided"``.
+    """
     config = load_agent_config()
+    config = replace(config, conversation=replace(config.conversation, mode=conversation_mode))
     if memory:
         config = replace(config, memory=replace(config.memory, **memory))
     return config

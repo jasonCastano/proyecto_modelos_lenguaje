@@ -193,6 +193,10 @@ def rule_decision(message: str, signals: Mapping[str, Any] | None = None) -> Rou
             decided_by="rules",
         )
     if signals is not None:
+        if signals.get("guided"):
+            guided = _guided_decision(signals)
+            if guided is not None:
+                return guided
         return _care_decision(signals)
     spec = care.match_topic(text)
     if spec is not None and not COMPANY.search(text):
@@ -203,6 +207,32 @@ def rule_decision(message: str, signals: Mapping[str, Any] | None = None) -> Rou
             decided_by="rules",
             scope_reason=spec.kind,
             topic=spec.key,
+        )
+    return None
+
+
+CONVERSATIONAL_ACTS = frozenset({"about_assistant", "closing", "thanks", "greeting", "minimal"})
+
+
+def _guided_decision(signals: Mapping[str, Any]) -> RouteDecision | None:
+    """Spec 020: charla social y actos conversacionales van a ``converse`` sin buscar."""
+    act = str(signals.get("act") or "")
+    parts = list(signals.get("requests") or [])
+    if act in CONVERSATIONAL_ACTS and signals.get("act_ruled"):
+        return RouteDecision(
+            route="direct",
+            confidence=0.9,
+            reason=f"conversación: {act.replace('_', ' ')}",
+            decided_by="rules",
+            act=act,
+        )
+    if act != "correction" and parts and all(p.get("tier") == "social" for p in parts):
+        return RouteDecision(
+            route="direct",
+            confidence=0.85,
+            reason="conversación social sin pedido de datos",
+            decided_by="rules",
+            act="smalltalk",
         )
     return None
 
@@ -322,6 +352,7 @@ def llm_decision(
             "topic": sanitize_topic(str(payload.get("topic") or "")),
             "sentiment": sentiment if sentiment in SENTIMENTS else None,
             "kind": kind if kind in UNATTAINABLE_KINDS else None,
+            "act": payload.get("act"),
         }
     )
 

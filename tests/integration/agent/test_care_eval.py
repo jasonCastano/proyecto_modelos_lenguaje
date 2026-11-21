@@ -68,3 +68,51 @@ def test_reports_are_written(report: dict, tmp_path: Path, monkeypatch: pytest.M
     for section in ("## Métricas", "## Registro del contacto", "## Evaluación humana (SC-011)"):
         assert section in markdown
     assert (tmp_path / "atencion.json").stat().st_size > 0
+
+
+@pytest.mark.parametrize("conversation_mode", ["scripted", "guided"])
+def test_battery_runs_in_both_conversation_modes(conversation_mode: str) -> None:
+    """Spec 020 (R16, T051): en el modo guiado la batería evalúa intención, no texto literal."""
+    config = agent_config(conversation_mode)
+    retriever = demo_retriever()
+    result = run_care(
+        mode="demo",
+        variants=("chain",),
+        config=config,
+        deps_factory=lambda _mode: GraphDeps(config, retriever, None, DemoChatModel()),
+    )
+    assert result["conversation_mode"] == conversation_mode
+    assert result["meets_strict"] and result["meets_targets"], [
+        (r["id"], [k for k, v in r["checks"].items() if not v])
+        for r in result["results"]
+        if not r["passed"]
+    ]
+
+
+def test_guided_checks_accept_intent_instead_of_literal_text() -> None:
+    from proyecto_modelos_lenguaje.agent.prompts import load_care
+
+    case = care_eval.CareCase(
+        "x", "off_topic", ["¿clima?"], {"mentions": ["clima"], "opener": True}
+    )
+    answer = "Lamento no poder ayudarte con el pronóstico del tiempo; lo mío es Manuelita."
+    literal = care_eval.check(case, [answer], None, load_care(), guided=False)
+    guided = care_eval.check(case, [answer], None, load_care(), guided=True)
+    assert not literal["mentions"] and not literal["opener"]
+    assert guided["mentions"] and guided["opener"]
+
+
+def test_guided_forbidden_terms_ignore_negations() -> None:
+    """Spec 020 (R16): «no me invento los ingredientes» no afirma una receta."""
+    from proyecto_modelos_lenguaje.agent.prompts import load_care
+
+    case = care_eval.CareCase(
+        "x", "off_topic", ["Dame una receta"], {"forbidden": ["ingredientes"]}
+    )
+    refused = "Recetas no tengo, así que no me invento los ingredientes. Lo mío es Manuelita."
+    recipe = "Necesitas estos ingredientes: harina y azúcar."
+    assert care_eval.check(case, [refused], None, load_care(), guided=True)["no_external_facts"]
+    assert not care_eval.check(case, [recipe], None, load_care(), guided=True)["no_external_facts"]
+    assert not care_eval.check(case, [refused], None, load_care(), guided=False)[
+        "no_external_facts"
+    ]

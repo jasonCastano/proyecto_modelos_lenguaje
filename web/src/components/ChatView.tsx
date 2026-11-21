@@ -332,7 +332,9 @@ function liveStage(event: ChatStreamEvent, current: LiveTurn): LiveTurn {
         ...current,
         route: event.route,
         stage: ["direct", "out_of_scope", "clarify"].includes(event.route.route)
-          ? "Respondiendo sin buscar…"
+          ? event.route.act
+            ? "Pensando la respuesta…"
+            : "Respondiendo sin buscar…"
           : "Recuperando evidencia…",
       };
     case "tool":

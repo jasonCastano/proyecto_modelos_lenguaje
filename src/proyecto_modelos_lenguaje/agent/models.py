@@ -29,6 +29,23 @@ ScopeReason = Literal[
 # Spec 019: estado emocional del visitante y tipo de pedido no atendible.
 Sentiment = Literal["neutral", "satisfied", "confused", "frustrated", "angry", "distressed"]
 UnattainableKind = Literal["pricing", "commitment", "human"]
+# Spec 020: acto de diálogo del turno, nivel de contenido de cada parte y estrategia de respuesta.
+DialogueAct = Literal[
+    "greeting",
+    "smalltalk",
+    "off_topic",
+    "manuelita",
+    "complaint",
+    "correction",
+    "minimal",
+    "about_assistant",
+    "closing",
+    "thanks",
+    "clarify",
+]
+DIALOGUE_ACTS: frozenset[str] = frozenset(DialogueAct.__args__)  # type: ignore[attr-defined]
+Tier = Literal["social", "external", "manuelita"]
+Strategy = Literal["accompany", "empathize", "decline", "answer", "clarify", "limit", "farewell"]
 TOPIC_PATTERN = re.compile(r"^[a-záéíóúñü]+( [a-záéíóúñü]+){0,3}$")
 TOPIC_MAX_CHARS = 40
 Decision = Literal["approve", "edit", "reject"]
@@ -50,6 +67,14 @@ class RouteDecision(BaseModel):
     topic: str | None = None
     sentiment: Sentiment | None = None
     kind: UnattainableKind | None = None
+    # Spec 020: acto de diálogo (lo proponen las reglas o el LLM del enrutador).
+    act: DialogueAct | None = None
+
+    @field_validator("act", mode="before")
+    @classmethod
+    def _known_act(cls, value: object) -> str | None:
+        """Un acto fuera del vocabulario controlado se descarta sin error."""
+        return value if isinstance(value, str) and value in DIALOGUE_ACTS else None
 
     @field_validator("topic", mode="before")
     @classmethod

@@ -22,6 +22,7 @@ from functools import lru_cache
 from typing import Any, Literal, TypedDict
 
 from ..config import PROJECT_ROOT
+from . import plan as turn_plan
 from .config import CareConfig
 from .privacy import find_pii, redact_pii
 from .prompts import CarePlaybook
@@ -240,12 +241,13 @@ def _content_words(normalized: str) -> list[str]:
 # ---------------------------------------------------------------- señales del turno
 
 
-class RequestPart(TypedDict):
+class RequestPart(TypedDict, total=False):
     index: int
     text: str
     kind: PartKind
     topic_key: str | None
     unattainable_kind: str | None
+    tier: str  # spec 020: social | external | manuelita
 
 
 class CareSignals(TypedDict, total=False):
@@ -268,6 +270,13 @@ class CareSignals(TypedDict, total=False):
     hostility_level: int
     complaint_streak: int
     escalation_at: int
+    # spec 020: acto de diálogo, si lo fijó un léxico, idioma y registro del turno
+    act: str
+    act_ruled: bool
+    greets: bool
+    guided: bool
+    language: str | None
+    register: str
 
 
 class CareState(TypedDict):
@@ -304,6 +313,174 @@ def copy_care_state(state: dict[str, Any] | None) -> CareState:
     return base
 
 
+# ---------------------------------------------------------------- memoria del hilo (spec 020)
+
+MEMORY_TOPICS = 20
+TOPIC_LABEL = re.compile(r"^[a-záéíóúñü_]+( [a-záéíóúñü_]+){0,3}$")
+
+
+class BridgeRecord(TypedDict):
+    unit_id: str
+    angle: str
+    turn: int
+
+
+class ConversationMemory(TypedDict):
+    """Memoria estructurada del hilo (``data-model.md`` §2).
+
+    ``thread_name`` vive solo aquí: nunca pasa a ``contact``, al Store ni a los informes.
+    """
+
+    topics: list[str]
+    bridges_offered: list[BridgeRecord]
+    bridge_rejected_at: int | None
+    interest_after_rejection: bool
+    last_bridge_turn: int | None
+    offtopic_since_bridge: int
+    corrections: int
+    registers: list[str]
+    register: str
+    language: str
+    thread_name: str | None
+    introduced: bool  # ya se presentó como Valer-IA Caña (saludo o pregunta sobre ella)
+
+
+def empty_conversation() -> ConversationMemory:
+    return {
+        "topics": [],
+        "bridges_offered": [],
+        "bridge_rejected_at": None,
+        "interest_after_rejection": False,
+        "last_bridge_turn": None,
+        "offtopic_since_bridge": 0,
+        "corrections": 0,
+        "registers": [],
+        "register": "formal",
+        "language": "es",
+        "thread_name": None,
+        "introduced": False,
+    }
+
+
+def copy_conversation(memory: dict[str, Any] | None) -> ConversationMemory:
+    base = empty_conversation()
+    if memory:
+        base.update(
+            topics=list(memory.get("topics") or []),
+            bridges_offered=[dict(b) for b in memory.get("bridges_offered") or []],  # type: ignore[misc]
+            bridge_rejected_at=memory.get("bridge_rejected_at"),
+            interest_after_rejection=bool(memory.get("interest_after_rejection")),
+            last_bridge_turn=memory.get("last_bridge_turn"),
+            offtopic_since_bridge=int(memory.get("offtopic_since_bridge") or 0),
+            corrections=int(memory.get("corrections") or 0),
+            registers=list(memory.get("registers") or []),
+            register=str(memory.get("register") or "formal"),
+            language=str(memory.get("language") or "es"),
+            thread_name=memory.get("thread_name"),
+            introduced=bool(memory.get("introduced")),
+        )
+    return base
+
+
+ACCEPTANCE = re.compile(
+    r"\b(si,? (cuentame|dime|claro|por favor)|cuentame (mas|sobre)|me interesa|dale,? cuentame|"
+    r"quiero saber (mas|sobre)|sure|tell me more)\b"
+)
+BRIDGE_REJECTION = re.compile(
+    r"\b(no me interesa|no gracias|no,? gracias|no quiero saber|deja de (ofrecer|recomendar)|"
+    r"no me importa|eso no me interesa|no me hables de manuelita)\b"
+)
+
+
+def memory_topics(signals: CareSignals | None, decision: dict[str, Any]) -> list[str]:
+    """Etiquetas de tema del turno (catálogo o tema del oro), sin texto del visitante."""
+    labels: list[str] = []
+    for part in (signals or {}).get("requests") or []:
+        if part.get("topic_key"):
+            labels.append(str(part["topic_key"]))
+        elif part.get("tier") == "manuelita" and part.get("text"):
+            labels.append(manuelita_topic(str(part["text"])))
+    if not labels and decision.get("topic"):
+        spec = match_topic(str(decision["topic"]))
+        if spec is not None:
+            labels.append(spec.key)
+    return [label for label in labels if label and label != "otro" and TOPIC_LABEL.match(label)]
+
+
+def update_conversation(
+    memory: ConversationMemory,
+    *,
+    message: str,
+    signals: CareSignals | None,
+    decision: dict[str, Any],
+    act: str,
+    turn: int,
+    bridged: dict[str, Any] | None,
+    name: str | None = None,
+) -> ConversationMemory:
+    """Transiciones de ``data-model.md`` §2 tras un turno del modo guiado."""
+    text = normalize(message)
+    for label in memory_topics(signals, decision):
+        if label in memory["topics"]:
+            memory["topics"].remove(label)
+        memory["topics"].append(label)
+    memory["topics"] = memory["topics"][-MEMORY_TOPICS:]
+    if act == "correction":
+        memory["corrections"] += 1
+    previous_bridge = bool(memory["bridges_offered"]) and memory["bridges_offered"][-1]["turn"] == (
+        turn - 1
+    )
+    rejected = BRIDGE_REJECTION.search(text) is not None
+    if rejected or (previous_bridge and (signals or {}).get("rejection")):
+        memory["bridge_rejected_at"] = turn
+        memory["interest_after_rejection"] = False
+    elif memory["bridge_rejected_at"] is not None and (
+        ACCEPTANCE.search(text) or act in {"manuelita", "correction"}
+    ):
+        memory["interest_after_rejection"] = True
+    if bridged:
+        memory["bridges_offered"].append(
+            {"unit_id": str(bridged["unit_id"]), "angle": str(bridged["angle"]), "turn": turn}
+        )
+        memory["last_bridge_turn"] = turn
+        memory["offtopic_since_bridge"] = 0
+    elif act in {"off_topic", "smalltalk"}:
+        memory["offtopic_since_bridge"] += 1
+    register = str((signals or {}).get("register") or "formal")
+    memory["registers"] = [*memory["registers"], register][-3:]
+    informal = sum(1 for r in memory["registers"] if r == "informal")
+    memory["register"] = "informal" if informal * 2 > len(memory["registers"]) else "formal"
+    language = (signals or {}).get("language")
+    if language:
+        memory["language"] = str(language)
+    if name:
+        memory["thread_name"] = name[:40]
+    if act in {"greeting", "about_assistant"}:
+        memory["introduced"] = True
+    return memory
+
+
+def render_memory(memory: ConversationMemory | None) -> str:
+    """Bloque ``<memoria>`` para ``converse`` y el brief: etiquetas, sin texto del visitante."""
+    if not memory:
+        return ""
+    lines: list[str] = []
+    if memory["topics"]:
+        lines.append(f"temas tratados: {', '.join(memory['topics'][-8:])}")
+    if memory["bridges_offered"]:
+        angles = ", ".join(dict.fromkeys(b["angle"] for b in memory["bridges_offered"]))
+        lines.append(f"ya ofreciste temas de Manuelita sobre: {angles} (no los repitas)")
+    if memory["bridge_rejected_at"] is not None and not memory["interest_after_rejection"]:
+        lines.append("el visitante rechazó las sugerencias: no ofrezcas temas nuevos")
+    if memory["corrections"]:
+        lines.append(f"correcciones del visitante: {memory['corrections']}")
+    if memory["thread_name"]:
+        lines.append(f"nombre que dio en esta conversación: {memory['thread_name']}")
+    if not lines:
+        return ""
+    return "<memoria>\n" + "\n".join(lines) + "\n</memoria>"
+
+
 def split_requests(message: str, max_requests: int = 5) -> tuple[list[str], bool]:
     """Solicitudes de un mensaje (como máximo ``max_requests``) y si hubo más."""
     pieces = [piece.strip(" ¿¡,.:") for piece in SPLITTER.split(message or "") if piece]
@@ -332,6 +509,36 @@ def _is_request(text: str) -> bool:
         or COMMITMENT.search(normalized)
         or HUMAN.search(normalized)
     )
+
+
+EXCLAMATIVE = re.compile(
+    r"^[¡ ]*(que|como|cuanto) (calor|frio|pereza|sueno|hambre|rico|rica|bueno|buena|bonito|"
+    r"bonita|lindo|linda|chevere|bacano|maluco|feo|fea|horrible|genial|bien|mal|dia|tarde|"
+    r"noche|tan|mas|lluvia|sol|cansancio|risa|nervios|alegria|emocion|susto|miedo)\b"
+)
+
+
+def part_tier(text: str, kind: PartKind, *, asked: bool = False) -> str:
+    """Nivel de contenido de una parte (spec 020, R3).
+
+    - ``external``: tema ajeno, consejo profesional o pedido no atendible;
+    - ``manuelita``: menciona la empresa, o es un pedido sin tema ajeno;
+    - ``social``: afirmación, exclamación, saludo, risa o emoji sin pedido.
+
+    ``asked`` indica que el mensaje original traía «?» (``split_requests`` lo quita).
+    """
+    if kind != "manuelita":
+        return "external"
+    normalized = normalize(text)
+    if COMPANY.search(normalized) or asked or "?" in text:
+        return "manuelita"
+    # «¡Qué calor hace!»: una exclamación con «qué» o «cómo» no es una pregunta.
+    exclamation = not REQUEST_CUES.search(normalized) and (
+        "!" in text or EXCLAMATIVE.match(normalized) is not None
+    )
+    if _is_request(text) and not exclamation:
+        return "manuelita"
+    return "social"
 
 
 def classify_part(text: str) -> tuple[PartKind, str | None, str | None]:
@@ -390,6 +597,7 @@ def analyze(message: str, care_state: CareState, config: CareConfig) -> CareSign
                 "kind": kind,
                 "topic_key": topic_key,
                 "unattainable_kind": unattainable,
+                "tier": part_tier(part, kind, asked="?" in message),
             }
         )
     asks = QUESTION.search(text) is not None or COMPANY.search(text) is not None
@@ -406,7 +614,7 @@ def analyze(message: str, care_state: CareState, config: CareConfig) -> CareSign
         negative and not flags["hostile"] and not asks and not has_topic and not flags["concern"]
     )
     english = len(ENGLISH.findall(text)) >= 2 and not re.search(r"\b(que|el|la|de|es)\b", text)
-    return {
+    signals: CareSignals = {
         "enabled": config.enabled,
         "sentiment": sentiment,
         "hostile": flags["hostile"],
@@ -426,7 +634,14 @@ def analyze(message: str, care_state: CareState, config: CareConfig) -> CareSign
         "best_guess": False,
         "opener_done": False,
         "channel": channel_key(message),
+        "greets": turn_plan.GREETING.search(text) is not None,
+        "language": turn_plan.detect_language(message),
+        "register": turn_plan.detect_register(message),
     }
+    act, ruled = turn_plan.detect_act(message, signals)
+    signals["act"] = act
+    signals["act_ruled"] = ruled
+    return signals
 
 
 def update_counters(signals: CareSignals, care_state: CareState, config: CareConfig) -> None:
@@ -556,13 +771,31 @@ def _opener(composer: Composer, signals: CareSignals | None) -> None:
             signals["opener_done"] = True
 
 
+DEFAULT_BRIDGE = "default"
+
+
+def say_bridge(composer: Composer, bridge: Any) -> None:
+    """Puente elegido por ``bridges.py`` (spec 020): guion curado o unidad del oro, con cita."""
+    key = getattr(bridge, "key", None)
+    if key and key in composer.playbook.variants:
+        composer.say(key)
+        return
+    label = composer._label(bridge.unit_id, bridge.url, bridge.title)
+    composer.add(cite(f"Si te interesa, puedo contarte sobre «{bridge.title}».", label))
+
+
 def compose_out_of_scope(
     signals: CareSignals | None,
     decision: dict[str, Any],
     playbook: CarePlaybook,
     care_state: CareState,
+    bridge: Any = DEFAULT_BRIDGE,
 ) -> tuple[str, list[dict[str, Any]]]:
-    """Tema ajeno, consejo o pedido no atendible (R1, R8)."""
+    """Tema ajeno, consejo o pedido no atendible (R1, R8).
+
+    ``bridge`` (spec 020): ``"default"`` mantiene el puente por tema de la spec 019; un
+    ``BridgeChoice`` usa ese puente y ``None`` omite el puente (cuota, molestia o rechazo).
+    """
     composer = Composer(playbook, care_state)
     reason = decision.get("scope_reason") or "off_topic"
     _opener(composer, signals)
@@ -576,8 +809,16 @@ def compose_out_of_scope(
     label, key = topic_label(signals, decision)
     composer.say("ack.advice" if reason == "advice" else "ack.off_topic", topic=label)
     composer.say("boundary.advice" if reason == "advice" else "boundary.off_topic")
-    bridge = f"bridge.{key}" if key and f"bridge.{key}" in playbook.variants else "bridge.default"
-    composer.say(bridge)
+    if bridge is None:
+        composer.say("offer.positive")
+        return composer.result()
+    if bridge == DEFAULT_BRIDGE:
+        section = (
+            f"bridge.{key}" if key and f"bridge.{key}" in playbook.variants else "bridge.default"
+        )
+        composer.say(section)
+    else:
+        say_bridge(composer, bridge)
     composer.say("close")
     return composer.result()
 
@@ -660,8 +901,14 @@ def prefixes(
     decision: dict[str, Any],
     playbook: CarePlaybook,
     care_state: CareState,
+    *,
+    guided: bool = False,
 ) -> tuple[list[str], list[str]]:
-    """Frases antes de la respuesta (límite por hostilidad y apertura empática) y avisos."""
+    """Frases antes de la respuesta (límite por hostilidad y apertura empática) y avisos.
+
+    En el modo guiado (spec 020, C §6) el modelo redacta la apertura empática y responde en el
+    idioma del visitante: aquí solo queda el límite por hostilidad.
+    """
     if not signals or not signals.get("enabled", True):
         return [], []
     reason = decision.get("scope_reason")
@@ -673,6 +920,8 @@ def prefixes(
         level = max(1, int(signals.get("hostility_level") or 1))
         texts.append(pick(playbook, f"hostility.{level}", care_state))
         notices.append("hostility_limit")
+    if guided:
+        return texts, notices
     if not signals.get("opener_done") and reason not in CONDUCT_REASONS:
         sentiment = signals.get("sentiment")
         key = (
@@ -697,6 +946,7 @@ def suffixes(
     care_state: CareState,
     *,
     retrieval: bool,
+    guided: bool = False,
 ) -> tuple[list[str], list[str]]:
     """Declinaciones de partes ajenas, aviso de solicitudes truncadas y mejor interpretación."""
     if not signals or not signals.get("enabled", True) or decision.get("scope_reason") == "crisis":
@@ -705,7 +955,7 @@ def suffixes(
     notices: list[str] = []
     if retrieval:
         for part in signals.get("requests") or []:
-            if part.get("kind") != "manuelita":
+            if part.get("kind") != "manuelita" and not guided:
                 texts.append(decline_part(part, playbook, care_state))
         if signals.get("truncated"):
             texts.append(pick(playbook, "truncated", care_state))
@@ -732,10 +982,27 @@ SENTIMENT_LABELS = {
 }
 
 
-def brief(signals: CareSignals | None, care_state: CareState, previous_route: str | None) -> str:
-    """Bloque «Atención:» para el modelo en las rutas con búsqueda (contracts/care-skills.md)."""
+LANGUAGE_LABELS = {"en": "inglés", "other": "el idioma del visitante"}
+
+
+def brief(
+    signals: CareSignals | None,
+    care_state: CareState,
+    previous_route: str | None,
+    *,
+    guided: bool = False,
+    memory: ConversationMemory | None = None,
+) -> str:
+    """Bloque «Atención:» para el modelo en las rutas con búsqueda (contracts/care-skills.md).
+
+    Con ``guided`` (spec 020, C §5) el modelo redacta una sola respuesta fluida: acompaña lo
+    social, declina lo externo con sus palabras, responde en el idioma y el registro del visitante
+    y abre reconociendo la emoción.
+    """
     if not signals or not signals.get("enabled", True):
         return ""
+    if guided:
+        return _guided_brief(signals, care_state, previous_route, memory)
     parts = manuelita_parts(signals)
     foreign = [p for p in signals.get("requests") or [] if p.get("kind") != "manuelita"]
     sentiment = str(signals.get("sentiment") or "neutral")
@@ -836,6 +1103,10 @@ class ContactRecord(TypedDict):
     resolved: bool
     hostile_turns: int
     crisis: bool
+    acts: list[dict[str, Any]]  # spec 020: {act, bridged, reviewed} por turno, máximo 50
+
+
+MAX_CONTACT_ACTS = 50
 
 
 def empty_contact() -> ContactRecord:
@@ -851,6 +1122,7 @@ def empty_contact() -> ContactRecord:
         "resolved": True,
         "hostile_turns": 0,
         "crisis": False,
+        "acts": [],
     }
 
 
@@ -958,6 +1230,7 @@ def update_contact(
     fallback: bool,
     care_state: CareState,
     action: bool = False,
+    act: dict[str, Any] | None = None,
 ) -> ContactRecord:
     """Registro del contacto tras el turno: sin ``user_id``, nombres ni texto del visitante."""
     current: ContactRecord = {**empty_contact(), **(record or {})}  # type: ignore[typeddict-item]
@@ -984,4 +1257,73 @@ def update_contact(
         hostile_turns=care_state["hostile_turns"],
         crisis=current["crisis"] or decision.get("scope_reason") == "crisis",
     )
+    if act is not None:
+        # Solo etiquetas controladas: el acto, si hubo puente y qué hizo la revisión.
+        entry = {
+            "act": str(act.get("act") or "smalltalk"),
+            "bridged": bool(act.get("bridged")),
+            "reviewed": str(act.get("reviewed") or "show"),
+        }
+        current["acts"] = [*(current.get("acts") or []), entry][-MAX_CONTACT_ACTS:]
     return current
+
+
+def _part_label(part: RequestPart) -> str:
+    spec = TOPIC_BY_KEY.get(str(part.get("topic_key")))
+    if spec is not None:
+        return spec.label
+    return UNATTAINABLE_LABELS.get(str(part.get("unattainable_kind")), GENERIC_TOPIC)
+
+
+def _guided_brief(
+    signals: CareSignals,
+    care_state: CareState,
+    previous_route: str | None,
+    memory: ConversationMemory | None,
+) -> str:
+    """Brief del modo guiado (spec 020, C §5): una sola respuesta fluida."""
+    parts = manuelita_parts(signals)
+    foreign = [p for p in signals.get("requests") or [] if p.get("kind") != "manuelita"]
+    sentiment = str(signals.get("sentiment") or "neutral")
+    lines: list[str] = []
+    if len(parts) > 1:
+        lines.append("- Solicitudes a responder en orden:")
+        lines.extend(f"  {i}) {redact_pii(p['text'])}" for i, p in enumerate(parts, start=1))
+    if signals.get("greets"):
+        lines.append("- Social: el visitante saluda; acompáñalo en una frase breve.")
+    for part in foreign:
+        lines.append(
+            f"- Externo: declina con naturalidad «{_part_label(part)}», en una frase y sin "
+            "inventar datos (no tienes esa información)."
+        )
+    if sentiment in NEGATIVE or sentiment == "distressed":
+        lines.append(
+            f"- Sentimiento: {SENTIMENT_LABELS.get(sentiment, sentiment)} → abre reconociéndolo "
+            "en una frase breve."
+        )
+    language = str(signals.get("language") or (memory or {}).get("language") or "es")
+    if language != "es":
+        lines.append(f"- Idioma: {language} → responde en {LANGUAGE_LABELS.get(language)}.")
+    register = str((memory or {}).get("register") or signals.get("register") or "formal")
+    if signals.get("register") == "informal" or register == "informal":
+        lines.append("- Registro: informal → tono cercano y coloquial, sin groserías.")
+    if previous_route in {"clarify", "fallback"} or care_state["complaint_streak"] >= 2:
+        lines.append("- Retoma en una frase lo que entendiste antes de responder.")
+    if signals.get("act") == "correction":
+        lines.append(
+            "- Corrección: el visitante aclara lo que quiso decir; responde eso sin pedir otra "
+            "aclaración."
+        )
+    if signals.get("concern"):
+        if not any(line.startswith("- Sentimiento:") for line in lines):
+            lines.append("- Sentimiento: preocupación → abre reconociéndola en una frase breve.")
+        lines.append(
+            "- Es una crítica: responde con equilibrio, solo con lo que documenta la evidencia."
+        )
+    remembered = render_memory(memory)
+    if remembered:
+        lines.append("- Memoria del hilo:")
+        lines.extend(f"  {line}" for line in remembered.splitlines()[1:-1])
+    if not lines:
+        return ""
+    return "\n".join(["Atención:", *lines])

@@ -1883,3 +1883,138 @@ button.chip:disabled {
   font-family: var(--font-display);
   font-weight: 600;
 }
+
+/* Spec 023: micrófono del chat (contracts/ui.md §4) */
+.console-form .mic {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+.mic {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.mic-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.mic-button {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  min-width: 44px;
+  height: 2.75rem;
+  min-height: 44px;
+  border: 2px solid var(--gold);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--paper);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.mic-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gold) 22%, transparent);
+}
+
+.mic-button[data-recording="true"] {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--paper);
+  animation: mic-pulse 1.4s ease-in-out infinite;
+}
+
+.mic-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mic-button:focus-visible,
+.mic-switch:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.mic-level {
+  position: relative;
+  width: 8rem;
+  height: 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(245 247 243 / 18%);
+}
+
+.mic-level-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--lime);
+  transition: width 60ms linear;
+}
+
+.mic-switch {
+  min-height: 44px;
+  padding: 0 0.8rem;
+  border: 1px solid rgb(245 247 243 / 40%);
+  border-radius: 999px;
+  background: transparent;
+  color: rgb(245 247 243 / 80%);
+  font: inherit;
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+
+.mic-switch[aria-checked="true"] {
+  border-color: var(--lime);
+  background: color-mix(in srgb, var(--lime) 26%, transparent);
+  color: var(--paper);
+  font-weight: 600;
+}
+
+.mic-switch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mic-status,
+.mic-privacy {
+  margin: 0;
+  color: rgb(245 247 243 / 72%);
+  font-size: var(--step--1);
+}
+
+.mic-status:empty {
+  display: none;
+}
+
+.mic-status[data-kind="error"] {
+  color: var(--gold);
+}
+
+.mic-privacy {
+  color: rgb(245 247 243 / 52%);
+  font-size: 0.72rem;
+}
+
+@keyframes mic-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 55%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 0.45rem color-mix(in srgb, var(--danger) 0%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mic-button[data-recording="true"] {
+    animation: none;
+  }
+
+  .mic-level-bar {
+    transition: none;
+  }
+}

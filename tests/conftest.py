@@ -426,12 +426,18 @@ def silver_env(tmp_path: Path):
 @pytest.fixture(autouse=True)
 def _offline_voice(monkeypatch: pytest.MonkeyPatch):
     """Spec 016: la suite nunca carga ni descarga el modelo Phonon (motor simulado, sin warmup)."""
+    from proyecto_modelos_lenguaje.stt.engine import reset_stt_service
     from proyecto_modelos_lenguaje.voice.engine import reset_voice_service
 
     monkeypatch.setenv("MANUELITA_VOICE_ENGINE", "fake")
     monkeypatch.setenv("MANUELITA_VOICE_WARMUP", "0")
+    # Spec 023: tampoco carga ni descarga el modelo de dictado (faster-whisper).
+    monkeypatch.setenv("MANUELITA_STT_ENGINE", "fake")
+    monkeypatch.setenv("MANUELITA_STT_WARMUP", "0")
+    reset_stt_service()
     # Spec 018: clave fija de identidad; la suite nunca genera identity.key.
     monkeypatch.setenv("MANUELITA_IDENTITY_KEY", "clave-de-prueba-de-identidad-0123456789abcdef")
     reset_voice_service()
     yield
     reset_voice_service()
+    reset_stt_service()

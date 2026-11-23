@@ -145,3 +145,5 @@ class Turn(BaseModel):
     metrics: TurnMetrics = Field(default_factory=TurnMetrics)
     # Spec 022: traza del gatekeeper Jev (estado, ruta, confianza, latencia, costo); sin texto.
     jev: dict[str, Any] | None = None
+    # Spec 023: el mensaje llegó por dictado (origen, duración y tiempo de reconocimiento).
+    input: dict[str, Any] | None = None

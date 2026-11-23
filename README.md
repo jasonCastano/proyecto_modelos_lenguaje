@@ -148,6 +148,9 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
     olvido, exportación).
   - **Voz del agente**: las respuestas se leen en voz alta en español, con voz femenina natural (Phonon), por
     oraciones y mientras se generan; se puede silenciar, detener y volver a escuchar.
+  - **Dictado por voz**: el visitante le habla a Valer-IA con el micrófono; la voz se convierte en texto en el
+    servidor (faster-whisper local, sin terceros) y queda en el campo para revisarla, o se envía sola en el modo
+    manos libres. El audio no se guarda.
   - **Valer-IA Caña**: la asistente se presenta al entrar, atiende con tono profesional, reconoce de forma
     opcional a un cliente que vuelve por su correo (sin guardar el correo en claro) y maneja con reglas las
     preguntas fuera de tema, la extracción del prompt, los datos de terceros, los insultos y los pedidos dañinos.
@@ -328,6 +331,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Atención de call center (spec 019) | ✅ | 36 casos reales: sin hechos externos, crisis con Línea 106 y 123, 0 registros con datos personales; `docs/evaluacion_atencion.md`, ADR 0023 |
 | Conversación guiada (spec 020) | ✅ | Respuestas redactadas y revisadas; similitud máxima en un hilo ≤ 0,5 frente a 1,0 con guiones; `docs/evaluacion_conversacion.md`, ADR 0024 |
 | Gatekeeper System One Jev (spec 022) | 🟡 | Implementado y probado: español 24/24, 73–77 % menos llamadas al LLM del enrutador, crisis 100 %; exactitud 93,2 % frente a 97,7 % ⇒ desactivado por defecto; `docs/evaluacion_jev.md`, ADR 0026 |
+| Dictado por voz (spec 023) | ✅ | faster-whisper `base` local: WER 0,048, nombres propios 97 %, p90 1,1 s (clips de hasta 10 s), 0 textos en silencio o ruido; `docs/evaluacion_stt.md`, ADR 0027 |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
 | CI y Pull Requests | 🟡 | 72 PRs fusionados al 2026-11-21 (63 del equipo y 9 de Dependabot, anteriores a la v1.6.0); 13 PRs del equipo tienen aprobación formal y 17 alguna revisión. CI con `test`, `web` y `autoria` |
 | Protección de `main` | ✅ | PR con 1 aprobación y checks `test` y `web`; sin push directo ni force-push |
@@ -402,6 +406,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Agente (Módulo 2) | LangChain 1.x + LangGraph (`StateGraph`, `create_agent`, LCEL, `@tool` con Pydantic, middleware HITL/PII/resumen/`dynamic_prompt`, `trim_messages`); SqliteSaver y SqliteStore |
 | Streaming (Módulo 2) | Server-Sent Events en FastAPI (`StreamingResponse`) y `fetch` + `ReadableStream` en React |
 | Voz del agente | **Phonon** (`ptts`, runtime local sin PyTorch) con `gradium/phonon-40m-es`, WAV por oración y Web Audio |
+| Dictado | **faster-whisper** (CTranslate2, CPU `int8`, modelo `base`) con Silero VAD; captura con `AudioWorklet` y WAV de 16 kHz |
 | Evaluación y trazas (Módulo 2) | Juez LLM propio con definiciones de Ragas; LangSmith (`LANGSMITH_*`) o log JSON por turno |
 | Desarrollo guiado por specs | Spec Kit (`.specify/`), con comandos para OpenCode y Claude Code |
 
@@ -448,6 +453,17 @@ cd web && npm run dev
 ```
 
 El modo demostración se activa desde la propia consola y no requiere DeepSeek ni red.
+
+Dictado por voz (spec 023): el modelo `base` de faster-whisper se descarga la primera vez a la caché de Hugging Face
+(sin `HF_TOKEN`). Configuración en `config/stt.toml`; `MANUELITA_STT_ENABLED=0` lo desactiva.
+
+```bash
+uv run python -m proyecto_modelos_lenguaje.stt --check            # carga el modelo y transcribe una frase
+uv run python -m proyecto_modelos_lenguaje.stt eval --models base small   # docs/evaluacion_stt.{md,json}
+uv run pytest -o addopts="" -m voice tests/integration/stt        # pruebas con el modelo real
+```
+
+El navegador solo permite el micrófono por `localhost` o HTTPS.
 
 ### Pipeline bronce
 

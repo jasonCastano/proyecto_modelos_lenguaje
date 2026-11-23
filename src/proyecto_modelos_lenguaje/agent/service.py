@@ -378,8 +378,9 @@ class ChatService:
         user_id: str = "anon",
         variant: Variant = "chain",
         mode: Mode = "demo",
+        input_meta: dict[str, Any] | None = None,
     ) -> ChatOutcome:
-        thread_id, state = self._prepare(message, thread_id, user_id, variant)
+        thread_id, state = self._prepare(message, thread_id, user_id, variant, input_meta)
         state["mode"] = mode
         result = self._invoke(variant, mode, state, thread_id)
         return self._log(self._outcome(thread_id, result), variant, mode)
@@ -392,6 +393,7 @@ class ChatService:
         user_id: str = "anon",
         variant: Variant = "chain",
         mode: Mode = "demo",
+        input_meta: dict[str, Any] | None = None,
     ) -> tuple[str, Iterator[dict[str, Any]]]:
         """Valida antes de abrir el flujo (los errores salen como HTTP) y devuelve los eventos.
 
@@ -399,7 +401,7 @@ class ChatService:
         ``token`` (texto de la respuesta a medida que el modelo lo genera) y ``done`` (la misma
         respuesta validada de ``POST /api/chat``). Un fallo a mitad del flujo emite ``error``.
         """
-        thread_id, state = self._prepare(message, thread_id, user_id, variant)
+        thread_id, state = self._prepare(message, thread_id, user_id, variant, input_meta)
         state["mode"] = mode
         return thread_id, self._events(variant, mode, state, thread_id)
 
@@ -461,7 +463,12 @@ class ChatService:
         )
 
     def _prepare(
-        self, message: str, thread_id: str | None, user_id: str, variant: Variant
+        self,
+        message: str,
+        thread_id: str | None,
+        user_id: str,
+        variant: Variant,
+        input_meta: dict[str, Any] | None = None,
     ) -> tuple[str, dict[str, Any]]:
         original = validate_message(message)
         validate_user_id(user_id)
@@ -475,6 +482,8 @@ class ChatService:
             "identity_event": event.to_dict() if event else None,
             "pii_notice": pii_kinds,
             "client": None,
+            # Spec 023: metadatos del dictado; siempre se reescribe para no heredar el turno previo.
+            "input_meta": dict(input_meta) if input_meta else None,
         }
         if thread_id is None:
             thread_id = str(uuid.uuid4())

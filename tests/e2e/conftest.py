@@ -35,6 +35,9 @@ def base_url() -> Iterator[str]:
         "DEEPSEEK_API_KEY": "",
         "PYTHONIOENCODING": "utf-8",
         "MANUELITA_STATE_DIR": tempfile.mkdtemp(prefix="manuelita-e2e-"),
+        # Spec 023: dictado simulado (sin descargar el modelo) salvo que se pida el real.
+        "MANUELITA_STT_ENGINE": os.environ.get("PML_E2E_STT_ENGINE", "fake"),
+        "MANUELITA_STT_WARMUP": "0",
     }
     process = subprocess.Popen(
         [

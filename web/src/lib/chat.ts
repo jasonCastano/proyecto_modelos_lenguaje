@@ -6,6 +6,7 @@ import {
 import type {
   ChatResponse,
   ChatVariant,
+  InputMeta,
   MemoryView,
   Mode,
   PendingAction,
@@ -18,6 +19,8 @@ export interface SendChatInput {
   userId: string;
   variant: ChatVariant;
   mode: Mode;
+  /** Spec 023: metadatos del dictado (solo si el mensaje vino de una transcripción). */
+  input?: InputMeta | null;
 }
 
 export function sendChat(input: SendChatInput, signal?: AbortSignal): Promise<ChatResponse> {
@@ -29,6 +32,7 @@ export function sendChat(input: SendChatInput, signal?: AbortSignal): Promise<Ch
       message: input.message,
       variant: input.variant,
       mode: input.mode,
+      ...(input.input ? { input: input.input } : {}),
     }),
     signal,
   });
@@ -113,6 +117,7 @@ export async function streamChat(
         message: input.message,
         variant: input.variant,
         mode: input.mode,
+        ...(input.input ? { input: input.input } : {}),
       }),
       signal,
     });

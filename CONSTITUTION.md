@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.14.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-21
+**Versión**: 1.15.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-23
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -177,6 +177,9 @@ entrega y la calidad de la demostración.
 - Voz del agente con **Phonon** (paquete `ptts`, runtime local sin PyTorch; modelo `gradium/phonon-40m-es`).
   El modelo y sus voces son **CC BY-NC 4.0** (uso académico, no comercial) y el motor es MIT/Apache-2.0; el
   modelo se descarga a la caché de Hugging Face, nunca al repositorio (spec 016, ADR 0020).
+- Dictado por voz con **faster-whisper** (CTranslate2 en CPU, modelo `base` `int8`, Silero VAD) en el servidor; sin
+  servicios de terceros. Motor, pesos y VAD con licencia MIT; el modelo se descarga a la caché de Hugging Face,
+  nunca al repositorio (spec 023, ADR 0027).
 - Dependencias de runtime y desarrollo separadas; versiones fijadas en `uv.lock` y `package-lock.json`.
 - Variables de entorno para claves y configuración sensible; `.env` fuera del repositorio.
 
@@ -268,6 +271,10 @@ uv.lock
 - El chat del agente lee sus respuestas en voz alta en español, por oraciones y mientras se generan
   (`POST /api/tts`, `GET /api/voice`). El visitante puede silenciarla, detenerla y volver a escucharla; si la
   voz no está disponible, el chat sigue igual por texto (spec 016).
+- El visitante puede **hablarle** a la asistente con el micrófono (spec 023, ADR 0027): la voz se convierte en texto
+  en el servidor (`POST /api/stt`) y entra al campo del mensaje para revisarlo, o se envía sola en el modo
+  opcional manos libres. El permiso se pide al pulsar el micrófono, nunca al cargar. Un mensaje dictado sigue el
+  mismo camino que uno escrito; si el dictado no está disponible, el chat y la voz siguen igual.
 - La asistente se presenta como **Valer-IA Caña** (spec 018, ADR 0022): da la bienvenida al entrar, se declara
   inteligencia artificial y NO DEBE presentarse como canal oficial ni autorizado de Manuelita (§10). La vista
   normal es para visitantes; la vista técnica (`?vista=tecnica`) conserva la demostración de la rúbrica.
@@ -774,6 +781,9 @@ Streamlit, Gradio y los notebooks no se aceptan como interfaz. La evidencia de c
   verificables** (pronósticos, resultados, precios, noticias, diagnósticos o asesoría profesional) se declinan sin
   inventarlos; la **información de Manuelita** solo se afirma con evidencia del corpus y su cita. La asistente no
   da opiniones propias ni institucionales sobre temas polémicos.
+- **Audio del visitante** (spec 023): el dictado procesa el audio en memoria y lo descarta al terminar; NO DEBE
+  guardarse en disco, en `data/`, en registros ni en trazas, ni enviarse a terceros. Solo se conserva el texto
+  que el visitante decide enviar. Las grabaciones de evaluación de personas son locales y no se versionan.
 - El uso de asistentes de IA se declara y se verifica; el equipo asume la responsabilidad del código y de las
   afirmaciones. Los asistentes no figuran como autores ni coautores en Git ni en GitHub (§4.3).
 - Los prompts y resultados no se inventan ni se editan para simular éxito.
@@ -987,4 +997,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.14.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-21
+**Versión**: 1.15.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-23

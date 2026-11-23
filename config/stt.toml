@@ -1,0 +1,37 @@
+# Dictado por voz (spec 023): reconocimiento local con faster-whisper (CTranslate2, CPU).
+# Las variables MANUELITA_STT_ENABLED, MANUELITA_STT_ENGINE, MANUELITA_STT_MODEL y
+# MANUELITA_STT_WARMUP tienen prioridad sobre este archivo.
+# Licencia: motor y pesos de Whisper MIT; Silero VAD MIT. El modelo se descarga a la caché de
+# Hugging Face (sin HF_TOKEN), nunca al repositorio. El audio se procesa en memoria y no se guarda.
+
+[stt]
+enabled = true
+engine = "whisper"                      # "whisper" | "fake"
+model = "base"                          # tiny | base | small | medium | large-v3 | large-v3-turbo
+compute_type = "int8"                   # int8 | int8_float32 | float32
+cpu_threads = 0                         # 0 = automático
+language = "es"
+beam_size = 1
+# Vocabulario propio: se pasa al reconocedor como prompt inicial (research R4).
+vocabulary = [
+    "Manuelita", "Valer-IA Caña", "Palmira", "Valle del Cauca", "Fundación Manuelita",
+    "Océanos", "Mejillones América", "Laredo", "Aceites Manuelita", "Ingenio Manuelita",
+    "Educar Uno a Uno", "Línea Ética",
+]
+no_speech_threshold = 0.6
+max_seconds = 60
+max_bytes = 2097152
+silence_ms = 1500                       # fin automático tras este silencio (cliente)
+min_speech_ms = 300
+handsfree_idle_seconds = 60
+max_concurrent = 2
+queue_timeout_seconds = 10
+warmup = true
+
+# Correcciones deterministas (palabras completas, sin distinguir mayúsculas ni tildes).
+[stt.corrections]
+"valeria caña" = "Valer-IA Caña"
+"valeria cana" = "Valer-IA Caña"
+"valeria" = "Valer-IA"
+"manuelita" = "Manuelita"
+"oceanos" = "Océanos"

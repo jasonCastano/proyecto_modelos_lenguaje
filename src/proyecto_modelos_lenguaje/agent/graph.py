@@ -188,6 +188,7 @@ class ChatState(TypedDict, total=False):
     # spec 018: identidad conversacional, avisos de datos sensibles y cliente para la respuesta
     identity: dict[str, Any]
     identity_event: dict[str, Any] | None
+    input_meta: dict[str, Any] | None  # spec 023: solo se copia al turno; el grafo no lo usa
     pii_notice: list[str]
     client: dict[str, Any] | None
     identity_next: str
@@ -1526,6 +1527,7 @@ def _finalize_node(deps: GraphDeps):
             fallback=fallback,
             metrics=metrics,
             jev=gate_trace,
+            input=state.get("input_meta"),
         )
         turns.append(turn.model_dump(mode="json"))
         summary, summarized = compact_history(

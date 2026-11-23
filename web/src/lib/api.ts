@@ -7,6 +7,8 @@ import {
   type RetrievalFragment,
   type RetrievalTrace,
   type ShowcaseResponse,
+  type SttResult,
+  type SttStatus,
   type WelcomeResponse,
 } from "./types";
 
@@ -146,4 +148,25 @@ export function getWelcome(): Promise<WelcomeResponse> {
 
 export function showcase(): Promise<ShowcaseResponse> {
   return request<ShowcaseResponse>("/showcase");
+}
+
+// ---------------------------------------------------------------- dictado (spec 023)
+
+/** Estado del dictado; siempre 200 (la indisponibilidad va en el cuerpo). */
+export function getSttStatus(signal?: AbortSignal): Promise<SttStatus> {
+  return request<SttStatus>("/stt", { signal });
+}
+
+/**
+ * Envía el WAV (PCM16 mono a 16 kHz) y devuelve el texto. El audio no se guarda en el servidor.
+ * Los errores llegan como `ApiClientError` con el `code` del contrato (`stt_busy`, …).
+ */
+export async function transcribe(
+  wav: Blob,
+  threadId: string | null,
+  signal?: AbortSignal,
+): Promise<SttResult> {
+  const headers: Record<string, string> = { "Content-Type": "audio/wav" };
+  if (threadId) headers["X-Thread-Id"] = threadId;
+  return request<SttResult>("/stt", { method: "POST", body: wav, headers, signal });
 }

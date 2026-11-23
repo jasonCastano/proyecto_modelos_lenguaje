@@ -13,6 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
 from .agent.adversarial import adversarial_enabled, adversarial_retriever
 from .agent.config import AgentConfigError, load_agent_config, resolve_state_dir
@@ -36,6 +37,8 @@ from .api_models import (
     ResumeRequest,
     RetrievalTraceModel,
     ShowcaseResponse,
+    SttResult,
+    SttStatus,
     SummaryRequest,
     ThreadView,
     TtsRequest,
@@ -72,6 +75,14 @@ from .retrieval import (
     load_gold_units,
 )
 from .showcase import build_showcase
+from .stt.audio import (
+    AudioTooLargeError,
+    EmptyAudioError,
+    UnsupportedAudioError,
+    parse_wav16k,
+)
+from .stt.engine import SttBusyError, SttUnavailableError, get_stt_service
+from .stt.log import log_stt
 from .tasks import (
     Citation,
     FAQItem,
@@ -109,6 +120,24 @@ def _voice_warmup() -> None:
         pass
 
 
+@app.on_event("startup")
+def _stt_warmup() -> None:
+    """Precarga el modelo de dictado en un hilo (spec 023, R13); nunca bloquea el arranque."""
+    try:
+        service = get_stt_service()
+        if service.config.warmup and service.config.engine != "fake":
+            service.warmup_async()
+    except Exception:  # el dictado es opcional
+        pass
+
+
+def _stt_available() -> bool:
+    try:
+        return get_stt_service().status().available
+    except Exception:
+        return False
+
+
 def _voice_available() -> bool:
     try:
         return get_voice_service().status().available
@@ -120,7 +149,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_methods=["GET", "POST", "DELETE"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "X-Thread-Id"],
     expose_headers=["X-Voice", "X-Synth-Ms", "X-Audio-Ms"],
 )
 
@@ -372,6 +401,7 @@ def health(probe: bool = False) -> HealthStatus | JSONResponse:
             detail="Falta DEEPSEEK_API_KEY. El modo demostración está disponible.",
             adversarial_corpus=adversarial_enabled(),
             voice_available=_voice_available(),
+            stt_available=_stt_available(),
         )
     if not probe:
         return HealthStatus(
@@ -383,6 +413,7 @@ def health(probe: bool = False) -> HealthStatus | JSONResponse:
             detail="Proveedor configurado.",
             adversarial_corpus=adversarial_enabled(),
             voice_available=_voice_available(),
+            stt_available=_stt_available(),
         )
     try:
         result = health_check(config)
@@ -396,6 +427,7 @@ def health(probe: bool = False) -> HealthStatus | JSONResponse:
         demo_available=True,
         adversarial_corpus=adversarial_enabled(),
         voice_available=_voice_available(),
+        stt_available=_stt_available(),
         latency_ms=result.get("latency_ms"),
         detail=result.get("detail"),
     )
@@ -615,6 +647,117 @@ def tts(payload: TtsRequest):
     )
 
 
+WAV_TYPES = {"audio/wav", "audio/x-wav", "audio/wave", "audio/vnd.wave"}
+
+
+@app.get("/api/stt", response_model=SttStatus)
+def stt_status() -> SttStatus:
+    """Estado del dictado (spec 023). Siempre 200; la indisponibilidad va en el cuerpo."""
+    return SttStatus(**get_stt_service().status().to_dict())
+
+
+async def _read_capped(request: Request, limit: int) -> bytes:
+    """Lee el cuerpo en memoria sin pasar de ``limit + 1`` bytes (nunca a disco)."""
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > limit:
+        return b"0" * (limit + 1)  # se rechaza sin leerlo
+    chunks: list[bytes] = []
+    size = 0
+    async for chunk in request.stream():
+        chunks.append(chunk)
+        size += len(chunk)
+        if size > limit:
+            break
+    return b"".join(chunks)
+
+
+def _stt_error(code: str, message: str, status_code: int, *, retryable: bool) -> JSONResponse:
+    return _api_error(
+        code,
+        message,
+        retryable=retryable,
+        action="reintentar" if retryable else "escribir",
+        status_code=status_code,
+    )
+
+
+@app.post("/api/stt", response_model=SttResult)
+async def stt(request: Request):
+    """Convierte la voz del visitante en texto (spec 023, contracts/stt-api.md §2).
+
+    El audio se procesa en memoria y se descarta; el registro guarda tiempos y tamaños, no texto.
+    """
+    service = get_stt_service()
+    config = service.config
+    thread_id = request.headers.get("x-thread-id")
+    log = {"thread_id": thread_id, "model": config.model_label}
+    content_type = request.headers.get("content-type", "").split(";")[0].strip().lower()
+    data = await _read_capped(request, config.max_bytes)
+    if content_type and content_type not in WAV_TYPES:
+        log_stt(**log, size=len(data), status="rejected", error="stt_unsupported_format")
+        return _stt_error(
+            "stt_unsupported_format",
+            "El audio debe ser WAV PCM16 mono a 16 kHz.",
+            415,
+            retryable=False,
+        )
+    if service.state in {"disabled", "unavailable"}:
+        log_stt(**log, size=len(data), status="unavailable", error="stt_unavailable")
+        return _stt_error(
+            "stt_unavailable",
+            service.status().detail or "El dictado no está disponible.",
+            503,
+            retryable=True,
+        )
+    try:
+        samples, audio_ms = parse_wav16k(
+            data, max_bytes=config.max_bytes, max_seconds=config.max_seconds
+        )
+    except EmptyAudioError:
+        log_stt(**log, size=len(data), status="rejected", error="stt_empty_audio")
+        return _stt_error("stt_empty_audio", "No llegó audio.", 400, retryable=False)
+    except AudioTooLargeError:
+        log_stt(**log, size=len(data), status="rejected", error="stt_too_large")
+        return _stt_error(
+            "stt_too_large",
+            f"El audio supera el máximo de {config.max_seconds:g} segundos.",
+            413,
+            retryable=False,
+        )
+    except UnsupportedAudioError:
+        log_stt(**log, size=len(data), status="rejected", error="stt_unsupported_format")
+        return _stt_error(
+            "stt_unsupported_format",
+            "El audio debe ser WAV PCM16 mono a 16 kHz.",
+            415,
+            retryable=False,
+        )
+    try:
+        result = await run_in_threadpool(service.transcribe, samples, audio_ms)
+    except SttUnavailableError as exc:
+        log_stt(**log, audio_ms=audio_ms, size=len(data), status="unavailable")
+        return _stt_error("stt_unavailable", str(exc), 503, retryable=True)
+    except SttBusyError:
+        log_stt(**log, audio_ms=audio_ms, size=len(data), status="busy", error="stt_busy")
+        return _stt_error(
+            "stt_busy", "El dictado está ocupado; intenta de nuevo.", 503, retryable=True
+        )
+    except Exception as exc:
+        log_stt(**log, audio_ms=audio_ms, size=len(data), status="error", error=type(exc).__name__)
+        return _stt_error("stt_error", "No se pudo convertir la voz en texto.", 500, retryable=True)
+    finally:
+        del samples  # el audio no sobrevive a la petición
+    log_stt(
+        **{**log, "model": result.model},
+        audio_ms=result.audio_ms,
+        stt_ms=result.stt_ms,
+        size=len(data),
+        status="empty" if result.empty else "ok",
+        chars=len(result.text),
+    )
+    return SttResult(**result.to_dict())
+
+
 def _chat_error(exc: Exception) -> JSONResponse:
     if isinstance(exc, ChatError):
         return _api_error(
@@ -645,6 +788,7 @@ def chat(payload: ChatRequest) -> dict[str, Any] | JSONResponse:
             user_id=payload.user_id,
             variant=payload.variant,
             mode=payload.mode,
+            input_meta=payload.input.model_dump() if payload.input else None,
         )
     except Exception as exc:
         return _chat_error(exc)
@@ -668,6 +812,7 @@ def chat_stream(payload: ChatRequest) -> StreamingResponse | JSONResponse:
             user_id=payload.user_id,
             variant=payload.variant,
             mode=payload.mode,
+            input_meta=payload.input.model_dump() if payload.input else None,
         )
     except Exception as exc:
         return _chat_error(exc)

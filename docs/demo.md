@@ -24,6 +24,7 @@ rúbrica de la Entrega 2. La versión anterior (2026-11-07) fue redactada con as
 | Tabla estructurada | `uv run python -m proyecto_modelos_lenguaje.agent build-structured` | 15 entidades, 381 hechos, 477 citas (si existe: código 2, sin cambios) |
 | Estado limpio | `MANUELITA_STATE_DIR` apuntando a una carpeta vacía de demo | Sin hilos ni preferencias de ensayos anteriores |
 | Voz | `uv run python -m proyecto_modelos_lenguaje.voice --check` (requiere `HF_TOKEN` la primera vez) | `state: ready`, voz femenina configurada |
+| Dictado | `uv run python -m proyecto_modelos_lenguaje.stt --check` (descarga el modelo `base` la primera vez) | `state: ready`, transcribe «¿Qué produce Manuelita?»; probar el micrófono del equipo de la sala y dar el permiso al navegador antes de empezar |
 | App | `make app` → <http://127.0.0.1:8000> (visitante) y <http://127.0.0.1:8000/?vista=tecnica> (rúbrica) | Página carga, `/api/health` responde y `voice_available: true` |
 | Ventanas | Navegador (app), IDE (VS Code/Cursor/Antigravity) con el repo, terminal, GitHub (PRs y CI) | Fuente grande, notificaciones apagadas |
 
@@ -51,6 +52,11 @@ rúbrica de la Entrega 2. La versión anterior (2026-11-07) fue redactada con as
 > Spec 021 (entrega por frases): en cualquiera de esos turnos la respuesta aparece frase por frase, sin esperar a
 > que esté completa, y la voz empieza a leer con la primera frase. En `?vista=tecnica`, la marca `✂N` de la línea
 > «Actos» indica las frases que la revisión descartó (nunca se mostraron).
+>
+> Spec 023 (dictado): pulsar 🎙, decir «¿Qué produce Manuelita?» y callar; el texto queda en el campo para
+> revisarlo y se envía con «Enviar». Luego activar «Manos libres» y conversar dos turnos solo con la voz: el
+> mensaje se envía al terminar de hablar, el micrófono vuelve cuando Valer-IA termina, y hablarle encima la
+> interrumpe. En `?vista=tecnica`, la traza del turno muestra «🎙 por voz · audio … · reconocimiento …».
 
 
 | Tiempo | Bloque | Quién | Qué se muestra | Criterio que cubre |
@@ -89,6 +95,8 @@ Usar preguntas del banco aprobado (`docs/alcance.md`) para que la respuesta sea 
 | La app no levanta | `uv run uvicorn proyecto_modelos_lenguaje.api:app --port 8000` y revisar el log en la terminal |
 | El avatar distrae o la pantalla es pequeña | «Ocultar avatar»; la voz y el chat siguen igual |
 | La voz no suena o no está disponible | El chat sigue por texto (aviso «La voz no está disponible…»); revisar `voice --check` después de la demo. Si el navegador bloqueó el audio, pulsar «▶ Reproducir voz». Si molesta en la sala, «🔇 Voz silenciada» |
+| El micrófono no aparece, está deshabilitado o el navegador negó el permiso | Escribir la pregunta (el chat no depende del dictado). El permiso se recupera en el candado de la barra de direcciones; el micrófono solo funciona por `localhost` o HTTPS. Revisar `stt --check` después de la demo |
+| Manos libres capta ruido de la sala | Desactivar «Manos libres» y usar el botón del micrófono (el texto queda en el campo para revisarlo antes de enviar) |
 | Pregunta inesperada sobre código | Abrir el archivo en el IDE y buscar con el buscador del editor; no improvisar cifras |
 
 ## 4. Lista de verificación del ensayo

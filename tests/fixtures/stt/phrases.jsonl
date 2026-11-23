@@ -1,0 +1,50 @@
+{"id": "d01", "kind": "speech", "group": "demo", "text": "¿Qué produce Manuelita?", "vocab": ["Manuelita"]}
+{"id": "d02", "kind": "speech", "group": "demo", "text": "¿Cuántos años tiene la empresa?", "vocab": []}
+{"id": "d03", "kind": "speech", "group": "demo", "text": "¿En qué países opera Manuelita?", "vocab": ["Manuelita"]}
+{"id": "d04", "kind": "speech", "group": "demo", "text": "¿Qué es la Fundación Manuelita?", "vocab": ["Manuelita"]}
+{"id": "d05", "kind": "speech", "group": "demo", "text": "Cuéntame la historia de la empresa.", "vocab": []}
+{"id": "d06", "kind": "speech", "group": "demo", "text": "¿Dónde queda la sede principal?", "vocab": []}
+{"id": "d07", "kind": "speech", "group": "demo", "text": "¿Qué negocios tiene el grupo en Chile?", "vocab": []}
+{"id": "d08", "kind": "speech", "group": "demo", "text": "¿Manuelita produce etanol?", "vocab": ["Manuelita"]}
+{"id": "d09", "kind": "speech", "group": "demo", "text": "¿Qué hace la empresa con el agua?", "vocab": []}
+{"id": "d10", "kind": "speech", "group": "demo", "text": "¿Qué certificaciones tiene Manuelita?", "vocab": ["Manuelita"]}
+{"id": "d11", "kind": "speech", "group": "demo", "text": "¿Cómo puedo trabajar en Manuelita?", "vocab": ["Manuelita"]}
+{"id": "d12", "kind": "speech", "group": "demo", "text": "¿Qué programas sociales tiene la fundación?", "vocab": []}
+{"id": "c01", "kind": "speech", "group": "charla", "text": "Hola Valer-IA Caña, ¿cómo estás?", "vocab": ["Valer-IA Caña"]}
+{"id": "c02", "kind": "speech", "group": "charla", "text": "Buenos días, gracias por atenderme.", "vocab": []}
+{"id": "c03", "kind": "speech", "group": "charla", "text": "Qué calor tan tremendo hace hoy.", "vocab": []}
+{"id": "c04", "kind": "speech", "group": "charla", "text": "Muchas gracias, eso era todo.", "vocab": []}
+{"id": "c05", "kind": "speech", "group": "charla", "text": "¿Eres una persona o una inteligencia artificial?", "vocab": []}
+{"id": "c06", "kind": "speech", "group": "charla", "text": "No entendí bien, ¿me lo explicas otra vez?", "vocab": []}
+{"id": "c07", "kind": "speech", "group": "charla", "text": "Perfecto, me quedó muy claro.", "vocab": []}
+{"id": "c08", "kind": "speech", "group": "charla", "text": "Listo, hasta luego.", "vocab": []}
+{"id": "n01", "kind": "speech", "group": "numeros", "text": "¿Cuánto invirtió Manuelita en programas sociales en el año dos mil veinticuatro?", "vocab": ["Manuelita"]}
+{"id": "n02", "kind": "speech", "group": "numeros", "text": "¿Cuántas toneladas de azúcar produjo en dos mil veintitrés?", "vocab": []}
+{"id": "n03", "kind": "speech", "group": "numeros", "text": "La empresa fue fundada en mil ochocientos sesenta y cuatro, ¿es cierto?", "vocab": []}
+{"id": "n04", "kind": "speech", "group": "numeros", "text": "¿Cuántos empleados tiene la compañía en total?", "vocab": []}
+{"id": "n05", "kind": "speech", "group": "numeros", "text": "Quiero saber las cifras de ventas del último año.", "vocab": []}
+{"id": "n06", "kind": "speech", "group": "numeros", "text": "¿Qué porcentaje de la energía que usa es renovable?", "vocab": []}
+{"id": "n07", "kind": "speech", "group": "numeros", "text": "Dame los datos de producción de los últimos tres años.", "vocab": []}
+{"id": "n08", "kind": "speech", "group": "numeros", "text": "¿Cuántas hectáreas de caña siembra la empresa?", "vocab": []}
+{"id": "v01", "kind": "speech", "group": "vocabulario", "text": "¿Dónde queda la sede de Manuelita en Palmira, Valle del Cauca?", "vocab": ["Manuelita", "Palmira", "Valle del Cauca"]}
+{"id": "v02", "kind": "speech", "group": "vocabulario", "text": "Cuéntame sobre la Fundación Manuelita y el programa Educar Uno a Uno.", "vocab": ["Fundación Manuelita", "Educar Uno a Uno"]}
+{"id": "v03", "kind": "speech", "group": "vocabulario", "text": "¿Qué hace Océanos con los camarones?", "vocab": ["Océanos"]}
+{"id": "v04", "kind": "speech", "group": "vocabulario", "text": "¿Qué produce Mejillones América en Chile?", "vocab": ["Mejillones América"]}
+{"id": "v05", "kind": "speech", "group": "vocabulario", "text": "¿Laredo es una planta de Manuelita en Perú?", "vocab": ["Laredo", "Manuelita"]}
+{"id": "v06", "kind": "speech", "group": "vocabulario", "text": "¿Qué productos vende Aceites Manuelita?", "vocab": ["Aceites Manuelita"]}
+{"id": "v07", "kind": "speech", "group": "vocabulario", "text": "Valer-IA Caña, háblame del Ingenio Manuelita.", "vocab": ["Valer-IA Caña", "Ingenio Manuelita"]}
+{"id": "v08", "kind": "speech", "group": "vocabulario", "text": "¿Cómo funciona la Línea Ética de la empresa?", "vocab": ["Línea Ética"]}
+{"id": "v09", "kind": "speech", "group": "vocabulario", "text": "Me interesa saber qué hace Océanos y qué produce Mejillones América.", "vocab": ["Océanos", "Mejillones América"]}
+{"id": "v10", "kind": "speech", "group": "vocabulario", "text": "¿Qué relación tiene Manuelita con el Valle del Cauca?", "vocab": ["Manuelita", "Valle del Cauca"]}
+{"id": "v11", "kind": "speech", "group": "vocabulario", "text": "Gracias Valer-IA Caña, ahora cuéntame de Palmira.", "vocab": ["Valer-IA Caña", "Palmira"]}
+{"id": "v12", "kind": "speech", "group": "vocabulario", "text": "¿La Fundación Manuelita trabaja en Palmira con colegios públicos?", "vocab": ["Fundación Manuelita", "Palmira"]}
+{"id": "l01", "kind": "speech", "group": "larga", "text": "Hola Valer-IA Caña, estoy preparando una exposición para el colegio y quisiera saber qué produce Manuelita, en qué países tiene operaciones y desde cuándo existe la empresa.", "vocab": ["Valer-IA Caña", "Manuelita"]}
+{"id": "l02", "kind": "speech", "group": "larga", "text": "Me gustaría conocer los programas de la Fundación Manuelita en Palmira, especialmente los que apoyan a los colegios públicos y a los jóvenes que quieren entrar a la universidad.", "vocab": ["Fundación Manuelita", "Palmira"]}
+{"id": "l03", "kind": "speech", "group": "larga", "text": "Quiero entender bien cómo se relacionan los negocios del grupo: qué hace Océanos con los camarones, qué produce Mejillones América en Chile y qué vende Aceites Manuelita en el país, porque estoy haciendo un trabajo comparativo.", "vocab": ["Océanos", "Mejillones América", "Aceites Manuelita"]}
+{"id": "l04", "kind": "speech", "group": "larga", "text": "Buenas tardes, ¿me puedes contar cuánta agua utiliza la empresa en el Valle del Cauca, qué está haciendo para cuidarla y si existe algún informe público donde pueda revisar esas cifras con más detalle?", "vocab": ["Valle del Cauca"]}
+{"id": "s01", "kind": "silence", "seconds": 2, "seed": 101}
+{"id": "s02", "kind": "silence", "seconds": 4, "seed": 102}
+{"id": "s03", "kind": "silence", "seconds": 8, "seed": 103}
+{"id": "s04", "kind": "noise", "seconds": 2, "seed": 104}
+{"id": "s05", "kind": "noise", "seconds": 4, "seed": 105}
+{"id": "s06", "kind": "noise", "seconds": 8, "seed": 106}

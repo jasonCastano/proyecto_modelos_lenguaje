@@ -460,6 +460,36 @@ confunde `documental` con `structured` en preguntas de «¿dónde?» y «¿desde
 **Decisión**: se versiona la 1.0 y el gatekeeper queda **desactivado por defecto**. El umbral se fijó con el conjunto
 de validación y no se ajustó con las 44 consultas de evaluación (principio II).
 
+### 3.20 Dictado por voz: prompt inicial del reconocedor (2026-11-23, spec 023)
+
+El dictado no usa el modelo de lenguaje: faster-whisper transcribe en el servidor. El único «prompt» es el
+vocabulario propio, que se pasa al reconocedor como `initial_prompt` (`config/stt.toml`, `[stt] vocabulary`):
+
+| Prompt | Versión | SHA-256 (12) | Contenido |
+| --- | --- | --- | --- |
+| `initial_prompt` (vocabulario) | 1.0 | `16126d7e1db5` | «Manuelita, Valer-IA Caña, Palmira, Valle del Cauca, Fundación Manuelita, Océanos, Mejillones América, Laredo, Aceites Manuelita, Ingenio Manuelita, Educar Uno a Uno, Línea Ética.» (178 caracteres) |
+
+Las correcciones deterministas (`[stt.corrections]`: «valeria caña» → «Valer-IA Caña», «oceanos» → «Océanos», …)
+se aplican después, en palabras completas.
+
+Evaluación (`python -m proyecto_modelos_lenguaje.stt eval --models base small`, `docs/evaluacion_stt.md`). Se
+usaron 44 frases sintetizadas con Phonon en dos voces (Rebeca y Regina), es decir, 88 clips de 1,4 a 13 s, más
+6 clips de silencio y ruido. CPU, `int8`, `beam_size` 1:
+
+| Modelo | WER | Vocabulario | p50 / p90 ≤ 10 s (ms) | Vacío en silencio y ruido | Metas |
+| --- | --- | --- | --- | --- | --- |
+| `base` | 0,048 | 72/74 (97 %) | 986 / 1073 | 100 % | SC-001 a SC-004 ✅ |
+| `small` | 0,027 | 74/74 (100 %) | 2182 / 2915 | 100 % | SC-003 ❌ (latencia) |
+
+- En el banco inicial (6 frases), el prompt bajó el WER de `base` de 0,309 a 0,055: sin él, «Océanos» salía «o sea
+  a nos» y «Mejillones», «mi gillones».
+- Los errores restantes de `base` son de morfología («países operan» por «países opera») y de palabras pegadas
+  («Produceta Noel» por «produce etanol»).
+- Una corrida con la CPU ocupada en paralelo (compilación de la web) duplicó la latencia de `base`, con p90 de
+  2,5 s en clips de 5 a 10 s. El informe publicado es de una corrida sin carga.
+- La voz sintética es más limpia que una voz humana con micrófono de portátil. Falta medir grabaciones del equipo
+  (`--audio-dir`, locales y no versionadas).
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

@@ -153,6 +153,7 @@ class HealthStatus(BaseModel):
     detail: str | None = None
     adversarial_corpus: bool = False  # spec 015: el servidor usa el corpus de prueba del blindaje
     voice_available: bool = False  # spec 016: el motor de voz (Phonon) está listo o cargando
+    stt_available: bool = False  # spec 023: el dictado (faster-whisper) está listo o cargando
 
 
 class CorpusMetric(BaseModel):
@@ -247,6 +248,18 @@ ContactStatus = Literal[
 ChatStatus = Literal["answered", "fallback", "clarify", "pending_approval"]
 
 
+class InputMeta(BaseModel):
+    """Origen de un mensaje dictado (spec 023, data-model §4). Sin texto ni audio."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    source: Literal["voice"]
+    audio_ms: int = Field(ge=0, le=120_000)
+    stt_ms: int = Field(ge=0, le=60_000)
+    edited: bool = False
+    handsfree: bool = False
+
+
 class ChatRequest(RequestModel):
     """``POST /api/chat``. El mensaje se valida en el servicio para responder 400 con su código."""
 
@@ -258,6 +271,7 @@ class ChatRequest(RequestModel):
     message: str = Field(max_length=2000)
     variant: Literal["chain", "agent"] = "chain"
     mode: Mode = "real"
+    input: InputMeta | None = None  # spec 023: el mensaje llegó por dictado
 
 
 class RouteModel(BaseModel):
@@ -342,6 +356,7 @@ class TurnModel(BaseModel):
     fallback: bool = False
     metrics: TurnMetricsModel = Field(default_factory=TurnMetricsModel)
     jev: dict[str, Any] | None = None  # spec 022: traza del gatekeeper (vista técnica)
+    input: InputMeta | None = None  # spec 023: origen por voz (vista técnica)
 
 
 class AnomalyModel(BaseModel):
@@ -534,3 +549,35 @@ class VoiceStatus(BaseModel):
     sample_rate: int | None = None
     license: str
     detail: str | None = None
+
+
+class SttStatus(BaseModel):
+    """``GET /api/stt``: estado del dictado, sin rutas (spec 023, contracts/stt-api.md §1)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    available: bool
+    state: Literal["disabled", "loading", "ready", "unavailable"]
+    engine: str
+    model: str
+    language: str
+    detail: str | None = None
+    max_seconds: float
+    silence_ms: int
+    min_speech_ms: int
+    handsfree_idle_seconds: int
+    privacy: str
+
+
+class SttResult(BaseModel):
+    """``POST /api/stt``: texto reconocido (spec 023, contracts/stt-api.md §2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    text: str
+    empty: bool
+    truncated: bool
+    language: str
+    audio_ms: int
+    stt_ms: int
+    model: str

@@ -93,6 +93,8 @@ export interface HealthStatus {
   detail?: string | null;
   adversarial_corpus?: boolean;
   voice_available?: boolean;
+  /** Spec 023: el dictado está listo o cargando. */
+  stt_available?: boolean;
 }
 
 export interface CorpusMetric {
@@ -298,6 +300,8 @@ export interface ChatTurn {
   metrics: TurnMetrics;
   /** Spec 022: traza del gatekeeper Jev del turno (null si está desactivado). */
   jev?: JevTrace | null;
+  /** Spec 023: el mensaje llegó por dictado (solo vista técnica). */
+  input?: InputMeta | null;
 }
 
 export interface JevTrace {
@@ -415,4 +419,43 @@ export interface VoiceStatus {
   sample_rate: number | null;
   license: string;
   detail: string | null;
+}
+
+// ---------------------------------------------------------------- dictado (spec 023)
+
+export type SttState = "disabled" | "loading" | "ready" | "unavailable";
+
+/** `GET /api/stt` (contracts/stt-api.md §1). */
+export interface SttStatus {
+  available: boolean;
+  state: SttState;
+  engine: string;
+  model: string;
+  language: string;
+  detail: string | null;
+  max_seconds: number;
+  silence_ms: number;
+  min_speech_ms: number;
+  handsfree_idle_seconds: number;
+  privacy: string;
+}
+
+/** `POST /api/stt` (contracts/stt-api.md §2). */
+export interface SttResult {
+  text: string;
+  empty: boolean;
+  truncated: boolean;
+  language: string;
+  audio_ms: number;
+  stt_ms: number;
+  model: string;
+}
+
+/** Origen de un mensaje dictado (data-model §4): sin texto ni audio. */
+export interface InputMeta {
+  source: "voice";
+  audio_ms: number;
+  stt_ms: number;
+  edited: boolean;
+  handsfree: boolean;
 }

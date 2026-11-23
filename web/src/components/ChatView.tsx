@@ -21,6 +21,7 @@ import {
   type ChatTurn,
   type ChatVariant,
   type ContactRecord,
+  type InputMeta,
   type Citation,
   type MemoryItem,
   type Mode,
@@ -28,11 +29,13 @@ import {
   type ProfileItem,
   type RetrievalTrace,
 } from "../lib/types";
+import { useDictation, type TranscriptInfo } from "../lib/useDictation";
 import { useVoice } from "../lib/useVoice";
 import { adoptUser, resetVisit, viewMode, visitUser } from "../lib/session";
 import { AgentAvatar } from "./AgentAvatar";
 import { ApprovalCard } from "./ApprovalCard";
 import { ContactRecordPanel } from "./ContactRecordPanel";
+import { MicButton } from "./MicButton";
 import { RetrievedFragments } from "./RetrievedFragments";
 import { QuickReplies } from "./QuickReplies";
 import { SourceList } from "./SourceList";
@@ -256,6 +259,35 @@ export function visitorText(text: string): string {
   return text.replace(/\[REDACTED_([A-Z_]+)\]/g, (match, kind: string) => REDACTED_LABEL[kind] ?? match);
 }
 
+function seconds(ms: number, digits = 1): string {
+  return (ms / 1000).toLocaleString("es-CO", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
+/** Spec 023: «🎙 por voz · audio 2,0 s · reconocimiento 0,45 s» (vista técnica). */
+export function inputSummary(input: ChatTurn["input"]): string | null {
+  if (!input || input.source !== "voice") return null;
+  const parts = [
+    "🎙 por voz",
+    `audio ${seconds(input.audio_ms)} s`,
+    `reconocimiento ${seconds(input.stt_ms, 2)} s`,
+  ];
+  if (input.edited) parts.push("editado");
+  if (input.handsfree) parts.push("manos libres");
+  return parts.join(" · ");
+}
+
+/** Texto dictado recortado al máximo del campo, en un límite de palabra. */
+export function clipDictated(text: string, limit: number): string {
+  const clean = text.trim();
+  if (clean.length <= limit) return clean;
+  const cut = clean.slice(0, limit);
+  const space = cut.lastIndexOf(" ");
+  return (space > limit / 2 ? cut.slice(0, space) : cut).trimEnd();
+}
+
 export function ChatTurnCard({
   turn,
   firstAudioMs,
@@ -329,6 +361,9 @@ export function ChatTurnCard({
                 maximumFractionDigits: 1,
               })} s`
             : ""}
+          {inputSummary(turn.input) ? (
+            <span data-testid="turn-input"> · {inputSummary(turn.input)}</span>
+          ) : null}
           {jevSummary(turn.jev) ? (
             <span data-kind={turn.jev?.status} data-testid="turn-jev">
               {" "}
@@ -433,6 +468,53 @@ export function ChatView({ mode }: { mode: Mode }) {
   }
   const voice = useVoice();
   const [voiceKeys, setVoiceKeys] = useState<Record<number, string>>({});
+  // Spec 023: dictado. `pendingInput` guarda el texto insertado para saber si se editó.
+  const pendingInput = useRef<{ meta: InputMeta; text: string } | null>(null);
+  const [handsfreeSend, setHandsfreeSend] = useState<{ text: string; meta: InputMeta } | null>(null);
+  const [replies, setReplies] = useState(0);
+  const lastSpoken = turns.length ? turns[turns.length - 1].answer : null;
+  const dictation = useDictation({
+    voice,
+    threadId,
+    busy,
+    replies,
+    lastSpoken,
+    onTranscript: receiveTranscript,
+  });
+
+  function receiveTranscript(text: string, meta: InputMeta, _info: TranscriptInfo) {
+    if (meta.handsfree) {
+      const clean = clipDictated(text, MAX_CHARS);
+      setMessage(clean);
+      pendingInput.current = null;
+      setHandsfreeSend({ text: clean, meta });
+      return;
+    }
+    setMessage((previous) => {
+      const joined = previous.trim() ? `${previous.trimEnd()} ${text.trim()}` : text.trim();
+      const next = clipDictated(joined, MAX_CHARS);
+      pendingInput.current = { meta, text: next };
+      return next;
+    });
+  }
+
+  function inputFor(text: string): InputMeta | undefined {
+    const pending = pendingInput.current;
+    if (!pending) return undefined;
+    return { ...pending.meta, edited: text !== pending.text.trim() };
+  }
+
+  // Manos libres: el texto se ve 400 ms en el campo y se envía cuando no hay otra petición.
+  useEffect(() => {
+    if (!handsfreeSend || busy || action !== null) return undefined;
+    const timer = window.setTimeout(() => {
+      const pending = handsfreeSend;
+      setHandsfreeSend(null);
+      void send(pending.text, pending.meta);
+    }, 400);
+    return () => window.clearTimeout(timer);
+    // `send` lee el estado vigente; basta con reaccionar a estos tres valores.
+  }, [handsfreeSend, busy, action]);
   // Spec 017: avatar con sincronización de labios (visible por defecto; preferencia en el navegador).
   const [avatarHidden, setAvatarHidden] = useState(() => readLocal(AVATAR_HIDDEN_KEY) === "1");
   const avatarDebug = useRef(
@@ -579,6 +661,11 @@ export function ChatView({ mode }: { mode: Mode }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const clean = message.trim();
+    await send(clean, inputFor(clean));
+  }
+
+  async function send(clean: string, inputMeta?: InputMeta) {
+    pendingInput.current = null;
     if (!clean) {
       setError({
         code: "empty_question",
@@ -590,7 +677,14 @@ export function ChatView({ mode }: { mode: Mode }) {
     }
     setBusy(true);
     setError(null);
-    const input = { message: clean, threadId, userId: userId.current, variant, mode };
+    const input = {
+      message: clean,
+      threadId,
+      userId: userId.current,
+      variant,
+      mode,
+      ...(inputMeta ? { input: inputMeta } : {}),
+    };
     let current: LiveTurn = { question: clean, route: null, stage: "Enrutando…", text: "" };
     setLive(current);
     // Spec 016: el envío es el gesto que habilita el audio; corta cualquier lectura anterior.
@@ -656,6 +750,7 @@ export function ChatView({ mode }: { mode: Mode }) {
       controller.current = null;
       setLive(null);
       setBusy(false);
+      setReplies((count) => count + 1);
     }
   }
 
@@ -857,7 +952,10 @@ export function ChatView({ mode }: { mode: Mode }) {
             data-testid="chat-input"
             id="chat-message"
             maxLength={MAX_CHARS}
-            onChange={(event) => setMessage(event.target.value)}
+            onChange={(event) => {
+              setMessage(event.target.value);
+              if (!event.target.value.trim()) pendingInput.current = null;
+            }}
             disabled={!technical && action !== null}
             placeholder={
               !technical && action !== null
@@ -872,6 +970,7 @@ export function ChatView({ mode }: { mode: Mode }) {
             </span>
           </div>
         </div>
+        <MicButton dictation={dictation} disabled={!technical && action !== null} />
         <button
           className="btn btn-accent"
           data-testid="chat-send"

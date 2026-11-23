@@ -11,9 +11,11 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "av>=14,<20",  # spec 023: decodificación de audio de faster-whisper
     "cryptography>=3.1",
     "fastapi>=0.162.0",
     "fastembed>=0.9.1",
+    "faster-whisper>=1.2.1",  # spec 023: dictado local (ADR 0027)
     "httpx>=0.28.1",
     "langchain>=1.4.7",
     "langchain-core>=1.7.3",
@@ -35,10 +37,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-asr = [
-    "faster-whisper>=1.2.1",
-    "av>=14,<20",
-]
+# Spec 023: faster-whisper y av pasaron a runtime (dictado); la extra queda como alias vacío
+# para que `uv run --extra asr` de scripts/transcribe_youtube.py siga funcionando.
+asr = []
 
 [project.urls]
 Repository = "https://github.com/jasonCastano/proyecto_modelos_lenguaje"

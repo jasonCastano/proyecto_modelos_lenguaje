@@ -9,7 +9,7 @@
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "e3c82418968d084408a2a14fb13b9aa0941a0032"
+      "revision": "f6a5642cdcd084b4bade6554b7ede86a916086ee"
     }
   },
   "stages": [
@@ -223,15 +223,15 @@
       "id": "router",
       "type": "backend",
       "label": "Enrutador",
-      "sublabel": "reglas · Jev opcional · DeepSeek",
+      "sublabel": "reglas · perfil · Jev · LLM",
       "tag": "Módulo 2",
       "stage": 3,
       "row": 0,
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/router.py",
-          "line": 385,
-          "end_line": 420
+          "line": 455,
+          "end_line": 495
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/jev.py",
@@ -265,7 +265,7 @@
       "id": "agent",
       "type": "backend",
       "label": "Grafos LangGraph",
-      "sublabel": "cadena · agente · HITL",
+      "sublabel": "cadena · agente · HITL · perfiles",
       "tag": "Módulo 2",
       "stage": 3,
       "row": 1,
@@ -305,6 +305,32 @@
           "path": "src/proyecto_modelos_lenguaje/agent/privacy.py",
           "line": 1,
           "end_line": 80
+        }
+      ]
+    },
+    {
+      "id": "planning",
+      "type": "backend",
+      "label": "Planificación",
+      "sublabel": "LP · datos sintéticos",
+      "tag": "el equipo decide",
+      "stage": 2,
+      "row": 0,
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
+          "line": 1,
+          "end_line": 52
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/tools_planning.py",
+          "line": 184,
+          "end_line": 243
+        },
+        {
+          "path": "data/synthetic/planificacion/v1/DATA_CARD.md",
+          "line": 1,
+          "end_line": 20
         }
       ]
     }
@@ -429,6 +455,13 @@
       "label": "turno citado",
       "classification": "ruta, fragmentos, acción pendiente",
       "variant": "emphasis"
+    },
+    {
+      "id": "plan-validated",
+      "from": "planning",
+      "to": "agent",
+      "label": "plan validado",
+      "classification": "cifras desde código"
     }
   ],
   "cards": [
@@ -450,7 +483,8 @@
         "Resumen, FAQ y Q&A con LangChain y DeepSeek, prompts versionados y citas [U#].",
         "Sin evidencia suficiente, la app declara fallback y muestra los fragmentos recuperados.",
         "Conversación con memoria: enrutador en dos etapas, variantes cadena y agente sobre el mismo hilo.",
-        "Fragmentos con instrucciones embebidas se marcan; respuestas que copian el prompt se descartan."
+        "Fragmentos con instrucciones embebidas se marcan; respuestas que copian el prompt se descartan.",
+        "Plataforma de agentes (spec 025): perfiles por público y un planificador que optimiza la producción con programación lineal sobre datos sintéticos declarados."
       ]
     },
     {

@@ -282,7 +282,7 @@ biodiésel.
   - uso de `/perfil` y de `agent planning`;
   - enlaces a las evaluaciones nuevas.
 - [X] T063 [P] Añadir los datos sintéticos de planificación a `docs/data_card.md`: limitación y changelog que remiten a `data/synthetic/planificacion/v1/DATA_CARD.md`
-- [ ] T064 [P] Actualizar los diagramas Archify:
+- [X] T064 [P] Actualizar los diagramas Archify:
   - `docs/arquitectura.json` y `docs/diagramas/herramientas-router.json`: componente «Planificación (simulador + LP, datos sintéticos)», ruta `planning` y perfiles;
   - regenerar con `finalize` y `visual-check` (`--require-provenance`) y copiar los recibos y capturas a `docs/`.
 - [X] T065 Actualizar el estado de los ítems de la spec 025 en `docs/rubrica_modulo3.md` §1 donde cambie la evidencia (1.1: 26 herramientas; 1.2: ruta `planning`), y la sección English version con el pitch de §7.2
@@ -378,4 +378,4 @@ T044 web/src/components/ChatView.tsx (+ lib/chat.ts)
   - `evaluate --tools --mode real`: línea base 86,0 % y 90,7 % en dos corridas (publicado 88,4 %), 0 búsquedas
     en triviales; planificador 6/6. No se reescribió `docs/evaluacion_herramientas.md`.
 - Pendiente: T054 en el PC servidor (incluye `agent shield --channel` con d06–d07), T055 por WhatsApp, T057
-  ensayo, T064 Archify (requiere el commit fijado) y la palma (T058–T059, P3).
+  ensayo y la palma (T058–T059, P3).

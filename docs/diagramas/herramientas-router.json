@@ -2,14 +2,14 @@
   "schema_version": 2,
   "diagram_type": "workflow",
   "meta": {
-    "title": "Herramientas y router",
+    "title": "Herramientas, perfiles y router",
     "locale": "es",
     "output": "docs/diagramas/herramientas-router.html",
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "e3c82418968d084408a2a14fb13b9aa0941a0032"
+      "revision": "f6a5642cdcd084b4bade6554b7ede86a916086ee"
     }
   },
   "lanes": [
@@ -36,6 +36,10 @@
     {
       "id": "answerlane",
       "label": "Respuesta"
+    },
+    {
+      "id": "planlane",
+      "label": "Planificación (perfil planificador)"
     }
   ],
   "mainPath": [
@@ -58,8 +62,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 351,
-          "end_line": 427
+          "line": 375,
+          "end_line": 488
         }
       ]
     },
@@ -73,13 +77,13 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/router.py",
-          "line": 171,
-          "end_line": 237
+          "line": 236,
+          "end_line": 309
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/actions.py",
-          "line": 225,
-          "end_line": 278
+          "line": 292,
+          "end_line": 330
         }
       ]
     },
@@ -94,8 +98,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 825,
-          "end_line": 840
+          "line": 1212,
+          "end_line": 1240
         }
       ]
     },
@@ -109,8 +113,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 773,
-          "end_line": 795
+          "line": 1167,
+          "end_line": 1193
         }
       ]
     },
@@ -125,8 +129,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/router.py",
-          "line": 349,
-          "end_line": 384
+          "line": 417,
+          "end_line": 454
         }
       ]
     },
@@ -166,8 +170,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/models.py",
-          "line": 100,
-          "end_line": 105
+          "line": 108,
+          "end_line": 113
         },
         {
           "path": "config/agent.toml",
@@ -186,8 +190,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/tools.py",
-          "line": 259,
-          "end_line": 275
+          "line": 265,
+          "end_line": 281
         }
       ]
     },
@@ -201,8 +205,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/tools.py",
-          "line": 276,
-          "end_line": 322
+          "line": 282,
+          "end_line": 328
         }
       ]
     },
@@ -216,8 +220,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/tools.py",
-          "line": 323,
-          "end_line": 345
+          "line": 329,
+          "end_line": 350
         }
       ]
     },
@@ -246,8 +250,90 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 302,
-          "end_line": 317
+          "line": 300,
+          "end_line": 340
+        }
+      ]
+    },
+    {
+      "id": "audience",
+      "lane": "planlane",
+      "col": 2,
+      "type": "security",
+      "label": "Perfil del turno",
+      "sublabel": "/perfil · selector · «soy…»",
+      "tag": "lista blanca",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 489,
+          "end_line": 540
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/profiles.py",
+          "line": 201,
+          "end_line": 216
+        },
+        {
+          "path": "config/profiles.toml",
+          "line": 1,
+          "end_line": 73
+        }
+      ]
+    },
+    {
+      "id": "plantstate",
+      "lane": "planlane",
+      "col": 3,
+      "type": "database",
+      "label": "Estado y compromisos",
+      "sublabel": "datos sintéticos · [S#]",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/tools_planning.py",
+          "line": 56,
+          "end_line": 140
+        }
+      ]
+    },
+    {
+      "id": "optimize",
+      "lane": "planlane",
+      "col": 4,
+      "type": "backend",
+      "label": "Optimizador lineal",
+      "sublabel": "HiGHS · sensibilidad",
+      "tag": "sin solución → faltantes",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
+          "line": 557,
+          "end_line": 670
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/tools_planning.py",
+          "line": 173,
+          "end_line": 181
+        }
+      ]
+    },
+    {
+      "id": "numcheck",
+      "lane": "planlane",
+      "col": 5,
+      "type": "security",
+      "label": "Validador de cifras",
+      "sublabel": "si falla → plan_card",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
+          "line": 800,
+          "end_line": 822
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 2302,
+          "end_line": 2342
         }
       ]
     }
@@ -339,6 +425,34 @@
       "from": "guard",
       "to": "answer",
       "variant": "emphasis"
+    },
+    {
+      "id": "audience-plantstate",
+      "from": "audience",
+      "to": "plantstate"
+    },
+    {
+      "id": "plantstate-optimize",
+      "from": "plantstate",
+      "to": "optimize"
+    },
+    {
+      "id": "optimize-numcheck",
+      "from": "optimize",
+      "to": "numcheck"
+    },
+    {
+      "id": "numcheck-answer",
+      "from": "numcheck",
+      "to": "answer",
+      "label": "el equipo decide"
+    },
+    {
+      "id": "rules-audience",
+      "from": "rules",
+      "to": "audience",
+      "label": "planificador + señales",
+      "variant": "dashed"
     }
   ],
   "cards": [
@@ -349,6 +463,15 @@
         "Las reglas resuelven saludos, temas ajenos y preguntas sobre el usuario sin llamar al modelo",
         "Jev (opcional, desactivado por defecto) decide la ruta en ~0,2 s si su probabilidad es ≥ 0,75; si no, o si falla, decide el router LLM",
         "El router LLM devuelve JSON validado con Pydantic; con confianza < 0,6 la ruta efectiva es aclaración"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Plataforma de agentes (spec 025)",
+      "items": [
+        "Cinco perfiles sobre el mismo agente: cada uno ofrece solo su lista blanca de herramientas",
+        "La ruta planning la deciden solo las reglas, y solo para el planificador autorizado",
+        "Las cifras del plan salen del simulador y del programa lineal; los datos son sintéticos"
       ]
     },
     {

@@ -1,0 +1,275 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Planificación industrial (spec 025)",
+    "locale": "es",
+    "output": "docs/diagramas/planificacion.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
+      "provider": "github",
+      "revision": "f6a5642cdcd084b4bade6554b7ede86a916086ee"
+    }
+  },
+  "lanes": [
+    {
+      "id": "entrada",
+      "label": "Entrada y perfil"
+    },
+    {
+      "id": "datos",
+      "label": "Datos sintéticos"
+    },
+    {
+      "id": "calculo",
+      "label": "Cálculo en código"
+    },
+    {
+      "id": "respuesta",
+      "label": "Respuesta"
+    }
+  ],
+  "mainPath": [
+    "msg",
+    "auth",
+    "state",
+    "optimize",
+    "check",
+    "answer"
+  ],
+  "nodes": [
+    {
+      "id": "msg",
+      "lane": "entrada",
+      "col": 0,
+      "type": "external",
+      "label": "Solicitud",
+      "sublabel": "«15 % menos caña…»",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/router.py",
+          "line": 190,
+          "end_line": 220
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "lane": "entrada",
+      "col": 1,
+      "type": "security",
+      "label": "Planificador",
+      "sublabel": "autorizado · ruta planning",
+      "tag": "solo reglas",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/profiles.py",
+          "line": 201,
+          "end_line": 216
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 489,
+          "end_line": 540
+        }
+      ]
+    },
+    {
+      "id": "state",
+      "lane": "datos",
+      "col": 1,
+      "type": "database",
+      "label": "Estado y contratos",
+      "sublabel": "planta · compromisos",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/tools_planning.py",
+          "line": 56,
+          "end_line": 107
+        },
+        {
+          "path": "data/synthetic/planificacion/v1/DATA_CARD.md",
+          "line": 1,
+          "end_line": 20
+        }
+      ]
+    },
+    {
+      "id": "procs",
+      "lane": "datos",
+      "col": 2,
+      "type": "database",
+      "label": "Procedimientos",
+      "sublabel": "BM25 · citas [S#]",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/tools_planning.py",
+          "line": 113,
+          "end_line": 126
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
+          "line": 825,
+          "end_line": 850
+        }
+      ]
+    },
+    {
+      "id": "optimize",
+      "lane": "calculo",
+      "col": 2,
+      "type": "backend",
+      "label": "Optimizador LP",
+      "sublabel": "HiGHS · sensibilidad",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
+          "line": 557,
+          "end_line": 670
+        }
+      ]
+    },
+    {
+      "id": "elastic",
+      "lane": "calculo",
+      "col": 3,
+      "type": "backend",
+      "label": "LP elástico",
+      "sublabel": "faltantes por prioridad",
+      "tag": "sin solución",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
+          "line": 498,
+          "end_line": 511
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "lane": "respuesta",
+      "col": 3,
+      "type": "security",
+      "label": "Validador",
+      "sublabel": "cifras de herramientas",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
+          "line": 800,
+          "end_line": 822
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
+          "line": 2302,
+          "end_line": 2342
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "lane": "respuesta",
+      "col": 4,
+      "type": "backend",
+      "label": "Plan recomendado",
+      "sublabel": "alternativa · supuestos",
+      "tag": "el equipo decide",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
+          "line": 680,
+          "end_line": 724
+        }
+      ]
+    },
+    {
+      "id": "save",
+      "lane": "respuesta",
+      "col": 5,
+      "type": "database",
+      "label": "Guardar con «SÍ»",
+      "sublabel": "proposals.jsonl",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/actions.py",
+          "line": 374,
+          "end_line": 420
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "msg-auth",
+      "from": "msg",
+      "to": "auth",
+      "variant": "emphasis"
+    },
+    {
+      "id": "auth-state",
+      "from": "auth",
+      "to": "state",
+      "variant": "emphasis"
+    },
+    {
+      "id": "state-procs",
+      "from": "state",
+      "to": "procs",
+      "label": "restricciones",
+      "variant": "dashed"
+    },
+    {
+      "id": "state-optimize",
+      "from": "state",
+      "to": "optimize",
+      "variant": "emphasis"
+    },
+    {
+      "id": "optimize-elastic",
+      "from": "optimize",
+      "to": "elastic",
+      "label": "sin solución",
+      "variant": "dashed"
+    },
+    {
+      "id": "optimize-check",
+      "from": "optimize",
+      "to": "check",
+      "variant": "emphasis"
+    },
+    {
+      "id": "check-answer",
+      "from": "check",
+      "to": "answer",
+      "label": "o plan_card",
+      "variant": "emphasis"
+    },
+    {
+      "id": "answer-save",
+      "from": "answer",
+      "to": "save",
+      "label": "aprobación",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Cifras desde código",
+      "items": [
+        "El modelo de lenguaje coordina y explica; el plan sale del programa lineal (scipy, HiGHS)",
+        "Si la respuesta trae un número que no está en las herramientas, se muestra el plan calculado",
+        "Batería de 12 escenarios: ≥ 99 % del óptimo de referencia en 10/10 y 2/2 sin solución detectados"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Límites declarados",
+      "items": [
+        "Datos sintéticos generados con semilla: demuestran la capacidad, no la operación real de Manuelita",
+        "Sin solución se reporta el faltante de cada compromiso; nunca se relaja una capacidad física",
+        "En modo degradado (MCP) no se simula ni se optimiza"
+      ]
+    }
+  ]
+}

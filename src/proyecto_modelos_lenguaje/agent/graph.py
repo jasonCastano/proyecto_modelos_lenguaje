@@ -61,6 +61,8 @@ from langgraph.types import Checkpointer, interrupt
 from ..rag.hybrid import HybridRetriever, RetrievedFragment
 from ..tasks import FALLBACK_ANSWER, STRICT_REMINDER, is_model_fallback
 from . import bridges, care
+from . import planning as planning_module
+from . import profiles as profiles_module
 from .actions import (
     TOOL_DESCRIPTIONS,
     WRITE_TOOLS,
@@ -115,7 +117,9 @@ from .router import (
     COMPANY,
     apply_structured_fallback,
     contextual_query,
+    is_planning_request,
     is_smalltalk,
+    planning_decision,
     route_message,
 )
 from .sentences import SentenceGate, SentenceSplitter, split_all
@@ -206,6 +210,12 @@ class ChatState(TypedDict, total=False):
     turn_notices: list[str]
     # spec 022: traza del gatekeeper Jev del turno (sin texto del visitante)
     jev: dict[str, Any] | None
+    # spec 025: perfil del hilo, perfil efectivo del turno, canal, aviso de perfil y último plan
+    profile: str | None
+    active_profile: str
+    channel: str
+    profile_note: str | None
+    last_plan: dict[str, Any] | None
     # spec 021: frases previas, frases entregadas por el nodo que genera y frases descartadas
     lead: list[str]
     delivered: list[str]
@@ -380,6 +390,12 @@ def _route_node(deps: GraphDeps):
         )
         if gate_outcome is not None and deps.gate is not None:
             signals = merge_signals(signals, gate_outcome, deps.gate.config)  # type: ignore[assignment]
+        thread_profile, active, profile_note = _turn_profile(state, intent, profile_query)
+        planned = (
+            planning_decision(state["question"], active, authorized=True)
+            if intent is None and not profile_query and state.get("variant") == "agent"
+            else None
+        )
         if intent is not None:
             decision = RouteDecision(
                 route="direct",
@@ -387,6 +403,8 @@ def _route_node(deps: GraphDeps):
                 reason=f"pedido de escritura: {intent.tool} (requiere aprobación)",
                 decided_by="rules",
             )
+        elif planned is not None:
+            decision = planned
         elif profile_query:
             decision = RouteDecision(
                 route="direct",
@@ -440,9 +458,65 @@ def _route_node(deps: GraphDeps):
             "retrievals": 0,
             "tool_calls": [],
             "plan_steps": [],
+            "profile": thread_profile,
+            "active_profile": active,
+            "profile_note": profile_note,
         }
 
     return route
+
+
+PLANNER_ONLY_NOTE = (
+    "La planificación de producción es solo para planificadores autorizados (perfil "
+    "planificador); puedo darte la información pública de Manuelita sobre el tema."
+)
+PLANNER_VARIANT_NOTE = (
+    "Para planificar la producción usa la variante agente (en la vista técnica de la web)."
+)
+
+
+def _stored_audience(user_id: str, deps_ttl: int = 30) -> str | None:
+    """Perfil recordado (preferencia ``audience``) del usuario, si lo guardó con «SÍ»."""
+    store = _safe_store()
+    if store is None:
+        return None
+    for item in UserMemory(store, deps_ttl).list(user_id):
+        if item.key == "audience":
+            return item.value
+    return None
+
+
+def _turn_profile(
+    state: ChatState, intent: Any, profile_query: bool
+) -> tuple[str, str, str | None]:
+    """Spec 025 (R15): (perfil del hilo, perfil efectivo del turno, aviso para la respuesta).
+
+    Orden: perfil del hilo (``/perfil`` o selector) → preferencia ``audience`` → visitante. Una
+    autopresentación («soy proveedor…») activa ese perfil en el hilo y ofrece recordarlo. El
+    planificador sin autorización atiende como visitante.
+    """
+    user_id = state.get("user_id", "anon")
+    channel = state.get("channel") or "web"
+    if not profiles_module.profiles_enabled():
+        return profiles_module.DEFAULT_PROFILE, profiles_module.DEFAULT_PROFILE, None
+    profile = state.get("profile") or _stored_audience(user_id) or "visitante"
+    note: str | None = None
+    if intent is None and not profile_query:
+        triggered = profiles_module.match_trigger(state["question"])
+        if triggered and triggered != profile:
+            profile = triggered
+            label = profiles_module.get_profile(triggered).label
+            note = (
+                f"Te atiendo como {label}. Si quieres que lo recuerde para próximas "
+                "conversaciones, escribe «recuerda mi perfil»."
+            )
+    active = profiles_module.effective_profile(profile, user_id, channel)
+    if intent is None and not profile_query and is_planning_request(state["question"]):
+        if active != profiles_module.PLANNER and profile == profiles_module.PLANNER:
+            note = PLANNER_ONLY_NOTE
+        elif active == profiles_module.PLANNER and state.get("variant") != "agent":
+            note = PLANNER_VARIANT_NOTE
+    return profile, active, note
 
 
 def _consult_gate(
@@ -1113,6 +1187,7 @@ def _run_action(deps: GraphDeps, state: ChatState, tool: str, args: dict[str, An
         user_id=state.get("user_id", "anon"),
         turns=state.get("turns") or [],
         ttl_days=deps.config.memory.preference_ttl_days,
+        last_plan=state.get("last_plan"),
     )
 
 
@@ -1437,7 +1512,11 @@ def _finalize_node(deps: GraphDeps):
         care_state = care.copy_care_state(state.get("care"))
         playbook = load_care()
         action = bool(state.get("intent"))
-        retrieval = decision.get("route") not in NO_RETRIEVAL_ROUTES and not action
+        retrieval = (
+            decision.get("route") not in NO_RETRIEVAL_ROUTES
+            and decision.get("route") != "planning"  # spec 025: validada en el nodo agente
+            and not action
+        )
         fallback = bool(state.get("fallback", False))
         plan = TurnPlan.from_state(state.get("plan"))
         guided = plan is not None
@@ -1535,6 +1614,7 @@ def _finalize_node(deps: GraphDeps):
             input=state.get("input_meta"),
             plan_steps=list(state.get("plan_steps") or []),
             tools=list(state.get("tool_calls") or []),
+            profile=str(state.get("active_profile") or "visitante"),
         )
         turns.append(turn.model_dump(mode="json"))
         summary, summarized = compact_history(
@@ -1621,6 +1701,9 @@ def _assemble_answer(
     offer = _remember_offer(state, plan, identity)
     if offer:
         answer = f"{answer} {offer}".strip()
+    if state.get("profile_note"):
+        answer = f"{answer}\n\n{state['profile_note']}".strip()
+        notices.append("profile_note")
     if SENSITIVE_NOTICES & set(state.get("pii_notice") or []):
         # Spec 018 (FR-020): aviso determinista si el visitante compartió datos sensibles.
         notices.append("sensitive_data")
@@ -1650,6 +1733,9 @@ def _deliver_tail(
     offer = _remember_offer(state, plan, identity)
     if offer:
         out.emit(offer)
+    if state.get("profile_note"):
+        out.emit(str(state["profile_note"]))
+        notices = [*notices, "profile_note"]
     converse = (state.get("plan") or {}).get("node") == "converse"
     if plan is not None and converse and state.get("reviewed") != "fallback":
         # Frases que el plan exige y el modelo no dijo: se agregan al final (FR-008).
@@ -2047,6 +2133,12 @@ ROUTE_HINTS = {
         "usa las dos fuentes: aggregate_series o query_structured para la cifra y "
         "search_documents para el contexto; la respuesta debe citar al menos un F# y un U#"
     ),
+    "planning": (
+        "consulta get_plant_state y get_commitments, luego optimize_production_plan con el "
+        "escenario de la persona; usa solo las cifras de las herramientas, incluye «Datos "
+        "sintéticos de demostración» y termina con «El agente recomienda; el equipo de planta "
+        "decide»"
+    ),
 }
 
 
@@ -2054,7 +2146,24 @@ def route_hint(state: ChatState) -> str:
     """Pista explícita para el agente: la ruta del enrutador restringe qué herramientas usar."""
     decision = state.get("decision") or {}
     hint = ROUTE_HINTS.get(str(decision.get("route", "")))
-    return f"\n\nRuta decidida por el enrutador: {decision.get('route')}. {hint}." if hint else ""
+    text = f"\n\nRuta decidida por el enrutador: {decision.get('route')}. {hint}." if hint else ""
+    return text + profile_hint(state)
+
+
+def profile_hint(state: ChatState) -> str:
+    """Spec 025: foco del perfil activo y, para el planificador, el último plan del hilo."""
+    active = str(state.get("active_profile") or profiles_module.DEFAULT_PROFILE)
+    if active == profiles_module.DEFAULT_PROFILE:
+        return ""
+    profile = profiles_module.get_profile(active)
+    text = f"\n\nPerfil activo: {profile.label} (clave {profile.key}). {profile.focus}"
+    last_plan = state.get("last_plan") or {}
+    if active == profiles_module.PLANNER and last_plan.get("plan_id"):
+        text += (
+            f" Último plan calculado en esta conversación: plan_id {last_plan['plan_id']} "
+            "(úsalo si la persona pide guardarlo)."
+        )
+    return text
 
 
 def _safe_store() -> Any:
@@ -2094,7 +2203,12 @@ def _agent_node(deps: GraphDeps):
             neutralize=deps.neutralize,
         )
         invocations: list[dict[str, Any]] = []
-        tools = instrument(build_catalog_tools(context, route=route, write_run=run), invocations)
+        active = str(state.get("active_profile") or profiles_module.DEFAULT_PROFILE)
+        tools = instrument(
+            build_catalog_tools(context, route=route, write_run=run, profile=active),
+            invocations,
+        )
+        tool_limit, model_limit = limits.limits_for(route)
 
         hint = route_hint(state)
         attention = care_brief(state)
@@ -2124,11 +2238,14 @@ def _agent_node(deps: GraphDeps):
                 build_summarization_middleware(
                     deps.config.memory, deps.summary_model or deps.model
                 ),
-                ToolCallLimitMiddleware(run_limit=limits.tool_call_limit),
-                ModelCallLimitMiddleware(run_limit=limits.model_call_limit),
+                ToolCallLimitMiddleware(run_limit=tool_limit),
+                ModelCallLimitMiddleware(run_limit=model_limit),
             ],
         )
-        sentences = deps.config.conversation.sentences and bool(state.get("plan"))
+        # Spec 025: la planificación se valida completa (R12); no se entrega por frases.
+        sentences = (
+            deps.config.conversation.sentences and bool(state.get("plan")) and route != "planning"
+        )
         handler: _AgentSentences | None = None
         run_config = config
         if sentences and not state.get("intent"):
@@ -2150,13 +2267,21 @@ def _agent_node(deps: GraphDeps):
                 "tool_calls": invocations,
                 "plan_steps": plan_steps(route, invocations),
             }
+        tool_text = [message_text(m) for m in result["messages"] if isinstance(m, ToolMessage)]
+        last_plan = trace.plans[-1] if trace.plans else state.get("last_plan")
+        steps = plan_steps(route, invocations)
         if state.get("intent") or executed:
             # Turno de escritura: responde con el resultado de la acción, sin exigir citas.
             text = final or _last_tool_text(result["messages"]) or REJECTED_ANSWER
             citations, fallback = [], False
+        elif route == "planning":
+            text, citations, fallback, guard = planning_answer(
+                final, tool_text, state["question"], trace
+            )
+            if guard:
+                steps.append(PLANNING_GUARD_STEP[guard])
         else:
             text, citations, fallback = validate_answer(final, evidence, system)
-        tool_text = [message_text(m) for m in result["messages"] if isinstance(m, ToolMessage)]
         return {
             "fragments": fragment_rows,
             "structured_rows": fact_rows,
@@ -2167,10 +2292,53 @@ def _agent_node(deps: GraphDeps):
             "fallback": fallback,
             "retrievals": trace.calls,
             "tool_calls": invocations,
-            "plan_steps": plan_steps(route, invocations),
+            "plan_steps": steps,
+            "last_plan": last_plan,
         }
 
     return agent
+
+
+def planning_answer(
+    final: str,
+    tool_text: list[str],
+    question: str,
+    trace: ToolTrace,
+) -> tuple[str, list[dict[str, Any]], bool, str | None]:
+    """Spec 025 (R12): cifras solo de herramientas; si no, el ``plan_card`` del optimizador.
+
+    Devuelve ``(texto, citas, fallback, guardia)``; ``guardia`` es ``"replaced"`` o ``"failed"``
+    cuando la respuesta del modelo no pasó la validación de cifras.
+    """
+    citations = [
+        {
+            "label": row["label"],
+            "title": f"{row['id']} · {row['title']}",
+            "url": "",
+            "kind": "synthetic",
+        }
+        for row in trace.procedures
+        if f"[{row['label']}]" in final
+    ]
+    check = planning_module.check_answer(final, [*tool_text, question])
+    if final.strip() and check.ok:
+        return final.strip(), citations, False, None
+    card = trace.plans[-1]["plan_card"] if trace.plans else ""
+    if card:
+        return card, [], False, "replaced"
+    return (
+        "No pude calcular un plan con datos verificables en este turno. "
+        f"{planning_module.DECISION_PHRASE}",
+        [],
+        True,
+        "failed",
+    )
+
+
+PLANNING_GUARD_STEP = {
+    "replaced": "→ validación de cifras: se mostró el plan calculado por el optimizador",
+    "failed": "→ validación de cifras: sin plan verificable, no se mostraron cifras",
+}
 
 
 class _AgentSentences(BaseCallbackHandler):

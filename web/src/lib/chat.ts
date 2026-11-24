@@ -10,6 +10,7 @@ import type {
   MemoryView,
   Mode,
   PendingAction,
+  ProfileOption,
   ThreadView,
 } from "./types";
 
@@ -21,6 +22,8 @@ export interface SendChatInput {
   mode: Mode;
   /** Spec 023: metadatos del dictado (solo si el mensaje vino de una transcripción). */
   input?: InputMeta | null;
+  /** Spec 025: perfil elegido en la vista técnica (null = el del hilo). */
+  profile?: string | null;
 }
 
 export function sendChat(input: SendChatInput, signal?: AbortSignal): Promise<ChatResponse> {
@@ -33,6 +36,7 @@ export function sendChat(input: SendChatInput, signal?: AbortSignal): Promise<Ch
       variant: input.variant,
       mode: input.mode,
       ...(input.input ? { input: input.input } : {}),
+      ...(input.profile ? { profile: input.profile } : {}),
     }),
     signal,
   });
@@ -118,6 +122,7 @@ export async function streamChat(
         variant: input.variant,
         mode: input.mode,
         ...(input.input ? { input: input.input } : {}),
+        ...(input.profile ? { profile: input.profile } : {}),
       }),
       signal,
     });
@@ -217,6 +222,11 @@ export interface GatekeeperStatus {
   model?: string;
   route_threshold?: number;
   signals?: string[];
+}
+
+/** Spec 025: perfiles de la plataforma y si este usuario puede usar cada uno. */
+export function getProfiles(userId: string): Promise<ProfileOption[]> {
+  return request<ProfileOption[]>(`/profiles?user_id=${encodeURIComponent(userId)}`);
 }
 
 export function getObservability(mode?: "demo" | "real"): Promise<ObservabilityStatus> {

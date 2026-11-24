@@ -5,16 +5,16 @@
   "status": "pass",
   "type": "workflow",
   "quality": "showcase",
-  "startedAt": "2026-11-21T13:44:29.068Z",
+  "startedAt": "2026-11-24T19:44:47.166Z",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.json",
-    "sha256": "92e631551aee132a1a1f6ec6b24e29c2e572a2eedef361d914256afaa3a44b9a",
-    "bytes": 8719
+    "sha256": "d106bca5e578c5f7cbd10ebddeb5cae882fcbd4972ec2bcec9c8b34510bd0cba",
+    "bytes": 11957
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.html",
-    "sha256": "f798254631a0a6edd447d51a7a0b3610f21526e2cad4a25ee9e81fb62e035f46",
-    "bytes": 857957
+    "sha256": "7ccec5340305732923951affbb0ee0cfa202080f82fe243c5733b56c3d5c90f5",
+    "bytes": 869331
   },
   "stages": {
     "validate": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "92e631551aee132a1a1f6ec6b24e29c2e572a2eedef361d914256afaa3a44b9a",
-          "bytes": 8719
+          "sha256": "d106bca5e578c5f7cbd10ebddeb5cae882fcbd4972ec2bcec9c8b34510bd0cba",
+          "bytes": 11957
         },
         "validation": {
           "checksPassed": 9,
@@ -56,7 +56,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 41839,
+      "durationMs": 1567,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -72,19 +72,19 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "3bed5db4-08b7-4a97-8718-5fa389e93bcc",
+        "receiptId": "511de9e5-a1a9-49b0-b699-0b5ab8ca5e97",
         "ok": true,
         "command": "deliver",
         "type": "workflow",
         "input": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.json",
         "output": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.html",
         "specification": {
-          "sha256": "92e631551aee132a1a1f6ec6b24e29c2e572a2eedef361d914256afaa3a44b9a",
-          "bytes": 8719
+          "sha256": "d106bca5e578c5f7cbd10ebddeb5cae882fcbd4972ec2bcec9c8b34510bd0cba",
+          "bytes": 11957
         },
         "artifact": {
-          "sha256": "f798254631a0a6edd447d51a7a0b3610f21526e2cad4a25ee9e81fb62e035f46",
-          "bytes": 857957
+          "sha256": "7ccec5340305732923951affbb0ee0cfa202080f82fe243c5733b56c3d5c90f5",
+          "bytes": 869331
         },
         "validation": {
           "checksPassed": 9,
@@ -97,8 +97,8 @@
         "evidence": {
           "verified": true,
           "repository": "https://github.com/jasonCastano/proyecto_modelos_lenguaje",
-          "revision": "e3c82418968d084408a2a14fb13b9aa0941a0032",
-          "references": 16
+          "revision": "f6a5642cdcd084b4bade6554b7ede86a916086ee",
+          "references": 24
         },
         "update": {
           "status": "unavailable",
@@ -116,7 +116,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 10309,
+      "durationMs": 284,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -128,8 +128,8 @@
         "ok": true,
         "file": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.html",
         "artifact": {
-          "sha256": "f798254631a0a6edd447d51a7a0b3610f21526e2cad4a25ee9e81fb62e035f46",
-          "bytes": 857957
+          "sha256": "7ccec5340305732923951affbb0ee0cfa202080f82fe243c5733b56c3d5c90f5",
+          "bytes": 869331
         },
         "checks": [
           {
@@ -196,18 +196,18 @@
             "containerBorderRuns": 0,
             "labelRouteClearanceIssues": 0,
             "labelCanvasOverflowIssues": 0,
-            "minLabelRouteClearance": 8.8,
+            "minLabelRouteClearance": 16.8,
             "desktopReadabilityIssues": 0,
             "viewportHeightIssues": 0,
-            "minProjectedNodeTextPx": 6.6,
+            "minProjectedNodeTextPx": 6.502118644067797,
             "maxBends": 0,
             "routesOverSuggestedBends": 0,
             "maxStretch": 1,
             "routesOverSuggestedStretch": 0,
             "minSegmentPx": 8,
             "minInteriorSegmentPx": null,
-            "shortSegmentCount": 5,
-            "shortEndpointSegmentCount": 5,
+            "shortSegmentCount": 9,
+            "shortEndpointSegmentCount": 9,
             "shortInteriorSegmentCount": 0,
             "microSegmentCount": 0
           },
@@ -240,19 +240,19 @@
               "id": "jev"
             },
             "minimumSourceTextPx": 6.6,
-            "minimumProjectedTextPx": 6.6,
-            "semanticTextCount": 33
+            "minimumProjectedTextPx": 6.502118644067797,
+            "semanticTextCount": 43
           },
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "3bed5db4-08b7-4a97-8718-5fa389e93bcc"
+        "deliveryReceiptId": "511de9e5-a1a9-49b0-b699-0b5ab8ca5e97"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 22961,
+      "durationMs": 2176,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -261,7 +261,7 @@
         "--json",
         "--require-provenance",
         "--out-dir",
-        "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\hr-jev1"
+        "D:\\proyecto_modelos_lenguaje\\docs\\diagramas"
       ],
       "execution": "in-process",
       "receipt": {
@@ -272,11 +272,11 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "3bed5db4-08b7-4a97-8718-5fa389e93bcc",
+        "deliveryReceiptId": "511de9e5-a1a9-49b0-b699-0b5ab8ca5e97",
         "artifact": {
           "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.html",
-          "sha256": "f798254631a0a6edd447d51a7a0b3610f21526e2cad4a25ee9e81fb62e035f46",
-          "bytes": 857957
+          "sha256": "7ccec5340305732923951affbb0ee0cfa202080f82fe243c5733b56c3d5c90f5",
+          "bytes": 869331
         },
         "state": {
           "detail": "read",
@@ -298,7 +298,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 1511,
+              "scrollHeight": 1622,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -308,88 +308,88 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1376,
-              "diagramWidth": 1269,
+              "diagramWidth": 1346,
               "pageComposition": {
                 "bodyPaddingPx": 12,
                 "headerPx": 52,
                 "diagramChromePx": 78,
-                "svgPx": 1368,
+                "svgPx": 1480,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "profile",
                     "direct"
                   ],
-                  "nodeSpanPx": 102,
-                  "spaceAboveNodesPx": 51,
+                  "nodeSpanPx": 97,
+                  "spaceAboveNodesPx": 48,
                   "spaceBelowNodesPx": 6
                 },
                 {
                   "frameId": "lane-1",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "msg",
                     "rules"
                   ],
-                  "nodeSpanPx": 78,
-                  "spaceAboveNodesPx": 63,
-                  "spaceBelowNodesPx": 18
+                  "nodeSpanPx": 74,
+                  "spaceAboveNodesPx": 60,
+                  "spaceBelowNodesPx": 17
                 },
                 {
                   "frameId": "lane-2",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 1,
                   "nodeIds": [
                     "jev"
                   ],
-                  "nodeSpanPx": 102,
-                  "spaceAboveNodesPx": 51,
+                  "nodeSpanPx": 97,
+                  "spaceAboveNodesPx": 48,
                   "spaceBelowNodesPx": 6
                 },
                 {
                   "frameId": "lane-3",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "llm",
                     "clarify"
                   ],
-                  "nodeSpanPx": 102,
-                  "spaceAboveNodesPx": 51,
+                  "nodeSpanPx": 97,
+                  "spaceAboveNodesPx": 48,
                   "spaceBelowNodesPx": 6
                 },
                 {
                   "frameId": "lane-4",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 3,
                   "nodeIds": [
                     "search",
                     "structured",
                     "series"
                   ],
-                  "nodeSpanPx": 78,
-                  "spaceAboveNodesPx": 63,
-                  "spaceBelowNodesPx": 18
+                  "nodeSpanPx": 74,
+                  "spaceAboveNodesPx": 60,
+                  "spaceBelowNodesPx": 17
                 },
                 {
                   "frameId": "lane-5",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "guard",
                     "answer"
                   ],
-                  "nodeSpanPx": 78,
-                  "spaceAboveNodesPx": 63,
-                  "spaceBelowNodesPx": 18
+                  "nodeSpanPx": 74,
+                  "spaceAboveNodesPx": 60,
+                  "spaceBelowNodesPx": 17
                 }
               ],
               "minimumProjectedNodeTextPx": 6.6,
@@ -422,7 +422,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1577,
+              "scrollHeight": 1765,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -432,16 +432,16 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1536,
-              "diagramWidth": 1269,
+              "diagramWidth": 1416,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
                 "diagramChromePx": 84,
-                "svgPx": 1368,
+                "svgPx": 1557,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
@@ -546,7 +546,7 @@
               "innerWidth": 1920,
               "innerHeight": 1080,
               "scrollWidth": 1920,
-              "scrollHeight": 1577,
+              "scrollHeight": 1766,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -556,16 +556,16 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1856,
-              "diagramWidth": 1269,
+              "diagramWidth": 1416,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
                 "diagramChromePx": 84,
-                "svgPx": 1368,
+                "svgPx": 1557,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
@@ -670,7 +670,7 @@
               "innerWidth": 2048,
               "innerHeight": 1320,
               "scrollWidth": 2048,
-              "scrollHeight": 1595,
+              "scrollHeight": 1784,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -680,16 +680,16 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1920,
-              "diagramWidth": 1269,
+              "diagramWidth": 1416,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
                 "diagramChromePx": 94,
-                "svgPx": 1368,
+                "svgPx": 1557,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
@@ -847,7 +847,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 1511,
+              "scrollHeight": 1622,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -857,88 +857,88 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1376,
-              "diagramWidth": 1269,
+              "diagramWidth": 1346,
               "pageComposition": {
                 "bodyPaddingPx": 12,
                 "headerPx": 52,
                 "diagramChromePx": 78,
-                "svgPx": 1368,
+                "svgPx": 1480,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "profile",
                     "direct"
                   ],
-                  "nodeSpanPx": 102,
-                  "spaceAboveNodesPx": 51,
+                  "nodeSpanPx": 97,
+                  "spaceAboveNodesPx": 48,
                   "spaceBelowNodesPx": 6
                 },
                 {
                   "frameId": "lane-1",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "msg",
                     "rules"
                   ],
-                  "nodeSpanPx": 78,
-                  "spaceAboveNodesPx": 63,
-                  "spaceBelowNodesPx": 18
+                  "nodeSpanPx": 74,
+                  "spaceAboveNodesPx": 60,
+                  "spaceBelowNodesPx": 17
                 },
                 {
                   "frameId": "lane-2",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 1,
                   "nodeIds": [
                     "jev"
                   ],
-                  "nodeSpanPx": 102,
-                  "spaceAboveNodesPx": 51,
+                  "nodeSpanPx": 97,
+                  "spaceAboveNodesPx": 48,
                   "spaceBelowNodesPx": 6
                 },
                 {
                   "frameId": "lane-3",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "llm",
                     "clarify"
                   ],
-                  "nodeSpanPx": 102,
-                  "spaceAboveNodesPx": 51,
+                  "nodeSpanPx": 97,
+                  "spaceAboveNodesPx": 48,
                   "spaceBelowNodesPx": 6
                 },
                 {
                   "frameId": "lane-4",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 3,
                   "nodeIds": [
                     "search",
                     "structured",
                     "series"
                   ],
-                  "nodeSpanPx": 78,
-                  "spaceAboveNodesPx": 63,
-                  "spaceBelowNodesPx": 18
+                  "nodeSpanPx": 74,
+                  "spaceAboveNodesPx": 60,
+                  "spaceBelowNodesPx": 17
                 },
                 {
                   "frameId": "lane-5",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "guard",
                     "answer"
                   ],
-                  "nodeSpanPx": 78,
-                  "spaceAboveNodesPx": 63,
-                  "spaceBelowNodesPx": 18
+                  "nodeSpanPx": 74,
+                  "spaceAboveNodesPx": 60,
+                  "spaceBelowNodesPx": 17
                 }
               ],
               "minimumProjectedNodeTextPx": 6.6,
@@ -971,7 +971,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1577,
+              "scrollHeight": 1765,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -981,16 +981,16 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1536,
-              "diagramWidth": 1269,
+              "diagramWidth": 1416,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
                 "diagramChromePx": 84,
-                "svgPx": 1368,
+                "svgPx": 1557,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
@@ -1095,7 +1095,7 @@
               "innerWidth": 1920,
               "innerHeight": 1080,
               "scrollWidth": 1920,
-              "scrollHeight": 1577,
+              "scrollHeight": 1766,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1105,16 +1105,16 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1856,
-              "diagramWidth": 1269,
+              "diagramWidth": 1416,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
                 "diagramChromePx": 84,
-                "svgPx": 1368,
+                "svgPx": 1557,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
@@ -1219,7 +1219,7 @@
               "innerWidth": 2048,
               "innerHeight": 1320,
               "scrollWidth": 2048,
-              "scrollHeight": 1595,
+              "scrollHeight": 1784,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1229,16 +1229,16 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1920,
-              "diagramWidth": 1269,
+              "diagramWidth": 1416,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
                 "diagramChromePx": 94,
-                "svgPx": 1368,
+                "svgPx": 1557,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
@@ -1348,7 +1348,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 1511,
+              "scrollHeight": 1622,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1358,88 +1358,88 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1376,
-              "diagramWidth": 1269,
+              "diagramWidth": 1346,
               "pageComposition": {
                 "bodyPaddingPx": 12,
                 "headerPx": 52,
                 "diagramChromePx": 78,
-                "svgPx": 1368,
+                "svgPx": 1480,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "profile",
                     "direct"
                   ],
-                  "nodeSpanPx": 102,
-                  "spaceAboveNodesPx": 51,
+                  "nodeSpanPx": 97,
+                  "spaceAboveNodesPx": 48,
                   "spaceBelowNodesPx": 6
                 },
                 {
                   "frameId": "lane-1",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "msg",
                     "rules"
                   ],
-                  "nodeSpanPx": 78,
-                  "spaceAboveNodesPx": 63,
-                  "spaceBelowNodesPx": 18
+                  "nodeSpanPx": 74,
+                  "spaceAboveNodesPx": 60,
+                  "spaceBelowNodesPx": 17
                 },
                 {
                   "frameId": "lane-2",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 1,
                   "nodeIds": [
                     "jev"
                   ],
-                  "nodeSpanPx": 102,
-                  "spaceAboveNodesPx": 51,
+                  "nodeSpanPx": 97,
+                  "spaceAboveNodesPx": 48,
                   "spaceBelowNodesPx": 6
                 },
                 {
                   "frameId": "lane-3",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "llm",
                     "clarify"
                   ],
-                  "nodeSpanPx": 102,
-                  "spaceAboveNodesPx": 51,
+                  "nodeSpanPx": 97,
+                  "spaceAboveNodesPx": 48,
                   "spaceBelowNodesPx": 6
                 },
                 {
                   "frameId": "lane-4",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 3,
                   "nodeIds": [
                     "search",
                     "structured",
                     "series"
                   ],
-                  "nodeSpanPx": 78,
-                  "spaceAboveNodesPx": 63,
-                  "spaceBelowNodesPx": 18
+                  "nodeSpanPx": 74,
+                  "spaceAboveNodesPx": 60,
+                  "spaceBelowNodesPx": 17
                 },
                 {
                   "frameId": "lane-5",
-                  "heightPx": 159,
+                  "heightPx": 151,
                   "nodeCount": 2,
                   "nodeIds": [
                     "guard",
                     "answer"
                   ],
-                  "nodeSpanPx": 78,
-                  "spaceAboveNodesPx": 63,
-                  "spaceBelowNodesPx": 18
+                  "nodeSpanPx": 74,
+                  "spaceAboveNodesPx": 60,
+                  "spaceBelowNodesPx": 17
                 }
               ],
               "minimumProjectedNodeTextPx": 6.6,
@@ -1472,7 +1472,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1577,
+              "scrollHeight": 1765,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1482,16 +1482,16 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1536,
-              "diagramWidth": 1269,
+              "diagramWidth": 1416,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
                 "diagramChromePx": 84,
-                "svgPx": 1368,
+                "svgPx": 1557,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
@@ -1596,7 +1596,7 @@
               "innerWidth": 1920,
               "innerHeight": 1080,
               "scrollWidth": 1920,
-              "scrollHeight": 1577,
+              "scrollHeight": 1766,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1606,16 +1606,16 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1856,
-              "diagramWidth": 1269,
+              "diagramWidth": 1416,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
                 "diagramChromePx": 84,
-                "svgPx": 1368,
+                "svgPx": 1557,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
@@ -1720,7 +1720,7 @@
               "innerWidth": 2048,
               "innerHeight": 1320,
               "scrollWidth": 2048,
-              "scrollHeight": 1595,
+              "scrollHeight": 1784,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1730,16 +1730,16 @@
               "readerFit": "width-first",
               "ok": true,
               "readerWidth": 1920,
-              "diagramWidth": 1269,
+              "diagramWidth": 1416,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
                 "diagramChromePx": 94,
-                "svgPx": 1368,
+                "svgPx": 1557,
                 "cardsPx": 0,
-                "viewBoxHeight": 912
+                "viewBoxHeight": 1038
               },
-              "viewBoxWidth": 846,
+              "viewBoxWidth": 944,
               "workflowLanes": [
                 {
                   "frameId": "lane-0",
@@ -1845,7 +1845,6 @@
           "contactSheet": null
         },
         "sidecars": {
-          "directory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\hr-jev1",
           "receipt": "herramientas-router.browser-check.json",
           "files": []
         }
@@ -1858,22 +1857,24 @@
   },
   "diagnostics": [],
   "evidence": {
-    "receipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\hr-jev1\\herramientas-router.finalize.json",
-    "summaryReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\hr-jev1\\herramientas-router.finalize-summary.json",
-    "browserCheckReceipt": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\hr-jev1\\herramientas-router.browser-check.json"
+    "receipt": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.finalize.json",
+    "summaryReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.finalize-summary.json",
+    "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-11-21T13:45:51.256Z",
-  "durationMs": 82181,
+  "finishedAt": "2026-11-24T19:44:51.657Z",
+  "durationMs": 4490,
   "update": {
-    "status": "unavailable",
-    "installedVersion": null,
-    "availableVersion": null,
-    "releaseNotes": null,
-    "checkedAt": null,
-    "source": null,
-    "noticeRequired": false,
-    "noticeText": null,
-    "reason": "timeout"
+    "status": "update_available",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.3.1",
+    "releaseNotes": "https://github.com/tt-a1i/archify/releases/tag/v3.3.1",
+    "severity": "normal",
+    "summary": "Polishes automatic Architecture layout, spine labels, crossing reduction, and Classic styling, and deduplicates cited Explainer files.",
+    "checkedAt": "2026-11-24T19:44:14.431Z",
+    "source": "cache",
+    "noticeRequired": true,
+    "noticeText": "Archify update: 3.2.0 → 3.3.1. A previous check at 2026-11-24T19:44:14.431Z found a newer release. Release notes: https://github.com/tt-a1i/archify/releases/tag/v3.3.1. Would you like me to update Archify?",
+    "eventKey": "archify@sha256:b92b4d55446966fd74e5338a45d6de9a7a1b194420cd5eb14d2cdc39f1053b80"
   }
 }

@@ -38,8 +38,9 @@ WRITE_TOOLS: tuple[str, ...] = (
     "save_profile",
     "export_conversation",
     "request_human_contact",
+    "save_production_proposal",  # spec 025: solo el perfil planificador lo ve
 )
-PreferenceKey = Literal["response_format", "topics_of_interest", "language"]
+PreferenceKey = Literal["response_format", "topics_of_interest", "language", "audience"]
 EXPORT_PREVIEW_TURNS = 20
 
 TOOL_DESCRIPTIONS = {
@@ -51,6 +52,11 @@ TOOL_DESCRIPTIONS = {
     "request_human_contact": (
         "Registrar una solicitud para que una persona de Manuelita atienda un tema, con el "
         "canal preferido del usuario"
+    ),
+    # Spec 025: guarda el plan del hilo (last_plan), nunca cifras escritas por el modelo.
+    "save_production_proposal": (
+        "Guardar la propuesta de programación de producción calculada en esta conversación "
+        "para revisión del equipo de planta"
     ),
     # Spec 018: no es herramienta del modelo; la propone el nodo de identidad.
     "remember_client": "Recordar al visitante por su correo para reconocerlo en próximas visitas",
@@ -64,7 +70,9 @@ class ForgetMemoryArgs(BaseModel):
 class SavePreferenceArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    key: PreferenceKey = Field(description="response_format, topics_of_interest o language.")
+    key: PreferenceKey = Field(
+        description="response_format, topics_of_interest, language o audience (perfil)."
+    )
     value: str = Field(min_length=1, max_length=200, description="Valor de la preferencia.")
 
 
@@ -113,6 +121,19 @@ class RequestHumanContactArgs(BaseModel):
     )
 
 
+class SaveProposalArgs(BaseModel):
+    """Spec 025: el plan se toma del hilo (``last_plan``); aquí solo viaja su id."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    plan_id: str = Field(
+        pattern=r"^p-[0-9a-f]{8}$", description="plan_id del último plan calculado."
+    )
+    note: str | None = Field(
+        default=None, max_length=200, description="Nota opcional para el equipo."
+    )
+
+
 ARG_SCHEMAS: dict[str, type[BaseModel]] = {
     "forget_memory": ForgetMemoryArgs,
     "save_preference": SavePreferenceArgs,
@@ -120,6 +141,7 @@ ARG_SCHEMAS: dict[str, type[BaseModel]] = {
     "export_conversation": ExportConversationArgs,
     "remember_client": RememberClientArgs,
     "request_human_contact": RequestHumanContactArgs,
+    "save_production_proposal": SaveProposalArgs,
 }
 
 
@@ -345,6 +367,46 @@ def register_contact_request(
     return record
 
 
+PROPOSALS_FILE = Path("planning") / "proposals.jsonl"
+STALE_PROPOSAL = "Esa propuesta ya no está en esta conversación; vuelve a calcularla."
+
+
+def save_proposal(
+    args: dict[str, Any],
+    *,
+    user_id: str,
+    last_plan: dict[str, Any] | None,
+    state_dir: Path | None = None,
+) -> str:
+    """Spec 025 (R13): añade el plan del hilo a ``planning/proposals.jsonl`` tras el «SÍ».
+
+    El plan sale del estado del hilo, no de los argumentos: el modelo no puede alterar las
+    cifras guardadas. Nunca toca sistemas reales de planta.
+    """
+    if not last_plan or last_plan.get("plan_id") != args["plan_id"]:
+        return STALE_PROPOSAL
+    directory = state_dir if state_dir is not None else resolve_state_dir()
+    path = directory / PROPOSALS_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    plan = {key: value for key, value in last_plan.items() if key != "plan_card"}
+    record = {
+        "version": "1.0",
+        "plan_id": args["plan_id"],
+        "user_id": user_id,
+        "created_at": datetime.now(UTC).isoformat(),
+        "note": redact_pii(args["note"].strip()) if args.get("note") else None,
+        "plan": plan,
+        "approved_by": "user",
+        "synthetic": True,
+    }
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+    return (
+        f"Guardé la propuesta {args['plan_id']} para revisión del equipo de planta "
+        "(datos sintéticos de demostración). El agente recomienda; el equipo de planta decide."
+    )
+
+
 def contact_reply(record: dict[str, Any]) -> str:
     from .tools_utility import channels_text
 
@@ -364,9 +426,12 @@ def execute_action(
     user_id: str,
     turns: Sequence[dict[str, Any]],
     ttl_days: int,
+    last_plan: dict[str, Any] | None = None,
 ) -> str:
     """Ejecuta una acción ya aprobada y devuelve el mensaje para el usuario."""
     clean = validate_args(tool, args)
+    if tool == "save_production_proposal":
+        return save_proposal(clean, user_id=user_id, last_plan=last_plan)
     if tool == "request_human_contact":
         return contact_reply(register_contact_request(clean, user_id=user_id))
     if tool == "export_conversation":

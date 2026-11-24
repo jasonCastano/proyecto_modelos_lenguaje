@@ -1,0 +1,73 @@
+# Perfiles de la plataforma de agentes de Manuelita (spec 025, idea 7; contracts/profiles.md).
+# La lee src/proyecto_modelos_lenguaje/agent/profiles.py. `tools` es la lista blanca de herramientas de
+# LECTURA del catálogo; las de escritura comunes (memoria, exportar, contacto) se ofrecen en todos los
+# perfiles y `save_production_proposal` solo en `planificador`. El foco de cada perfil está en
+# prompts/profiles.md. `triggers` son expresiones regulares sobre el texto sin tildes ni mayúsculas.
+
+[profiles]
+enabled = true            # false: solo existe «visitante» y la ruta planning no se activa (respaldo de la demo)
+default = "visitante"
+
+[[profile]]
+key = "visitante"
+label = "Visitante"
+requires_authorization = false
+triggers = []
+tools = [
+    "search_documents", "query_structured", "aggregate_series", "list_indicators",
+    "compare_indicator", "sustainability_lookup", "list_business_units", "list_company_entities",
+    "get_official_channels", "faq_lookup", "summarize_topic", "latest_news", "get_fragment",
+    "calculate", "get_my_profile",
+]
+
+[[profile]]
+key = "cliente"
+label = "Cliente B2B"
+requires_authorization = false
+triggers = [
+    "\\b(compro|compramos|comprar|cotizacion|cotizar|distribuidor|cliente)\\b.*\\b(azucar|etanol|alcohol|aceite|glicerina|biodiesel|producto|empresa)\\b",
+    "\\bsoy cliente\\b",
+]
+tools = [
+    "search_documents", "list_company_entities", "list_business_units", "faq_lookup",
+    "get_official_channels", "get_fragment", "summarize_topic", "calculate", "get_my_profile",
+]
+
+[[profile]]
+key = "proveedor"
+label = "Proveedor"
+requires_authorization = false
+triggers = [
+    "\\bsoy (un |una )?(proveedor|proveedora|cultivador|cultivadora|canicultor|canicultora|agricultor|agricultora|palmicultor|palmicultora)\\b",
+    "\\b(proveo|le vendo|les vendo|vendo) (cana|fruta|fruto|racimos)\\b",
+]
+tools = [
+    "search_documents", "sustainability_lookup", "faq_lookup", "get_official_channels",
+    "get_fragment", "summarize_topic", "calculate", "get_my_profile",
+]
+
+[[profile]]
+key = "colaborador"
+label = "Colaborador"
+requires_authorization = false
+triggers = [
+    "\\b(trabajo en|trabajo para|soy colaborador|soy colaboradora|soy empleado|soy empleada) (de )?manuelita\\b",
+]
+tools = [
+    "search_documents", "faq_lookup", "get_official_channels", "get_fragment", "summarize_topic",
+    "latest_news", "calculate", "get_my_profile",
+]
+
+[[profile]]
+key = "planificador"
+label = "Planificador industrial"
+requires_authorization = true
+triggers = []
+tools = [
+    "search_documents", "query_structured", "aggregate_series", "list_indicators",
+    "compare_indicator", "sustainability_lookup", "list_business_units", "list_company_entities",
+    "get_official_channels", "faq_lookup", "summarize_topic", "latest_news", "get_fragment",
+    "calculate", "get_my_profile",
+    "get_plant_state", "get_commitments", "search_operating_procedures",
+    "simulate_production_scenario", "optimize_production_plan",
+]

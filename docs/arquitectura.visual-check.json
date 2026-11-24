@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "pending",
   "provenance": "current",
-  "deliveryReceiptId": "bc4dac16-ee4f-4de5-b2f5-a8cc9889196e",
+  "deliveryReceiptId": "7a45a5a4-371b-415e-b537-d22c68f38f76",
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "dd326d613f5af70dd5ff9fead1e847c436e852bc28cb85042a42b6e6a320a5cd",
-    "bytes": 863021
+    "sha256": "cd8920a34e6b687b0793c5ec580b97bb9f9b1d26102769f5a069d8829af0cb3d",
+    "bytes": 866231
   },
   "state": {
     "detail": "read",
@@ -41,8 +41,8 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1303,
-        "diagramWidth": 1273,
+        "readerWidth": 1312,
+        "diagramWidth": 1282,
         "pageComposition": {
           "bodyPaddingPx": 12,
           "headerPx": 52,
@@ -51,7 +51,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -91,8 +91,8 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1361,
-        "diagramWidth": 1331,
+        "readerWidth": 1371,
+        "diagramWidth": 1341,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
@@ -101,7 +101,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -141,8 +141,8 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1497,
-        "diagramWidth": 1467,
+        "readerWidth": 1508,
+        "diagramWidth": 1478,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
@@ -151,7 +151,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -192,7 +192,7 @@
         "readerFit": "intrinsic-height",
         "ok": true,
         "readerWidth": 1920,
-        "diagramWidth": 1602,
+        "diagramWidth": 1614,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 68,
@@ -201,7 +201,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -294,8 +294,8 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1303,
-        "diagramWidth": 1273,
+        "readerWidth": 1312,
+        "diagramWidth": 1282,
         "pageComposition": {
           "bodyPaddingPx": 12,
           "headerPx": 52,
@@ -304,7 +304,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -344,8 +344,8 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1361,
-        "diagramWidth": 1331,
+        "readerWidth": 1371,
+        "diagramWidth": 1341,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
@@ -354,7 +354,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -394,8 +394,8 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1497,
-        "diagramWidth": 1467,
+        "readerWidth": 1508,
+        "diagramWidth": 1478,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
@@ -404,7 +404,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -445,7 +445,7 @@
         "readerFit": "intrinsic-height",
         "ok": true,
         "readerWidth": 1920,
-        "diagramWidth": 1602,
+        "diagramWidth": 1614,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 68,
@@ -454,7 +454,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -499,8 +499,8 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1303,
-        "diagramWidth": 1273,
+        "readerWidth": 1312,
+        "diagramWidth": 1282,
         "pageComposition": {
           "bodyPaddingPx": 12,
           "headerPx": 52,
@@ -509,7 +509,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -549,8 +549,8 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1361,
-        "diagramWidth": 1331,
+        "readerWidth": 1371,
+        "diagramWidth": 1341,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
@@ -559,7 +559,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -599,8 +599,8 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1497,
-        "diagramWidth": 1467,
+        "readerWidth": 1508,
+        "diagramWidth": 1478,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 60,
@@ -609,7 +609,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -650,7 +650,7 @@
         "readerFit": "intrinsic-height",
         "ok": true,
         "readerWidth": 1920,
-        "diagramWidth": 1602,
+        "diagramWidth": 1614,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 68,
@@ -659,7 +659,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -704,8 +704,8 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1303,
-        "diagramWidth": 1273,
+        "readerWidth": 1312,
+        "diagramWidth": 1282,
         "pageComposition": {
           "bodyPaddingPx": 12,
           "headerPx": 52,
@@ -714,7 +714,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -755,8 +755,8 @@
         "readerOverflow": null,
         "readerFit": "intrinsic-height",
         "ok": true,
-        "readerWidth": 1303,
-        "diagramWidth": 1273,
+        "readerWidth": 1312,
+        "diagramWidth": 1282,
         "pageComposition": {
           "bodyPaddingPx": 12,
           "headerPx": 52,
@@ -765,7 +765,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -807,7 +807,7 @@
         "readerFit": "intrinsic-height",
         "ok": true,
         "readerWidth": 1920,
-        "diagramWidth": 1602,
+        "diagramWidth": 1614,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 68,
@@ -816,7 +816,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -858,7 +858,7 @@
         "readerFit": "intrinsic-height",
         "ok": true,
         "readerWidth": 1920,
-        "diagramWidth": 1602,
+        "diagramWidth": 1614,
         "pageComposition": {
           "bodyPaddingPx": 64,
           "headerPx": 68,
@@ -867,7 +867,7 @@
           "cardsPx": 0,
           "viewBoxHeight": 626
         },
-        "viewBoxWidth": 1068,
+        "viewBoxWidth": 1076,
         "minimumProjectedNodeTextPx": 7,
         "minimumProjectedNonEdgeTextPx": 7,
         "minimumProjectedEdgeTextPx": 8,
@@ -896,7 +896,7 @@
     "contactSheet": "arquitectura.visual-check.html"
   },
   "sidecars": {
-    "directory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc\\arquitectura-visual",
+    "directory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\vc_arquitectura",
     "receipt": "arquitectura.visual-check.json",
     "contactSheet": "arquitectura.visual-check.html",
     "files": [
@@ -906,23 +906,23 @@
         "file": "arquitectura.visual-check.html"
       },
       {
-        "sha256": "f827d7fdc269d6b692e7c62ecbf688f1c02d2df8db1b2b52f7fa3f350316c8b5",
-        "bytes": 136473,
+        "sha256": "d3594c697c9fb2fcd1f17a5d2125b64e4823491e8f43980ddb044bdd893a8314",
+        "bytes": 142019,
         "file": "arquitectura.visual-check.1440x900.light.png"
       },
       {
-        "sha256": "c46bf7903b444e4be19fe5e97ce0d1fe7d2bbff229ec4281d1f5c30128df37e3",
-        "bytes": 152487,
+        "sha256": "c3e2293b46634d6c8f3c302adf7d0c7dde9ec35e9046c94e8f1b9b76893826f6",
+        "bytes": 158697,
         "file": "arquitectura.visual-check.1440x900.dark.png"
       },
       {
-        "sha256": "e3a31a3657d1fe972a4efc209147136bb2c4db09cb2603b4ea337f7bf2116a10",
-        "bytes": 167494,
+        "sha256": "31c06058b2d11d00e55c8b5ef219de0926071be28e42cf0dd4ea9fdda98714b3",
+        "bytes": 172981,
         "file": "arquitectura.visual-check.2048x1320.light.png"
       },
       {
-        "sha256": "68353f8a7b3d9393d304d0392466bab24f084057220b248ddfb9ddd2071e4543",
-        "bytes": 185365,
+        "sha256": "2ea7719e3df7641fc1e9172282c068b7d2d140a3e40e2d0244e599be7c17315a",
+        "bytes": 191986,
         "file": "arquitectura.visual-check.2048x1320.dark.png"
       }
     ]

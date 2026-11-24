@@ -95,6 +95,7 @@ def turn_record(
         "gate_calls": metrics.get("gate_calls", 0),
         # Spec 022 (FR-021): estado, ruta, confianza, latencia y costo del gatekeeper; sin texto.
         "jev": turn.get("jev"),
+        "profile": turn.get("profile", "visitante"),  # spec 025
         "langsmith": tracing_enabled(),
     }
 

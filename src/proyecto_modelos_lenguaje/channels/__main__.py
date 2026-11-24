@@ -2,6 +2,8 @@
 
     uv run python -m proyecto_modelos_lenguaje.channels simulate --sender +570000000001 --text hola
     uv run python -m proyecto_modelos_lenguaje.channels simulate --sender +570000000001 --kind image
+    uv run python -m proyecto_modelos_lenguaje.channels simulate --sender +570000000001 \\
+        --profile planificador --text "Tenemos 15 % menos caña esta semana"   # spec 025
 
 Usa ``VALERIA_CHANNEL_TOKEN`` del ``.env`` y llama ``POST /api/channels/messages`` como lo haría el
 plugin ``valeria-bridge``: sirve para ensayar sin teléfono y para la prueba de carga
@@ -44,6 +46,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="N remitentes distintos a la vez (prueba de carga, SC-002)",
     )
     simulate.add_argument("--timeout", type=float, default=60.0)
+    simulate.add_argument(
+        "--profile",
+        default=None,
+        help="spec 025: envía antes «/perfil <clave>» desde el mismo remitente",
+    )
     return parser
 
 
@@ -54,7 +61,22 @@ def _sender(base: str, index: int) -> str:
     return f"+{digits[:-3]}{(int(digits[-3:]) + index) % 1000:03d}"
 
 
+def _post_profile(args: argparse.Namespace, url: str, token: str, index: int) -> None:
+    """Spec 025: activa el perfil con ``/perfil`` antes del mensaje (como un usuario real)."""
+    body = {
+        "channel": args.channel,
+        "message_id": uuid.uuid4().hex,
+        "sender": _sender(args.sender, index),
+        "kind": "text",
+        "text": f"/perfil {args.profile}",
+        "received_at": datetime.now(UTC).isoformat(),
+    }
+    httpx.post(url, json=body, headers={"X-Channel-Token": token}, timeout=args.timeout)
+
+
 def _send(args: argparse.Namespace, url: str, token: str, index: int) -> dict:
+    if getattr(args, "profile", None):
+        _post_profile(args, url, token, index)
     body = {
         "channel": args.channel,
         "message_id": args.message_id if index == 0 and args.message_id else uuid.uuid4().hex,

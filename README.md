@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1388%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-1917%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/M%C3%B3dulo%202-v0.2.0-brightgreen)](CONSTITUTION.md)
 
@@ -25,6 +25,15 @@ Universidad Autónoma de Occidente, 2026-2S.
 **Docente**: Jan Polanco Velasco.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
+
+> **Producto final (constitución v2.0.0, spec 025)**: Valer-IA se reenfoca en la **idea 7** de
+> [`docs/alucinaciones/ideas_negocio_ia_manuelita.md`](docs/alucinaciones/ideas_negocio_ia_manuelita.md). Es una
+> **plataforma de agentes de Manuelita** con perfiles: visitante, cliente B2B, proveedor, colaborador y
+> planificador industrial. El planificador recomienda cómo repartir la caña entre azúcar, etanol y energía con un
+> simulador y un optimizador sobre datos sintéticos declarados. Requerimientos en
+> [`specs/025-agentes-manuelita-idea7/`](specs/025-agentes-manuelita-idea7/spec.md) y
+> [ADR 0029](docs/decisions/0029-plataforma-agentes-idea7.md); estado frente a la rúbrica del Módulo 3 en
+> [`docs/rubrica_modulo3.md`](docs/rubrica_modulo3.md) §7.
 
 > **Estado al 2026-11-21 (constitución v1.14.0)**: después de la sustentación del Módulo 2 se sumaron:
 > - **Voz** (spec 016) y **avatar con sincronización de labios** (spec 017), ambos locales.
@@ -210,12 +219,23 @@ de interrupción Human-in-the-Loop:
 
 *Diagrama interactivo (Archify): [`docs/diagramas/memoria.html`](docs/diagramas/memoria.html).*
 
-**Herramientas y router**. Las reglas deciden sin llamar al modelo; el gatekeeper Jev (opcional, desactivado por
-defecto) decide si su probabilidad llega a 0,75; si no, decide el router LLM:
+**Herramientas, perfiles y router**. Las reglas deciden sin llamar al modelo; el gatekeeper Jev (opcional,
+desactivado por defecto) decide si su probabilidad llega a 0,75; si no, decide el router LLM. El perfil del turno
+(spec 025) limita qué herramientas se ofrecen, y la ruta `planning` (solo reglas, solo el planificador
+autorizado) lleva al carril de planificación del final del diagrama:
 
-[![Herramientas y router](docs/capturas/diagramas/herramientas-router.png)](docs/diagramas/herramientas-router.html)
+[![Herramientas, perfiles y router](docs/capturas/diagramas/herramientas-router.png)](docs/diagramas/herramientas-router.html)
 
 *Diagrama interactivo (Archify): [`docs/diagramas/herramientas-router.html`](docs/diagramas/herramientas-router.html).*
+
+**Planificación industrial (spec 025)**. El planificador autorizado pide un programa de producción; el agente
+consulta el estado de la planta y los compromisos (datos **sintéticos**), optimiza con programación lineal y
+responde con el plan, la restricción que lo limita y una alternativa. Un validador comprueba que cada cifra salga
+de las herramientas; si no, muestra el plan calculado. Guardar la propuesta exige «SÍ»:
+
+[![Planificación industrial](docs/capturas/diagramas/planificacion.png)](docs/diagramas/planificacion.html)
+
+*Diagrama interactivo (Archify): [`docs/diagramas/planificacion.html`](docs/diagramas/planificacion.html).*
 
 **Trazas**: cada turno lleva `run_name`, etiquetas y metadatos para LangSmith (`LANGSMITH_TRACING`,
 `LANGSMITH_API_KEY` y `LANGSMITH_PROJECT`). También se registra como JSON en
@@ -241,8 +261,8 @@ el bloque `jev` con estado, confianza, latencia y costo del gatekeeper).
 
 Valer-IA Caña responde por **WhatsApp** desde un número real, a través del gateway **OpenClaw** que corre como
 servicio en un PC del equipo. Es **un solo agente**: el plugin propio `valeria-bridge` lleva cada mensaje
-admitido (allowlist E.164 o emparejamiento) al mismo `ChatService` de la web, con su router, memoria, 20
-herramientas, blindaje, aprobación humana y citas. Si el backend no responde en 45 s, contesta el agente
+admitido (allowlist E.164 o emparejamiento) al mismo `ChatService` de la web, con su router, perfiles, memoria,
+26 herramientas, blindaje, aprobación humana y citas. Si el backend no responde en 45 s, contesta el agente
 nativo de OpenClaw con el servidor MCP propio `valeria-tools` (solo lectura): el **modo degradado**.
 Decisión: [ADR 0028](docs/decisions/0028-openclaw-whatsapp-puente.md).
 
@@ -253,11 +273,12 @@ flowchart LR
     GW -->|"hook before_dispatch"| BR["Plugin valeria-bridge<br/>(TypeScript)"]
     BR -->|"POST /api/channels/messages<br/>X-Channel-Token"| API["FastAPI<br/>channels/: seudónimo, hilo,<br/>SÍ/NO, formato, bitácora"]
     API --> CS["ChatService / LangGraph<br/>router reglas → Jev → LLM<br/>SqliteSaver + SqliteStore"]
-    CS --> CAT["Catálogo de 20 herramientas<br/>15 lectura · 5 escritura con HITL"]
+    CS --> CAT["Catálogo de 26 herramientas<br/>20 lectura · 6 escritura con HITL<br/>filtradas por perfil"]
+    CAT --> PL["Planificación (spec 025)<br/>LP sobre datos sintéticos"]
     CAT --> QD[("Qdrant servidor<br/>HNSW + híbrida")]
     CS --> DS["DeepSeek API"]
     BR -.->|"backend caído o > 45 s"| NA["Agente nativo OpenClaw<br/>deepseek-flash → deepseek-v4-pro"]
-    NA --> MCP["MCP valeria-tools<br/>(15 de lectura)"]
+    NA --> MCP["MCP valeria-tools<br/>(18 de lectura; sin simular ni optimizar)"]
     MCP --> QD
 ```
 
@@ -271,7 +292,7 @@ flowchart LR
 | Servidor MCP | `src/proyecto_modelos_lenguaje/mcp_server.py` (`make mcp`) |
 
 ```bash
-uv run python -m proyecto_modelos_lenguaje.agent tools            # catálogo de 20 con esquemas
+uv run python -m proyecto_modelos_lenguaje.agent tools            # catálogo de 26 con esquemas
 uv run pml channels simulate --sender +570000000001 --text "hola" # canal sin teléfono (backend local)
 uv run pml corpus rebuild --from bronze --json                    # corpus de punta a punta, sin tocar data/
 uv run pml ops check                                              # prueba de 3 minutos del Anuncio 007
@@ -296,7 +317,8 @@ fuente tipada es un JSON versionado y el HTML no se edita a mano. Las imágenes 
 | Grafo del agente (LangGraph) | `workflow` | [`docs/diagramas/grafo-agente.json`](docs/diagramas/grafo-agente.json) | [`grafo-agente.html`](docs/diagramas/grafo-agente.html) |
 | Nodo del agente desplegado | `workflow` | [`docs/diagramas/nodo-agente.json`](docs/diagramas/nodo-agente.json) | [`nodo-agente.html`](docs/diagramas/nodo-agente.html) |
 | Memoria: checkpointer frente a Store | `architecture` | [`docs/diagramas/memoria.json`](docs/diagramas/memoria.json) | [`memoria.html`](docs/diagramas/memoria.html) |
-| Herramientas y router | `workflow` | [`docs/diagramas/herramientas-router.json`](docs/diagramas/herramientas-router.json) | [`herramientas-router.html`](docs/diagramas/herramientas-router.html) |
+| Herramientas, perfiles y router | `workflow` | [`docs/diagramas/herramientas-router.json`](docs/diagramas/herramientas-router.json) | [`herramientas-router.html`](docs/diagramas/herramientas-router.html) |
+| Planificación industrial (spec 025) | `workflow` | [`docs/diagramas/planificacion.json`](docs/diagramas/planificacion.json) | [`planificacion.html`](docs/diagramas/planificacion.html) |
 | Trazas de un turno | `sequence` | [`docs/diagramas/trazas.json`](docs/diagramas/trazas.json) | [`trazas.html`](docs/diagramas/trazas.html) |
 
 Regenerar y validar (con la skill Archify instalada; cambiar el tipo y la ruta según la tabla):
@@ -316,8 +338,9 @@ Si la copia global de la skill está incompleta, clona
 [`tt-a1i/archify`](https://github.com/tt-a1i/archify) y usa `archify/bin/archify.mjs`.
 
 El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → Qdrant, recuperación híbrida y
-tabla estructurada → enrutador (reglas, gatekeeper Jev opcional y LLM, con ruta mixta) y grafos LangGraph
-(cadena, agente, HITL) → experiencia web y memoria (hilos, perfil y preferencias)**. En GitHub, el enlace abre el código del HTML; para verlo interactivo,
+tabla estructurada → enrutador (reglas, perfil, gatekeeper Jev opcional y LLM, con ruta mixta) y grafos
+LangGraph (cadena, agente, HITL, perfiles) → experiencia web y memoria (hilos, perfil y preferencias)**, más la
+**planificación industrial** (programación lineal sobre datos sintéticos) que alimenta al agente. En GitHub, el enlace abre el código del HTML; para verlo interactivo,
 clona el repositorio y abre `docs/arquitectura.html` en el navegador.
 
 ## Capturas
@@ -379,6 +402,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Atención de call center (spec 019) | ✅ | 36 casos reales: sin hechos externos, crisis con Línea 106 y 123, 0 registros con datos personales; `docs/evaluacion_atencion.md`, ADR 0023 |
 | Conversación guiada (spec 020) | ✅ | Respuestas redactadas y revisadas; similitud máxima en un hilo ≤ 0,5 frente a 1,0 con guiones; `docs/evaluacion_conversacion.md`, ADR 0024 |
 | Gatekeeper System One Jev (spec 022) | 🟡 | Implementado y probado: español 24/24, 73–77 % menos llamadas al LLM del enrutador, crisis 100 %; exactitud 93,2 % frente a 97,7 % ⇒ desactivado por defecto; `docs/evaluacion_jev.md`, ADR 0026 |
+| Plataforma de agentes y planificación (spec 025) | 🟡 | Cinco perfiles y planificador industrial sobre datos sintéticos: optimizador ≥ 99 % del óptimo de referencia en 10/10, 0 violaciones, 2/2 sin solución detectados; con DeepSeek 12/12 con secuencia completa y etiqueta, p95 10,8 s; perfiles 19/20 con DeepSeek; herramientas 90,7 % y 86,0 % en dos corridas (sin regresión clara frente a 88,4 %); `docs/evaluacion_planificacion.md`, `docs/evaluacion_perfiles.md`, ADR 0029. Falta la verificación por WhatsApp y aprobar la enmienda 2.0.0 |
 | Dictado por voz (spec 023) | ✅ | faster-whisper `base` local: WER 0,048, nombres propios 97 %, p90 1,1 s (clips de hasta 10 s), 0 textos en silencio o ruido; `docs/evaluacion_stt.md`, ADR 0027 |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
 | CI y Pull Requests | 🟡 | 72 PRs fusionados al 2026-11-21 (63 del equipo y 9 de Dependabot, anteriores a la v1.6.0); 13 PRs del equipo tienen aprobación formal y 17 alguna revisión. CI con `test`, `web` y `autoria` |
@@ -862,6 +886,24 @@ Ejecución `variants-real-2026-11-14` con DeepSeek y el código vigente, 44 cons
 La **cadena** es la variante por defecto: más rápida y barata. El **agente** recupera mejor la evidencia esperada
 a costa de 1,6 veces más llamadas y 2,6 veces más tokens.
 
+### Plataforma de agentes y planificación industrial (spec 025)
+
+Valer-IA atiende con un **perfil** por público (idea 7 de [`docs/alucinaciones/ideas_negocio_ia_manuelita.md`](docs/alucinaciones/ideas_negocio_ia_manuelita.md)): visitante, cliente B2B, proveedor, colaborador y planificador industrial. Cada perfil es una lista blanca de herramientas (`config/profiles.toml`) y un foco en el prompt (`prompts/profiles.md`); el agente, el enrutador, la memoria y el blindaje son los mismos.
+
+- **Elegir el perfil**: en WhatsApp, `/perfil` lista los perfiles y `/perfil proveedor` (o `b2b`, `colaborador`…) lo activa en el hilo; en la vista técnica de la web, el selector «Perfil». Si la persona se presenta («soy proveedor de caña…»), el agente la atiende con ese perfil y ofrece recordarlo: «recuerda mi perfil» lo guarda con «SÍ» (preferencia `audience`) y `/olvidar` lo borra.
+- **Planificador industrial** (solo autorizados: `VALERIA_PLANNERS` con seudónimos, `MANUELITA_PLANNER_WEB=1` para la vista técnica o `MANUELITA_PLANNER_OPEN=1` solo en la jornada). Ante «Tenemos 15 % menos caña esta semana. ¿Cómo cumplimos azúcar, etanol y energía?», el agente consulta el estado de la planta y los compromisos, optimiza con programación lineal (`scipy`, HiGHS) y responde con el plan, la restricción que lo limita, una alternativa y los supuestos. Las cifras salen de las herramientas; si el modelo escribe un número que no está en ellas, se muestra el plan calculado. «guarda esta propuesta» la guarda con «SÍ» en `$MANUELITA_STATE_DIR/planning/proposals.jsonl`. **Los datos son sintéticos** (`data/synthetic/planificacion/v1/`, ficha propia): demuestran la capacidad, no la operación real de Manuelita.
+
+```bash
+uv run python scripts/generate_planning_data.py --seed 2026 --version v1 --check   # datos sintéticos
+uv run python -m proyecto_modelos_lenguaje.agent planning --scenario '{"cane_delta_pct": -15}'
+uv run python -m proyecto_modelos_lenguaje.agent planning-eval --mode direct        # SC-001, sin LLM
+uv run python -m proyecto_modelos_lenguaje.agent planning-eval --mode real --write-docs
+uv run python -m proyecto_modelos_lenguaje.agent profiles-eval --mode real --write-docs
+uv run pml channels simulate --sender +570000000001 --profile planificador --text "Tenemos 15 % menos caña"
+```
+
+Requerimientos: [`specs/025-agentes-manuelita-idea7/`](specs/025-agentes-manuelita-idea7/spec.md) · Decisión: [ADR 0029](docs/decisions/0029-plataforma-agentes-idea7.md) · Resultados: [`docs/evaluacion_planificacion.md`](docs/evaluacion_planificacion.md), [`docs/evaluacion_planificacion_directa.md`](docs/evaluacion_planificacion_directa.md) y [`docs/evaluacion_perfiles.md`](docs/evaluacion_perfiles.md).
+
 ### Experiencia web y API
 
 La entrada actual es una página React servida por FastAPI:
@@ -1054,6 +1096,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 
 ## Limitaciones conocidas
 
+- El planificador industrial (spec 025) usa **datos sintéticos**: su plan demuestra la capacidad, pero no dice nada de la operación real de Manuelita. Un piloto real requiere el ERP y los históricos de planta.
 - El corpus activo es de 557 artefactos; 26.347 fueron retirados por no ser relevantes y purgados el
   2026-11-13 (`pml curate purge --run 2026-10-curation-01`): ya no se pueden restaurar.
 - La purga liberó 8,93 GB; el total de datos quedó en 0,59 GB. El catálogo conserva la auditoría.
@@ -1160,7 +1203,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Rúbrica de sustentación del Módulo 3: cumplimiento y guion](docs/rubrica_modulo3.md)
 - [Guía de despliegue (PC servidor, OpenClaw y WhatsApp)](docs/despliegue.md)
 - [Manual de uso por WhatsApp para invitados](docs/manual_whatsapp.md)
-- [Catálogo de las 20 herramientas](docs/herramientas.md) ·
+- [Catálogo de las 26 herramientas](docs/herramientas.md) ·
   [evaluación de herramientas](docs/evaluacion_herramientas.md)
 - [Rúbrica de sustentación del Módulo 2: cumplimiento y guion](docs/rubrica_modulo2.md)
 - [Política de memoria y privacidad](docs/memoria.md)
@@ -1172,6 +1215,9 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Evaluación de la atención de Valer-IA](docs/evaluacion_atencion.md)
 - [Evaluación de la conversación guiada](docs/evaluacion_conversacion.md)
 - [Evaluación del gatekeeper System One (Jev)](docs/evaluacion_jev.md)
+- [Evaluación del agente de planificación industrial](docs/evaluacion_planificacion.md) y [del optimizador frente al óptimo de referencia](docs/evaluacion_planificacion_directa.md)
+- [Evaluación de los perfiles de la plataforma](docs/evaluacion_perfiles.md)
+- [Ideas de negocio con IA (idea 7: producto final)](docs/alucinaciones/ideas_negocio_ia_manuelita.md)
 - [Evaluación del Módulo 1 (40 preguntas)](docs/evaluacion_modulo1.md)
 - [Calificación humana a ciegas: Módulo 1](docs/calificacion_m1/INSTRUCCIONES.md) y
   [Módulo 2](docs/calificacion_m2/INSTRUCCIONES.md)
@@ -1221,7 +1267,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 
 ### Fase 3 — Módulo 3: productización y despliegue (40 %)
 
-Spec 024; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/rubrica_modulo3.md)).
+Specs 024 y 025; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/rubrica_modulo3.md)).
 
 - [x] Catálogo único de 20 herramientas tipadas, plan visible en la traza y `GET /api/tools`.
 - [x] Puente OpenClaw → backend (`valeria-bridge`, `/api/channels/*`), HITL por «SÍ/NO», seudónimos y bitácora.
@@ -1231,6 +1277,9 @@ Spec 024; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/rubrica
 - [ ] Instalar OpenClaw en el PC servidor, vincular WhatsApp y probar con teléfonos reales.
 - [ ] Qdrant servidor, evaluación del retrieval y t-SNE sobre el índice desplegado.
 - [ ] `openclaw security audit` en verde, blindaje por el canal y prueba de carga.
+- [x] Plataforma de agentes por perfil y planificador industrial sobre datos sintéticos (spec 025, ADR 0029),
+  con diagramas Archify actualizados.
+- [ ] Verificar `/perfil` y la planificación por WhatsApp, y aprobar la constitución 2.0.0.
 - [ ] Ensayo cronometrado y tag `v3.0.0`.
 
 ## Créditos

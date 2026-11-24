@@ -4,6 +4,7 @@ import {
   deleteMemory,
   getMemory,
   getObservability,
+  getProfiles,
   getThread,
   type ObservabilityStatus,
   resumeThread,
@@ -27,6 +28,7 @@ import {
   type Mode,
   type PendingAction,
   type ProfileItem,
+  type ProfileOption,
   type RetrievalTrace,
 } from "../lib/types";
 import { useDictation, type TranscriptInfo } from "../lib/useDictation";
@@ -57,6 +59,15 @@ const PROFILE_LABEL: Record<ProfileItem["key"], string> = {
   city: "ciudad",
 };
 
+/** Spec 025: etiquetas de los perfiles de la plataforma (iguales a config/profiles.toml). */
+export const AUDIENCE_LABEL: Record<string, string> = {
+  visitante: "Visitante",
+  cliente: "Cliente B2B",
+  proveedor: "Proveedor",
+  colaborador: "Colaborador",
+  planificador: "Planificador industrial",
+};
+
 const ROUTE_LABEL: Record<ChatRouteName, string> = {
   direct: "Directa",
   documental: "Documentos",
@@ -64,6 +75,7 @@ const ROUTE_LABEL: Record<ChatRouteName, string> = {
   mixed: "Documentos + datos",
   out_of_scope: "Fuera de alcance",
   clarify: "Aclaración",
+  planning: "Planificación industrial",
 };
 
 /** Spec 022: resumen de lo que hizo el gatekeeper Jev en el turno (vista técnica). */
@@ -364,6 +376,9 @@ export function ChatTurnCard({
           {inputSummary(turn.input) ? (
             <span data-testid="turn-input"> · {inputSummary(turn.input)}</span>
           ) : null}
+          {turn.profile ? (
+            <span data-testid="turn-profile"> · Perfil: {AUDIENCE_LABEL[turn.profile] ?? turn.profile}</span>
+          ) : null}
           {jevSummary(turn.jev) ? (
             <span data-kind={turn.jev?.status} data-testid="turn-jev">
               {" "}
@@ -479,12 +494,29 @@ export function ChatView({ mode }: { mode: Mode }) {
   const [live, setLive] = useState<LiveTurn | null>(null);
   const [recent, setRecent] = useState<RecentThread[]>(() => readRecent());
   const [observability, setObservability] = useState<ObservabilityStatus | null>(null);
+  // Spec 025: perfil de atención elegido en la vista técnica (null = el del hilo).
+  const [audience, setAudience] = useState<string | null>(null);
+  const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
   // Spec 019: registro del contacto (CRM) del hilo; solo se muestra en la vista técnica.
   const [contact, setContact] = useState<ContactRecord | null>(null);
   const userId = useRef(visitUser());
   // Spec 018: vista de visitante (normal) o de sustentación (técnica, con ?vista=tecnica).
   const technical = useRef(viewMode() === "tecnica").current;
   const controller = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (!technical) return;
+    void getProfiles(userId.current)
+      .then((rows) => setProfileOptions(Array.isArray(rows) ? rows : []))
+      .catch(() => setProfileOptions([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function chooseProfile(key: string) {
+    setAudience(key || null);
+    // La planificación industrial solo existe en la variante agente.
+    if (key === "planificador" && variant !== "agent") startOver("agent");
+  }
 
   function refreshObservability() {
     void getObservability(mode)
@@ -709,6 +741,7 @@ export function ChatView({ mode }: { mode: Mode }) {
       variant,
       mode,
       ...(inputMeta ? { input: inputMeta } : {}),
+      ...(audience ? { profile: audience } : {}),
     };
     let current: LiveTurn = { question: clean, route: null, stage: "Enrutando…", text: "" };
     setLive(current);
@@ -804,6 +837,26 @@ export function ChatView({ mode }: { mode: Mode }) {
             <button className="btn btn-link" type="button" onClick={() => startOver()}>
               Nueva conversación
             </button>
+            {profileOptions.length > 0 ? (
+              <>
+                <label htmlFor="chat-profile">Perfil</label>
+                <select
+                  className="select-input"
+                  data-testid="profile-select"
+                  id="chat-profile"
+                  onChange={(event) => chooseProfile(event.target.value)}
+                  value={audience ?? ""}
+                >
+                  <option value="">Del hilo</option>
+                  {profileOptions.map((option) => (
+                    <option disabled={!option.authorized} key={option.key} value={option.key}>
+                      {option.label}
+                      {option.authorized ? "" : " (solo autorizados)"}
+                    </option>
+                  ))}
+                </select>
+              </>
+            ) : null}
           </>
         ) : null}
         <VoiceControls voice={voice} showUnavailable />

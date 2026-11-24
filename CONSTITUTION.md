@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.16.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-23
+**Versión**: 2.0.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-24
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -38,6 +38,20 @@ Agent OS, persistencia de estado y canales reales como WhatsApp o Telegram).
 
 Esta constitución es obligatoria para los dos integrantes. Aplica a código, datos, prompts, modelos,
 interfaces, pruebas, documentación, repositorio, presentación y uso de herramientas de IA.
+
+**Producto final** (enmienda 2.0.0, spec 025, ADR 0029): Valer-IA es la **plataforma de agentes de Manuelita**
+de la idea 7 de [`docs/alucinaciones/ideas_negocio_ia_manuelita.md`](docs/alucinaciones/ideas_negocio_ia_manuelita.md).
+Es un solo agente con perfiles:
+
+- **visitante**: la conducta evaluada en los Módulos 2 y 3;
+- **cliente B2B**;
+- **proveedor**;
+- **colaborador**;
+- **planificador industrial**: recomienda el mejor destino de la materia prima entre azúcar, etanol y energía, con
+  un simulador y un optimizador sobre datos sintéticos declarados.
+
+Los perfiles públicos responden solo con información pública citada. La planificación demuestra la capacidad y no
+afirma resultados sobre la operación real de Manuelita.
 
 **Criterio de éxito**: cumplir la rúbrica del curso, demostrar el sistema en vivo y poder explicar cada
 decisión técnica sin depender de diapositivas ni de la memoria de una sola persona.
@@ -689,6 +703,39 @@ canales reales (WhatsApp o Telegram), evaluado y observable.
 15. **Despliegue**: PC del equipo como servidor (servicios con reinicio automático), reproducible con
     `docs/despliegue.md`. WhatsApp no usa túnel (conexión saliente); el túnel, si existe, solo publica la web.
 
+**Plataforma de agentes de la idea 7** (enmienda 2.0.0, spec 025, ADR 0029). Las reglas 8–15 siguen vigentes, y se
+añaden:
+
+16. **Perfiles**:
+    - Los perfiles (visitante, cliente B2B, proveedor, colaborador, planificador) se declaran en un solo lugar,
+      con su foco y su subconjunto del catálogo.
+    - El router combina ruta y perfil, y la traza muestra el perfil activo.
+    - El perfil se guarda en la memoria de largo plazo solo con aprobación y se borra con `/olvidar`.
+17. **Información pública**: los perfiles cliente, proveedor y colaborador responden solo con la capa oro y sus
+    citas. NO DEBEN dar precios, condiciones comerciales, datos internos ni datos de personas. Las cotizaciones van
+    a un humano con «SÍ».
+18. **Datos sintéticos**:
+    - Solo la planificación industrial puede usar datos sintéticos.
+    - Esos datos se generan con un script determinista y semilla, se versionan con su ficha y se etiquetan como
+      sintéticos en cada respuesta.
+    - NO DEBEN mezclarse con el corpus público, citarse como fuentes de Manuelita ni presentarse como su operación
+      real. Sus citas son distinguibles de `[U#]` y `[F#]`.
+19. **Cifras de planificación**:
+    - Balances, márgenes, sensibilidad y planes salen del simulador y del optimizador (programación lineal), nunca
+      del texto del modelo.
+    - Si no hay solución factible, se declara el conflicto y no se inventa capacidad.
+    - El agente recomienda y el equipo de planta decide.
+20. **Autorización**:
+    - El perfil planificador es solo para usuarios autorizados (lista fuera del repositorio).
+    - Guardar una propuesta exige «SÍ/NO» con vencimiento de 10 minutos.
+    - Ninguna herramienta se conecta con sistemas reales de planta.
+    - El modo degradado no simula, no optimiza ni guarda.
+21. **Evaluación**:
+    - Las baterías de planificación (12 escenarios con óptimo de referencia independiente) y de perfiles
+      (20 consultas) se fijan antes de evaluar.
+    - Las evaluaciones vigentes (herramientas, triviales, blindaje y retrieval) no pueden bajar de su último valor
+      publicado.
+
 ---
 
 ### Reglas transversales de fase
@@ -816,6 +863,18 @@ No se aceptan: menos de 20 tools, WhatsApp simulado o que no salga de localhost,
 diapositivas o video, ni claves o `.env` en el repositorio. Estado y evidencia de cada ítem:
 `docs/rubrica_modulo3.md`.
 
+**Reenfoque a la idea 7** (enmienda 2.0.0): la plataforma de agentes refuerza, sin cambiar la evidencia anterior,
+estos ítems:
+
+- **1.1**: 26 herramientas, con simulador y optimizador;
+- **1.2**: planificación de varios pasos en la traza y herramientas por perfil;
+- **1.3**: perfil persistente;
+- **3.3**: líneas rojas por perfil;
+- **4.2**: planificador restringido y aprobación;
+- **5.1 y 5.2**: el pitch de la plataforma y la discusión del optimizador.
+
+La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
+
 ---
 
 ## 9. Documentación obligatoria
@@ -876,6 +935,7 @@ diapositivas o video, ni claves o `.env` en el repositorio. Estado y evidencia d
 
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
+| 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
 
@@ -1074,4 +1134,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.16.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-23
+**Versión**: 2.0.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-24

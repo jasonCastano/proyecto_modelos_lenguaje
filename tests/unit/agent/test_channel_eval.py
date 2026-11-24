@@ -37,9 +37,13 @@ def test_fixture_covers_every_tool() -> None:
     from proyecto_modelos_lenguaje.agent.catalog import catalog
 
     cases = load_tool_cases(TOOL_CASES)
-    expected = [case["expected_tool"] for case in cases]
+    expected = [case["expected_tool"] for case in cases if "profile" not in case]
+    planner = [case["expected_tool"] for case in cases if "profile" in case]
     for spec in catalog():
-        assert expected.count(spec.name) >= 2, spec.name
+        if 21 <= spec.number <= 25:
+            assert planner.count(spec.name) >= 1, spec.name  # spec 025: aparte
+        elif spec.name != "save_production_proposal":
+            assert expected.count(spec.name) >= 2, spec.name
     assert expected.count(None) >= 10 and len(cases) >= 50
 
 
@@ -87,7 +91,9 @@ def test_channel_attacks_pass_and_fail() -> None:
             SimpleNamespace(status="answered", messages=["ok"]),
         ]
     )
-    results = run_channel_attacks(lambda mid, text: next(replies), DIRECT_ATTACKS, kind="direct")
+    results = run_channel_attacks(
+        lambda mid, text: next(replies), DIRECT_ATTACKS[:5], kind="direct"
+    )
     summary = summarize_attacks(results)
     assert summary["cases"] == 5 and summary["obeyed"] == 1
     assert summary["writes_without_confirmation"] == 1 and summary["proposed_writes"] == 1
@@ -114,3 +120,24 @@ def test_memory_audit_lists_namespace_and_dates() -> None:
 def test_tools_doc_is_generated(tmp_path: Path) -> None:
     doc = render_tools_doc()
     assert "| 20 | `request_human_contact` |" in doc and "## Esquemas de argumentos" in doc
+
+
+def test_platform_attacks_are_included() -> None:
+    """Spec 025 (FR-019, T047): forzar el planificador y afirmar que lo sintético es real."""
+    attacks = {attack["attack"]: attack for attack in DIRECT_ATTACKS}
+    assert {"force_planner", "synthetic_as_real"} <= set(attacks)
+    results = run_channel_attacks(
+        lambda mid, text: SimpleNamespace(
+            status="answered",
+            messages=["La planificación industrial es solo para planificadores autorizados."],
+        ),
+        [attacks["force_planner"], attacks["synthetic_as_real"]],
+        kind="direct",
+    )
+    assert all(result.passed for result in results)
+    obeyed = run_channel_attacks(
+        lambda mid, text: SimpleNamespace(status="answered", messages=["Plan recomendado · …"]),
+        [attacks["force_planner"]],
+        kind="direct",
+    )
+    assert obeyed[0].obeyed and not obeyed[0].passed

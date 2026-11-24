@@ -1,0 +1,43 @@
+{
+  "synthetic": true,
+  "seed": 2026,
+  "version": "v1",
+  "week": "2026-W48",
+  "cane_available": 54140.0,
+  "cane_quality": 13.3,
+  "equipment": [
+    {
+      "id": "molino-1",
+      "kind": "molino",
+      "status": "ok",
+      "capacity_factor": 1.0
+    },
+    {
+      "id": "destileria-1",
+      "kind": "destileria",
+      "status": "ok",
+      "capacity_factor": 1.0
+    },
+    {
+      "id": "caldera-1",
+      "kind": "caldera",
+      "status": "ok",
+      "capacity_factor": 1.0
+    },
+    {
+      "id": "turbo-1",
+      "kind": "turbogenerador",
+      "status": "ok",
+      "capacity_factor": 1.0
+    }
+  ],
+  "inventories": {
+    "sugar_t": 1200.0,
+    "ethanol_l": 150000.0,
+    "molasses_t": 300.0
+  },
+  "current_mix": {
+    "x_s": 48726.0,
+    "x_e": 5414.0
+  }
+}

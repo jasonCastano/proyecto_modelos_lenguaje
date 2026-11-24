@@ -195,6 +195,10 @@ necesarios y primer piloto.
 
 ### Idea 7 — Agentes de IA generativa para clientes, proveedores y colaboradores (extiende Valer-IA)
 
+> **Adoptada como producto final** el 2026-11-24: spec
+> [`025-agentes-manuelita-idea7`](../../specs/025-agentes-manuelita-idea7/spec.md), ADR 0029 y constitución 2.0.0.
+> Para la sustentación del Módulo 3, el agente de planificación (§7.4) usa datos sintéticos declarados.
+
 - **Problema:**
   - El conocimiento de Manuelita está disperso en informes, fichas técnicas, certificaciones
     (ISO, FSSC 22000, Halal, Kosher, orgánico), manuales de cumplimiento (PTEE) y programas

@@ -41,6 +41,7 @@ HELP_TEXT = (
     "• /nuevo — empezar otra conversación (recuerdo tu perfil si lo guardaste)\n"
     "• /olvidar — borrar los datos que guardé sobre ti\n"
     "• /traza — ver cómo resolví tu última pregunta (ruta, plan y herramientas)\n"
+    "• /perfil — ver o cambiar cómo te atiendo (cliente, proveedor, colaborador…)\n"
     "• /ayuda — este mensaje\n\n"
     "Antes de guardar o enviar algo te pido confirmación: responde *SÍ* o *NO*."
 )
@@ -55,6 +56,9 @@ NEW_THREAD_TEXT = (
     "Listo, empezamos una conversación nueva. Si me habías dado tu nombre, lo sigo recordando."
 )
 EXPIRED_TEXT = "La confirmación anterior venció y no se ejecutó nada."
+PLANNER_DENIED_TEXT = (
+    "La planificación industrial es solo para planificadores autorizados. Sigo como visitante."
+)
 
 
 class ChatServiceLike(Protocol):
@@ -80,6 +84,7 @@ class ChannelReply:
     route: str | None = None
     tools: list[str] = field(default_factory=list)
     latency_ms: int = 0
+    event: str | None = None  # spec 025: evento auditable (p. ej. planner_denied)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -132,6 +137,7 @@ class LastTrace:
     route: str | None
     plan_steps: list[str]
     tools: list[dict[str, Any]]
+    profile: str = "visitante"  # spec 025
 
 
 class ChannelBridge:
@@ -160,6 +166,8 @@ class ChannelBridge:
         self._locks: dict[str, threading.Lock] = {}
         self._locks_guard = threading.Lock()
         self._last: dict[str, LastTrace] = {}
+        # Spec 025: perfil elegido con /perfil que se aplica en el siguiente turno del hilo.
+        self._pending_profile: dict[str, str] = {}
 
     # -- utilidades -----------------------------------------------------------------------
     def _lock_for(self, user_id: str) -> threading.Lock:
@@ -190,6 +198,7 @@ class ChannelBridge:
             route=reply.route,
             tools=reply.tools,
             latency_ms=reply.latency_ms,
+            event=reply.event,
             **extra,
         )
         log_channel(self.log_dir, record)
@@ -237,6 +246,8 @@ class ChannelBridge:
         if command == "/nuevo":
             new_thread = self.store.new_thread(user_id)
             return ChannelReply("answered", self._short(NEW_THREAD_TEXT), new_thread)
+        if command == "/perfil":
+            return self._profile_command(text, user_id, thread_id, message.channel)
 
         notices: list[str] = []
         pending = self.store.get_pending(thread_id)
@@ -258,22 +269,67 @@ class ChannelBridge:
                 return ChannelReply("pending_approval", self._short(reminder), thread_id)
 
         prompt = FORGET_PROMPT if command == "/olvidar" else text
-        outcome = self._send(prompt, user_id, thread_id)
+        outcome = self._send(prompt, user_id, thread_id, message.channel)
         thread_id = str(getattr(outcome, "thread_id", None) or thread_id)
         reply = self._from_outcome(outcome, user_id, thread_id)
         if notices:
             reply.messages = [*self._short("\n".join(notices)), *reply.messages]
         return reply
 
-    def _send(self, prompt: str, user_id: str, thread_id: str) -> Any:
+    def _profile_command(
+        self, text: str, user_id: str, thread_id: str, channel: str
+    ) -> ChannelReply:
+        """Spec 025: ``/perfil`` lista los perfiles; ``/perfil <clave>`` activa uno en el hilo."""
+        from ..agent import profiles
+
+        argument = text.split(maxsplit=1)[1] if len(text.split(maxsplit=1)) > 1 else ""
+        current = self._pending_profile.get(user_id) or self._current_profile(user_id)
+        if not argument.strip():
+            lines = ["*Perfiles de atención* (escribe /perfil <nombre>):"]
+            for item in profiles.describe(user_id, channel):
+                mark = " ✅" if item["key"] == current else ""
+                lock = " (solo autorizados)" if item["requires_authorization"] else ""
+                lines.append(f"• {item['key']} — {item['label']}{lock}{mark}")
+            return ChannelReply("answered", self._short("\n".join(lines)), thread_id)
+        key = profiles.resolve_alias(argument)
+        if key is None or key not in profiles.load_profiles():
+            reply = "No conozco ese perfil. Escribe /perfil para ver la lista."
+            return ChannelReply("answered", self._short(reply), thread_id)
+        chosen = profiles.get_profile(key)
+        if chosen.requires_authorization and not profiles.is_authorized(user_id, channel):
+            self._pending_profile[user_id] = profiles.DEFAULT_PROFILE
+            return ChannelReply(
+                "answered",
+                self._short(PLANNER_DENIED_TEXT),
+                thread_id,
+                event="planner_denied",
+            )
+        self._pending_profile[user_id] = chosen.key
+        reply = (
+            f"Listo: ahora te atiendo como {chosen.label}. ¿Quieres que lo recuerde para "
+            "próximas conversaciones? Escribe «recuerda mi perfil»."
+        )
+        return ChannelReply("answered", self._short(reply), thread_id)
+
+    def _current_profile(self, user_id: str) -> str:
+        last = self._last.get(user_id)
+        return last.profile if last is not None else "visitante"
+
+    def _send(self, prompt: str, user_id: str, thread_id: str, channel: str = "whatsapp") -> Any:
         """Turno del agente; el primer turno de un hilo nuevo lo crea el propio servicio."""
         fresh = not self.store.is_started(thread_id)
+        extra: dict[str, Any] = {}
+        profile = self._pending_profile.pop(user_id, None)
+        if profile is not None:
+            extra["profile"] = profile
         outcome = self.service.send(
             prompt,
             thread_id=None if fresh else thread_id,
             user_id=user_id,
             variant="agent",
             mode=self.mode,
+            channel=channel,
+            **extra,
         )
         created = str(getattr(outcome, "thread_id", None) or thread_id)
         if fresh:
@@ -284,7 +340,10 @@ class ChannelBridge:
     def _remember_trace(self, user_id: str, turn: Mapping[str, Any]) -> None:
         route = (turn.get("route") or {}).get("route")
         self._last[user_id] = LastTrace(
-            route, list(turn.get("plan_steps") or []), list(turn.get("tools") or [])
+            route,
+            list(turn.get("plan_steps") or []),
+            list(turn.get("tools") or []),
+            str(turn.get("profile") or "visitante"),
         )
 
     def _from_outcome(self, outcome: Any, user_id: str, thread_id: str) -> ChannelReply:
@@ -334,7 +393,9 @@ class ChannelBridge:
         last = self._last.get(user_id)
         if last is None:
             return "Todavía no he respondido ninguna pregunta en esta conversación."
-        lines = [f"*Ruta:* {last.route or '—'}"]
+        from ..agent.profiles import get_profile
+
+        lines = [f"*Perfil:* {get_profile(last.profile).label}", f"*Ruta:* {last.route or '—'}"]
         if last.plan_steps:
             steps = "\n".join(f"{i}. {step}" for i, step in enumerate(last.plan_steps, 1))
             lines.append(f"*Plan:*\n{steps}")

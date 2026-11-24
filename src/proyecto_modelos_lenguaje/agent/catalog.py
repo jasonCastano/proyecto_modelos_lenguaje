@@ -30,7 +30,7 @@ from .tools import QueryStructuredArgs, SearchDocumentsArgs, ToolTrace, build_re
 
 ToolKind = Literal["read", "write"]
 ROUTES: frozenset[str] = frozenset(
-    {"direct", "documental", "structured", "mixed", "out_of_scope", "clarify"}
+    {"direct", "documental", "structured", "mixed", "out_of_scope", "clarify", "planning"}
 )
 NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]{2,40}$")
 MIN_DESCRIPTION, MAX_DESCRIPTION = 20, 300
@@ -72,6 +72,8 @@ class ToolSpec:
     routes: frozenset[str]
     data_source: str
     impl: ReadImpl | None = None  # None: herramienta existente construida por su fábrica
+    # Spec 025 (R16): lecturas que no van al MCP ni al modo degradado (simular, optimizar).
+    mcp_allowed: bool = True
 
     @property
     def requires_approval(self) -> bool:
@@ -79,7 +81,7 @@ class ToolSpec:
 
     @property
     def mcp(self) -> bool:
-        return self.kind == "read"
+        return self.kind == "read" and self.mcp_allowed
 
     def validate(self) -> None:
         """Invariantes del catálogo; falla al cargar si alguna no se cumple."""
@@ -153,6 +155,7 @@ WRITE_NUMBERS = {
     "forget_memory": 18,
     "export_conversation": 19,
     "request_human_contact": 20,
+    "save_production_proposal": 26,
 }
 WRITE_SOURCES = {
     "save_profile": 'Store ("users", id, "profile")',
@@ -160,6 +163,7 @@ WRITE_SOURCES = {
     "forget_memory": "Store del usuario",
     "export_conversation": "hilo del checkpointer",
     "request_human_contact": "$MANUELITA_STATE_DIR/contacts.jsonl",
+    "save_production_proposal": "$MANUELITA_STATE_DIR/planning/proposals.jsonl",
 }
 ALL_ROUTES = ROUTES
 
@@ -185,7 +189,14 @@ def _write_specs() -> tuple[ToolSpec, ...]:
 def _new_read_specs() -> tuple[ToolSpec, ...]:
     """Las 12 herramientas de lectura nuevas de la spec 024 (módulos ``tools_*``)."""
     specs: list[ToolSpec] = []
-    for module_name in ("tools_series", "tools_entities", "tools_knowledge", "tools_utility"):
+    modules = (
+        "tools_series",
+        "tools_entities",
+        "tools_knowledge",
+        "tools_utility",
+        "tools_planning",
+    )
+    for module_name in modules:
         try:
             module = __import__(f"{__package__}.{module_name}", fromlist=["SPECS"])
         except ModuleNotFoundError as exc:
@@ -222,18 +233,36 @@ def write_specs() -> tuple[ToolSpec, ...]:
     return tuple(spec for spec in catalog() if spec.kind == "write")
 
 
-def specs_for_route(route: str | None, *, include_write: bool = True) -> tuple[ToolSpec, ...]:
+PLANNER_ONLY_WRITES = frozenset({"save_production_proposal"})
+
+
+def specs_for_route(
+    route: str | None, *, include_write: bool = True, profile: str | None = None
+) -> tuple[ToolSpec, ...]:
     """Subconjunto que se ofrece al agente según la ruta del enrutador (research R9).
 
-    ``direct`` no ofrece búsquedas; sin ruta conocida se ofrece todo el catálogo de lectura.
+    ``direct`` no ofrece búsquedas; sin ruta conocida se ofrece todo el catálogo de lectura. Con
+    ``profile`` (spec 025, R2) las lecturas se cruzan con la lista blanca del perfil; las
+    escrituras comunes siguen en todos los perfiles y guardar propuestas solo en el planificador.
     """
     specs = catalog()
     if route in ROUTES:
         chosen = [spec for spec in specs if route in spec.routes and spec.kind == "read"]
     else:
         chosen = [spec for spec in specs if spec.kind == "read"]
+    allowed_writes = {spec.name for spec in specs if spec.kind == "write"}
+    if profile is not None:
+        from .profiles import PLANNER, get_profile
+
+        active = get_profile(profile)
+        whitelist = set(active.tools)
+        chosen = [spec for spec in chosen if spec.name in whitelist]
+        if active.key != PLANNER:
+            allowed_writes -= PLANNER_ONLY_WRITES
     if include_write:
-        chosen.extend(spec for spec in specs if spec.kind == "write")
+        chosen.extend(
+            spec for spec in specs if spec.kind == "write" and spec.name in allowed_writes
+        )
     return tuple(chosen)
 
 
@@ -301,6 +330,7 @@ def build_catalog_tools(
     route: str | None = None,
     write_run: Callable[[str, dict[str, Any]], str] | None = None,
     names: Iterable[str] | None = None,
+    profile: str | None = None,
 ) -> Sequence[BaseTool]:
     """Herramientas LangChain del catálogo para el agente, filtradas por ruta.
 
@@ -308,7 +338,7 @@ def build_catalog_tools(
     métricas); las nuevas se envuelven con :func:`run_read`. Las de escritura solo se incluyen si
     se pasa ``write_run`` (la ejecución tras la aprobación humana).
     """
-    offered = specs_for_route(route, include_write=write_run is not None)
+    offered = specs_for_route(route, include_write=write_run is not None, profile=profile)
     if names is not None:
         wanted = set(names)
         offered = tuple(spec for spec in offered if spec.name in wanted)
@@ -345,6 +375,13 @@ PLAN_BY_ROUTE: dict[str, tuple[str, ...]] = {
     ),
     "clarify": ("pedir una aclaración breve antes de buscar",),
     "out_of_scope": ("declinar con amabilidad y ofrecer un tema de Manuelita",),
+    # Spec 025: planificación industrial sobre datos sintéticos (idea 7.4).
+    "planning": (
+        "consultar estado de planta y compromisos",
+        "optimizar el plan y simular la alternativa",
+        "comparar margen, energía y cumplimiento",
+        "explicar supuestos; datos sintéticos; el equipo de planta decide",
+    ),
 }
 
 

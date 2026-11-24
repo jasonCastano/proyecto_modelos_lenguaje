@@ -10,6 +10,10 @@ tool_call_limit = 3       # búsquedas máximas por turno (ToolCallLimitMiddlewa
 model_call_limit = 5      # llamadas máximas al modelo por turno (ModelCallLimitMiddleware)
 chain_top_k = 8           # fragmentos que recupera siempre la variante cadena
 
+[agent.route_limits.planning]  # spec 025 (R4): estado, compromisos, optimizar y simular la alternativa
+tool_call_limit = 5
+model_call_limit = 6
+
 [memory]
 summarize_after_tokens = 6000
 keep_last_messages = 6

@@ -40,16 +40,21 @@ def render_tools_doc() -> str:
         "docs/herramientas.md` desde `src/proyecto_modelos_lenguaje/agent/catalog.py` "
         "(spec 024, ítem 1.1). No editar a mano.",
         "",
-        "Regla de oro: **lectura automática, escritura con aprobación**. Las de lectura también se "
-        "exponen por el servidor MCP `valeria-tools`; las de escritura piden «SÍ/NO» en la web y "
-        "en WhatsApp.",
+        "Regla de oro: **lectura automática, escritura con aprobación**. Las de lectura marcadas "
+        "«MCP» también se exponen por el servidor MCP `valeria-tools`; simular y optimizar la "
+        "producción (spec 025) solo existen en el backend. Las de escritura piden «SÍ/NO» en la "
+        "web y en WhatsApp. Las herramientas 21–26 usan datos **sintéticos** de demostración y "
+        "solo las ve el perfil planificador.",
         "",
         "| # | Herramienta | Tipo | Rutas | Fuente | Descripción |",
         "|---:|---|---|---|---|---|",
     ]
     specs = catalog()
     for spec in specs:
-        kind = "escritura (HITL)" if spec.requires_approval else "lectura (MCP)"
+        if spec.requires_approval:
+            kind = "escritura (HITL)"
+        else:
+            kind = "lectura (MCP)" if spec.mcp else "lectura (solo backend)"
         lines.append(
             f"| {spec.number} | `{spec.name}` | {kind} | {', '.join(sorted(spec.routes))} | "
             f"{spec.data_source} | {spec.description} |"
@@ -125,8 +130,14 @@ def run_evaluate_tools(args: argparse.Namespace, root: Path) -> int:
     mode = "demo" if args.fake else args.mode
     service = cli_service(root, Path(tempfile.mkdtemp(prefix="pml-tools-eval-")))
 
-    def send(question: str) -> Any:
-        return service.send(question, user_id="eval-tools", variant="agent", mode=mode)
+    from .planning_eval import enable_planner_for_eval
+
+    enable_planner_for_eval()  # spec 025: casos del planificador (reportados aparte)
+
+    def send(question: str, profile: str | None = None) -> Any:
+        return service.send(
+            question, user_id="eval-tools", variant="agent", mode=mode, profile=profile
+        )
 
     results = evaluate_tools(send, load_tool_cases())
     summary = summarize_tools(results)
@@ -142,6 +153,76 @@ def run_evaluate_tools(args: argparse.Namespace, root: Path) -> int:
         json_out.with_suffix(".md").write_text(render_tools_markdown(report), encoding="utf-8")
         print(f"Escribí {json_out} y {json_out.with_suffix('.md')}")
     return 0 if summary["meets_target"] else 1
+
+
+# --- spec 025: agent planning / planning-eval / profiles-eval -----------------------------------
+
+
+def run_planning(args: argparse.Namespace, root: Path) -> int:
+    """0 cumple la meta, 1 no la cumple, 2 error de datos o configuración."""
+    from . import planning_eval as pe
+    from .planning import PlanningError, Scenario, optimize
+
+    _configure()
+    if args.command == "planning":
+        try:
+            plan = optimize(Scenario.model_validate(json.loads(args.scenario)))
+        except (PlanningError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(plan.to_dict(), ensure_ascii=False, indent=2))
+        else:
+            print(plan.plan_card)
+        return 0
+    docs = root / "docs"
+    if args.command == "planning-eval":
+        cases = pe.load_cases(pe.PLANNING_CASES)
+        if args.mode == "direct":
+            results = pe.evaluate_planning_direct(cases)
+        else:
+            pe.enable_planner_for_eval()
+            service = cli_service(root, Path(tempfile.mkdtemp(prefix="pml-planning-")))
+
+            def send(question: str) -> Any:
+                return service.send(
+                    question,
+                    user_id="eval-planner",
+                    variant="agent",
+                    mode=args.mode,
+                    profile="planificador",
+                )
+
+            results = pe.evaluate_planning_agent(send, cases)
+        summary = pe.summarize_planning(results, "direct" if args.mode == "direct" else "agent")
+        report = pe.build_report("planning", args.mode, _command(), results, summary)
+        report["mode"] = "direct" if args.mode == "direct" else args.mode
+        markdown = pe.render_planning_markdown(
+            {**report, "mode": "direct" if args.mode == "direct" else "agente"}
+        )
+        name = "evaluacion_planificacion" + ("_directa" if args.mode == "direct" else "")
+        target = docs / f"{name}.json"
+    else:
+        cases = pe.load_cases(pe.PROFILE_CASES)
+        pe.enable_planner_for_eval()
+        service = cli_service(root, Path(tempfile.mkdtemp(prefix="pml-profiles-")))
+
+        def send_profile(question: str, profile: str | None = None) -> Any:
+            return service.send(
+                question, user_id="eval-profiles", variant="agent", mode=args.mode,
+                profile=profile,
+            )  # fmt: skip
+
+        results = pe.evaluate_profiles(send_profile, cases)
+        summary = pe.summarize_profiles(results)
+        report = pe.build_report("profiles", args.mode, _command(), results, summary)
+        markdown = pe.render_profiles_markdown(report)
+        target = docs / "evaluacion_perfiles.json"
+    print(json.dumps(report["summary"], ensure_ascii=False, indent=2))
+    if args.write_docs:
+        pe.write_report(report, target, markdown)
+        print(f"Escribí {target} y {target.with_suffix('.md')}")
+    return 0 if report["summary"]["meets_target"] else 1
 
 
 # --- agent shield --channel ----------------------------------------------------------------------

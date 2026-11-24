@@ -185,6 +185,40 @@ OFFICIAL_CHANNEL = re.compile(
 )
 
 
+# Spec 025 (R3): señales de planificación industrial. Solo deciden la ruta ``planning`` con el
+# perfil planificador autorizado; el clasificador LLM y Jev nunca la devuelven.
+PLANNING_CUE = re.compile(
+    r"\b(?:programa|programacion|plan|planifica\w*|planea\w*|escenario|optimiza\w*|reparti\w*"
+    r"|reparto|mezcla|ajusta\w*)\b.{0,80}\b(?:produccion|cana|azucar|etanol|semana|energia|vapor"
+    r"|molienda|contratos?|compromisos?)\b"
+    r"|\b(?:menos|mas|baja|caida|reduccion|aumento)\b.{0,20}\bcana\b"
+    r"|\b(?:restriccion|limite|limitado|limitada)\b.{0,15}\bvapor\b"
+    r"|\b(?:cumplir|cumplimos|cumplo)\b.{0,40}\b(?:compromisos?|contratos?)\b"
+    r"|\bpol de \d"
+    r"|\b(?:estado|capacidad\w*|equipos?|inventarios?)\b.{0,20}\bplanta\b"
+    r"|\b(?:compromisos?|contratos?)\b.{0,30}\b(?:azucar|etanol|energia)\b"
+    r"|\bprocedimientos?\b.{0,60}\b(?:prioridad|vapor|molienda|compromisos?|planta|mezcla)\b"
+    r"|\bsimula\w*\b"
+)
+
+
+def is_planning_request(message: str) -> bool:
+    """¿El mensaje pide planificar la producción de la planta? (sin modelo)."""
+    return PLANNING_CUE.search(" ".join(_words(message))) is not None
+
+
+def planning_decision(message: str, profile: str, *, authorized: bool) -> RouteDecision | None:
+    """Ruta ``planning`` para el planificador autorizado; ``None`` en cualquier otro caso."""
+    if profile != "planificador" or not authorized or not is_planning_request(message):
+        return None
+    return RouteDecision(
+        route="planning",
+        confidence=0.95,
+        reason="planificación industrial (perfil planificador, datos sintéticos)",
+        decided_by="rules",
+    )
+
+
 def tool_cue_decision(message: str, text: str) -> RouteDecision | None:
     """Ruta para consultas que nombran una capacidad del catálogo (spec 024, ítem 1.2)."""
     if UNIT_ID.search(message.lower()):
@@ -391,6 +425,8 @@ def llm_decision(
     payload = _extract_json(str(response.content))
     reason = str(payload.get("reason") or "sin motivo")[:200]
     route = payload.get("route")
+    if route == "planning":
+        route = None  # spec 025 (R3): solo las reglas deciden la ruta de planificación
     scope = payload.get("scope_reason") if route == "out_of_scope" else None
     if route == "out_of_scope" and scope not in OUT_OF_SCOPE_REASONS:
         scope = "off_topic"

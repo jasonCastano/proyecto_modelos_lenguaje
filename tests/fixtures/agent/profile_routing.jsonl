@@ -1,0 +1,20 @@
+{"id": "r01", "question": "¿Qué produce Manuelita?", "expected_profile": "visitante", "expected_tools_subset": ["search_documents"]}
+{"id": "r02", "question": "¿En qué países opera Manuelita?", "expected_profile": "visitante", "expected_tools_subset": ["list_business_units", "search_documents"]}
+{"id": "r03", "question": "¿Cuál es la historia de Manuelita?", "expected_profile": "visitante", "expected_tools_subset": ["search_documents", "summarize_topic"]}
+{"id": "r04", "question": "¿Qué hace la Fundación Manuelita?", "expected_profile": "visitante", "expected_tools_subset": ["search_documents"]}
+{"id": "r05", "question": "Compro azúcar para mi empresa, ¿qué certificaciones de calidad tienen?", "expected_profile": "cliente", "expected_tools_subset": ["list_company_entities", "search_documents"]}
+{"id": "r06", "question": "Soy cliente y necesito saber qué presentaciones de azúcar orgánica venden.", "expected_profile": "cliente", "expected_tools_subset": ["search_documents"]}
+{"id": "r07", "question": "¿Tienen certificación Kosher o Halal?", "profile": "cliente", "expected_profile": "cliente", "expected_tools_subset": ["list_company_entities"]}
+{"id": "r08", "question": "Quiero una cotización de alcohol industrial.", "profile": "cliente", "expected_profile": "cliente", "expected_tools_subset": ["request_human_contact", "get_official_channels"]}
+{"id": "r09", "question": "Soy proveedor de caña, ¿qué apoyo técnico dan a los proveedores?", "expected_profile": "proveedor", "expected_tools_subset": ["search_documents"]}
+{"id": "r10", "question": "Soy agricultor y le vendo caña a Manuelita, ¿hacen control biológico?", "expected_profile": "proveedor", "expected_tools_subset": ["search_documents", "sustainability_lookup"]}
+{"id": "r11", "question": "¿Cómo usan el compost en los cultivos?", "profile": "proveedor", "expected_profile": "proveedor", "expected_tools_subset": ["sustainability_lookup", "search_documents"]}
+{"id": "r12", "question": "¿Qué técnicas de riego recomiendan para ahorrar agua?", "profile": "proveedor", "expected_profile": "proveedor", "expected_tools_subset": ["sustainability_lookup"]}
+{"id": "r13", "question": "Trabajo en Manuelita, ¿cómo reporto una situación ética?", "expected_profile": "colaborador", "expected_tools_subset": ["get_official_channels", "search_documents"]}
+{"id": "r14", "question": "Soy colaborador de Manuelita, ¿qué dice el código de conducta sobre regalos?", "expected_profile": "colaborador", "expected_tools_subset": ["search_documents"]}
+{"id": "r15", "question": "¿Qué programas de seguridad y salud en el trabajo tienen?", "profile": "colaborador", "expected_profile": "colaborador", "expected_tools_subset": ["search_documents"]}
+{"id": "r16", "question": "¿Qué es el programa de transparencia y ética empresarial?", "profile": "colaborador", "expected_profile": "colaborador", "expected_tools_subset": ["search_documents", "faq_lookup"]}
+{"id": "r17", "question": "Tenemos 15 % menos caña esta semana. ¿Cómo cumplimos azúcar, etanol y energía?", "profile": "planificador", "expected_profile": "planificador", "expected_tools_subset": ["optimize_production_plan"]}
+{"id": "r18", "question": "¿Cuál es el estado de la planta esta semana?", "profile": "planificador", "expected_profile": "planificador", "expected_tools_subset": ["get_plant_state"]}
+{"id": "r19", "question": "¿Qué compromisos de etanol tenemos esta semana?", "profile": "planificador", "expected_profile": "planificador", "expected_tools_subset": ["get_commitments"]}
+{"id": "r20", "question": "Simula qué pasa si mandamos el 90 % de la caña a azúcar.", "profile": "planificador", "expected_profile": "planificador", "expected_tools_subset": ["simulate_production_scenario"]}

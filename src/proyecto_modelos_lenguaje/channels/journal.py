@@ -35,6 +35,7 @@ class ChannelLogRecord:
     latency_ms: int = 0
     model_calls: int = 0
     error_code: str | None = None
+    event: str | None = None  # spec 025: p. ej. «planner_denied» (sin número ni texto)
     ts: str = field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds"))
 
     @classmethod

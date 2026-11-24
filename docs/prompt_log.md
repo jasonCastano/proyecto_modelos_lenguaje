@@ -507,6 +507,18 @@ Con DeepSeek, la exactitud de herramienta pasó de 72,1 % (`agent.md` 1.6) a **8
 señal inequívoca del enrutador), con 0 búsquedas en las 10 consultas triviales; la meta era 90 %. Los fallos
 restantes se explican en el informe.
 
+### 3.22 Plataforma de agentes y planificación: `profiles.md` 1.0 y `agent.md` 1.8 (2026-11-24, spec 025)
+
+| Prompt | Versión | SHA-256 (12) | Cambio |
+| --- | --- | --- | --- |
+| `prompts/profiles.md` | 1.0 | `a0b0b8baca30` | Nuevo. Foco de cada perfil (visitante, cliente B2B, proveedor, colaborador y planificador); se añade al system prompt solo cuando el perfil está activo. |
+| `prompts/agent.md` | 1.8 | `e3597f3d0d60` | Reglas 15 y 16: sin precios ni condiciones comerciales; `audience` para recordar el perfil; en la ruta `planning`, cifras solo de las herramientas, etiqueta «Datos sintéticos de demostración», frase de decisión humana y citas `[S#]`. |
+
+El prompt no es la única garantía: la ruta `planning` solo la deciden las reglas, el perfil restringe las herramientas
+(`config/profiles.toml`) y un validador en código reemplaza por el `plan_card` del optimizador cualquier respuesta con
+cifras que no estén en las salidas de las herramientas (`planning.check_answer`, research R12). La batería de
+herramientas vigente (53 casos) no cambia; los 6 casos del planificador se reportan aparte.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

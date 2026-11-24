@@ -7,7 +7,7 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
-      "backendUrl": { "type": "string", "pattern": "^https?://(127\.0\.0\.1|localhost|\[::1\])(:\d+)?/?$" },
+      "backendUrl": { "type": "string", "pattern": "^https?://(127\\.0\\.0\\.1|localhost|\\[::1\\])(:\\d+)?/?$" },
       "timeoutMs": { "type": "integer", "minimum": 5000, "maximum": 120000 },
       "channels": { "type": "array", "items": { "type": "string", "enum": ["whatsapp", "telegram"] } }
     }

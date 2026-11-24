@@ -1,0 +1,4 @@
+# Falsos positivos revisados (spec 024, T080): claves ficticias en pruebas, no secretos reales.
+320c6e08eeec8b0f7cbc41bc4234d9e776844428:tests/api/test_api.py:generic-api-key:109
+e3c82418968d084408a2a14fb13b9aa0941a0032:tests/unit/test_jev.py:generic-api-key:31
+a9ab921f11a8b61738313d3e2da433b2cd9595a2:tests/conftest.py:generic-api-key:434

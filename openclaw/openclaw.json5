@@ -1,0 +1,70 @@
+// Configuración versionada del gateway OpenClaw de Valer-IA Caña (spec 024, contracts/openclaw-config.md).
+// Sin secretos: todo valor sensible es ${VAR} y vive en %USERPROFILE%\.openclaw-valeria\.env.
+// Arranque: OPENCLAW_CONFIG_PATH=<repo>\openclaw\openclaw.json5 (ver scripts/openclaw_env.ps1).
+// Validación estricta: una clave desconocida impide arrancar; verificar con `openclaw doctor`.
+{
+  gateway: {
+    mode: "local",
+    bind: "loopback", // nunca expuesto: WhatsApp usa una conexión saliente (research R3)
+    port: 18789,
+    auth: { mode: "token", token: "${OPENCLAW_GATEWAY_TOKEN}" },
+  },
+
+  agents: {
+    defaults: {
+      workspace: "${OPENCLAW_WORKSPACE_DIR}",
+      skipBootstrap: true, // el workspace lo sincroniza `pml ops workspace sync`
+      // Modelo en la nube (FR-010): DeepSeek primario y respaldo; nada de modelos locales.
+      model: { primary: "deepseek/deepseek-flash", fallbacks: ["deepseek/deepseek-v4-pro"] },
+      // Sandbox (ítem 4.2): toda ejecución del agente nativo en un contenedor sin red.
+      sandbox: { mode: "all", scope: "session", workspaceAccess: "ro", backend: "docker", network: "none" },
+    },
+  },
+
+  session: { dmScope: "per-channel-peer" }, // un hilo por remitente
+
+  tools: {
+    profile: "messaging",
+    deny: ["group:automation", "group:runtime", "group:fs", "sessions_spawn", "sessions_send"],
+    fs: { workspaceOnly: true },
+    exec: { security: "deny", ask: "always" },
+    elevated: { enabled: false },
+    agentToAgent: { enabled: false },
+  },
+
+  channels: {
+    whatsapp: {
+      // Número de un integrante (aclaración de la spec): "allowlist" fuera de la jornada,
+      // "pairing" solo el sábado (`openclaw config set channels.whatsapp.dmPolicy pairing`).
+      dmPolicy: "allowlist",
+      allowFrom: ["${WA_ALLOW_1}", "${WA_ALLOW_2}", "${WA_ALLOW_3}"],
+      groupPolicy: "disabled", // nunca en grupos (FR-001a)
+      selfChatMode: false, // ignora lo que escribe el propio titular
+    },
+    // Extra opcional (FR-007):
+    // telegram: { enabled: true, botToken: "${TELEGRAM_BOT_TOKEN}", dmPolicy: "pairing" },
+  },
+
+  // Servidor MCP propio (ítem 3.4): solo las 15 herramientas de lectura del catálogo.
+  mcp: {
+    servers: {
+      "valeria-tools": {
+        command: "uv",
+        args: ["run", "--project", "${VALERIA_REPO}", "python", "-m", "proyecto_modelos_lenguaje.mcp_server"],
+        cwd: "${VALERIA_REPO}",
+        env: { MANUELITA_STATE_DIR: "${MANUELITA_STATE_DIR}", QDRANT_URL: "${QDRANT_URL}" },
+      },
+    },
+  },
+
+  // Plugin puente (ADR 0028): cada DM admitido va a Valer-IA por loopback.
+  plugins: {
+    entries: {
+      "valeria-bridge": {
+        enabled: true,
+        hooks: { allowConversationAccess: true },
+        config: { backendUrl: "http://127.0.0.1:8000", timeoutMs: 45000, channels: ["whatsapp", "telegram"] },
+      },
+    },
+  },
+}

@@ -98,3 +98,18 @@ jobs:
       - name: Web build
         working-directory: web
         run: npm run build
+
+  # Spec 024 (FR-033, SC-010): ninguna clave, token ni sesión en el historial completo.
+  secretos:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks (historial completo)
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.0/gitleaks_8.24.0_linux_x64.tar.gz \
+            | tar -xz gitleaks
+          ./gitleaks git --redact --verbose --exit-code 1 .

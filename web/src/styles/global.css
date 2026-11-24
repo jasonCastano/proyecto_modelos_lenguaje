@@ -2018,3 +2018,18 @@ button.chip:disabled {
     transition: none;
   }
 }
+
+/* Spec 024: plan y herramientas del turno (vista técnica) */
+.turn-tools summary {
+  cursor: pointer;
+}
+
+.turn-tools ol,
+.turn-tools ul {
+  margin: 0.25rem 0 0 1.25rem;
+  padding: 0;
+}
+
+.turn-tools li[data-ok="false"] {
+  color: var(--danger, #b3261e);
+}

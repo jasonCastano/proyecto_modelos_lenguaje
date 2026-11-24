@@ -12,7 +12,12 @@ Route = Literal["direct", "documental", "structured", "mixed", "out_of_scope", "
 # Spec 022: "jev" = gatekeeper System One de TypeSafe.
 DecidedBy = Literal["rules", "llm", "demo", "jev"]
 WriteTool = Literal[
-    "forget_memory", "save_preference", "save_profile", "export_conversation", "remember_client"
+    "forget_memory",
+    "save_preference",
+    "save_profile",
+    "export_conversation",
+    "remember_client",
+    "request_human_contact",
 ]
 # Spec 018: motivo de una respuesta sin búsqueda (conducta de Valer-IA).
 # Spec 019: «crisis» (angustia grave) y «unattainable» (precios, compromisos, pedir una persona).
@@ -147,3 +152,6 @@ class Turn(BaseModel):
     jev: dict[str, Any] | None = None
     # Spec 023: el mensaje llegó por dictado (origen, duración y tiempo de reconocimiento).
     input: dict[str, Any] | None = None
+    # Spec 024: plan del turno y herramientas invocadas (nombre, argumentos, duración, resultado).
+    plan_steps: list[str] = Field(default_factory=list)
+    tools: list[dict[str, Any]] = Field(default_factory=list)

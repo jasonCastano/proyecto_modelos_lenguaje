@@ -72,6 +72,24 @@ def build_parser() -> argparse.ArgumentParser:
         "--report", default=str(REPORT_PATH), help="Markdown donde se escribe la sección."
     )
     evaluate.add_argument("--json-out", default=None)
+    evaluate.add_argument(
+        "--tools",
+        action="store_true",
+        help="Spec 024: exactitud de herramienta sobre tool_routing.jsonl (SC-004).",
+    )
+    evaluate.add_argument(
+        "--fake", action="store_true", help="Equivale a --mode demo (sin red ni clave)."
+    )
+
+    tools_cmd = sub.add_parser("tools", help="Catálogo de las 20 herramientas (spec 024).")
+    tools_cmd.add_argument("--json", action="store_true", help="Imprime el catálogo en JSON.")
+    tools_cmd.add_argument("--markdown", default=None, help="Escribe docs/herramientas.md.")
+
+    memory_cmd = sub.add_parser("memory", help="Auditoría de la memoria de largo plazo.")
+    memory_sub = memory_cmd.add_subparsers(dest="memory_command", required=True)
+    memory_list = memory_sub.add_parser("list", help="Recuerdos de un usuario (seudónimo).")
+    memory_list.add_argument("--user", required=True, help="Seudónimo, p. ej. wa-0123…")
+    memory_list.add_argument("--json", action="store_true")
 
     shield = sub.add_parser(
         "shield", help="Evalúa el blindaje contra inyección indirecta (spec 015)."
@@ -90,6 +108,11 @@ def build_parser() -> argparse.ArgumentParser:
     shield.add_argument("--run-id", default="")
     shield.add_argument("--json-out", default=None, help="Informe JSON (por defecto en real).")
     shield.add_argument("--report", default=None, help="Markdown (por defecto en real).")
+    shield.add_argument(
+        "--channel",
+        action="store_true",
+        help="Spec 024: ataques directos e indirectos llegados por el canal WhatsApp.",
+    )
 
     conduct = sub.add_parser(
         "conduct", help="Evalúa la conducta de Valer-IA ante situaciones difíciles (spec 018)."
@@ -588,6 +611,18 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
     root = Path(project_root) if project_root is not None else PROJECT_ROOT
     if args.command == "build-structured":
         return _build_structured(args, root)
+    if args.command in {"tools", "memory"} or getattr(args, "tools", False):
+        from . import cli_m3
+
+        if args.command == "tools":
+            return cli_m3.run_tools(args, root)
+        if args.command == "memory":
+            return cli_m3.run_memory(args, root)
+        return cli_m3.run_evaluate_tools(args, root)
+    if args.command == "shield" and args.channel:
+        from . import cli_m3
+
+        return cli_m3.run_shield_channel(args, root)
     if args.command == "evaluate":
         return _evaluate(args, root)
     if args.command == "shield":

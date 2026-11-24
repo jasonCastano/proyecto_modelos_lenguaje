@@ -66,3 +66,9 @@ Thumbs.db
 # Logs
 *.log
 web/*.tsbuildinfo
+
+# Spec 024: OpenClaw (secretos, sesión de WhatsApp y dependencias del plugin fuera de Git)
+openclaw/**/.env
+openclaw/plugins/*/node_modules/
+openclaw/plugins/*/dist/
+**/.openclaw*/

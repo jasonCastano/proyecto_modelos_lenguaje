@@ -342,6 +342,20 @@ class ChatCitationModel(BaseModel):
     fact_id: str | None = None
 
 
+class ToolInvocationModel(BaseModel):
+    """Spec 024 (data-model §7): una herramienta invocada en el turno."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    step: int = Field(ge=1)
+    name: str
+    args: dict[str, Any] = Field(default_factory=dict)
+    ok: bool = True
+    error: str | None = None
+    duration_ms: int = Field(default=0, ge=0)
+    summary: str = Field(default="", max_length=200)
+
+
 class TurnModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -357,6 +371,8 @@ class TurnModel(BaseModel):
     metrics: TurnMetricsModel = Field(default_factory=TurnMetricsModel)
     jev: dict[str, Any] | None = None  # spec 022: traza del gatekeeper (vista técnica)
     input: InputMeta | None = None  # spec 023: origen por voz (vista técnica)
+    plan_steps: list[str] = Field(default_factory=list)  # spec 024: plan del turno
+    tools: list[ToolInvocationModel] = Field(default_factory=list)  # spec 024: traza
 
 
 class AnomalyModel(BaseModel):
@@ -581,3 +597,50 @@ class SttResult(BaseModel):
     audio_ms: int
     stt_ms: int
     model: str
+
+
+# --- Spec 024: canal de mensajería por OpenClaw y catálogo de herramientas ------------------
+
+ChannelName = Literal["whatsapp", "telegram"]
+ChannelKind = Literal["text", "audio", "image", "video", "document", "sticker", "location", "other"]
+ChannelReplyStatus = Literal[
+    "answered", "pending_approval", "approval_resolved", "unsupported", "busy", "error", "ignored"
+]
+
+
+class ChannelMessageRequest(RequestModel):
+    """``POST /api/channels/messages``: un mensaje ya admitido por el gateway (channel-api §1)."""
+
+    channel: ChannelName
+    message_id: str = Field(min_length=1, max_length=128)
+    sender: str = Field(min_length=3, max_length=80)
+    kind: ChannelKind = "text"
+    text: str | None = Field(default=None, max_length=4000)
+    received_at: str | None = Field(default=None, max_length=40)
+
+    @model_validator(mode="after")
+    def text_when_needed(self) -> ChannelMessageRequest:
+        if self.kind == "text" and not (self.text or "").strip():
+            raise ValueError("text es obligatorio cuando kind = text")
+        return self
+
+
+class ChannelReplyModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: ChannelReplyStatus
+    messages: list[str] = Field(default_factory=list)
+    thread_id: str | None = None
+    route: str | None = None
+    tools: list[str] = Field(default_factory=list)
+    latency_ms: int = 0
+
+
+class ChannelStatus(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool
+    channels: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    model: dict[str, Any] = Field(default_factory=dict)
+    qdrant: dict[str, Any] = Field(default_factory=dict)
+    pending_approvals: int = 0

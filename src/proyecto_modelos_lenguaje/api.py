@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import hmac
 import json
+import os
 import uuid
 from functools import lru_cache
 from typing import Any, Literal
@@ -16,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
 from .agent.adversarial import adversarial_enabled, adversarial_retriever
+from .agent.catalog import to_json_schema
 from .agent.config import AgentConfigError, load_agent_config, resolve_state_dir
 from .agent.memory import build_checkpointer, build_store
 from .agent.observability import configure_tracing
@@ -24,6 +27,9 @@ from .agent.welcome import load_welcome
 from .api_models import (
     ApiError,
     AskRequest,
+    ChannelMessageRequest,
+    ChannelReplyModel,
+    ChannelStatus,
     ChatRequest,
     ChatResponse,
     CitedAnswer,
@@ -48,6 +54,10 @@ from .api_models import (
 from .api_models import (
     Citation as CitationModel,
 )
+from .channels.bridge import ChannelBridge, InboundMessage
+from .channels.identity import channel_salt, normalize_sender
+from .channels.journal import recent_stats, workspace_dir
+from .channels.store import ChannelStore
 from .config import PROJECT_ROOT
 from .llm import (
     LLMAuthError,
@@ -868,6 +878,128 @@ def thread(thread_id: str) -> dict[str, Any] | JSONResponse:
         return _chat_service().thread(thread_id)
     except Exception as exc:
         return _chat_error(exc)
+
+
+# --- Spec 024: canal de mensajería (puente OpenClaw → Valer-IA) y catálogo -------------------
+
+CHANNEL_TOKEN_ENV = "VALERIA_CHANNEL_TOKEN"
+CHANNEL_MODE_ENV = "MANUELITA_CHANNEL_MODE"
+LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost", "testclient"}
+
+
+@lru_cache(maxsize=1)
+def _channel_bridge() -> ChannelBridge:
+    """Puente del canal sobre el mismo ``ChatService`` que la web (un solo agente)."""
+    config = load_agent_config()
+    state_dir = resolve_state_dir(config.state_env_var)
+    mode = os.environ.get(CHANNEL_MODE_ENV, "real").strip() or "real"
+    return ChannelBridge(
+        _chat_service(),
+        ChannelStore(state_dir / "channels.sqlite3"),
+        config.channels,
+        salt=channel_salt(),
+        mode="demo" if mode == "demo" else "real",
+        log_dir=state_dir / "logs",
+        workspace=workspace_dir(),
+    )
+
+
+def _channel_guard(request: Request) -> JSONResponse | None:
+    """Solo loopback y con ``X-Channel-Token`` (comparación en tiempo constante)."""
+    expected = os.environ.get(CHANNEL_TOKEN_ENV, "").strip()
+    if not expected or not load_agent_config().channels.enabled:
+        return _api_error(
+            "channel_disabled",
+            "El canal de mensajería no está configurado en este servidor.",
+            retryable=False,
+            action="configurar VALERIA_CHANNEL_TOKEN",
+            status_code=503,
+        )
+    host = request.client.host if request.client else ""
+    supplied = request.headers.get("X-Channel-Token", "")
+    if host not in LOOPBACK_HOSTS or not hmac.compare_digest(supplied, expected):
+        return _api_error(
+            "channel_forbidden",
+            "Acceso denegado al canal.",
+            retryable=False,
+            action="revisar",
+            status_code=403,
+        )
+    return None
+
+
+@app.post("/api/channels/messages", response_model=ChannelReplyModel)
+async def channel_message(request: Request) -> dict[str, Any] | JSONResponse:
+    """Un mensaje entrante de WhatsApp (o Telegram) ya admitido por el gateway OpenClaw."""
+    denied = _channel_guard(request)
+    if denied is not None:
+        return denied
+    try:
+        payload = ChannelMessageRequest.model_validate(await request.json())
+        sender = normalize_sender(payload.sender, payload.channel)
+    except (ValueError, json.JSONDecodeError) as exc:
+        detail = str(exc).splitlines()[0][:200] if str(exc) else "cuerpo inválido"
+        return _api_error(
+            "channel_invalid",
+            f"El mensaje no cumple el contrato del canal: {detail}",
+            retryable=False,
+            action="revisar",
+            status_code=400,
+        )
+    message = InboundMessage(
+        payload.channel, payload.message_id, sender, payload.kind, payload.text
+    )
+    try:
+        reply = await run_in_threadpool(_channel_bridge().handle, message)
+    except Exception:
+        return _api_error(
+            "channel_error",
+            "No se pudo atender el mensaje.",
+            retryable=True,
+            action="reintentar",
+            status_code=500,
+        )
+    return reply.to_dict()
+
+
+@app.get("/api/channels/status", response_model=ChannelStatus)
+def channel_status(request: Request) -> dict[str, Any] | JSONResponse:
+    """Salud del canal: mensajes y errores de la última hora, p90, modelo y Qdrant."""
+    denied = _channel_guard(request)
+    if denied is not None:
+        return denied
+    config = load_agent_config()
+    state_dir = resolve_state_dir(config.state_env_var)
+    try:
+        pending = _channel_bridge().store.pending_count()
+    except Exception:
+        pending = 0
+    try:
+        llm = load_llm_config()
+        model = {"provider": llm.provider, "model": llm.model, "ok": llm.api_key_present}
+    except Exception:
+        model = {"ok": False}
+    qdrant_url = os.environ.get("QDRANT_URL", "").strip()
+    return {
+        "enabled": config.channels.enabled,
+        "channels": recent_stats(state_dir / "logs"),
+        "model": model,
+        "qdrant": {"mode": "server" if qdrant_url else "embedded", "ok": _retriever_ok()},
+        "pending_approvals": pending,
+    }
+
+
+def _retriever_ok() -> bool:
+    try:
+        return _retriever("real") is not None
+    except Exception:
+        return False
+
+
+@app.get("/api/tools")
+def tools_catalog() -> list[dict[str, Any]]:
+    """Catálogo de herramientas del agente (ítem 1.1): nombre, tipo, rutas y JSON Schema."""
+    return to_json_schema()
 
 
 if WEB_DIST.is_dir():

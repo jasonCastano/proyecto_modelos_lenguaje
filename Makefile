@@ -5,7 +5,7 @@
 APP_URL ?= http://127.0.0.1:8000
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev pre-commit-install pre-commit lint format format-check test python-check web-install web-dev web-test web-build check-web check app structured demo-prep qdrant-up audit e2e build clean
+.PHONY: help install dev pre-commit-install pre-commit lint format format-check test python-check web-install web-dev web-test web-build check-web check app structured demo-prep corpus openclaw-workspace ops-check mcp qdrant-up audit e2e build clean
 
 help: ## Muestra esta ayuda
 	@echo RAG Ingenio Manuelita — comandos disponibles
@@ -25,6 +25,10 @@ help: ## Muestra esta ayuda
 	@echo   app                Build web + tabla estructurada + API local (FastAPI)
 	@echo   structured         Tabla estructurada derivada del oro (si falta)
 	@echo   demo-prep          Indice, coleccion Qdrant y tabla listos para la demo
+	@echo   corpus             Plata, oro, indice y Qdrant en un directorio de trabajo (ARGS=...)
+	@echo   openclaw-workspace Copia openclaw/workspace al workspace de OpenClaw
+	@echo   ops-check          Prueba de 3 minutos del Anuncio 007 (backend, gateway, canal, auditoria)
+	@echo   mcp                Lista las herramientas del servidor MCP valeria-tools
 	@echo   qdrant-up          Qdrant servidor (HNSW) con Docker Compose
 	@echo   audit              E2E visual y funcional con Playwright
 	@echo   build              sdist + wheel
@@ -82,6 +86,18 @@ demo-prep: ## Deja listo el equipo de la demo: indice, Qdrant y tabla estructura
 	uv run python -m proyecto_modelos_lenguaje.rag qdrant build
 	uv run python -m proyecto_modelos_lenguaje.agent build-structured --force
 	uv run python -m proyecto_modelos_lenguaje.rag qdrant status
+
+corpus: ## Reconstruye plata, oro, indice y Qdrant en un directorio temporal (ARGS="--from silver")
+	uv run pml corpus rebuild $(ARGS)
+
+openclaw-workspace: ## Sincroniza el workspace versionado de OpenClaw (spec 024)
+	uv run pml ops workspace sync
+
+ops-check: ## Prueba de 3 minutos del Anuncio 007 (spec 024)
+	uv run pml ops check
+
+mcp: ## Herramientas del servidor MCP propio valeria-tools (spec 024)
+	uv run python -m proyecto_modelos_lenguaje.mcp_server --list
 
 qdrant-up: ## Qdrant servidor con indice HNSW real (exportar QDRANT_URL=http://localhost:6333)
 	docker compose up -d qdrant

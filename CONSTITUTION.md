@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 1.15.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-23
+**Versión**: 1.16.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-23
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -180,6 +180,12 @@ entrega y la calidad de la demostración.
 - Dictado por voz con **faster-whisper** (CTranslate2 en CPU, modelo `base` `int8`, Silero VAD) en el servidor; sin
   servicios de terceros. Motor, pesos y VAD con licencia MIT; el modelo se descarga a la caché de Hugging Face,
   nunca al repositorio (spec 023, ADR 0027).
+- **Canal y gateway** (spec 024, ADR 0028): **OpenClaw** (`npm i -g openclaw`, plugin `@openclaw/whatsapp`) y
+  Docker Desktop (Qdrant servidor y sandbox) se instalan en el PC servidor, fuera del paquete. **TypeScript
+  sobre Node ≥ 24.16 solo para el plugin puente** `openclaw/plugins/valeria-bridge` (lógica pura, pruebas
+  `node --test`); el backend sigue siendo solo Python.
+- Dependencias Python añadidas en la Fase 3: `mcp` (SDK oficial del servidor MCP), `scikit-learn` (t-SNE) y
+  `matplotlib` (figura de la proyección). UMAP queda descartado por compatibilidad con Python 3.14.
 - Dependencias de runtime y desarrollo separadas; versiones fijadas en `uv.lock` y `package-lock.json`.
 - Variables de entorno para claves y configuración sensible; `.env` fuera del repositorio.
 
@@ -190,6 +196,7 @@ web/                           # frontend React + Vite + TypeScript
 src/proyecto_modelos_lenguaje/ # paquete: API FastAPI, datos, prompts, LLM, RAG
 scripts/                       # entradas operativas reproducibles y auditoría visual
 config/                        # fuentes, reglas y parámetros versionados
+openclaw/                      # gateway OpenClaw: configuración sin secretos, workspace y plugin puente
 data/                          # capas medallion versionadas por Git LFS
 specs/                         # especificaciones, planes y contratos
 tests/                         # unitarias, integración, contrato y visuales
@@ -332,6 +339,10 @@ uv.lock
 
 - `.env`, credenciales, tokens y claves NO se versionan; `.gitignore` los cubre. Esto incluye `MANUELITA_IDENTITY_KEY` (clave HMAC del reconocimiento por correo) y `HF_TOKEN`, que
   solo sirve para descargar el modelo de voz.
+- Lo mismo aplica a `OPENCLAW_GATEWAY_TOKEN`, `VALERIA_CHANNEL_TOKEN`, `VALERIA_CHANNEL_SALT`, los números
+  `WA_ALLOW_*` y la sesión de WhatsApp (`%USERPROFILE%\.openclaw-valeria`): las plantillas versionadas
+  (`openclaw/openclaw.json5`, `openclaw/.env.example`) solo usan `${VAR}`. El job `secretos` de CI corre
+  `gitleaks` sobre el historial completo.
 - No se ejecuta código arbitrario proveniente del scraping.
 - Las dependencias se mantienen actualizadas y fijadas; se revisan vulnerabilidades antes de la entrega.
 - Los datos de terceros se citan y se usan dentro de lo permitido por su licencia.
@@ -650,6 +661,34 @@ canales reales (WhatsApp o Telegram), evaluado y observable.
 6. **Documentación final**: README, informe, arquitectura, limitaciones y créditos.
 7. **Demo final** y tag de release.
 
+**Concreción para el Anuncio 007** (enmienda 1.16.0, spec 024, ADR 0028):
+
+8. **Canal**: WhatsApp es obligatorio y llega por **OpenClaw** (gateway con `bind: "loopback"` y token, modelo
+   DeepSeek en la nube con respaldo, nunca un modelo local en la demo). Telegram u otro canal es un extra,
+   nunca un reemplazo. Hay **un solo agente**: el plugin `valeria-bridge` (hook `before_dispatch`) envía cada
+   mensaje admitido al mismo `ChatService` de la web por `POST /api/channels/messages` (loopback +
+   `X-Channel-Token`).
+9. **Número**: el de un integrante, vinculado como dispositivo. Solo chats individuales (`groupPolicy:
+   "disabled"`, `selfChatMode: false`); `dmPolicy: "allowlist"` con E.164 desde variables de entorno y
+   `"pairing"` solo durante la jornada de sustentación.
+10. **Seudónimos**: el número NO DEBE guardarse ni registrarse. Se convierte en `wa-<16 hex>` con HMAC-SHA256
+    y `VALERIA_CHANNEL_SALT`. Los registros (`channels.jsonl`, `mcp.jsonl`, bitácora `memory/YYYY-MM-DD.md`)
+    no llevan texto de mensajes ni números, y los archivos versionados del workspace no llevan datos de
+    personas.
+11. **Catálogo único**: las herramientas del agente se declaran en `agent/catalog.py` (mínimo 20, esquema
+    Pydantic con `extra="forbid"`, `requires_approval ⇔ write`). De ahí salen el agente, el servidor MCP,
+    `GET /api/tools` y `docs/herramientas.md`; no se declaran herramientas en otro lugar. Toda escritura pide
+    «SÍ/NO» también en WhatsApp y vence a los 10 minutos.
+12. **MCP de solo lectura**: el servidor propio `valeria-tools` expone únicamente las herramientas de lectura.
+    Lo usa el agente nativo de OpenClaw en el **modo degradado** (backend caído o > 45 s), sin escrituras.
+13. **Persistencia**: `SqliteSaver`, `SqliteStore` y `channels.sqlite3` (WAL) en `$MANUELITA_STATE_DIR` se
+    aceptan como el «equivalente» a PostgresSaver de la regla 0: un proceso, ≤ 20 usuarios simultáneos y
+    candado por usuario. Escalar a varios procesos obliga a revisar esta regla.
+14. **Hardening**: sandbox Docker sin red, `tools.deny`, `fs.workspaceOnly`, `exec` denegado;
+    `openclaw security audit` sin hallazgos críticos antes de la sustentación.
+15. **Despliegue**: PC del equipo como servidor (servicios con reinicio automático), reproducible con
+    `docs/despliegue.md`. WhatsApp no usa túnel (conexión saliente); el túnel, si existe, solo publica la web.
+
 ---
 
 ### Reglas transversales de fase
@@ -749,6 +788,34 @@ se puntúa de 1.0 a 5.0 y la nota es `1.0 + 4 × (puntos / 100)`.
 Streamlit, Gradio y los notebooks no se aceptan como interfaz. La evidencia de cada ítem está en
 `docs/rubrica_modulo2.md`.
 
+### 8.4 Rúbrica del Módulo 3
+
+Anuncio 007 (2026-11-23): sustentación el sábado 28 de noviembre de 2026, 15 minutos (7 de pitch con la demo
+en WhatsApp desde el teléfono de un invitado y 8 de discusión técnica), sin diapositivas. El Módulo 3 vale el
+40 % del curso; la nota es Σ (peso × puntaje), en escala de 1,0 a 5,0, y sustentar en inglés suma un bonus.
+
+| Ítem | Peso | Evidencia principal |
+|------|-----:|---------------------|
+| 1.1 Function calling y 20 tools | 10 % | `agent/catalog.py`, `agent tools`, `docs/herramientas.md`, `docs/evaluacion_herramientas.md` |
+| 1.2 Razonamiento, plan y router | 8 % | Subconjuntos por ruta, `plan_steps`, `/traza`, 0 búsquedas en triviales |
+| 1.3 Memoria por capas | 7 % | `SqliteSaver`/`SqliteStore`, `channels.sqlite3`, `/nuevo`, `/olvidar`, `agent memory list` |
+| 2.1 Pipeline del M1 | 5 % | `pml corpus rebuild` con manifiesto y procedencia |
+| 2.2 RAG sobre Qdrant | 6 % | Qdrant servidor (HNSW), filtro por *payload*, híbrida, citas |
+| 2.3 Evaluación del conocimiento | 4 % | 30 consultas, Recall@10/nDCG@10, t-SNE (`docs/evaluacion_modulo3.md`) |
+| 3.1 Gateway OpenClaw | 8 % | `openclaw/openclaw.json5`, `scripts/openclaw_env.ps1` |
+| 3.2 WhatsApp en producción | 10 % | `valeria-bridge`, `/api/channels/messages`, allowlist/pairing, teléfonos reales |
+| 3.3 Workspace operativo | 7 % | `openclaw/workspace/` y bitácora `memory/YYYY-MM-DD.md` |
+| 3.4 Skills/plugins/MCP | 5 % | `mcp_server.py` (`valeria-tools`), skill `valeria-manuelita`, plugin puente |
+| 4.1 Código y pruebas | 7 % | `make check`, pytest sin red, `node --test` del plugin |
+| 4.2 Seguridad y hardening | 7 % | Sandbox, `tools.deny`, `fs.workspaceOnly`, HITL, `agent shield --channel`, `security audit` |
+| 4.3 Documentación final | 6 % | README, `docs/despliegue.md`, `docs/manual_whatsapp.md`, ADR 0028 |
+| 5.1 Elevator pitch | 6 % | Guion de `docs/rubrica_modulo3.md` §2 |
+| 5.2 Discusión técnica | 4 % | Reparto y preguntas de `docs/rubrica_modulo3.md` §3–§4 |
+
+No se aceptan: menos de 20 tools, WhatsApp simulado o que no salga de localhost, Ollama como motor, solo
+diapositivas o video, ni claves o `.env` en el repositorio. Estado y evidencia de cada ítem:
+`docs/rubrica_modulo3.md`.
+
 ---
 
 ## 9. Documentación obligatoria
@@ -766,6 +833,9 @@ Streamlit, Gradio y los notebooks no se aceptan como interfaz. La evidencia de c
 | `docs/demo.md` | Guion de 12+3 minutos y checklist | Antes de la sustentación |
 | `docs/evaluacion_modulo2.md` | Conjunto etiquetado, Recall@10, nDCG@10, MRR, enrutador, Chain vs. Agent | Cierre del Módulo 2 |
 | `docs/memoria.md` | Qué se persiste, retención, borrado y privacidad | Al implementar memoria |
+| `docs/despliegue.md` | Requisitos, variables, gateway, WhatsApp, servicios, verificación y contingencia | Fase 3 |
+| `docs/manual_whatsapp.md` | Acceso, ejemplos, comandos, confirmaciones, privacidad y límites | Fase 3 |
+| `docs/rubrica_modulo3.md` | 15 ítems con estado y evidencia, guion 7 + 8 min, versión en inglés | Antes de la sustentación |
 
 ---
 
@@ -801,6 +871,13 @@ Streamlit, Gradio y los notebooks no se aceptan como interfaz. La evidencia de c
 - Una enmienda no invalida retroactivamente entregas ya aprobadas; si cambia una regla de evaluación, se
   aplica desde la fase siguiente.
 - Revisión obligatoria al cierre de cada fase y antes de cada entrega.
+
+**Historial reciente** (las versiones anteriores se reconstruyen con `git log -- CONSTITUTION.md`):
+
+| Versión | Fecha | Cambio |
+|---------|-------|--------|
+| 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
+| 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
 
 ---
 
@@ -997,4 +1074,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 1.15.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-23
+**Versión**: 1.16.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-23

@@ -64,12 +64,12 @@ from . import bridges, care
 from .actions import (
     TOOL_DESCRIPTIONS,
     WRITE_TOOLS,
-    build_write_tools,
     detect_write_intent,
     execute_action,
     extract_profile,
     is_profile_question,
 )
+from .catalog import ToolContext, build_catalog_tools, instrument, plan_steps
 from .config import AgentConfig
 from .guard import GuardedDocument, leaks_prompt, render_documents
 from .identity import (
@@ -124,7 +124,6 @@ from .structured import StructuredFact, StructuredStore, normalize
 from .tools import (
     ToolTrace,
     aggregate_series_impl,
-    build_read_tools,
     count_fact,
     count_intent,
     fact_document,
@@ -189,6 +188,8 @@ class ChatState(TypedDict, total=False):
     identity: dict[str, Any]
     identity_event: dict[str, Any] | None
     input_meta: dict[str, Any] | None  # spec 023: solo se copia al turno; el grafo no lo usa
+    tool_calls: list[dict[str, Any]]  # spec 024: herramientas invocadas en el turno
+    plan_steps: list[str]  # spec 024: plan visible del turno
     pii_notice: list[str]
     client: dict[str, Any] | None
     identity_next: str
@@ -437,6 +438,8 @@ def _route_node(deps: GraphDeps):
             "citations": [],
             "fallback": False,
             "retrievals": 0,
+            "tool_calls": [],
+            "plan_steps": [],
         }
 
     return route
@@ -1243,6 +1246,8 @@ TURN_RESET: dict[str, Any] = {
     "citations": [],
     "fallback": False,
     "retrievals": 0,
+    "tool_calls": [],
+    "plan_steps": [],
     "care_signals": None,
     "plan": None,
     "reviewed": "show",
@@ -1528,6 +1533,8 @@ def _finalize_node(deps: GraphDeps):
             metrics=metrics,
             jev=gate_trace,
             input=state.get("input_meta"),
+            plan_steps=list(state.get("plan_steps") or []),
+            tools=list(state.get("tool_calls") or []),
         )
         turns.append(turn.model_dump(mode="json"))
         summary, summarized = compact_history(
@@ -2050,6 +2057,14 @@ def route_hint(state: ChatState) -> str:
     return f"\n\nRuta decidida por el enrutador: {decision.get('route')}. {hint}." if hint else ""
 
 
+def _safe_store() -> Any:
+    """Store de largo plazo del grafo en curso (``None`` fuera de un grafo con Store)."""
+    try:
+        return get_store()
+    except Exception:
+        return None
+
+
 def _agent_node(deps: GraphDeps):
     system = load_agent_prompt("agent").render()
     limits = deps.config.agent
@@ -2064,18 +2079,22 @@ def _agent_node(deps: GraphDeps):
             executed.append(tool)
             return _run_action(deps, state, tool, args)
 
-        tools = [
-            *build_read_tools(
-                deps.retriever,
-                deps.store,
-                trace,
-                top_k=limits.chain_top_k,
-                neutralize=deps.neutralize,
-                series=deps.series,
-                question=state["question"],
-            ),
-            *build_write_tools(run),
-        ]
+        # Spec 024: catálogo único de 20 herramientas, filtrado por la ruta del enrutador, con
+        # traza de cada invocación (nombre, argumentos, duración, resultado) y plan visible.
+        route = str((state.get("decision") or {}).get("route") or "")
+        context = ToolContext(
+            retriever=deps.retriever,
+            store=deps.store,
+            series=deps.series,
+            trace=trace,
+            question=state["question"],
+            user_id=state.get("user_id", "anon"),
+            memory_store=_safe_store(),
+            top_k=limits.chain_top_k,
+            neutralize=deps.neutralize,
+        )
+        invocations: list[dict[str, Any]] = []
+        tools = instrument(build_catalog_tools(context, route=route, write_run=run), invocations)
 
         hint = route_hint(state)
         attention = care_brief(state)
@@ -2128,6 +2147,8 @@ def _agent_node(deps: GraphDeps):
                 "context": "\n\n".join(tool_text),
                 **delivered,
                 "retrievals": trace.calls,
+                "tool_calls": invocations,
+                "plan_steps": plan_steps(route, invocations),
             }
         if state.get("intent") or executed:
             # Turno de escritura: responde con el resultado de la acción, sin exigir citas.
@@ -2145,6 +2166,8 @@ def _agent_node(deps: GraphDeps):
             "citations": citations,
             "fallback": fallback,
             "retrievals": trace.calls,
+            "tool_calls": invocations,
+            "plan_steps": plan_steps(route, invocations),
         }
 
     return agent

@@ -168,6 +168,37 @@ def _words(text: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", normalize(text))
 
 
+# Spec 024: señales inequívocas de una herramienta del catálogo (sin modelo). Llevan la consulta
+# al agente aunque la conversación guiada la tomaría por charla («calcula…», «compara 2019 con…»).
+UNIT_ID = re.compile(r"\bunit_[0-9a-f]{16}\b")
+ARITHMETIC = re.compile(
+    r"\d[\d.,]*\s*(?:por|x|\*|\+|mas|menos|-|entre|/|dividido)\s*\d"
+    r"|\b(?:calcula|calcular|variacion porcentual|cambio porcentual|cuanto es)\b.*\d"
+)
+YEARS_COMPARISON = re.compile(
+    r"\b(?:compara|comparar|comparacion|diferencia|variacion|crecio|cambio)\b.*"
+    r"\b(?:19|20)\d{2}\b.*\b(?:19|20)\d{2}\b"
+)
+OFFICIAL_CHANNEL = re.compile(
+    r"\b(?:servicio al cliente|canales? oficiales?|linea etica|como (?:los )?contact\w*"
+    r"|(?:correo|telefono|pagina) de contacto)\b"
+)
+
+
+def tool_cue_decision(message: str, text: str) -> RouteDecision | None:
+    """Ruta para consultas que nombran una capacidad del catálogo (spec 024, ítem 1.2)."""
+    if UNIT_ID.search(message.lower()):
+        reason = "cita por identificador de unidad (get_fragment)"
+        return RouteDecision(route="documental", confidence=0.95, reason=reason, decided_by="rules")
+    if YEARS_COMPARISON.search(text) or ARITHMETIC.search(text):
+        reason = "cálculo o comparación entre años (compare_indicator / calculate)"
+        return RouteDecision(route="structured", confidence=0.9, reason=reason, decided_by="rules")
+    if OFFICIAL_CHANNEL.search(text):
+        reason = "canal oficial de contacto (get_official_channels)"
+        return RouteDecision(route="documental", confidence=0.9, reason=reason, decided_by="rules")
+    return None
+
+
 def rule_decision(message: str, signals: Mapping[str, Any] | None = None) -> RouteDecision | None:
     """Etapa 1: decide sin modelo cuando el caso es inequívoco; si no, ``None``.
 
@@ -203,6 +234,9 @@ def rule_decision(message: str, signals: Mapping[str, Any] | None = None) -> Rou
                 scope_reason=reason,
                 topic=spec.key if spec and spec.kind == "advice" else None,
             )
+    tool_route = tool_cue_decision(message, text)
+    if tool_route is not None:
+        return tool_route
     if AI_QUESTION.search(text):
         return RouteDecision(
             route="direct",

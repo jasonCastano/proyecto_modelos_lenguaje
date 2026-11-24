@@ -490,6 +490,23 @@ usaron 44 frases sintetizadas con Phonon en dos voces (Rebeca y Regina), es deci
 - La voz sintética es más limpia que una voz humana con micrófono de portátil. Falta medir grabaciones del equipo
   (`--audio-dir`, locales y no versionadas).
 
+### 3.21 Catálogo de 20 herramientas: `agent.md` 1.7 (2026-11-23, spec 024)
+
+| Prompt | Versión | SHA-256 (12) | Cambio |
+| --- | --- | --- | --- |
+| `prompts/agent.md` | 1.7 | `2f5c72163971` | Nombra las 12 herramientas de lectura nuevas y cuándo preferirlas a la búsqueda general; regla explícita «saludos, agradecimientos y preguntas sobre ti: sin herramientas»; `request_human_contact` entre las escrituras con aprobación. |
+
+Además de la regla del prompt, el enrutador restringe qué herramientas ve el agente: cada ruta ofrece un subconjunto
+del catálogo (`agent/catalog.py`, `specs_for_route`). Las tres herramientas del Módulo 2 siguen disponibles en las
+rutas documental, estructurada y mixta, así que la conducta evaluada en el Módulo 2 no cambia. Las descripciones de
+las herramientas son parte del prompt efectivo y viven en el catálogo (`docs/herramientas.md`, generado).
+
+La evaluación de enrutamiento de herramientas (43 consultas, al menos 2 por herramienta, más 10 triviales;
+`tests/fixtures/agent/tool_routing.jsonl`, fijada antes de correr) está en `docs/evaluacion_herramientas.md`.
+Con DeepSeek, la exactitud de herramienta pasó de 72,1 % (`agent.md` 1.6) a **88,4 %** (1.7, más las reglas de
+señal inequívoca del enrutador), con 0 búsquedas en las 10 consultas triviales; la meta era 90 %. Los fallos
+restantes se explican en el informe.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

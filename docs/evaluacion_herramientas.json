@@ -1,0 +1,767 @@
+{
+  "run_id": "tools-real-20261123T220245Z",
+  "mode": "real",
+  "created_at": "2026-11-23T22:02:45+00:00",
+  "command": "uv run python -m proyecto_modelos_lenguaje.agent evaluate --tools --mode real",
+  "summary": {
+    "cases": 53,
+    "scored": 43,
+    "accuracy": 0.8837,
+    "trivial": 10,
+    "searches_in_trivial": 0,
+    "errors": 0,
+    "latency_p50_ms": 3723,
+    "latency_p90_ms": 9230,
+    "by_tool": {
+      "search_documents": {
+        "cases": 2,
+        "hits": 2
+      },
+      "query_structured": {
+        "cases": 2,
+        "hits": 2
+      },
+      "aggregate_series": {
+        "cases": 2,
+        "hits": 2
+      },
+      "list_indicators": {
+        "cases": 2,
+        "hits": 2
+      },
+      "compare_indicator": {
+        "cases": 2,
+        "hits": 2
+      },
+      "sustainability_lookup": {
+        "cases": 3,
+        "hits": 3
+      },
+      "list_business_units": {
+        "cases": 2,
+        "hits": 2
+      },
+      "list_company_entities": {
+        "cases": 2,
+        "hits": 2
+      },
+      "get_official_channels": {
+        "cases": 3,
+        "hits": 3
+      },
+      "faq_lookup": {
+        "cases": 2,
+        "hits": 0
+      },
+      "summarize_topic": {
+        "cases": 2,
+        "hits": 2
+      },
+      "latest_news": {
+        "cases": 2,
+        "hits": 2
+      },
+      "get_fragment": {
+        "cases": 2,
+        "hits": 2
+      },
+      "calculate": {
+        "cases": 3,
+        "hits": 3
+      },
+      "get_my_profile": {
+        "cases": 2,
+        "hits": 0
+      },
+      "save_profile": {
+        "cases": 2,
+        "hits": 2
+      },
+      "save_preference": {
+        "cases": 2,
+        "hits": 2
+      },
+      "forget_memory": {
+        "cases": 2,
+        "hits": 2
+      },
+      "export_conversation": {
+        "cases": 2,
+        "hits": 2
+      },
+      "request_human_contact": {
+        "cases": 2,
+        "hits": 1
+      }
+    },
+    "meets_target": false
+  },
+  "results": [
+    {
+      "case_id": "t01",
+      "route": "documental",
+      "expected_tool": "search_documents",
+      "called": [
+        "search_documents",
+        "summarize_topic",
+        "search_documents"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 16400,
+      "error": null
+    },
+    {
+      "case_id": "t02",
+      "route": "documental",
+      "expected_tool": "search_documents",
+      "called": [
+        "search_documents",
+        "sustainability_lookup",
+        "search_documents"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 9230,
+      "error": null
+    },
+    {
+      "case_id": "t03",
+      "route": "structured",
+      "expected_tool": "query_structured",
+      "called": [
+        "query_structured",
+        "search_documents",
+        "query_structured"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 6983,
+      "error": null
+    },
+    {
+      "case_id": "t04",
+      "route": "structured",
+      "expected_tool": "query_structured",
+      "called": [
+        "query_structured"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 3878,
+      "error": null
+    },
+    {
+      "case_id": "t05",
+      "route": "structured",
+      "expected_tool": "aggregate_series",
+      "called": [
+        "aggregate_series"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 3723,
+      "error": null
+    },
+    {
+      "case_id": "t06",
+      "route": "structured",
+      "expected_tool": "aggregate_series",
+      "called": [
+        "aggregate_series"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 4369,
+      "error": null
+    },
+    {
+      "case_id": "t07",
+      "route": "structured",
+      "expected_tool": "list_indicators",
+      "called": [
+        "list_indicators"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 5676,
+      "error": null
+    },
+    {
+      "case_id": "t08",
+      "route": "structured",
+      "expected_tool": "list_indicators",
+      "called": [
+        "list_indicators",
+        "aggregate_series",
+        "aggregate_series"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 7119,
+      "error": null
+    },
+    {
+      "case_id": "t09",
+      "route": "structured",
+      "expected_tool": "compare_indicator",
+      "called": [
+        "compare_indicator"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 2126,
+      "error": null
+    },
+    {
+      "case_id": "t10",
+      "route": "structured",
+      "expected_tool": "compare_indicator",
+      "called": [
+        "search_documents",
+        "compare_indicator",
+        "search_documents"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 6960,
+      "error": null
+    },
+    {
+      "case_id": "t11",
+      "route": "documental",
+      "expected_tool": "sustainability_lookup",
+      "called": [
+        "sustainability_lookup"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 4851,
+      "error": null
+    },
+    {
+      "case_id": "t12",
+      "route": "documental",
+      "expected_tool": "sustainability_lookup",
+      "called": [
+        "sustainability_lookup"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 5816,
+      "error": null
+    },
+    {
+      "case_id": "t13",
+      "route": "documental",
+      "expected_tool": "sustainability_lookup",
+      "called": [
+        "sustainability_lookup",
+        "search_documents"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 9357,
+      "error": null
+    },
+    {
+      "case_id": "t14",
+      "route": "structured",
+      "expected_tool": "list_business_units",
+      "called": [
+        "list_business_units"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 6236,
+      "error": null
+    },
+    {
+      "case_id": "t15",
+      "route": "structured",
+      "expected_tool": "list_business_units",
+      "called": [
+        "list_business_units"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 6337,
+      "error": null
+    },
+    {
+      "case_id": "t16",
+      "route": "structured",
+      "expected_tool": "list_company_entities",
+      "called": [
+        "list_company_entities"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 4729,
+      "error": null
+    },
+    {
+      "case_id": "t17",
+      "route": "structured",
+      "expected_tool": "list_company_entities",
+      "called": [
+        "list_company_entities"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 4740,
+      "error": null
+    },
+    {
+      "case_id": "t18",
+      "route": "documental",
+      "expected_tool": "get_official_channels",
+      "called": [
+        "get_official_channels"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 5342,
+      "error": null
+    },
+    {
+      "case_id": "t19",
+      "route": "documental",
+      "expected_tool": "get_official_channels",
+      "called": [
+        "get_official_channels",
+        "search_documents"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 6031,
+      "error": null
+    },
+    {
+      "case_id": "t20",
+      "route": "documental",
+      "expected_tool": "get_official_channels",
+      "called": [
+        "get_official_channels",
+        "get_official_channels"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 3156,
+      "error": null
+    },
+    {
+      "case_id": "t21",
+      "route": "documental",
+      "expected_tool": "faq_lookup",
+      "called": [
+        "search_documents",
+        "summarize_topic",
+        "search_documents"
+      ],
+      "proposed": null,
+      "hit": false,
+      "searched": true,
+      "latency_ms": 7633,
+      "error": null
+    },
+    {
+      "case_id": "t22",
+      "route": "documental",
+      "expected_tool": "faq_lookup",
+      "called": [
+        "summarize_topic",
+        "search_documents"
+      ],
+      "proposed": null,
+      "hit": false,
+      "searched": true,
+      "latency_ms": 8376,
+      "error": null
+    },
+    {
+      "case_id": "t23",
+      "route": "documental",
+      "expected_tool": "summarize_topic",
+      "called": [
+        "summarize_topic",
+        "search_documents",
+        "search_documents"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 13594,
+      "error": null
+    },
+    {
+      "case_id": "t24",
+      "route": "documental",
+      "expected_tool": "summarize_topic",
+      "called": [
+        "search_documents",
+        "summarize_topic",
+        "search_documents"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 9440,
+      "error": null
+    },
+    {
+      "case_id": "t25",
+      "route": "documental",
+      "expected_tool": "latest_news",
+      "called": [
+        "latest_news"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 5301,
+      "error": null
+    },
+    {
+      "case_id": "t26",
+      "route": "documental",
+      "expected_tool": "latest_news",
+      "called": [
+        "latest_news",
+        "search_documents"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": true,
+      "latency_ms": 9800,
+      "error": null
+    },
+    {
+      "case_id": "t27",
+      "route": "documental",
+      "expected_tool": "get_fragment",
+      "called": [
+        "get_fragment"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 3044,
+      "error": null
+    },
+    {
+      "case_id": "t28",
+      "route": "documental",
+      "expected_tool": "get_fragment",
+      "called": [
+        "get_fragment"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 2813,
+      "error": null
+    },
+    {
+      "case_id": "t29",
+      "route": "structured",
+      "expected_tool": "calculate",
+      "called": [
+        "calculate"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 2601,
+      "error": null
+    },
+    {
+      "case_id": "t30",
+      "route": "structured",
+      "expected_tool": "calculate",
+      "called": [
+        "calculate"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 2296,
+      "error": null
+    },
+    {
+      "case_id": "t31",
+      "route": "structured",
+      "expected_tool": "calculate",
+      "called": [
+        "calculate"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 4557,
+      "error": null
+    },
+    {
+      "case_id": "t32",
+      "route": "out_of_scope",
+      "expected_tool": "get_my_profile",
+      "called": [],
+      "proposed": null,
+      "hit": false,
+      "searched": false,
+      "latency_ms": 2271,
+      "error": null
+    },
+    {
+      "case_id": "t33",
+      "route": "out_of_scope",
+      "expected_tool": "get_my_profile",
+      "called": [],
+      "proposed": null,
+      "hit": false,
+      "searched": false,
+      "latency_ms": 2399,
+      "error": null
+    },
+    {
+      "case_id": "t34",
+      "route": "direct",
+      "expected_tool": "save_profile",
+      "called": [],
+      "proposed": "save_profile",
+      "hit": true,
+      "searched": false,
+      "latency_ms": 2287,
+      "error": null
+    },
+    {
+      "case_id": "t35",
+      "route": "direct",
+      "expected_tool": "save_profile",
+      "called": [],
+      "proposed": "save_profile",
+      "hit": true,
+      "searched": false,
+      "latency_ms": 4324,
+      "error": null
+    },
+    {
+      "case_id": "t36",
+      "route": "direct",
+      "expected_tool": "save_preference",
+      "called": [],
+      "proposed": "save_preference",
+      "hit": true,
+      "searched": false,
+      "latency_ms": 1322,
+      "error": null
+    },
+    {
+      "case_id": "t37",
+      "route": "direct",
+      "expected_tool": "save_preference",
+      "called": [],
+      "proposed": "save_preference",
+      "hit": true,
+      "searched": false,
+      "latency_ms": 2131,
+      "error": null
+    },
+    {
+      "case_id": "t38",
+      "route": "direct",
+      "expected_tool": "forget_memory",
+      "called": [],
+      "proposed": "forget_memory",
+      "hit": true,
+      "searched": false,
+      "latency_ms": 1390,
+      "error": null
+    },
+    {
+      "case_id": "t39",
+      "route": "direct",
+      "expected_tool": "forget_memory",
+      "called": [],
+      "proposed": "forget_memory",
+      "hit": true,
+      "searched": false,
+      "latency_ms": 1535,
+      "error": null
+    },
+    {
+      "case_id": "t40",
+      "route": "direct",
+      "expected_tool": "export_conversation",
+      "called": [],
+      "proposed": "export_conversation",
+      "hit": true,
+      "searched": false,
+      "latency_ms": 992,
+      "error": null
+    },
+    {
+      "case_id": "t41",
+      "route": "direct",
+      "expected_tool": "export_conversation",
+      "called": [],
+      "proposed": "export_conversation",
+      "hit": true,
+      "searched": false,
+      "latency_ms": 1707,
+      "error": null
+    },
+    {
+      "case_id": "t42",
+      "route": "out_of_scope",
+      "expected_tool": "request_human_contact",
+      "called": [],
+      "proposed": null,
+      "hit": false,
+      "searched": false,
+      "latency_ms": 3731,
+      "error": null
+    },
+    {
+      "case_id": "t43",
+      "route": "direct",
+      "expected_tool": "request_human_contact",
+      "called": [],
+      "proposed": "request_human_contact",
+      "hit": true,
+      "searched": false,
+      "latency_ms": 1511,
+      "error": null
+    },
+    {
+      "case_id": "z01",
+      "route": "direct",
+      "expected_tool": null,
+      "called": [],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 1611,
+      "error": null
+    },
+    {
+      "case_id": "z02",
+      "route": "direct",
+      "expected_tool": null,
+      "called": [],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 1688,
+      "error": null
+    },
+    {
+      "case_id": "z03",
+      "route": "direct",
+      "expected_tool": null,
+      "called": [],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 2818,
+      "error": null
+    },
+    {
+      "case_id": "z04",
+      "route": "direct",
+      "expected_tool": null,
+      "called": [],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 1814,
+      "error": null
+    },
+    {
+      "case_id": "z05",
+      "route": "direct",
+      "expected_tool": null,
+      "called": [],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 2171,
+      "error": null
+    },
+    {
+      "case_id": "z06",
+      "route": "direct",
+      "expected_tool": null,
+      "called": [],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 2309,
+      "error": null
+    },
+    {
+      "case_id": "z07",
+      "route": "direct",
+      "expected_tool": null,
+      "called": [],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 2229,
+      "error": null
+    },
+    {
+      "case_id": "z08",
+      "route": "direct",
+      "expected_tool": null,
+      "called": [],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 1194,
+      "error": null
+    },
+    {
+      "case_id": "z09",
+      "route": "direct",
+      "expected_tool": null,
+      "called": [],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 2303,
+      "error": null
+    },
+    {
+      "case_id": "z10",
+      "route": "direct",
+      "expected_tool": null,
+      "called": [],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 1672,
+      "error": null
+    }
+  ]
+}

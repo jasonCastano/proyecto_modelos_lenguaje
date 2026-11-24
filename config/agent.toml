@@ -56,3 +56,12 @@ signals = ["route", "scope", "annoyance", "crisis"]
 
 [state]
 env_var = "MANUELITA_STATE_DIR"    # checkpointer y Store, siempre fuera del repositorio
+
+[channels]                 # canal WhatsApp por OpenClaw (spec 024); el token va en .env: VALERIA_CHANNEL_TOKEN
+enabled = true
+reply_max_chars = 1500    # caracteres por mensaje de WhatsApp (el canal admite 4000)
+max_messages = 4          # mensajes por respuesta; el resto se abrevia
+approval_ttl_minutes = 10 # vencimiento de una confirmación SÍ/NO pendiente
+dedupe_hours = 48         # retención de ids de mensaje ya atendidos
+voice_notes = false       # true: transcribe notas de voz con el dictado (spec 023)
+bridge_timeout_seconds = 45  # el plugin espera esto antes del modo degradado

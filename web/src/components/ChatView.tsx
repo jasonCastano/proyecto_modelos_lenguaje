@@ -372,6 +372,31 @@ export function ChatTurnCard({
           ) : null}
         </p>
         ) : null}
+        {technical && (turn.plan_steps?.length || turn.tools?.length) ? (
+          <details className="answer-meta turn-tools" data-testid="turn-tools">
+            <summary>
+              Plan y herramientas ({turn.tools?.length ?? 0}
+              {turn.tools?.length === 1 ? " herramienta" : " herramientas"})
+            </summary>
+            {turn.plan_steps?.length ? (
+              <ol data-testid="turn-plan">
+                {turn.plan_steps.map((step, index) => (
+                  <li key={`${index}-${step}`}>{step}</li>
+                ))}
+              </ol>
+            ) : null}
+            {turn.tools?.length ? (
+              <ul data-testid="turn-tool-list">
+                {turn.tools.map((call) => (
+                  <li data-ok={call.ok} key={`${call.step}-${call.name}`}>
+                    <code>{call.name}</code> · {call.duration_ms} ms
+                    {call.ok ? "" : ` · error: ${call.error ?? "desconocido"}`}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </details>
+        ) : null}
         {onListen && turn.answer ? (
           <button className="btn btn-link" data-testid="turn-listen" onClick={onListen} type="button">
             🔊 Escuchar

@@ -1,0 +1,53 @@
+{"id": "t01", "question": "¿Cuál es la historia de Manuelita desde su fundación?", "route": "documental", "expected_tool": "search_documents"}
+{"id": "t02", "question": "¿Qué hace Manuelita con la vinaza en sus ingenios?", "route": "documental", "expected_tool": "search_documents"}
+{"id": "t03", "question": "¿En qué año se fundó Agroindustrial Laredo?", "route": "structured", "expected_tool": "query_structured"}
+{"id": "t04", "question": "¿Cuál es la capacidad de la planta de biodiésel de Manuelita Aceites y Energía?", "route": "structured", "expected_tool": "query_structured"}
+{"id": "t05", "question": "¿Cuál fue el promedio de ventas consolidadas de Manuelita entre 2018 y 2022?", "route": "structured", "expected_tool": "aggregate_series"}
+{"id": "t06", "question": "¿En qué año fue máxima la producción de azúcar?", "route": "structured", "expected_tool": "aggregate_series"}
+{"id": "t07", "question": "¿Qué indicadores anuales tienes disponibles de Manuelita?", "route": "structured", "expected_tool": "list_indicators"}
+{"id": "t08", "question": "¿De qué cifras del negocio de palma tienes datos por año?", "route": "structured", "expected_tool": "list_indicators"}
+{"id": "t09", "question": "Compara el EBITDA de 2019 con el de 2022", "route": "structured", "expected_tool": "compare_indicator"}
+{"id": "t10", "question": "¿Cuánto cambió la producción de bioetanol entre 2017 y 2021 y por qué?", "route": "mixed", "expected_tool": "compare_indicator"}
+{"id": "t11", "question": "¿Qué hace Manuelita para cuidar el agua?", "route": "documental", "expected_tool": "sustainability_lookup"}
+{"id": "t12", "question": "¿Cómo reduce Manuelita sus emisiones de carbono?", "route": "documental", "expected_tool": "sustainability_lookup"}
+{"id": "t13", "question": "¿Qué acciones de biodiversidad tiene Manuelita en el Meta?", "route": "documental", "expected_tool": "sustainability_lookup"}
+{"id": "t14", "question": "¿Qué filiales tiene Manuelita en Perú?", "route": "structured", "expected_tool": "list_business_units"}
+{"id": "t15", "question": "¿Cuáles son las unidades de negocio de Manuelita y en qué países están?", "route": "structured", "expected_tool": "list_business_units"}
+{"id": "t16", "question": "¿Qué certificaciones tiene Manuelita?", "route": "structured", "expected_tool": "list_company_entities"}
+{"id": "t17", "question": "¿Qué marcas comercializa Manuelita?", "route": "structured", "expected_tool": "list_company_entities"}
+{"id": "t18", "question": "¿Dónde puedo enviar mi hoja de vida a Manuelita?", "route": "direct", "expected_tool": "get_official_channels"}
+{"id": "t19", "question": "¿Cuál es el canal oficial para proveedores de caña?", "route": "direct", "expected_tool": "get_official_channels"}
+{"id": "t20", "question": "¿Cómo contacto al servicio al cliente de Manuelita?", "route": "documental", "expected_tool": "get_official_channels"}
+{"id": "t21", "question": "¿Qué relación tiene la Fundación Manuelita con la empresa?", "route": "documental", "expected_tool": "faq_lookup"}
+{"id": "t22", "question": "Preguntas frecuentes sobre rankings y reconocimientos de Manuelita", "route": "documental", "expected_tool": "faq_lookup"}
+{"id": "t23", "question": "Dame un panorama general de las sedes de Manuelita", "route": "documental", "expected_tool": "summarize_topic"}
+{"id": "t24", "question": "Resúmeme lo que hay sobre la Fundación Manuelita", "route": "documental", "expected_tool": "summarize_topic"}
+{"id": "t25", "question": "¿Cuáles son las últimas noticias de Manuelita?", "route": "documental", "expected_tool": "latest_news"}
+{"id": "t26", "question": "¿Qué comunicados ha publicado Manuelita desde 2024?", "route": "documental", "expected_tool": "latest_news"}
+{"id": "t27", "question": "Muéstrame el texto completo de la unidad unit_27c34db39788d197", "route": "documental", "expected_tool": "get_fragment"}
+{"id": "t28", "question": "¿De qué página sale la cita unit_8537ad9053e21e86?", "route": "documental", "expected_tool": "get_fragment"}
+{"id": "t29", "question": "¿Cuánto es 1.250 por 3,5?", "route": "direct", "expected_tool": "calculate"}
+{"id": "t30", "question": "Calcula la variación porcentual de 120 a 150", "route": "direct", "expected_tool": "calculate"}
+{"id": "t31", "question": "Si las ventas fueron 1.133.242 millones y crecen 15%, ¿cuánto serían?", "route": "mixed", "expected_tool": "calculate"}
+{"id": "t32", "question": "¿Qué datos míos tienes guardados?", "route": "direct", "expected_tool": "get_my_profile"}
+{"id": "t33", "question": "¿Recuerdas en qué ciudad vivo?", "route": "direct", "expected_tool": "get_my_profile"}
+{"id": "t34", "question": "Me llamo Ana y trabajo en Carvajal", "route": "direct", "expected_tool": "save_profile"}
+{"id": "t35", "question": "Guarda que soy ingeniera agrónoma en Palmira", "route": "direct", "expected_tool": "save_profile"}
+{"id": "t36", "question": "Prefiero respuestas en viñetas", "route": "direct", "expected_tool": "save_preference"}
+{"id": "t37", "question": "Respóndeme siempre en inglés", "route": "direct", "expected_tool": "save_preference"}
+{"id": "t38", "question": "Olvida mis preferencias, por favor", "route": "direct", "expected_tool": "forget_memory"}
+{"id": "t39", "question": "Borra todo lo que sabes de mí", "route": "direct", "expected_tool": "forget_memory"}
+{"id": "t40", "question": "Exporta la conversación", "route": "direct", "expected_tool": "export_conversation"}
+{"id": "t41", "question": "Descarga este chat en Markdown", "route": "direct", "expected_tool": "export_conversation"}
+{"id": "t42", "question": "Quiero que una persona de Manuelita me contacte por WhatsApp sobre vacantes", "route": "direct", "expected_tool": "request_human_contact"}
+{"id": "t43", "question": "Necesito que alguien de proveedores me llame, me llamo Luis", "route": "direct", "expected_tool": "request_human_contact"}
+{"id": "z01", "question": "Hola, buenas tardes", "route": "direct", "expected_tool": null}
+{"id": "z02", "question": "Buenos días", "route": "direct", "expected_tool": null}
+{"id": "z03", "question": "Gracias por la información", "route": "direct", "expected_tool": null}
+{"id": "z04", "question": "Muchas gracias, eso era todo", "route": "direct", "expected_tool": null}
+{"id": "z05", "question": "¿Quién eres?", "route": "direct", "expected_tool": null}
+{"id": "z06", "question": "¿Qué puedes hacer?", "route": "direct", "expected_tool": null}
+{"id": "z07", "question": "¿Cómo te llamas?", "route": "direct", "expected_tool": null}
+{"id": "z08", "question": "Chao, hasta luego", "route": "direct", "expected_tool": null}
+{"id": "z09", "question": "Perfecto, entendido", "route": "direct", "expected_tool": null}
+{"id": "z10", "question": "¿Eres un robot?", "route": "direct", "expected_tool": null}

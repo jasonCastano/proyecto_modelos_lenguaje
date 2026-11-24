@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import time
 from collections import Counter
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -141,9 +142,16 @@ class SilverPipeline:
         sources_config: str | Path = "config/sources.toml",
         silver_config: str | Path = "config/silver.toml",
         project_root: Path = PROJECT_ROOT,
+        output_root: str | Path | None = None,
     ) -> SilverPipeline:
+        """Crea el pipeline; ``output_root`` sustituye ``[output] root`` (p. ej. un workdir)."""
         app = load_config(sources_config, project_root=project_root)
         config = load_silver_config(silver_config, project_root=project_root)
+        if output_root is not None:
+            root = Path(output_root)
+            if not root.is_absolute():
+                root = project_root / root
+            config = replace(config, output=replace(config.output, root=root.resolve()))
         return cls(
             bronze_db=app.settings.bronze_dir / "_meta" / "bronze.sqlite3",
             bronze_dir=app.settings.bronze_dir,
@@ -158,13 +166,21 @@ class SilverPipeline:
         limit: int | None = None,
         source: str | None = None,
         force: bool = False,
+        smoke: bool | None = None,
     ) -> dict[str, Any]:
+        """Construye la capa de plata.
+
+        Por defecto una corrida parcial (``limit`` o ``source``) escribe en ``_meta/smoke/<run>``;
+        ``smoke=False`` la publica en la raíz de salida (útil en un directorio de trabajo).
+        """
         validate_run_id(run_id)
         started = time.perf_counter()
         started_at = utcnow()
         paths = prepare_output(self.config.output.root)
         partial = limit is not None or source is not None
-        if partial:
+        if smoke is None:
+            smoke = partial
+        if smoke:
             run_root = paths["meta"] / "smoke" / run_id
             paths = dict(paths)
             paths["documents"] = run_root / "documents.jsonl"

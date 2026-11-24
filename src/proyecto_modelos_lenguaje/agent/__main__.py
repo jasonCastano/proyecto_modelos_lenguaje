@@ -81,9 +81,25 @@ def build_parser() -> argparse.ArgumentParser:
         "--fake", action="store_true", help="Equivale a --mode demo (sin red ni clave)."
     )
 
-    tools_cmd = sub.add_parser("tools", help="Catálogo de las 20 herramientas (spec 024).")
+    tools_cmd = sub.add_parser(
+        "tools", help="Catálogo de herramientas (20 de la spec 024 + 6 de la 025)."
+    )
     tools_cmd.add_argument("--json", action="store_true", help="Imprime el catálogo en JSON.")
     tools_cmd.add_argument("--markdown", default=None, help="Escribe docs/herramientas.md.")
+
+    planning_cmd = sub.add_parser(
+        "planning", help="Spec 025: optimiza un escenario sintético sin LLM (plan_card)."
+    )
+    planning_cmd.add_argument("--scenario", default="{}", help="JSON del escenario.")
+    planning_cmd.add_argument("--json", action="store_true")
+    planning_eval = sub.add_parser(
+        "planning-eval", help="Spec 025: batería de planificación (SC-001/002/004)."
+    )
+    planning_eval.add_argument("--mode", choices=("direct", "real", "demo"), default="direct")
+    planning_eval.add_argument("--write-docs", action="store_true")
+    profiles_eval = sub.add_parser("profiles-eval", help="Spec 025: batería de perfiles (SC-003).")
+    profiles_eval.add_argument("--mode", choices=("demo", "real"), default="demo")
+    profiles_eval.add_argument("--write-docs", action="store_true")
 
     memory_cmd = sub.add_parser("memory", help="Auditoría de la memoria de largo plazo.")
     memory_sub = memory_cmd.add_subparsers(dest="memory_command", required=True)
@@ -611,6 +627,10 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
     root = Path(project_root) if project_root is not None else PROJECT_ROOT
     if args.command == "build-structured":
         return _build_structured(args, root)
+    if args.command in {"planning", "planning-eval", "profiles-eval"}:
+        from . import cli_m3
+
+        return cli_m3.run_planning(args, root)
     if args.command in {"tools", "memory"} or getattr(args, "tools", False):
         from . import cli_m3
 

@@ -51,3 +51,9 @@
 {"id": "z08", "question": "Chao, hasta luego", "route": "direct", "expected_tool": null}
 {"id": "z09", "question": "Perfecto, entendido", "route": "direct", "expected_tool": null}
 {"id": "z10", "question": "¿Eres un robot?", "route": "direct", "expected_tool": null}
+{"id": "t54", "question": "¿Cuál es el estado de la planta esta semana: caña disponible y equipos?", "route": "planning", "expected_tool": "get_plant_state", "profile": "planificador"}
+{"id": "t55", "question": "¿Qué compromisos de azúcar, etanol y energía tenemos esta semana?", "route": "planning", "expected_tool": "get_commitments", "profile": "planificador"}
+{"id": "t56", "question": "¿Qué dice el procedimiento sobre la prioridad de los compromisos?", "route": "planning", "expected_tool": "search_operating_procedures", "profile": "planificador"}
+{"id": "t57", "question": "Simula qué pasa si mandamos el 90 % de la caña a azúcar esta semana.", "route": "planning", "expected_tool": "simulate_production_scenario", "profile": "planificador"}
+{"id": "t58", "question": "Tenemos 15 % menos caña esta semana. ¿Cómo cumplimos azúcar, etanol y energía?", "route": "planning", "expected_tool": "optimize_production_plan", "profile": "planificador"}
+{"id": "t59", "question": "Planifica la producción de la semana con una restricción de vapor de 30.000 toneladas.", "route": "planning", "expected_tool": "optimize_production_plan", "profile": "planificador"}

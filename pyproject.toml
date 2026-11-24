@@ -33,6 +33,7 @@ dependencies = [
     "pyyaml>=6.0",
     "qdrant-client>=1.15",
     "scikit-learn>=1.7",  # spec 024: t-SNE de los embeddings (R16)
+    "scipy>=1.14",  # spec 025: programación lineal del planificador (R5)
     "scrapling[fetchers]>=0.5",
     "trafilatura>=2.3",
     "uvicorn[standard]>=0.54.0",

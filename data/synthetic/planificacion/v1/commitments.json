@@ -1,0 +1,29 @@
+{
+  "synthetic": true,
+  "seed": 2026,
+  "version": "v1",
+  "week": "2026-W48",
+  "commitments": [
+    {
+      "id": "c-azucar-1",
+      "product": "sugar",
+      "min_quantity": 4470.0,
+      "priority": 1,
+      "counterparty": "Cliente industrial A"
+    },
+    {
+      "id": "c-etanol-1",
+      "product": "ethanol",
+      "min_quantity": 910000.0,
+      "priority": 2,
+      "counterparty": "Mayorista de combustibles B"
+    },
+    {
+      "id": "c-energia-1",
+      "product": "power",
+      "min_quantity": 1318.0,
+      "priority": 3,
+      "counterparty": "Comercializador de energía C"
+    }
+  ]
+}

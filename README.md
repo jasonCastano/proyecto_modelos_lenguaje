@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1388%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-1917%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/M%C3%B3dulo%202-v0.2.0-brightgreen)](CONSTITUTION.md)
 
@@ -25,6 +25,15 @@ Universidad Autónoma de Occidente, 2026-2S.
 **Docente**: Jan Polanco Velasco.
 
 **Repositorio**: https://github.com/jasonCastano/proyecto_modelos_lenguaje
+
+> **Producto final (constitución v2.0.0, spec 025)**: Valer-IA se reenfoca en la **idea 7** de
+> [`docs/alucinaciones/ideas_negocio_ia_manuelita.md`](docs/alucinaciones/ideas_negocio_ia_manuelita.md). Es una
+> **plataforma de agentes de Manuelita** con perfiles: visitante, cliente B2B, proveedor, colaborador y
+> planificador industrial. El planificador recomienda cómo repartir la caña entre azúcar, etanol y energía con un
+> simulador y un optimizador sobre datos sintéticos declarados. Requerimientos en
+> [`specs/025-agentes-manuelita-idea7/`](specs/025-agentes-manuelita-idea7/spec.md) y
+> [ADR 0029](docs/decisions/0029-plataforma-agentes-idea7.md); estado frente a la rúbrica del Módulo 3 en
+> [`docs/rubrica_modulo3.md`](docs/rubrica_modulo3.md) §7.
 
 > **Estado al 2026-11-21 (constitución v1.14.0)**: después de la sustentación del Módulo 2 se sumaron:
 > - **Voz** (spec 016) y **avatar con sincronización de labios** (spec 017), ambos locales.
@@ -379,6 +388,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Atención de call center (spec 019) | ✅ | 36 casos reales: sin hechos externos, crisis con Línea 106 y 123, 0 registros con datos personales; `docs/evaluacion_atencion.md`, ADR 0023 |
 | Conversación guiada (spec 020) | ✅ | Respuestas redactadas y revisadas; similitud máxima en un hilo ≤ 0,5 frente a 1,0 con guiones; `docs/evaluacion_conversacion.md`, ADR 0024 |
 | Gatekeeper System One Jev (spec 022) | 🟡 | Implementado y probado: español 24/24, 73–77 % menos llamadas al LLM del enrutador, crisis 100 %; exactitud 93,2 % frente a 97,7 % ⇒ desactivado por defecto; `docs/evaluacion_jev.md`, ADR 0026 |
+| Plataforma de agentes y planificación (spec 025) | 🟡 | Cinco perfiles y planificador industrial sobre datos sintéticos: optimizador ≥ 99 % del óptimo de referencia en 10/10, 0 violaciones, 2/2 sin solución detectados; con DeepSeek 12/12 con secuencia completa y etiqueta, p95 10,8 s; perfiles 19/20 con DeepSeek; herramientas 90,7 % y 86,0 % en dos corridas (sin regresión clara frente a 88,4 %); `docs/evaluacion_planificacion.md`, `docs/evaluacion_perfiles.md`, ADR 0029. Falta la verificación por WhatsApp y aprobar la enmienda 2.0.0 |
 | Dictado por voz (spec 023) | ✅ | faster-whisper `base` local: WER 0,048, nombres propios 97 %, p90 1,1 s (clips de hasta 10 s), 0 textos en silencio o ruido; `docs/evaluacion_stt.md`, ADR 0027 |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
 | CI y Pull Requests | 🟡 | 72 PRs fusionados al 2026-11-21 (63 del equipo y 9 de Dependabot, anteriores a la v1.6.0); 13 PRs del equipo tienen aprobación formal y 17 alguna revisión. CI con `test`, `web` y `autoria` |
@@ -862,6 +872,24 @@ Ejecución `variants-real-2026-11-14` con DeepSeek y el código vigente, 44 cons
 La **cadena** es la variante por defecto: más rápida y barata. El **agente** recupera mejor la evidencia esperada
 a costa de 1,6 veces más llamadas y 2,6 veces más tokens.
 
+### Plataforma de agentes y planificación industrial (spec 025)
+
+Valer-IA atiende con un **perfil** por público (idea 7 de [`docs/alucinaciones/ideas_negocio_ia_manuelita.md`](docs/alucinaciones/ideas_negocio_ia_manuelita.md)): visitante, cliente B2B, proveedor, colaborador y planificador industrial. Cada perfil es una lista blanca de herramientas (`config/profiles.toml`) y un foco en el prompt (`prompts/profiles.md`); el agente, el enrutador, la memoria y el blindaje son los mismos.
+
+- **Elegir el perfil**: en WhatsApp, `/perfil` lista los perfiles y `/perfil proveedor` (o `b2b`, `colaborador`…) lo activa en el hilo; en la vista técnica de la web, el selector «Perfil». Si la persona se presenta («soy proveedor de caña…»), el agente la atiende con ese perfil y ofrece recordarlo: «recuerda mi perfil» lo guarda con «SÍ» (preferencia `audience`) y `/olvidar` lo borra.
+- **Planificador industrial** (solo autorizados: `VALERIA_PLANNERS` con seudónimos, `MANUELITA_PLANNER_WEB=1` para la vista técnica o `MANUELITA_PLANNER_OPEN=1` solo en la jornada). Ante «Tenemos 15 % menos caña esta semana. ¿Cómo cumplimos azúcar, etanol y energía?», el agente consulta el estado de la planta y los compromisos, optimiza con programación lineal (`scipy`, HiGHS) y responde con el plan, la restricción que lo limita, una alternativa y los supuestos. Las cifras salen de las herramientas; si el modelo escribe un número que no está en ellas, se muestra el plan calculado. «guarda esta propuesta» la guarda con «SÍ» en `$MANUELITA_STATE_DIR/planning/proposals.jsonl`. **Los datos son sintéticos** (`data/synthetic/planificacion/v1/`, ficha propia): demuestran la capacidad, no la operación real de Manuelita.
+
+```bash
+uv run python scripts/generate_planning_data.py --seed 2026 --version v1 --check   # datos sintéticos
+uv run python -m proyecto_modelos_lenguaje.agent planning --scenario '{"cane_delta_pct": -15}'
+uv run python -m proyecto_modelos_lenguaje.agent planning-eval --mode direct        # SC-001, sin LLM
+uv run python -m proyecto_modelos_lenguaje.agent planning-eval --mode real --write-docs
+uv run python -m proyecto_modelos_lenguaje.agent profiles-eval --mode real --write-docs
+uv run pml channels simulate --sender +570000000001 --profile planificador --text "Tenemos 15 % menos caña"
+```
+
+Requerimientos: [`specs/025-agentes-manuelita-idea7/`](specs/025-agentes-manuelita-idea7/spec.md) · Decisión: [ADR 0029](docs/decisions/0029-plataforma-agentes-idea7.md) · Resultados: [`docs/evaluacion_planificacion.md`](docs/evaluacion_planificacion.md), [`docs/evaluacion_planificacion_directa.md`](docs/evaluacion_planificacion_directa.md) y [`docs/evaluacion_perfiles.md`](docs/evaluacion_perfiles.md).
+
 ### Experiencia web y API
 
 La entrada actual es una página React servida por FastAPI:
@@ -1054,6 +1082,7 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 
 ## Limitaciones conocidas
 
+- El planificador industrial (spec 025) usa **datos sintéticos**: su plan demuestra la capacidad, pero no dice nada de la operación real de Manuelita. Un piloto real requiere el ERP y los históricos de planta.
 - El corpus activo es de 557 artefactos; 26.347 fueron retirados por no ser relevantes y purgados el
   2026-11-13 (`pml curate purge --run 2026-10-curation-01`): ya no se pueden restaurar.
 - La purga liberó 8,93 GB; el total de datos quedó en 0,59 GB. El catálogo conserva la auditoría.
@@ -1172,6 +1201,9 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 - [Evaluación de la atención de Valer-IA](docs/evaluacion_atencion.md)
 - [Evaluación de la conversación guiada](docs/evaluacion_conversacion.md)
 - [Evaluación del gatekeeper System One (Jev)](docs/evaluacion_jev.md)
+- [Evaluación del agente de planificación industrial](docs/evaluacion_planificacion.md) y [del optimizador frente al óptimo de referencia](docs/evaluacion_planificacion_directa.md)
+- [Evaluación de los perfiles de la plataforma](docs/evaluacion_perfiles.md)
+- [Ideas de negocio con IA (idea 7: producto final)](docs/alucinaciones/ideas_negocio_ia_manuelita.md)
 - [Evaluación del Módulo 1 (40 preguntas)](docs/evaluacion_modulo1.md)
 - [Calificación humana a ciegas: Módulo 1](docs/calificacion_m1/INSTRUCCIONES.md) y
   [Módulo 2](docs/calificacion_m2/INSTRUCCIONES.md)

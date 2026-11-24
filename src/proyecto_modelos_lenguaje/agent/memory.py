@@ -199,11 +199,17 @@ def build_summarization_middleware(
 
 # ------------------------------------------------- memoria larga (US5, FR-009, FR-010)
 
-PREFERENCE_KEYS: tuple[str, ...] = ("response_format", "topics_of_interest", "language")
+PREFERENCE_KEYS: tuple[str, ...] = (
+    "response_format",
+    "topics_of_interest",
+    "language",
+    "audience",  # spec 025: perfil de atención recordado (visitante, cliente, …)
+)
 PREFERENCE_LABELS = {
     "response_format": "formato de respuesta",
     "topics_of_interest": "temas de interés",
     "language": "idioma",
+    "audience": "perfil de atención",
 }
 PREFERENCE_MAX_CHARS = 200
 PREFERENCE_SEARCH_LIMIT = 100
@@ -264,6 +270,13 @@ class UserMemory:
         clean = redact_pii(" ".join(str(value).split()))
         if not clean or len(clean) > PREFERENCE_MAX_CHARS:
             raise PreferenceError(f"El valor debe tener 1 a {PREFERENCE_MAX_CHARS} caracteres.")
+        if key == "audience":
+            from .profiles import resolve_alias
+
+            resolved = resolve_alias(clean)
+            if resolved is None:
+                raise PreferenceError(f"Perfil de atención inválido: {clean!r}.")
+            clean = resolved
         now = now or datetime.now(UTC)
         item = PreferenceItem(
             key, clean, now.isoformat(), (now + timedelta(days=self.ttl_days)).isoformat()

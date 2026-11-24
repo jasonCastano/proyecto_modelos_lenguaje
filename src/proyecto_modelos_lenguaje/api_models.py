@@ -210,7 +210,9 @@ class ShowcaseResponse(BaseModel):
 
 # ---------------------------------------------------------------- conversación (spec 014, US1)
 
-Route = Literal["direct", "documental", "structured", "mixed", "out_of_scope", "clarify"]
+Route = Literal[
+    "direct", "documental", "structured", "mixed", "out_of_scope", "clarify", "planning"
+]
 ScopeReason = Literal[
     "off_topic",
     "abuse",
@@ -272,6 +274,8 @@ class ChatRequest(RequestModel):
     variant: Literal["chain", "agent"] = "chain"
     mode: Mode = "real"
     input: InputMeta | None = None  # spec 023: el mensaje llegó por dictado
+    # Spec 025: perfil del turno (visitante, cliente, proveedor, colaborador, planificador).
+    profile: str | None = Field(default=None, max_length=40)
 
 
 class RouteModel(BaseModel):
@@ -373,6 +377,7 @@ class TurnModel(BaseModel):
     input: InputMeta | None = None  # spec 023: origen por voz (vista técnica)
     plan_steps: list[str] = Field(default_factory=list)  # spec 024: plan del turno
     tools: list[ToolInvocationModel] = Field(default_factory=list)  # spec 024: traza
+    profile: str = "visitante"  # spec 025: perfil que atendió el turno
 
 
 class AnomalyModel(BaseModel):

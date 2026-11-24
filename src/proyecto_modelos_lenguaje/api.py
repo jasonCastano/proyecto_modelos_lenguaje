@@ -799,10 +799,19 @@ def chat(payload: ChatRequest) -> dict[str, Any] | JSONResponse:
             variant=payload.variant,
             mode=payload.mode,
             input_meta=payload.input.model_dump() if payload.input else None,
+            profile=payload.profile,
         )
     except Exception as exc:
         return _chat_error(exc)
     return outcome.to_dict()
+
+
+@app.get("/api/profiles")
+def list_profiles(user_id: str = "anon") -> list[dict[str, Any]]:
+    """Spec 025: perfiles de la plataforma y si el usuario puede usar cada uno (web)."""
+    from .agent.profiles import describe
+
+    return describe(user_id, "web")
 
 
 def _sse(event: dict[str, object]) -> str:
@@ -823,6 +832,7 @@ def chat_stream(payload: ChatRequest) -> StreamingResponse | JSONResponse:
             variant=payload.variant,
             mode=payload.mode,
             input_meta=payload.input.model_dump() if payload.input else None,
+            profile=payload.profile,
         )
     except Exception as exc:
         return _chat_error(exc)

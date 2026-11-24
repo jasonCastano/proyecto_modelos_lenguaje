@@ -53,3 +53,13 @@ def test_mcp_tools_listed_in_agents_md() -> None:
     agents = (WORKSPACE_SOURCE / "AGENTS.md").read_text(encoding="utf-8")
     missing = [spec.name for spec in exposed_specs() if f"`{spec.name}`" not in agents]
     assert not missing, missing
+
+
+def test_platform_red_lines_in_agents_md() -> None:
+    """Spec 025 (FR-018, T048): líneas rojas de la plataforma y límite de planificación."""
+    agents = (WORKSPACE_SOURCE / "AGENTS.md").read_text(encoding="utf-8")
+    assert "Nunca dar precios" in agents
+    assert "Datos\n    sintéticos de demostración" in agents or "Datos sintéticos" in agents
+    assert "el\n    equipo de planta decide" in agents or "equipo de planta decide" in agents
+    assert "hasta cinco en planificación" in agents
+    assert "En modo degradado no se planifica" in agents

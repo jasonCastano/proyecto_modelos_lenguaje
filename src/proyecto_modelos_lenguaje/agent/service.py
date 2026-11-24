@@ -123,6 +123,29 @@ class ChatError(Exception):
         self.status_code = status_code
 
 
+def validate_profile(profile: str | None, user_id: str, channel: str = "web") -> str | None:
+    """Spec 025: perfil explícito del turno (``None`` = conservar el del hilo).
+
+    400 ``invalid_profile`` si no existe; 403 ``planner_not_authorized`` si es el planificador y
+    el usuario no está autorizado en ese canal.
+    """
+    if profile is None:
+        return None
+    from . import profiles
+
+    key = profiles.resolve_alias(profile)
+    if key is None or key not in profiles.load_profiles():
+        raise ChatError("invalid_profile", f"Perfil desconocido: {profile}.", 400)
+    chosen = profiles.get_profile(key)
+    if chosen.requires_authorization and not profiles.is_authorized(user_id, channel):
+        raise ChatError(
+            "planner_not_authorized",
+            "La planificación industrial es solo para planificadores autorizados.",
+            403,
+        )
+    return chosen.key
+
+
 @dataclass(slots=True)
 class ChatOutcome:
     thread_id: str
@@ -379,8 +402,12 @@ class ChatService:
         variant: Variant = "chain",
         mode: Mode = "demo",
         input_meta: dict[str, Any] | None = None,
+        profile: str | None = None,
+        channel: str = "web",
     ) -> ChatOutcome:
-        thread_id, state = self._prepare(message, thread_id, user_id, variant, input_meta)
+        thread_id, state = self._prepare(
+            message, thread_id, user_id, variant, input_meta, profile=profile, channel=channel
+        )
         state["mode"] = mode
         result = self._invoke(variant, mode, state, thread_id)
         return self._log(self._outcome(thread_id, result), variant, mode)
@@ -394,6 +421,8 @@ class ChatService:
         variant: Variant = "chain",
         mode: Mode = "demo",
         input_meta: dict[str, Any] | None = None,
+        profile: str | None = None,
+        channel: str = "web",
     ) -> tuple[str, Iterator[dict[str, Any]]]:
         """Valida antes de abrir el flujo (los errores salen como HTTP) y devuelve los eventos.
 
@@ -401,7 +430,9 @@ class ChatService:
         ``token`` (texto de la respuesta a medida que el modelo lo genera) y ``done`` (la misma
         respuesta validada de ``POST /api/chat``). Un fallo a mitad del flujo emite ``error``.
         """
-        thread_id, state = self._prepare(message, thread_id, user_id, variant, input_meta)
+        thread_id, state = self._prepare(
+            message, thread_id, user_id, variant, input_meta, profile=profile, channel=channel
+        )
         state["mode"] = mode
         return thread_id, self._events(variant, mode, state, thread_id)
 
@@ -469,9 +500,13 @@ class ChatService:
         user_id: str,
         variant: Variant,
         input_meta: dict[str, Any] | None = None,
+        *,
+        profile: str | None = None,
+        channel: str = "web",
     ) -> tuple[str, dict[str, Any]]:
         original = validate_message(message)
         validate_user_id(user_id)
+        chosen = validate_profile(profile, user_id, channel)
         # Spec 018: la identidad se calcula sobre el texto original y el correo se descarta aquí;
         # el hilo, el modelo y los registros solo ven el mensaje redactado y la huella.
         event = detect_identity_event(original, self.identity_key())
@@ -484,7 +519,10 @@ class ChatService:
             "client": None,
             # Spec 023: metadatos del dictado; siempre se reescribe para no heredar el turno previo.
             "input_meta": dict(input_meta) if input_meta else None,
+            "channel": channel,  # spec 025: la autorización del planificador depende del canal
         }
+        if chosen is not None:
+            state["profile"] = chosen  # spec 025: /perfil o selector de la web (hilo)
         if thread_id is None:
             thread_id = str(uuid.uuid4())
             state.update(

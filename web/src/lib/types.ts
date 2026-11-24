@@ -159,7 +159,8 @@ export type ChatRouteName =
   | "structured"
   | "mixed"
   | "out_of_scope"
-  | "clarify";
+  | "clarify"
+  | "planning";
 export type ChatStatus = "answered" | "fallback" | "clarify" | "pending_approval";
 
 export interface ChatRoute {
@@ -306,6 +307,16 @@ export interface ChatTurn {
   plan_steps?: string[];
   /** Spec 024: herramientas invocadas en el turno. */
   tools?: ToolInvocation[];
+  /** Spec 025: perfil que atendió el turno (visitante, cliente, proveedor, …). */
+  profile?: string;
+}
+
+/** Spec 025: perfil de la plataforma de agentes (`GET /api/profiles`). */
+export interface ProfileOption {
+  key: string;
+  label: string;
+  requires_authorization: boolean;
+  authorized: boolean;
 }
 
 /** Spec 024: una herramienta del catálogo invocada en el turno (vista técnica). */

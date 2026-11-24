@@ -92,6 +92,12 @@ describe("ChatTurnCard", () => {
     expect(screen.queryByTestId("turn-tools")).not.toBeInTheDocument();
   });
 
+  it("muestra el perfil que atendió el turno (spec 025)", () => {
+    renderTurn(makeTurn({ profile: "proveedor" }));
+
+    expect(screen.getByTestId("turn-profile")).toHaveTextContent("Perfil: Proveedor");
+  });
+
   it("muestra cuando decidió el gatekeeper Jev (spec 022)", () => {
     const base = makeTurn();
     renderTurn(makeTurn({ route: { ...base.route, decided_by: "jev", confidence: 0.93 } }));
@@ -309,6 +315,45 @@ describe("ChatView", () => {
     expect(screen.queryByTestId("chat-live")).not.toBeInTheDocument();
     expect(window.sessionStorage.getItem("manuelita.chat.thread")).toContain(first.thread_id);
     expect(window.location.hash).toBe(`#/chat/${first.thread_id}`);
+  });
+
+  it("spec 025: elige el perfil y lo envía; el planificador no autorizado queda deshabilitado", async () => {
+    const answered: ChatResponse = {
+      thread_id: "8f6c1e0a-0000-4000-8000-000000000025",
+      turn: makeTurn({ profile: "proveedor", question: "¿Qué apoyo dan a los proveedores?" }),
+      status: "answered",
+      pending_action: null,
+      anomalies: [],
+    };
+    const profiles = [
+      { key: "visitante", label: "Visitante", requires_authorization: false, authorized: true },
+      { key: "proveedor", label: "Proveedor", requires_authorization: false, authorized: true },
+      {
+        key: "planificador",
+        label: "Planificador industrial",
+        requires_authorization: true,
+        authorized: false,
+      },
+    ];
+    const fetchMock = routedFetch((url) => {
+      if (url.endsWith("/chat/stream")) return sse(answered);
+      if (url.includes("/profiles")) return new Response(JSON.stringify(profiles), { status: 200 });
+      return undefined;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+
+    render(<ChatView mode="demo" />);
+    const select = await screen.findByTestId("profile-select");
+    expect(within(select).getByRole("option", { name: /Planificador industrial/ })).toBeDisabled();
+    await user.selectOptions(select, "proveedor");
+    await user.type(screen.getByTestId("chat-input"), "¿Qué apoyo dan a los proveedores?");
+    await user.click(screen.getByTestId("chat-send"));
+    await screen.findByText("¿Qué apoyo dan a los proveedores?");
+
+    const body = JSON.parse(String(chatCalls(fetchMock)[0][1]?.body));
+    expect(body.profile).toBe("proveedor");
+    expect(await screen.findByTestId("turn-profile")).toHaveTextContent("Perfil: Proveedor");
   });
 
   it("si el servidor no tiene streaming usa la ruta clásica", async () => {

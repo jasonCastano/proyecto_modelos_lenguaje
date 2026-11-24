@@ -1,0 +1,38 @@
+{
+  "synthetic": true,
+  "seed": 2026,
+  "version": "v1",
+  "plant_id": "cana",
+  "description": "Planta de caña SINTÉTICA para demostrar la planificación (no es Manuelita).",
+  "mill_capacity": 60000.0,
+  "distillery_capacity": 1954000.0,
+  "boiler_capacity": 40010.0,
+  "turbine_capacity": 4000.0,
+  "quality_ref": 13.0,
+  "sugar_yield": 0.1151,
+  "molasses_yield": 0.0358,
+  "ethanol_from_molasses": 273.0,
+  "ethanol_from_juice": 78.7,
+  "bagasse_yield": 0.282,
+  "steam_per_bagasse": 2.21,
+  "steam_sugar": 0.509,
+  "steam_ethanol": 0.00301,
+  "power_per_steam": 0.0963,
+  "power_use": 0.0305,
+  "price_sugar": 1929000.0,
+  "price_ethanol": 2613.0,
+  "price_power": 345000.0,
+  "cost_cane": 121000.0,
+  "units": {
+    "capacities": "por semana (t caña, L etanol, t vapor, MWh)",
+    "prices": "COP netos sintéticos por t de azúcar, L de etanol y MWh exportado",
+    "cost_cane": "COP por t de caña procesada"
+  },
+  "sources": [
+    {
+      "use": "orden de magnitud de la cogeneración (≈ 200.000 MWh/año ≈ 3.800 MWh/semana)",
+      "citation": "Informe de Sostenibilidad Manuelita 2023-2024, p. 57 y 124",
+      "url": "https://www.manuelita.com/wp-content/uploads/2025/06/Informe-de-Sostenibilidad-Manuelita-2023-2024.pdf"
+    }
+  ]
+}

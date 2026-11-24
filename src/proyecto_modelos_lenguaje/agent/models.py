@@ -8,7 +8,9 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-Route = Literal["direct", "documental", "structured", "mixed", "out_of_scope", "clarify"]
+Route = Literal[
+    "direct", "documental", "structured", "mixed", "out_of_scope", "clarify", "planning"
+]
 # Spec 022: "jev" = gatekeeper System One de TypeSafe.
 DecidedBy = Literal["rules", "llm", "demo", "jev"]
 WriteTool = Literal[
@@ -18,6 +20,7 @@ WriteTool = Literal[
     "export_conversation",
     "remember_client",
     "request_human_contact",
+    "save_production_proposal",
 ]
 # Spec 018: motivo de una respuesta sin búsqueda (conducta de Valer-IA).
 # Spec 019: «crisis» (angustia grave) y «unattainable» (precios, compromisos, pedir una persona).
@@ -155,3 +158,6 @@ class Turn(BaseModel):
     # Spec 024: plan del turno y herramientas invocadas (nombre, argumentos, duración, resultado).
     plan_steps: list[str] = Field(default_factory=list)
     tools: list[dict[str, Any]] = Field(default_factory=list)
+    # Spec 025: perfil que atendió el turno (visitante, cliente, proveedor, colaborador o
+    # planificador).
+    profile: str = "visitante"

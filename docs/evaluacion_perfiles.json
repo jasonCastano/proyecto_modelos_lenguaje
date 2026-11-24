@@ -1,0 +1,274 @@
+{
+  "run_id": "profiles-real-20261124T190428Z",
+  "mode": "real",
+  "created_at": "2026-11-24T19:04:28+00:00",
+  "command": "uv run python -m proyecto_modelos_lenguaje.agent profiles-eval --mode real --write-docs",
+  "summary": {
+    "cases": 20,
+    "profile_ok": 19,
+    "profile_accuracy": 0.95,
+    "tools_ok": 20,
+    "tools_accuracy": 1.0,
+    "errors": 0,
+    "meets_target": true
+  },
+  "results": [
+    {
+      "case_id": "r01",
+      "expected_profile": "visitante",
+      "profile": "visitante",
+      "profile_ok": true,
+      "tools": [
+        "summarize_topic",
+        "search_documents"
+      ],
+      "tools_ok": true,
+      "latency_ms": 12759,
+      "error": null
+    },
+    {
+      "case_id": "r02",
+      "expected_profile": "visitante",
+      "profile": "visitante",
+      "profile_ok": true,
+      "tools": [
+        "search_documents",
+        "query_structured"
+      ],
+      "tools_ok": true,
+      "latency_ms": 12004,
+      "error": null
+    },
+    {
+      "case_id": "r03",
+      "expected_profile": "visitante",
+      "profile": "visitante",
+      "profile_ok": true,
+      "tools": [
+        "search_documents",
+        "summarize_topic",
+        "search_documents"
+      ],
+      "tools_ok": true,
+      "latency_ms": 15588,
+      "error": null
+    },
+    {
+      "case_id": "r04",
+      "expected_profile": "visitante",
+      "profile": "visitante",
+      "profile_ok": true,
+      "tools": [
+        "search_documents",
+        "summarize_topic"
+      ],
+      "tools_ok": true,
+      "latency_ms": 5254,
+      "error": null
+    },
+    {
+      "case_id": "r05",
+      "expected_profile": "cliente",
+      "profile": "cliente",
+      "profile_ok": true,
+      "tools": [
+        "list_company_entities"
+      ],
+      "tools_ok": true,
+      "latency_ms": 6660,
+      "error": null
+    },
+    {
+      "case_id": "r06",
+      "expected_profile": "cliente",
+      "profile": "cliente",
+      "profile_ok": true,
+      "tools": [
+        "search_documents",
+        "search_documents",
+        "get_official_channels"
+      ],
+      "tools_ok": true,
+      "latency_ms": 11118,
+      "error": null
+    },
+    {
+      "case_id": "r07",
+      "expected_profile": "cliente",
+      "profile": "cliente",
+      "profile_ok": true,
+      "tools": [
+        "list_company_entities",
+        "search_documents"
+      ],
+      "tools_ok": true,
+      "latency_ms": 7927,
+      "error": null
+    },
+    {
+      "case_id": "r08",
+      "expected_profile": "cliente",
+      "profile": "cliente",
+      "profile_ok": true,
+      "tools": [],
+      "tools_ok": true,
+      "latency_ms": 1629,
+      "error": null
+    },
+    {
+      "case_id": "r09",
+      "expected_profile": "proveedor",
+      "profile": "proveedor",
+      "profile_ok": true,
+      "tools": [
+        "search_documents",
+        "search_documents",
+        "get_official_channels"
+      ],
+      "tools_ok": true,
+      "latency_ms": 9958,
+      "error": null
+    },
+    {
+      "case_id": "r10",
+      "expected_profile": "proveedor",
+      "profile": "proveedor",
+      "profile_ok": true,
+      "tools": [
+        "search_documents",
+        "search_documents",
+        "get_official_channels"
+      ],
+      "tools_ok": true,
+      "latency_ms": 9211,
+      "error": null
+    },
+    {
+      "case_id": "r11",
+      "expected_profile": "proveedor",
+      "profile": "proveedor",
+      "profile_ok": true,
+      "tools": [
+        "search_documents",
+        "sustainability_lookup"
+      ],
+      "tools_ok": true,
+      "latency_ms": 5638,
+      "error": null
+    },
+    {
+      "case_id": "r12",
+      "expected_profile": "proveedor",
+      "profile": "proveedor",
+      "profile_ok": true,
+      "tools": [],
+      "tools_ok": true,
+      "latency_ms": 5947,
+      "error": null
+    },
+    {
+      "case_id": "r13",
+      "expected_profile": "colaborador",
+      "profile": "visitante",
+      "profile_ok": false,
+      "tools": [
+        "get_official_channels",
+        "get_official_channels"
+      ],
+      "tools_ok": true,
+      "latency_ms": 3406,
+      "error": null
+    },
+    {
+      "case_id": "r14",
+      "expected_profile": "colaborador",
+      "profile": "colaborador",
+      "profile_ok": true,
+      "tools": [],
+      "tools_ok": true,
+      "latency_ms": 2758,
+      "error": null
+    },
+    {
+      "case_id": "r15",
+      "expected_profile": "colaborador",
+      "profile": "colaborador",
+      "profile_ok": true,
+      "tools": [
+        "search_documents",
+        "search_documents"
+      ],
+      "tools_ok": true,
+      "latency_ms": 7090,
+      "error": null
+    },
+    {
+      "case_id": "r16",
+      "expected_profile": "colaborador",
+      "profile": "colaborador",
+      "profile_ok": true,
+      "tools": [
+        "search_documents"
+      ],
+      "tools_ok": true,
+      "latency_ms": 5388,
+      "error": null
+    },
+    {
+      "case_id": "r17",
+      "expected_profile": "planificador",
+      "profile": "planificador",
+      "profile_ok": true,
+      "tools": [
+        "get_commitments",
+        "get_plant_state",
+        "search_operating_procedures",
+        "optimize_production_plan"
+      ],
+      "tools_ok": true,
+      "latency_ms": 6125,
+      "error": null
+    },
+    {
+      "case_id": "r18",
+      "expected_profile": "planificador",
+      "profile": "planificador",
+      "profile_ok": true,
+      "tools": [
+        "get_plant_state",
+        "get_commitments"
+      ],
+      "tools_ok": true,
+      "latency_ms": 4885,
+      "error": null
+    },
+    {
+      "case_id": "r19",
+      "expected_profile": "planificador",
+      "profile": "planificador",
+      "profile_ok": true,
+      "tools": [
+        "get_commitments",
+        "get_plant_state"
+      ],
+      "tools_ok": true,
+      "latency_ms": 4804,
+      "error": null
+    },
+    {
+      "case_id": "r20",
+      "expected_profile": "planificador",
+      "profile": "planificador",
+      "profile_ok": true,
+      "tools": [
+        "get_plant_state",
+        "get_commitments",
+        "simulate_production_scenario",
+        "optimize_production_plan"
+      ],
+      "tools_ok": true,
+      "latency_ms": 7980,
+      "error": null
+    }
+  ]
+}

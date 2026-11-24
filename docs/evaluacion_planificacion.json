@@ -1,0 +1,264 @@
+{
+  "run_id": "planning-real-20261124T190134Z",
+  "mode": "real",
+  "created_at": "2026-11-24T19:01:34+00:00",
+  "command": "uv run python -m proyecto_modelos_lenguaje.agent planning-eval --mode real --write-docs",
+  "summary": {
+    "cases": 12,
+    "feasible": 10,
+    "infeasible": 2,
+    "errors": 0,
+    "latency_p50_ms": 5993,
+    "latency_p95_ms": 10785,
+    "planning_route": 12,
+    "sequence_ok": 12,
+    "labeled": 12,
+    "meets_target": true
+  },
+  "results": [
+    {
+      "case_id": "p01",
+      "feasible": true,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_plant_state",
+        "get_commitments",
+        "optimize_production_plan",
+        "search_operating_procedures"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 21674,
+      "error": null
+    },
+    {
+      "case_id": "p02",
+      "feasible": true,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_plant_state",
+        "get_commitments",
+        "search_operating_procedures",
+        "optimize_production_plan"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 10785,
+      "error": null
+    },
+    {
+      "case_id": "p03",
+      "feasible": true,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_plant_state",
+        "get_commitments",
+        "optimize_production_plan"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 5430,
+      "error": null
+    },
+    {
+      "case_id": "p04",
+      "feasible": true,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_plant_state",
+        "get_commitments",
+        "optimize_production_plan"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 6557,
+      "error": null
+    },
+    {
+      "case_id": "p05",
+      "feasible": true,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_commitments",
+        "get_plant_state",
+        "optimize_production_plan"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 5103,
+      "error": null
+    },
+    {
+      "case_id": "p06",
+      "feasible": true,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_commitments",
+        "get_plant_state",
+        "optimize_production_plan"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 4882,
+      "error": null
+    },
+    {
+      "case_id": "p07",
+      "feasible": true,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_plant_state",
+        "get_commitments",
+        "optimize_production_plan"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 5213,
+      "error": null
+    },
+    {
+      "case_id": "p08",
+      "feasible": true,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_plant_state",
+        "get_commitments",
+        "optimize_production_plan",
+        "search_operating_procedures"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 8210,
+      "error": null
+    },
+    {
+      "case_id": "p09",
+      "feasible": true,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_plant_state",
+        "get_commitments",
+        "optimize_production_plan"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 4970,
+      "error": null
+    },
+    {
+      "case_id": "p10",
+      "feasible": true,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_plant_state",
+        "get_commitments",
+        "optimize_production_plan",
+        "search_operating_procedures"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 7166,
+      "error": null
+    },
+    {
+      "case_id": "p11",
+      "feasible": false,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_commitments",
+        "get_plant_state",
+        "optimize_production_plan"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 4855,
+      "error": null
+    },
+    {
+      "case_id": "p12",
+      "feasible": false,
+      "status": null,
+      "margin": null,
+      "reference_margin": null,
+      "ratio": null,
+      "violations": 0,
+      "detected_infeasible": null,
+      "tools": [
+        "get_plant_state",
+        "get_commitments",
+        "optimize_production_plan"
+      ],
+      "sequence_ok": true,
+      "labeled": true,
+      "route": "planning",
+      "latency_ms": 6813,
+      "error": null
+    }
+  ]
+}

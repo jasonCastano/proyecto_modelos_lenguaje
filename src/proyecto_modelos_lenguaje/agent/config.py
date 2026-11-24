@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +30,12 @@ class AgentLimits:
     tool_call_limit: int
     model_call_limit: int
     chain_top_k: int
+    # Spec 025 (R4): límites propios por ruta, p. ej. ``planning`` → (5, 6).
+    route_limits: dict[str, tuple[int, int]] = field(default_factory=dict)
+
+    def limits_for(self, route: str | None) -> tuple[int, int]:
+        """(tool_call_limit, model_call_limit) de la ruta; por defecto los generales."""
+        return self.route_limits.get(str(route), (self.tool_call_limit, self.model_call_limit))
 
 
 @dataclass(frozen=True, slots=True)
@@ -214,6 +220,7 @@ def load_agent_config(
             tool_call_limit=_integer(agent, "tool_call_limit", table="agent"),
             model_call_limit=_integer(agent, "model_call_limit", table="agent"),
             chain_top_k=_integer(agent, "chain_top_k", table="agent"),
+            route_limits=_route_limits(agent.get("route_limits")),
         ),
         memory=MemoryConfig(
             summarize_after_tokens=_integer(memory, "summarize_after_tokens", table="memory"),
@@ -228,6 +235,24 @@ def load_agent_config(
         jev=jev_config(document.get("jev")),
         channels=channels_config(document.get("channels")),
     )
+
+
+def _route_limits(section: Any) -> dict[str, tuple[int, int]]:
+    """Valida ``[agent.route_limits.<ruta>]`` (spec 025, R4); opcional."""
+    if section is None:
+        return {}
+    if not isinstance(section, dict):
+        raise AgentConfigError("[agent.route_limits] debe ser una tabla.")
+    limits: dict[str, tuple[int, int]] = {}
+    for route, values in section.items():
+        if not isinstance(values, dict):
+            raise AgentConfigError(f"[agent.route_limits.{route}] debe ser una tabla.")
+        table = f"agent.route_limits.{route}"
+        limits[str(route)] = (
+            _integer(values, "tool_call_limit", table=table),
+            _integer(values, "model_call_limit", table=table),
+        )
+    return limits
 
 
 def channels_config(section: Any) -> ChannelsConfig:

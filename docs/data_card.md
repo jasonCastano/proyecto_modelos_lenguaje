@@ -327,6 +327,12 @@ El código del proyecto se distribuye bajo **MIT** (`LICENSE`, 2026).
     lenguaje) y, si el gatekeeper Jev está activo (`[jev].enabled`, spec 022), a TypeSafe en EE. UU. A Jev solo
     llegan el último mensaje y hasta tres preguntas previas, con correos, teléfonos y documentos enmascarados; el
     corpus no se envía. Jev está desactivado por defecto.
+14. **Datos sintéticos de planificación** (spec 025): el agente de planificación industrial usa
+    `data/synthetic/planificacion/v1/`, generado con `scripts/generate_planning_data.py --seed 2026`. **No es
+    parte del corpus** ni describe la operación, los contratos, los precios o las capacidades reales de
+    Manuelita: solo demuestra la capacidad. Cada respuesta lo etiqueta como «Datos sintéticos de demostración» y
+    sus citas `[S#]` se listan aparte de las fuentes públicas. Ficha propia:
+    `data/synthetic/planificacion/v1/DATA_CARD.md`.
 
 ---
 
@@ -371,6 +377,7 @@ uv sync
 | 1.1 | 2026-10-30 | Bronce, plata y oro versionados en Git LFS; cuarentena y cachés excluidos |
 | 1.2 | 2026-11-13 | Cuarentena purgada (corrida `2026-10-curation-01`): 26.347 artefactos y 8,93 GB eliminados; el catálogo los marca `purged` |
 | 1.3 | 2026-11-21 | Limitación 13: envío de mensajes enmascarados al gatekeeper Jev de TypeSafe cuando está activo (spec 022) |
+| 1.4 | 2026-11-24 | Limitación 14: datos sintéticos de planificación industrial, separados del corpus y con ficha propia (spec 025) |
 
 ---
 

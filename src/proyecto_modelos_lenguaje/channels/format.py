@@ -11,7 +11,8 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
-LABEL = re.compile(r"\[(?P<labels>[UF]\d+(?:\s*,\s*[UF]\d+)*)\]")
+# Spec 025: [S#] son procedimientos SINTÉTICOS; se listan aparte de las fuentes públicas.
+LABEL = re.compile(r"\[(?P<labels>[UFS]\d+(?:\s*,\s*[UFS]\d+)*)\]")
 BOLD = re.compile(r"\*\*(.+?)\*\*")
 UNDERSCORE_BOLD = re.compile(r"__(.+?)__")
 HEADING = re.compile(r"^[ \t]{0,3}#{1,6}[ \t]+(.+?)[ \t]*#*[ \t]*$", re.MULTILINE)
@@ -66,6 +67,16 @@ def number_citations(
 
 
 def sources_block(used: Sequence[tuple[int, Mapping[str, Any]]]) -> str:
+    public = [item for item in used if item[1].get("kind") != "synthetic"]
+    synthetic = [item for item in used if item[1].get("kind") == "synthetic"]
+    blocks = [_sources_lines("Fuentes:", public), _sources_lines(SYNTHETIC_TITLE, synthetic)]
+    return "\n\n".join(block for block in blocks if block)
+
+
+SYNTHETIC_TITLE = "Fuentes sintéticas (demostración):"
+
+
+def _sources_lines(title_line: str, used: Sequence[tuple[int, Mapping[str, Any]]]) -> str:
     lines = []
     for number, citation in used:
         title = str(citation.get("title") or citation.get("label") or "Fuente").strip()
@@ -76,7 +87,7 @@ def sources_block(used: Sequence[tuple[int, Mapping[str, Any]]]) -> str:
             title = f"{title}, p. {page}"
         url = str(citation.get("url") or "").strip()
         lines.append(f"[{number}] {title}" + (f" — {url}" if url else ""))
-    return "Fuentes:\n" + "\n".join(lines) if lines else ""
+    return f"{title_line}\n" + "\n".join(lines) if lines else ""
 
 
 def _pieces(text: str, max_chars: int) -> list[str]:

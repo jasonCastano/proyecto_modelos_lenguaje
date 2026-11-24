@@ -159,10 +159,15 @@ class ToolTrace:
     fragments: list[RetrievedFragment] = field(default_factory=list)
     facts: list[StructuredFact] = field(default_factory=list)
     calls: int = 0
+    # Spec 025: planes calculados (PlanResult.to_dict) y procedimientos sintéticos citados [S#].
+    plans: list[dict[str, Any]] = field(default_factory=list)
+    procedures: list[dict[str, str]] = field(default_factory=list)
 
     def reset(self) -> None:
         self.fragments.clear()
         self.facts.clear()
+        self.plans.clear()
+        self.procedures.clear()
         self.calls = 0
 
 

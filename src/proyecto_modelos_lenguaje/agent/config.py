@@ -112,6 +112,19 @@ class JevConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class ChannelsConfig:
+    """Canal de mensajería por OpenClaw (spec 024, research R7–R8 y R13)."""
+
+    enabled: bool = True
+    reply_max_chars: int = 1500
+    max_messages: int = 4
+    approval_ttl_minutes: int = 10
+    dedupe_hours: int = 48
+    voice_notes: bool = False
+    bridge_timeout_seconds: int = 45
+
+
+@dataclass(frozen=True, slots=True)
 class AgentConfig:
     router: RouterConfig
     agent: AgentLimits
@@ -122,6 +135,7 @@ class AgentConfig:
     care: CareConfig = CareConfig()
     conversation: ConversationConfig = ConversationConfig()
     jev: JevConfig = JevConfig()
+    channels: ChannelsConfig = ChannelsConfig()
 
 
 def _section(document: dict[str, Any], key: str, source: Path) -> dict[str, Any]:
@@ -212,7 +226,37 @@ def load_agent_config(
         care=_care_config(document.get("care")),
         conversation=_conversation_config(document.get("conversation")),
         jev=jev_config(document.get("jev")),
+        channels=channels_config(document.get("channels")),
     )
+
+
+def channels_config(section: Any) -> ChannelsConfig:
+    """Valida ``[channels]`` (opcional; sin sección se usan los valores por defecto)."""
+    if section is None:
+        return ChannelsConfig()
+    if not isinstance(section, dict):
+        raise AgentConfigError("[channels] debe ser una tabla.")
+    defaults = ChannelsConfig()
+    flags: dict[str, bool] = {}
+    for key in ("enabled", "voice_notes"):
+        value = section.get(key, getattr(defaults, key))
+        if not isinstance(value, bool):
+            raise AgentConfigError(f"channels.{key} debe ser true o false.")
+        flags[key] = value
+    limits = {
+        "reply_max_chars": (200, 4000),
+        "max_messages": (1, 10),
+        "approval_ttl_minutes": (1, 120),
+        "dedupe_hours": (1, 720),
+        "bridge_timeout_seconds": (5, 120),
+    }
+    numbers: dict[str, int] = {}
+    for key, (low, high) in limits.items():
+        value = section.get(key, getattr(defaults, key))
+        if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+            raise AgentConfigError(f"channels.{key} debe ser un entero entre {low} y {high}.")
+        numbers[key] = value
+    return ChannelsConfig(**flags, **numbers)
 
 
 def _bounded(

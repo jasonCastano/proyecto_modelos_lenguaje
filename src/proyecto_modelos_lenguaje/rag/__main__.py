@@ -7,12 +7,17 @@ Ejemplos::
     uv run python -m proyecto_modelos_lenguaje.rag search "¿cómo cuida el agua?"
     uv run python -m proyecto_modelos_lenguaje.rag evaluate `
         --questions tests/fixtures/rag/eval_questions.jsonl
+    uv run python -m proyecto_modelos_lenguaje.rag evaluate `
+        --queries tests/fixtures/rag/module3_queries.jsonl --qdrant-url http://localhost:6333 `
+        --write-docs
+    uv run python -m proyecto_modelos_lenguaje.rag project --sample 5000 --seed 2026
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -32,10 +37,20 @@ from .errors import (
     IndexUnavailableError,
     RetrievalConfigError,
 )
-from .evaluate import DEFAULT_WARMUP, evaluate_questions, load_questions, render_markdown
+from .evaluate import (
+    DEFAULT_WARMUP,
+    MODULE2_BASELINE_PATH,
+    evaluate_questions,
+    load_module2_baseline,
+    load_questions,
+    module3_payload,
+    render_markdown,
+    render_module3_markdown,
+)
 from .hybrid import HybridRetriever, RetrievalTrace
 from .index import build_index, load_index, verify_index
 from .vectorstore import (
+    URL_ENV,
     attach_vector_store,
     build_collection,
     collection_matches,
@@ -44,6 +59,8 @@ from .vectorstore import (
 )
 
 GOLD_RELATIVE = Path("data") / "gold" / "knowledge_units.jsonl"
+MODULE3_QUERIES = Path("tests") / "fixtures" / "rag" / "module3_queries.jsonl"
+MODULE3_DOCS = Path("docs") / "evaluacion_modulo3"
 
 
 def _profile(config) -> EmbeddingProfile:
@@ -143,7 +160,22 @@ def _build_parser() -> argparse.ArgumentParser:
     search_parser.add_argument("--json", action="store_true")
 
     evaluate_parser = subparsers.add_parser("evaluate", help="Compara modos y escribe el informe")
-    evaluate_parser.add_argument("--questions", required=True)
+    sources = evaluate_parser.add_mutually_exclusive_group(required=True)
+    sources.add_argument("--questions", help="Conjunto del Módulo 2 (eval_questions.jsonl)")
+    sources.add_argument(
+        "--queries",
+        help="Consultas fijas del Módulo 3 (module3_queries.jsonl); compara con la línea base M2",
+    )
+    evaluate_parser.add_argument(
+        "--qdrant-url",
+        default=None,
+        help=f"Servidor Qdrant (equivale a exportar {URL_ENV}); sin él, modo local embebido",
+    )
+    evaluate_parser.add_argument(
+        "--write-docs",
+        action="store_true",
+        help="Con --queries: escribe docs/evaluacion_modulo3.{json,md}",
+    )
     evaluate_parser.add_argument("--out", default=None)
     evaluate_parser.add_argument("--json-out", default=None)
     evaluate_parser.add_argument("--embedder", choices=("fastembed", "hash"), default="fastembed")
@@ -161,6 +193,28 @@ def _build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_WARMUP,
         help="Consultas descartadas por modo antes de medir latencia.",
     )
+
+    project_parser = subparsers.add_parser(
+        "project", help="Proyección t-SNE de fragmentos indexados y consultas (PNG + JSON)"
+    )
+    project_parser.add_argument("--sample", type=int, default=5000)
+    project_parser.add_argument("--seed", type=int, default=2026)
+    project_parser.add_argument("--perplexity", type=float, default=30.0)
+    project_parser.add_argument("--queries", default=str(MODULE3_QUERIES))
+    project_parser.add_argument("--out-dir", default="docs")
+    project_parser.add_argument(
+        "--eval",
+        default=None,
+        help="JSON de `rag evaluate --queries` para tomar el Recall@10 por consulta; "
+        "sin él se calcula el Recall@10 denso sobre el índice",
+    )
+    project_parser.add_argument(
+        "--index-dir", default=None, help="Índice a proyectar (por defecto el de la config)"
+    )
+    project_parser.add_argument(
+        "--gold", default=None, help="knowledge_units.jsonl para el tema de cada fragmento"
+    )
+    project_parser.add_argument("--embedder", choices=("fastembed", "hash"), default="fastembed")
     return parser
 
 
@@ -247,6 +301,50 @@ def _qdrant_command(args, config, root: Path) -> int:
         client.close()
 
 
+def _backend(retriever: HybridRetriever) -> str:
+    """Dónde se hizo la búsqueda vectorial (servidor Qdrant, modo local o matriz numpy)."""
+    store = getattr(retriever, "vector_store", None)
+    if store is None:
+        return "matriz numpy en memoria (sin colección Qdrant)"
+    settings = store.settings
+    if settings.url:
+        return f"servidor Qdrant {settings.url} (HNSW m={settings.hnsw_m}, ef={settings.hnsw_ef})"
+    return f"Qdrant local embebido ({settings.location}, búsqueda exacta)"
+
+
+def _project_command(args, config, root: Path) -> int:
+    """``rag project``: t-SNE de fragmentos + consultas → ``proyeccion_embeddings.{png,json}``."""
+    from .project import run_projection
+
+    def resolve(value: str | None, default: Path) -> Path:
+        path = Path(value) if value else default
+        return path if path.is_absolute() else root / path
+
+    profile = _profile(config)
+    index_dir = resolve(args.index_dir, config.index_dir)
+    try:
+        _points, png, target = run_projection(
+            index_dir=index_dir,
+            queries_path=resolve(args.queries, MODULE3_QUERIES),
+            gold_path=resolve(args.gold, GOLD_RELATIVE),
+            embedder=build_embedder(profile, kind=args.embedder),
+            profile=profile,
+            out_dir=resolve(args.out_dir, Path("docs")),
+            sample=args.sample,
+            seed=args.seed,
+            perplexity=args.perplexity,
+            eval_path=resolve(args.eval, Path()) if args.eval else None,
+        )
+    except (IndexUnavailableError, IndexInvalidError) as exc:
+        print(f"índice no utilizable: {exc}")
+        return 5
+    except (OSError, ValueError, KeyError) as exc:
+        print(f"error en la proyección: {exc}")
+        return 3
+    print(f"proyección escrita en {png} ({png.stat().st_size // 1024} KB) y {target}")
+    return 0
+
+
 def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
@@ -302,6 +400,12 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
     if args.command == "qdrant":
         return _qdrant_command(args, config, root)
 
+    if args.command == "project":
+        return _project_command(args, config, root)
+
+    if getattr(args, "qdrant_url", None):
+        os.environ[URL_ENV] = args.qdrant_url
+
     try:
         retriever = _retriever(args, root)
     except (IndexUnavailableError, IndexInvalidError) as exc:
@@ -316,8 +420,9 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
         _print_trace(trace, as_json=args.json)
         return 0
 
+    source = args.queries or args.questions
     try:
-        questions = load_questions(args.questions)
+        questions = load_questions(source)
     except (OSError, ValueError) as exc:
         print(f"error en el conjunto de evaluación: {exc}")
         return 3
@@ -333,7 +438,21 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
         "requiere generación y revisión manual (ver informe).",
         "Evaluación de recuperación: no se invocó al LLM.",
     ]
-    markdown = render_markdown(run, extra_notes=notes)
+    if args.queries:
+        notes.append(f"Búsqueda vectorial: {_backend(retriever)}.")
+        payload = module3_payload(
+            run,
+            queries_path=Path(args.queries).as_posix(),
+            backend=_backend(retriever),
+            baseline=load_module2_baseline(root / MODULE2_BASELINE_PATH),
+        )
+        markdown = render_module3_markdown(payload, run, extra_notes=notes)
+        if args.write_docs:
+            args.out = args.out or str(root / MODULE3_DOCS.with_suffix(".md"))
+            args.json_out = args.json_out or str(root / MODULE3_DOCS.with_suffix(".json"))
+    else:
+        payload = run.to_dict()
+        markdown = render_markdown(run, extra_notes=notes)
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.out).write_text(markdown, encoding="utf-8")
@@ -341,7 +460,7 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
     if args.json_out:
         Path(args.json_out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.json_out).write_text(
-            json.dumps(run.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
         print(f"JSON escrito en {args.json_out}")
     if not args.out and not args.json_out:

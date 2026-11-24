@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import time
 from collections import Counter
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -96,8 +97,15 @@ class GoldPipeline:
         config_path: str | Path = "config/gold.toml",
         taxonomy_path: str | Path = "config/gold_taxonomy.toml",
         project_root: Path = PROJECT_ROOT,
+        output_root: str | Path | None = None,
     ) -> GoldPipeline:
+        """Crea el pipeline; ``output_root`` sustituye ``[output] root`` (p. ej. un workdir)."""
         config = load_gold_config(config_path, taxonomy_path, project_root=project_root)
+        if output_root is not None:
+            root = Path(output_root)
+            if not root.is_absolute():
+                root = project_root / root
+            config = replace(config, output=replace(config.output, root=root.resolve()))
         taxonomy = load_taxonomy(
             config.taxonomy_path,
             coverage_path=config.path.parent / "coverage-items.toml",
@@ -120,14 +128,22 @@ class GoldPipeline:
         limit: int | None = None,
         topic: str | None = None,
         force: bool = False,
+        smoke: bool | None = None,
     ) -> dict[str, Any]:
+        """Construye la capa de oro.
+
+        Por defecto una corrida parcial (``limit`` o ``topic``) escribe en ``_meta/smoke/<run>``;
+        ``smoke=False`` la publica en la raíz de salida (útil en un directorio de trabajo).
+        """
         validate_run_id(run_id)
         started = time.perf_counter()
         started_at = utcnow()
         paths = prepare_output(self.config.output.root)
         paths["context_root"] = paths["root"]
         partial = limit is not None or topic is not None
-        if partial:
+        if smoke is None:
+            smoke = partial
+        if smoke:
             run_root = paths["meta"] / "smoke" / run_id
             paths = dict(paths)
             paths["context_root"] = run_root

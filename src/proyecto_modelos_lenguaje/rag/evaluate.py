@@ -88,9 +88,10 @@ def load_questions(path: str | Path) -> tuple[EvaluationQuestion, ...]:
             payload = json.loads(line)
         except json.JSONDecodeError as exc:
             raise ValueError(f"JSON inválido en {source.name}, línea {number}: {exc}") from exc
-        identifier = payload.get("question_id", payload.get("query_id"))
+        # Spec 024: module3_queries.jsonl identifica cada consulta con ``id``.
+        identifier = payload.get("question_id", payload.get("query_id", payload.get("id")))
         if identifier is None:
-            raise ValueError(f"Falta question_id/query_id en {source.name}, línea {number}")
+            raise ValueError(f"Falta question_id/query_id/id en {source.name}, línea {number}")
         questions.append(
             EvaluationQuestion(
                 question_id=str(identifier),
@@ -202,6 +203,8 @@ class EvaluationRun:
     scored_questions: int = 0
     warmup: int = 0
     per_question: dict[str, dict[str, float]] = field(default_factory=dict)
+    # Spec 024: Recall@10 por consulta y modo (proyección t-SNE y consultas fallidas).
+    per_question_recall: dict[str, dict[str, float]] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -286,6 +289,7 @@ def evaluate_questions(
     results: dict[str, ModeMetrics] = {}
     errors: list[dict[str, object]] = []
     per_question: dict[str, dict[str, float]] = {}
+    per_question_recall: dict[str, dict[str, float]] = {}
 
     for mode in modes:
         for question in corpus[: max(0, warmup)]:
@@ -298,6 +302,7 @@ def evaluate_questions(
         abstained = 0
         latencies: list[float] = []
         mode_scores: dict[str, float] = {}
+        mode_recalls: dict[str, float] = {}
         for question in corpus:
             begin = time.perf_counter()
             ranking = _rankings(
@@ -324,6 +329,7 @@ def evaluate_questions(
             expected = set(question.expected_unit_ids)
             for k in k_values:
                 recalls[k] += recall_at_k(ranking, expected, k)
+            mode_recalls[question.question_id] = recall_at_k(ranking, expected, NDCG_K)
             score = ndcg_at_k(ranking, expected, NDCG_K)
             ndcg_total += score
             mode_scores[question.question_id] = score
@@ -340,6 +346,7 @@ def evaluate_questions(
                 )
         total = len(scored) or 1
         per_question[mode] = mode_scores
+        per_question_recall[mode] = mode_recalls
         results[mode] = ModeMetrics(
             mode=mode,
             recall_at_k={k: recalls[k] / total for k in k_values},
@@ -378,6 +385,7 @@ def evaluate_questions(
         scored_questions=len(scored),
         warmup=max(0, warmup),
         per_question=per_question,
+        per_question_recall=per_question_recall,
     )
 
 
@@ -454,5 +462,158 @@ def render_markdown(run: EvaluationRun, *, extra_notes: Iterable[str] = ()) -> s
     if notes:
         lines.extend(["", "## Notas", ""])
         lines.extend(f"- {note}" for note in notes)
+    lines.append("")
+    return "\n".join(lines)
+
+
+# --- Spec 024 (US5, T071): evaluación del Módulo 3 frente a la línea base del Módulo 2 ---------
+
+MODULE2_BASELINE_PATH = Path("docs") / "evaluacion_qdrant.json"
+# Modo híbrido del Módulo 2 sobre Qdrant (docs/evaluacion_qdrant.json, 35 preguntas puntuables).
+MODULE2_BASELINE: dict[str, object] = {
+    "source": MODULE2_BASELINE_PATH.as_posix(),
+    "run_id": "qdrant-base-2026-11-14",
+    "mode": "hybrid",
+    "scored_questions": 35,
+    "recall_at_10": 0.6714,
+    "ndcg_at_10": 0.4986,
+    "mrr": 0.4499,
+}
+COMPARED_METRICS = {"recall_at_10": "Recall@10", "ndcg_at_10": "nDCG@10", "mrr": "MRR"}
+
+
+def load_module2_baseline(path: str | Path | None = None) -> dict[str, object]:
+    """Línea base híbrida del Módulo 2; si el JSON no está, usa los valores registrados."""
+    source = Path(path) if path is not None else None
+    if source is None or not source.is_file():
+        return dict(MODULE2_BASELINE)
+    try:
+        payload = json.loads(source.read_text(encoding="utf-8"))
+        hybrid = payload["modes"]["hybrid"]
+        return {
+            "source": MODULE2_BASELINE_PATH.as_posix(),
+            "run_id": payload.get("run_id", ""),
+            "mode": "hybrid",
+            "scored_questions": payload.get("scored_questions"),
+            "recall_at_10": float(hybrid["recall_at_k"]["10"]),
+            "ndcg_at_10": float(hybrid["ndcg_at_10"]),
+            "mrr": float(hybrid["mrr"]),
+        }
+    except OSError, ValueError, KeyError, TypeError:
+        return dict(MODULE2_BASELINE)
+
+
+def compare_with_baseline(
+    run: EvaluationRun, baseline: dict[str, object] | None = None, *, mode: str = "hybrid"
+) -> dict[str, object]:
+    """Diferencias (actual − línea base) en Recall@10, nDCG@10 y MRR del modo indicado."""
+    reference = baseline or MODULE2_BASELINE
+    metrics = run.modes.get(mode)
+    if metrics is None:
+        return {"mode": mode, "baseline": reference, "available": False}
+    current = {
+        "recall_at_10": metrics.recall_at_k.get(NDCG_K, 0.0),
+        "ndcg_at_10": metrics.ndcg_at_10,
+        "mrr": metrics.mrr,
+    }
+    rows: dict[str, dict[str, float]] = {}
+    for name in COMPARED_METRICS:
+        before = float(reference[name])  # type: ignore[arg-type]
+        rows[name] = {
+            "baseline": round(before, 4),
+            "current": round(current[name], 4),
+            "delta": round(current[name] - before, 4),
+        }
+    return {
+        "mode": mode,
+        "available": True,
+        "baseline": reference,
+        "metrics": rows,
+        "not_worse": all(row["delta"] >= 0 for row in rows.values()),
+    }
+
+
+def per_query_results(run: EvaluationRun, *, mode: str = "hybrid") -> list[dict[str, object]]:
+    """Recall@10 y nDCG@10 por consulta; ``failed`` = Recall@10 igual a 0."""
+    recalls = run.per_question_recall.get(mode, {})
+    ndcg = run.per_question.get(mode, {})
+    return [
+        {
+            "id": question_id,
+            "recall_at_10": round(recall, 4),
+            "ndcg_at_10": round(ndcg.get(question_id, 0.0), 4),
+            "failed": recall == 0.0,
+        }
+        for question_id, recall in recalls.items()
+    ]
+
+
+def module3_payload(
+    run: EvaluationRun,
+    *,
+    queries_path: str,
+    backend: str,
+    baseline: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """JSON de ``docs/evaluacion_modulo3.json``: métricas, comparación y resultado por consulta."""
+    return {
+        "spec": "024",
+        "queries": queries_path,
+        "backend": backend,
+        **run.to_dict(),
+        "comparison": compare_with_baseline(run, baseline),
+        "per_query": per_query_results(run),
+    }
+
+
+def render_module3_markdown(
+    payload: dict[str, object], run: EvaluationRun, *, extra_notes: Iterable[str] = ()
+) -> str:
+    """Informe del Módulo 3: métricas por modo, comparación con el Módulo 2 y consultas fallidas."""
+    base = render_markdown(run, extra_notes=extra_notes).replace(
+        "# Evaluación del Módulo 2 — recuperación semántica",
+        "# Evaluación del Módulo 3 — recuperación sobre Qdrant",
+        1,
+    )
+    comparison = payload["comparison"]
+    assert isinstance(comparison, dict)
+    lines = [
+        base.rstrip(),
+        "",
+        "## Comparación con la línea base del Módulo 2 (híbrido)",
+        "",
+        f"**Consultas**: `{payload['queries']}` · **Búsqueda vectorial**: {payload['backend']}",
+        "",
+    ]
+    if comparison.get("available"):
+        reference = comparison["baseline"]
+        metrics = comparison["metrics"]
+        assert isinstance(reference, dict) and isinstance(metrics, dict)
+        lines.extend(["| Métrica | Módulo 2 | Módulo 3 | Δ |", "|---|---|---|---|"])
+        for name, label in COMPARED_METRICS.items():
+            row = metrics[name]
+            lines.append(
+                f"| {label} | {row['baseline']:.3f} | {row['current']:.3f} | {row['delta']:+.3f} |"
+            )
+        verdict = "no empeora" if comparison.get("not_worse") else "empeora en alguna métrica"
+        lines.extend(
+            [
+                "",
+                f"**Lectura**: el Módulo 3 {verdict} frente a la línea base "
+                f"(`{reference.get('source')}`, {reference.get('scored_questions')} preguntas "
+                "puntuables). Las consultas son una muestra fija (semilla 2026) de esas "
+                "preguntas, elegida antes de evaluar; la comparación es indicativa.",
+            ]
+        )
+    else:
+        lines.append("Sin modo híbrido en esta ejecución: no hay comparación.")
+    per_query = payload.get("per_query") or []
+    assert isinstance(per_query, list)
+    failed = [row for row in per_query if row["failed"]]
+    lines.extend(["", "## Consultas fallidas (Recall@10 = 0, híbrido)", ""])
+    if failed:
+        lines.extend(f"- `{row['id']}`" for row in failed)
+    else:
+        lines.append("Ninguna.")
     lines.append("")
     return "\n".join(lines)

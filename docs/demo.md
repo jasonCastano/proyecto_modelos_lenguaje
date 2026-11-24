@@ -1,5 +1,10 @@
 # Guion de demostración — 12 + 3 minutos
 
+> **Módulo 3 (2026-11-23).** El guion vigente de la sustentación final (7 min de pitch con la demo en WhatsApp
+> desde el teléfono de un invitado + 8 de discusión técnica, reparto por integrante, preguntas, contingencia y
+> versión en inglés) está en [`rubrica_modulo3.md`](rubrica_modulo3.md) §2. La operación del día está en
+> [`despliegue.md`](despliegue.md).
+>
 > **Reemplazado el 2026-11-14.** El guion vigente de la sustentación del Módulo 2 (casos, preparación con
 > `make demo-prep`, plan B y reparto por integrante) está en [`rubrica_modulo2.md`](rubrica_modulo2.md) §5,
 > como pidió la evaluación docente para no tener dos guiones contradictorios. Este archivo se conserva como

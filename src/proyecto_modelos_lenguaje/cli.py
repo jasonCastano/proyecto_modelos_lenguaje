@@ -21,6 +21,7 @@ from .config import (
     load_coverage_items,
     load_relevance_config,
 )
+from .corpus import CorpusError, rebuild
 from .coverage import build_matrix
 from .curation import CurationError, CurationService
 from .gold.pipeline import GoldPipeline
@@ -530,6 +531,7 @@ def cmd_silver_build(args: argparse.Namespace) -> int:
     pipeline = SilverPipeline.from_paths(
         sources_config=args.sources_config,
         silver_config=args.config,
+        output_root=args.output_dir,
     )
     payload = pipeline.build(
         args.run,
@@ -545,6 +547,7 @@ def cmd_silver_verify(args: argparse.Namespace) -> int:
     pipeline = SilverPipeline.from_paths(
         sources_config=args.sources_config,
         silver_config=args.config,
+        output_root=args.output_dir,
     )
     payload = pipeline.verify_run(args.run, sample=args.sample, seed=args.seed)
     _emit(payload, args.json)
@@ -555,6 +558,7 @@ def cmd_silver_report(args: argparse.Namespace) -> int:
     pipeline = SilverPipeline.from_paths(
         sources_config=args.sources_config,
         silver_config=args.config,
+        output_root=args.output_dir,
     )
     payload = pipeline.report(args.run)
     if args.format == "md":
@@ -569,6 +573,7 @@ def cmd_silver_status(args: argparse.Namespace) -> int:
     pipeline = SilverPipeline.from_paths(
         sources_config=args.sources_config,
         silver_config=args.config,
+        output_root=args.output_dir,
     )
     payload = pipeline.status(args.run)
     _emit(payload, args.json)
@@ -580,6 +585,7 @@ def cmd_gold_build(args: argparse.Namespace) -> int:
         silver_dir=args.silver_dir,
         config_path=args.config,
         taxonomy_path=args.taxonomy,
+        output_root=args.output_dir,
     )
     payload = pipeline.build(
         args.run,
@@ -596,6 +602,7 @@ def cmd_gold_verify(args: argparse.Namespace) -> int:
         silver_dir=args.silver_dir,
         config_path=args.config,
         taxonomy_path=args.taxonomy,
+        output_root=args.output_dir,
     )
     payload = pipeline.verify_run(args.run, sample=args.sample, seed=args.seed)
     _emit(payload, args.json)
@@ -607,6 +614,7 @@ def cmd_gold_report(args: argparse.Namespace) -> int:
         silver_dir=args.silver_dir,
         config_path=args.config,
         taxonomy_path=args.taxonomy,
+        output_root=args.output_dir,
     )
     payload = pipeline.report(args.run)
     if args.format == "md":
@@ -622,10 +630,45 @@ def cmd_gold_status(args: argparse.Namespace) -> int:
         silver_dir=args.silver_dir,
         config_path=args.config,
         taxonomy_path=args.taxonomy,
+        output_root=args.output_dir,
     )
     payload = pipeline.status(args.run)
     _emit(payload, args.json)
     return 0
+
+
+def cmd_corpus_rebuild(args: argparse.Namespace) -> int:
+    def progress(message: str) -> None:
+        print(f"[corpus] {message}", file=sys.stderr, flush=True)
+
+    manifest = rebuild(
+        from_=args.from_,
+        workdir=args.workdir,
+        in_place=args.in_place,
+        confirm=args.confirm,
+        scrape=args.scrape,
+        campaign=args.campaign,
+        limit=args.limit,
+        embedder=args.embedder,
+        qdrant=not args.no_qdrant,
+        sources_config=args.config,
+        progress=progress,
+    )
+    if args.json:
+        _emit(manifest, True)
+    else:
+        stages = manifest["stages"]
+        print(f"reconstrucción {manifest['run_id']} · {manifest['status']}")
+        print(f"directorio de trabajo: {manifest['workdir']}")
+        for name, stage in stages.items():
+            counts = ", ".join(f"{k}={v}" for k, v in (stage.get("counts") or {}).items())
+            print(f"- {name}: {stage.get('status')} {counts}")
+        print(
+            "fragmentos con procedencia: "
+            f"{manifest['fragments_with_provenance']}/{manifest['fragments_total']}"
+        )
+        print(f"manifiesto: {manifest['manifest_path']}")
+    return 0 if manifest["status"] == "completed" else 1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -791,6 +834,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     silver_build = silver_sub.add_parser("build", help="build or update the silver layer")
     silver_build.add_argument("--config", default="config/silver.toml")
+    silver_build.add_argument(
+        "--output-dir",
+        default=None,
+        help="directorio de salida en lugar de [output] root de config/silver.toml",
+    )
     silver_build.add_argument("--sources-config", default=DEFAULT_CONFIG)
     silver_build.add_argument("--run", required=True)
     silver_build.add_argument("--limit", type=int, default=None)
@@ -801,6 +849,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     silver_verify = silver_sub.add_parser("verify", help="audit a silver run")
     silver_verify.add_argument("--config", default="config/silver.toml")
+    silver_verify.add_argument(
+        "--output-dir",
+        default=None,
+        help="directorio de salida en lugar de [output] root de config/silver.toml",
+    )
     silver_verify.add_argument("--sources-config", default=DEFAULT_CONFIG)
     silver_verify.add_argument("--run", required=True)
     silver_verify.add_argument("--sample", type=int, default=50)
@@ -810,6 +863,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     silver_report = silver_sub.add_parser("report", help="show a silver quality report")
     silver_report.add_argument("--config", default="config/silver.toml")
+    silver_report.add_argument(
+        "--output-dir",
+        default=None,
+        help="directorio de salida en lugar de [output] root de config/silver.toml",
+    )
     silver_report.add_argument("--sources-config", default=DEFAULT_CONFIG)
     silver_report.add_argument("--run", required=True)
     silver_report.add_argument("--format", choices=["json", "md"], default="json")
@@ -817,6 +875,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     silver_status = silver_sub.add_parser("status", help="show the latest silver run")
     silver_status.add_argument("--config", default="config/silver.toml")
+    silver_status.add_argument(
+        "--output-dir",
+        default=None,
+        help="directorio de salida en lugar de [output] root de config/silver.toml",
+    )
     silver_status.add_argument("--sources-config", default=DEFAULT_CONFIG)
     silver_status.add_argument("--run")
     silver_status.add_argument("--json", action="store_true")
@@ -827,6 +890,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     gold_build = gold_sub.add_parser("build", help="build or update the gold layer")
     gold_build.add_argument("--config", default="config/gold.toml")
+    gold_build.add_argument(
+        "--output-dir",
+        default=None,
+        help="directorio de salida en lugar de [output] root de config/gold.toml",
+    )
     gold_build.add_argument("--taxonomy", default="config/gold_taxonomy.toml")
     gold_build.add_argument("--silver-dir", default="data/silver")
     gold_build.add_argument("--run", required=True)
@@ -838,6 +906,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     gold_verify = gold_sub.add_parser("verify", help="audit a gold run")
     gold_verify.add_argument("--config", default="config/gold.toml")
+    gold_verify.add_argument(
+        "--output-dir",
+        default=None,
+        help="directorio de salida en lugar de [output] root de config/gold.toml",
+    )
     gold_verify.add_argument("--taxonomy", default="config/gold_taxonomy.toml")
     gold_verify.add_argument("--silver-dir", default="data/silver")
     gold_verify.add_argument("--run", required=True)
@@ -848,6 +921,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     gold_report = gold_sub.add_parser("report", help="show a gold quality report")
     gold_report.add_argument("--config", default="config/gold.toml")
+    gold_report.add_argument(
+        "--output-dir",
+        default=None,
+        help="directorio de salida en lugar de [output] root de config/gold.toml",
+    )
     gold_report.add_argument("--taxonomy", default="config/gold_taxonomy.toml")
     gold_report.add_argument("--silver-dir", default="data/silver")
     gold_report.add_argument("--run", required=True)
@@ -856,13 +934,114 @@ def build_parser() -> argparse.ArgumentParser:
 
     gold_status = gold_sub.add_parser("status", help="show the latest gold run")
     gold_status.add_argument("--config", default="config/gold.toml")
+    gold_status.add_argument(
+        "--output-dir",
+        default=None,
+        help="directorio de salida en lugar de [output] root de config/gold.toml",
+    )
     gold_status.add_argument("--taxonomy", default="config/gold_taxonomy.toml")
     gold_status.add_argument("--silver-dir", default="data/silver")
     gold_status.add_argument("--run")
     gold_status.add_argument("--json", action="store_true")
     gold_status.set_defaults(func=cmd_gold_status)
 
+    corpus = sub.add_parser(
+        "corpus", help="reconstrucción del corpus (plata → oro → índice → Qdrant)", parents=[common]
+    )
+    corpus_sub = corpus.add_subparsers(dest="corpus_command", required=True)
+    corpus_rebuild = corpus_sub.add_parser(
+        "rebuild",
+        parents=[common],
+        help="reconstruye plata, oro, índice y Qdrant en un directorio de trabajo",
+    )
+    corpus_rebuild.add_argument(
+        "--from",
+        dest="from_",
+        choices=["bronze", "silver"],
+        default="bronze",
+        help="capa de partida (bronce versionado o plata versionada; ambas solo lectura)",
+    )
+    corpus_rebuild.add_argument(
+        "--workdir", default=None, help="directorio de trabajo (por defecto $TMP/pml-rebuild-<run>)"
+    )
+    corpus_rebuild.add_argument(
+        "--in-place",
+        action="store_true",
+        help="reescribe data/silver, data/gold, el índice y Qdrant (exige --confirm)",
+    )
+    corpus_rebuild.add_argument(
+        "--confirm", action="store_true", help="confirma explícitamente --in-place"
+    )
+    corpus_rebuild.add_argument(
+        "--scrape", action="store_true", help="ejecuta antes la campaña de bronce (usa la red)"
+    )
+    corpus_rebuild.add_argument("--campaign", default=None, help="campaña para --scrape")
+    corpus_rebuild.add_argument(
+        "--limit", type=int, default=None, help="artefactos de bronce (o documentos de plata)"
+    )
+    corpus_rebuild.add_argument(
+        "--embedder",
+        choices=["fastembed", "hash"],
+        default="fastembed",
+        help="hash = determinista y sin descarga (pruebas)",
+    )
+    corpus_rebuild.add_argument(
+        "--no-qdrant", action="store_true", help="omite la carga de la colección Qdrant"
+    )
+    corpus_rebuild.add_argument("--json", action="store_true")
+    corpus_rebuild.set_defaults(func=cmd_corpus_rebuild)
+
+    # Spec 024: canal WhatsApp (ensayo sin teléfono) y operación de la jornada.
+    channels = sub.add_parser("channels", help="canal WhatsApp/Telegram por OpenClaw (spec 024)")
+    channels.add_argument("rest", nargs=argparse.REMAINDER, help="simulate --sender … --text …")
+    channels.set_defaults(func=cmd_channels)
+
+    ops = sub.add_parser("ops", help="operación del despliegue (spec 024)")
+    ops_sub = ops.add_subparsers(dest="ops_command", required=True)
+    ops_workspace = ops_sub.add_parser("workspace", help="workspace de OpenClaw")
+    ops_workspace.add_argument("action", choices=("sync",))
+    ops_workspace.add_argument("--target", default=None, help="por defecto OPENCLAW_WORKSPACE_DIR")
+    ops_workspace.set_defaults(func=cmd_ops_workspace)
+    ops_check = ops_sub.add_parser("check", help="prueba de 3 minutos del Anuncio 007")
+    ops_check.add_argument("--backend", default="http://127.0.0.1:8000")
+    ops_check.add_argument("--json", action="store_true")
+    ops_check.set_defaults(func=cmd_ops_check)
+
     return parser
+
+
+def cmd_channels(args: argparse.Namespace) -> int:
+    from .channels.__main__ import main as channels_main
+
+    return channels_main(list(args.rest))
+
+
+def cmd_ops_workspace(args: argparse.Namespace) -> int:
+    import os
+
+    from .ops import workspace_sync
+
+    target = args.target or os.environ.get("OPENCLAW_WORKSPACE_DIR")
+    if not target:
+        return _error("define OPENCLAW_WORKSPACE_DIR o pasa --target", 2)
+    copied = workspace_sync(Path(target))
+    print(f"Sincronicé {len(copied)} archivos en {target} (memory/ intacta).")
+    return 0
+
+
+def cmd_ops_check(args: argparse.Namespace) -> int:
+    from dotenv import load_dotenv
+
+    from .config import PROJECT_ROOT
+    from .ops import ops_check, render
+
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
+    results = ops_check(backend=args.backend.rstrip("/"))
+    if args.json:
+        print(json.dumps([r.to_dict() for r in results], ensure_ascii=False, indent=2))
+    else:
+        print(render(results))
+    return 0 if all(r.ok for r in results) else 1
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -881,6 +1060,8 @@ def main(argv: list[str] | None = None) -> int:
     except ConfigError as exc:
         return _error(str(exc), 3)
     except CurationError as exc:
+        return _error(str(exc), exc.exit_code)
+    except CorpusError as exc:
         return _error(str(exc), exc.exit_code)
     except FileNotFoundError as exc:
         return _error(str(exc), 3)

@@ -15,6 +15,8 @@ import json
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Literal
 
 from langchain_core.language_models import BaseChatModel
@@ -23,8 +25,10 @@ from langchain_core.tools import BaseTool, StructuredTool
 from langgraph.store.base import BaseStore
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
+from .config import resolve_state_dir
 from .identity import IdentityRegistry
 from .memory import PROFILE_KEYS, PreferenceError, UserMemory, UserProfile
+from .privacy import redact_pii
 from .prompts import load_agent_prompt
 from .structured import normalize
 
@@ -33,6 +37,7 @@ WRITE_TOOLS: tuple[str, ...] = (
     "save_preference",
     "save_profile",
     "export_conversation",
+    "request_human_contact",
 )
 PreferenceKey = Literal["response_format", "topics_of_interest", "language"]
 EXPORT_PREVIEW_TURNS = 20
@@ -42,6 +47,11 @@ TOOL_DESCRIPTIONS = {
     "save_preference": "Guardar una preferencia del usuario para próximas conversaciones",
     "save_profile": "Guardar datos del perfil del usuario (nombre, trabajo, cargo o ciudad)",
     "export_conversation": "Exportar la conversación actual en Markdown",
+    # Spec 024: deja la solicitud en el registro de contactos; no promete que alguien llame.
+    "request_human_contact": (
+        "Registrar una solicitud para que una persona de Manuelita atienda un tema, con el "
+        "canal preferido del usuario"
+    ),
     # Spec 018: no es herramienta del modelo; la propone el nodo de identidad.
     "remember_client": "Recordar al visitante por su correo para reconocerlo en próximas visitas",
 }
@@ -89,12 +99,27 @@ class ExportConversationArgs(BaseModel):
     format: Literal["markdown"] = "markdown"
 
 
+class RequestHumanContactArgs(BaseModel):
+    """Spec 024: solicitud de contacto humano (se registra solo tras la aprobación)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    topic: str = Field(min_length=3, max_length=120, description="Tema de la solicitud.")
+    preferred_channel: Literal["whatsapp", "email", "llamada"] = Field(
+        description="Canal preferido: whatsapp, email o llamada."
+    )
+    name: str | None = Field(
+        default=None, min_length=1, max_length=80, description="Nombre para el contacto."
+    )
+
+
 ARG_SCHEMAS: dict[str, type[BaseModel]] = {
     "forget_memory": ForgetMemoryArgs,
     "save_preference": SavePreferenceArgs,
     "save_profile": SaveProfileArgs,
     "export_conversation": ExportConversationArgs,
     "remember_client": RememberClientArgs,
+    "request_human_contact": RequestHumanContactArgs,
 }
 
 
@@ -288,6 +313,49 @@ def export_markdown(turns: Sequence[dict[str, Any]]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+CONTACTS_FILE = "contacts.jsonl"
+CONTACT_CHANNEL_LABELS = {"whatsapp": "WhatsApp", "email": "correo", "llamada": "llamada"}
+
+
+def register_contact_request(
+    args: dict[str, Any], *, user_id: str, state_dir: Path | None = None
+) -> dict[str, Any]:
+    """Añade la solicitud a ``$MANUELITA_STATE_DIR/contacts.jsonl`` (fuera del repositorio).
+
+    Guarda el ``user_id`` seudónimo del canal, el tema sin datos de contacto (``redact_pii``), el
+    canal preferido, el nombre si el usuario lo dio y la hora. Solo se llama tras la aprobación.
+    """
+    from .tools_utility import purpose_for  # importación diferida: el catálogo importa actions
+
+    directory = state_dir if state_dir is not None else resolve_state_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    topic = redact_pii(" ".join(str(args["topic"]).split()))
+    record = {
+        "version": "1.0",
+        "created_at": datetime.now(UTC).isoformat(),
+        "user_id": user_id,
+        "topic": topic,
+        "purpose": purpose_for(topic),
+        "preferred_channel": args["preferred_channel"],
+        "name": redact_pii(args["name"].strip()) if args.get("name") else None,
+        "status": "pending",
+    }
+    with (directory / CONTACTS_FILE).open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+    return record
+
+
+def contact_reply(record: dict[str, Any]) -> str:
+    from .tools_utility import channels_text
+
+    channel = CONTACT_CHANNEL_LABELS.get(record["preferred_channel"], record["preferred_channel"])
+    return (
+        f"Registré tu solicitud de contacto sobre «{record['topic']}» con {channel} como canal "
+        "preferido. No puedo garantizar cuándo te responderán; mientras tanto, el canal oficial "
+        f"es: {channels_text(record['purpose'])}."
+    )
+
+
 def execute_action(
     tool: str,
     args: dict[str, Any],
@@ -299,6 +367,8 @@ def execute_action(
 ) -> str:
     """Ejecuta una acción ya aprobada y devuelve el mensaje para el usuario."""
     clean = validate_args(tool, args)
+    if tool == "request_human_contact":
+        return contact_reply(register_contact_request(clean, user_id=user_id))
     if tool == "export_conversation":
         if not turns:
             return "La conversación todavía no tiene turnos para exportar."

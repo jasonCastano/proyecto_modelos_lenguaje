@@ -430,6 +430,9 @@ def _offline_voice(monkeypatch: pytest.MonkeyPatch):
     from proyecto_modelos_lenguaje.voice.engine import reset_voice_service
 
     monkeypatch.setenv("MANUELITA_VOICE_ENGINE", "fake")
+    # Spec 024: la suite no envía trazas a LangSmith aunque .env active el trazado.
+    monkeypatch.setenv("LANGSMITH_TRACING", "false")
+    monkeypatch.setenv("LANGCHAIN_TRACING_V2", "false")
     monkeypatch.setenv("MANUELITA_VOICE_WARMUP", "0")
     # Spec 023: tampoco carga ni descarga el modelo de dictado (faster-whisper).
     monkeypatch.setenv("MANUELITA_STT_ENGINE", "fake")

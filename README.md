@@ -94,6 +94,7 @@ Universidad Autónoma de Occidente, 2026-2S.
 - [Problema](#problema)
 - [Solución](#solución)
 - [Arquitectura](#arquitectura)
+- [Módulo 3: WhatsApp con OpenClaw](#módulo-3-whatsapp-con-openclaw)
 - [Arquitectura interactiva (Archify)](#arquitectura-interactiva-archify)
 - [Capturas](#capturas)
 - [Estado del proyecto](#estado-del-proyecto)
@@ -235,6 +236,53 @@ el bloque `jev` con estado, confianza, latencia y costo del gatekeeper).
   manifiesto (modelo, fragmentación, fecha y hash del oro) vive junto al índice en `data/module2/index/`, también
   fuera de Git; cada evaluación registra su `run_id`. Cambiar el modelo de embeddings obliga a reindexar.
 - La app es de **solo lectura**: no escribe en `data/` ni en el repositorio.
+
+### Módulo 3: WhatsApp con OpenClaw
+
+Valer-IA Caña responde por **WhatsApp** desde un número real, a través del gateway **OpenClaw** que corre como
+servicio en un PC del equipo. Es **un solo agente**: el plugin propio `valeria-bridge` lleva cada mensaje
+admitido (allowlist E.164 o emparejamiento) al mismo `ChatService` de la web, con su router, memoria, 20
+herramientas, blindaje, aprobación humana y citas. Si el backend no responde en 45 s, contesta el agente
+nativo de OpenClaw con el servidor MCP propio `valeria-tools` (solo lectura): el **modo degradado**.
+Decisión: [ADR 0028](docs/decisions/0028-openclaw-whatsapp-puente.md).
+
+```mermaid
+flowchart LR
+    P["📱 Teléfono del invitado"] -->|WhatsApp| WA["WhatsApp Web<br/>(Baileys, conexión saliente)"]
+    WA --> GW["OpenClaw gateway<br/>loopback + token · allowlist/pairing<br/>sandbox · tools.deny · workspace"]
+    GW -->|"hook before_dispatch"| BR["Plugin valeria-bridge<br/>(TypeScript)"]
+    BR -->|"POST /api/channels/messages<br/>X-Channel-Token"| API["FastAPI<br/>channels/: seudónimo, hilo,<br/>SÍ/NO, formato, bitácora"]
+    API --> CS["ChatService / LangGraph<br/>router reglas → Jev → LLM<br/>SqliteSaver + SqliteStore"]
+    CS --> CAT["Catálogo de 20 herramientas<br/>15 lectura · 5 escritura con HITL"]
+    CAT --> QD[("Qdrant servidor<br/>HNSW + híbrida")]
+    CS --> DS["DeepSeek API"]
+    BR -.->|"backend caído o > 45 s"| NA["Agente nativo OpenClaw<br/>deepseek-flash → deepseek-v4-pro"]
+    NA --> MCP["MCP valeria-tools<br/>(15 de lectura)"]
+    MCP --> QD
+```
+
+| Pieza | Dónde |
+|---|---|
+| Configuración del gateway (sin secretos) | [`openclaw/openclaw.json5`](openclaw/openclaw.json5), [`openclaw/.env.example`](openclaw/.env.example) |
+| Workspace (`SOUL`, `IDENTITY`, `AGENTS`, `USER`, `MEMORY`, skill) | [`openclaw/workspace/`](openclaw/workspace/) |
+| Plugin puente | [`openclaw/plugins/valeria-bridge/`](openclaw/plugins/valeria-bridge/) |
+| Canal en el backend | `src/proyecto_modelos_lenguaje/channels/`, `POST /api/channels/messages`, `GET /api/channels/status` |
+| Catálogo de herramientas | `agent/catalog.py`, `GET /api/tools`, [`docs/herramientas.md`](docs/herramientas.md) |
+| Servidor MCP | `src/proyecto_modelos_lenguaje/mcp_server.py` (`make mcp`) |
+
+```bash
+uv run python -m proyecto_modelos_lenguaje.agent tools            # catálogo de 20 con esquemas
+uv run pml channels simulate --sender +570000000001 --text "hola" # canal sin teléfono (backend local)
+uv run pml corpus rebuild --from bronze --json                    # corpus de punta a punta, sin tocar data/
+uv run pml ops check                                              # prueba de 3 minutos del Anuncio 007
+```
+
+Documentos: [guía de despliegue](docs/despliegue.md) · [manual para invitados](docs/manual_whatsapp.md) ·
+[catálogo de herramientas](docs/herramientas.md) · [evaluación de
+herramientas](docs/evaluacion_herramientas.md) · evaluación del retrieval y proyección t-SNE
+(`docs/evaluacion_modulo3.md`, `docs/proyeccion_embeddings.png`) y blindaje por el canal
+(`docs/evaluacion_blindaje_canal.md`), pendientes de ejecutar en el PC servidor · [rúbrica del Módulo 3 y
+guion](docs/rubrica_modulo3.md).
 
 ### Arquitectura interactiva (Archify)
 
@@ -1107,6 +1155,13 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   [especificación 021](specs/021-sentence-streaming/spec.md)
 - [Decisión: gatekeeper System One (Jev)](docs/decisions/0026-jev-gatekeeper.md) ·
   [especificación 022](specs/022-jev-router-gate/spec.md)
+- [Decisión: WhatsApp con OpenClaw y plugin puente](docs/decisions/0028-openclaw-whatsapp-puente.md) ·
+  [especificación 024](specs/024-module3-openclaw-whatsapp/spec.md)
+- [Rúbrica de sustentación del Módulo 3: cumplimiento y guion](docs/rubrica_modulo3.md)
+- [Guía de despliegue (PC servidor, OpenClaw y WhatsApp)](docs/despliegue.md)
+- [Manual de uso por WhatsApp para invitados](docs/manual_whatsapp.md)
+- [Catálogo de las 20 herramientas](docs/herramientas.md) ·
+  [evaluación de herramientas](docs/evaluacion_herramientas.md)
 - [Rúbrica de sustentación del Módulo 2: cumplimiento y guion](docs/rubrica_modulo2.md)
 - [Política de memoria y privacidad](docs/memoria.md)
 - [Informe del Módulo 2](docs/informe_modulo2.md)
@@ -1166,10 +1221,17 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 
 ### Fase 3 — Módulo 3: productización y despliegue (40 %)
 
-- [ ] Canal real (WhatsApp o Telegram) con persistencia de estado productiva.
-- [ ] Guardrails, evaluación de fidelidad, relevancia, latencia y costo.
-- [ ] Despliegue reproducible (FastAPI / Agent Server en contenedor u otro entorno).
-- [ ] Observabilidad, documentación final y tag de release.
+Spec 024; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/rubrica_modulo3.md)).
+
+- [x] Catálogo único de 20 herramientas tipadas, plan visible en la traza y `GET /api/tools`.
+- [x] Puente OpenClaw → backend (`valeria-bridge`, `/api/channels/*`), HITL por «SÍ/NO», seudónimos y bitácora.
+- [x] Configuración del gateway, workspace, skill y servidor MCP propio versionados sin secretos.
+- [x] `pml corpus rebuild`, 30 consultas de evaluación y proyección t-SNE (código).
+- [x] Guía de despliegue, manual para invitados, ADR 0028 y guion ES/EN.
+- [ ] Instalar OpenClaw en el PC servidor, vincular WhatsApp y probar con teléfonos reales.
+- [ ] Qdrant servidor, evaluación del retrieval y t-SNE sobre el índice desplegado.
+- [ ] `openclaw security audit` en verde, blindaje por el canal y prueba de carga.
+- [ ] Ensayo cronometrado y tag `v3.0.0`.
 
 ## Créditos
 

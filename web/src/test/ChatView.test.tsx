@@ -70,6 +70,28 @@ describe("ChatTurnCard", () => {
     expect(screen.getByTestId("chat-turn")).toHaveAttribute("data-kind", "answered");
   });
 
+  it("muestra el plan y las herramientas del turno en la vista técnica (spec 024)", () => {
+    renderTurn(
+      makeTurn({
+        plan_steps: ["consultar series anuales", "→ compare_indicator(metric=azucar)"],
+        tools: [
+          { step: 1, name: "compare_indicator", args: { metric: "azucar" }, ok: true, duration_ms: 12, summary: "ok" },
+          { step: 2, name: "calculate", args: {}, ok: false, error: "división por cero", duration_ms: 1, summary: "" },
+        ],
+      }),
+    );
+    const panel = screen.getByTestId("turn-tools");
+    expect(panel).toHaveTextContent("Plan y herramientas (2 herramientas)");
+    expect(screen.getByTestId("turn-plan")).toHaveTextContent("→ compare_indicator(metric=azucar)");
+    expect(screen.getByTestId("turn-tool-list")).toHaveTextContent("compare_indicator · 12 ms");
+    expect(screen.getByTestId("turn-tool-list")).toHaveTextContent("error: división por cero");
+  });
+
+  it("no muestra el panel de herramientas si el turno no usó ninguna (spec 024)", () => {
+    renderTurn(makeTurn());
+    expect(screen.queryByTestId("turn-tools")).not.toBeInTheDocument();
+  });
+
   it("muestra cuando decidió el gatekeeper Jev (spec 022)", () => {
     const base = makeTurn();
     renderTurn(makeTurn({ route: { ...base.route, decided_by: "jev", confidence: 0.93 } }));

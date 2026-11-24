@@ -302,6 +302,21 @@ export interface ChatTurn {
   jev?: JevTrace | null;
   /** Spec 023: el mensaje llegó por dictado (solo vista técnica). */
   input?: InputMeta | null;
+  /** Spec 024: plan del turno (pasos previstos y ejecutados). */
+  plan_steps?: string[];
+  /** Spec 024: herramientas invocadas en el turno. */
+  tools?: ToolInvocation[];
+}
+
+/** Spec 024: una herramienta del catálogo invocada en el turno (vista técnica). */
+export interface ToolInvocation {
+  step: number;
+  name: string;
+  args: Record<string, unknown>;
+  ok: boolean;
+  error?: string | null;
+  duration_ms: number;
+  summary: string;
 }
 
 export interface JevTrace {

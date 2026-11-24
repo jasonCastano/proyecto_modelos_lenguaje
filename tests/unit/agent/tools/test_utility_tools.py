@@ -17,6 +17,7 @@ from proyecto_modelos_lenguaje.agent.tools_utility import (
     purpose_for,
 )
 from proyecto_modelos_lenguaje.config import PROJECT_ROOT
+from tests.unit.agent.tools.gold import requires_gold
 
 GOLD_UNITS = PROJECT_ROOT / "data" / "gold" / "knowledge_units.jsonl"
 
@@ -151,6 +152,7 @@ def test_official_channels_reject_unknown_purpose() -> None:
         _run("get_official_channels", {"purpose": "ventas"})
 
 
+@requires_gold
 def test_contact_units_exist_in_the_gold() -> None:
     # Arrange
     wanted = {c.unit_id for contacts in OFFICIAL_CONTACTS.values() for c in contacts}

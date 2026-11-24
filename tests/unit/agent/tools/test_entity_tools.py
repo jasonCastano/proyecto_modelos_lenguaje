@@ -12,7 +12,9 @@ from proyecto_modelos_lenguaje.agent.tools_entities import BUSINESS_LOCATIONS, l
 from proyecto_modelos_lenguaje.config import PROJECT_ROOT
 from proyecto_modelos_lenguaje.rag.hybrid import HybridRetriever
 from proyecto_modelos_lenguaje.retrieval import GoldUnit
+from tests.unit.agent.tools.gold import requires_gold
 
+pytestmark = requires_gold
 GOLD_UNITS = PROJECT_ROOT / "data" / "gold" / "knowledge_units.jsonl"
 URL = "https://www.manuelita.com/informe.pdf"
 

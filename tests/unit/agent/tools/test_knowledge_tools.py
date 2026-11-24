@@ -25,6 +25,7 @@ from proyecto_modelos_lenguaje.config import PROJECT_ROOT
 from proyecto_modelos_lenguaje.rag.hybrid import HybridRetriever
 from proyecto_modelos_lenguaje.retrieval import GoldUnit
 from tests.agent_helpers import demo_retriever
+from tests.unit.agent.tools.gold import requires_gold
 
 TOPICS_DIR = PROJECT_ROOT / "data" / "gold" / "topics"
 WATER_UNIT = "unit_8537ad9053e21e86"  # vertimientos de aguas residuales (fixture)
@@ -108,6 +109,7 @@ def test_sustainability_lookup_without_index_is_declared() -> None:
 # ----------------------------------------------------------------------------- faq_lookup
 
 
+@requires_gold
 def test_faq_seeds_of_the_gold_are_ranked_lexically() -> None:
     # Arrange
     seeds = load_faq_seeds()
@@ -148,6 +150,7 @@ def test_faq_lookup_returns_seed_question_and_cited_evidence(
     assert '<documento id="U1"' in output
 
 
+@requires_gold
 def test_faq_lookup_without_match_is_sin_resultados(retriever) -> None:
     # Act
     output, ctx = _run("faq_lookup", {"question": "zzzz qwerty"}, retriever)
@@ -171,6 +174,7 @@ def test_summarize_topic_only_accepts_the_gold_topics() -> None:
     assert sorted(get_args(TopicId)) == sorted(path.stem for path in TOPICS_DIR.glob("*.md"))
 
 
+@requires_gold
 def test_summarize_topic_returns_units_of_that_topic(retriever) -> None:
     # Act
     output, ctx = _run("summarize_topic", {"topic_id": "sostenibilidad"}, retriever)

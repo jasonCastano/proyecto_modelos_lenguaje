@@ -209,6 +209,8 @@ necesarios y primer piloto.
      fertilización, por WhatsApp y con voz (Phonon) para quienes no leen con facilidad.
   3. **Copiloto interno:** Universidad Manuelita, seguridad y salud en el trabajo (más de 40.000
      horas de capacitación) y consultas de cumplimiento ético.
+  4. **Agente de planificación industrial:** recomienda el mejor destino de cada tonelada de
+     materia prima entre productos y coproductos (detalle en la sección 7.4).
 - **Cómo potencia a Manuelita:**
   - Respuestas citadas en segundos.
   - Menos carga en las áreas técnica y comercial.
@@ -216,9 +218,56 @@ necesarios y primer piloto.
   - Transfiere conocimiento a proveedores, lo que mejora su productividad y, con ella, el
     abastecimiento de caña y fruta.
 - **Datos:** ya existen en la capa oro de este proyecto para la parte pública. La parte interna
-  requiere documentos privados y control de acceso.
+  requiere documentos privados y control de acceso. El agente de planificación industrial necesita
+  además el ERP de pedidos e inventarios, los históricos de planta y un simulador de procesos.
 - **Piloto:** el asistente B2B sobre fichas técnicas y certificaciones, medido con la misma
   evaluación del Módulo 2 (exactitud de ruta, fidelidad de citas, latencia).
+
+#### 7.4 Agente de planificación industrial: el mejor destino de cada tonelada de materia prima
+
+- **Idea:** un sistema que recomienda cómo distribuir la materia prima y los flujos intermedios
+  entre productos. Considera al mismo tiempo calidad, capacidad industrial, energía, contratos y
+  margen económico.
+  - **En caña:** conecta las decisiones de producción de azúcar, etanol y aprovechamiento
+    energético del bagazo.
+  - **En palma:** evalúa las alternativas técnicamente disponibles entre aceite, biodiésel y
+    derivados.
+  - Cada planta tendría su propio modelo.
+- **Misión:** ayudar al equipo a decidir cómo operar la planta ante cambios de calidad,
+  disponibilidad, demanda o costos.
+- **Cómo funcionaría la IA:**
+  - Modelos predictivos estiman rendimientos y consumos.
+  - Un simulador de los procesos (gemelo digital, que comparte base con la Idea 2) evalúa
+    escenarios.
+  - Un optimizador matemático recomienda la combinación más conveniente dentro de las restricciones
+    reales.
+  - El modelo especializado calcula balances y rendimientos; el agente coordina las consultas y
+    explica el resultado.
+- **Ejemplo:** ante una variación en la calidad de la caña y una restricción de vapor, el sistema
+  propone un programa de producción que cumple los contratos y mejora el margen total.
+- **Solicitud de ejemplo:** «Tenemos menor disponibilidad de caña esta semana. Evalúa cómo cumplir
+  los compromisos de azúcar y etanol y mantener el suministro energético». El agente:
+  1. Consulta inventarios, contratos, programación y estado de los equipos.
+  2. Recupera restricciones operativas y procedimientos de los documentos internos.
+  3. Ejecuta el simulador industrial y el optimizador con distintos escenarios.
+  4. Compara margen, consumo energético, cumplimiento y sensibilidad de los resultados.
+  5. Prepara una propuesta de programación y explica sus supuestos.
+- **Herramientas:** sistema empresarial de pedidos e inventarios, históricos de planta, simulador
+  de procesos y optimizador matemático.
+- **Entregable:** plan de producción recomendado, alternativas y consecuencias de cada una.
+- **Valor:** optimiza la rentabilidad conjunta de productos y coproductos, incluidos los costos que
+  una decisión aislada puede trasladar a otra área.
+- **Potencial transformador:** convierte la planificación industrial en una capacidad que se
+  actualiza con el estado real del negocio.
+- **Piloto:** una planta y una decisión concreta, como el programa diario de producción y uso
+  energético.
+- **Indicadores:** margen por tonelada, recuperación de producto, consumo energético y cumplimiento
+  de pedidos.
+- **Condiciones clave:**
+  - Representar correctamente las flexibilidades de la planta: el software no puede crear capacidad
+    industrial inexistente.
+  - Los cambios de operación quedan sujetos a las autorizaciones de planta; el agente recomienda y
+    el equipo decide.
 
 ### Idea 8 (complementaria) — Frutas de exportación: calibre, calidad y pronóstico de cosecha
 
@@ -279,6 +328,9 @@ flowchart TB
 - **Los agentes (7) son la «cara» de todo:** un gerente pregunta «¿cuánta energía venderemos esta
   semana?» o un proveedor pregunta «¿cuándo riego mi lote?», y el agente llama a los modelos como
   herramientas, igual que hoy Valer-IA llama a `structured` o `documental`.
+- **El agente de planificación industrial (7.4) une campo y fábrica:** toma el pronóstico de caña
+  (1) y el gemelo de planta (2) para decidir el reparto entre azúcar, etanol y energía, y su
+  resultado alimenta la huella por lote (3).
 
 **Hoja de ruta sugerida:**
 
@@ -299,7 +351,7 @@ flowchart TB
 | 4. Palma y EUDR | Alto (si exporta a la UE) | Medio | Medios |
 | 5. Acuicultura predictiva | Medio | Alto | Bajos-medios |
 | 6. Biorrefinería | Medio | Medio | Medios |
-| 7. Agentes de IA | Medio | Bajo (ya hay base) | Altos |
+| 7. Agentes de IA | Medio (alto con el agente de planificación) | Bajo (ya hay base); alto para el agente de planificación, que necesita el gemelo de planta | Altos (públicos); medios (planta y ERP) |
 | 8. Frutas | Medio | Medio | Medios |
 
 ---

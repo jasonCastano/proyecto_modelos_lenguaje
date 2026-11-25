@@ -31,6 +31,7 @@ class BrandPalette:
     """Paleta institucional extraída del logotipo público."""
 
     forest: str = "#387C2B"
+    forest_deep: str = "#173512"
     orange: str = "#E86D1F"
     lime: str = "#B0BC22"
     yellow: str = "#FFD200"
@@ -52,6 +53,7 @@ class BrandPalette:
     def to_dict(self) -> dict[str, str]:
         return {
             "forest": self.forest,
+            "forest_deep": self.forest_deep,
             "orange": self.orange,
             "lime": self.lime,
             "yellow": self.yellow,
@@ -99,6 +101,11 @@ class BrandTokens:
         ContrastPair("white", "warning", 4.5),
         ContrastPair("forest", "surface", 3.0),
         ContrastPair("orange", "white", 3.0),
+        # Spec 026 (design.md §2): tinta sobre los colores de producto; blanco solo sobre verdes.
+        ContrastPair("ink", "orange", 4.5),
+        ContrastPair("ink", "lime", 4.5),
+        ContrastPair("ink", "yellow", 4.5),
+        ContrastPair("white", "forest_deep", 4.5),
     )
     type_scale: dict[str, int] = field(
         default_factory=lambda: {"display": 28, "heading": 22, "body": 16, "caption": 13}

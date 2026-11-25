@@ -34,6 +34,7 @@ def test_tokens_validate_against_the_contract() -> None:
 def test_palette_declares_exactly_the_documented_colours() -> None:
     expected = {
         "forest",
+        "forest_deep",  # spec 026: fondo del rail y del hero (design.md §2)
         "orange",
         "lime",
         "yellow",

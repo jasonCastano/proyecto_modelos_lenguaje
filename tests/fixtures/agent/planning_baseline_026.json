@@ -1,0 +1,978 @@
+{
+ "p01": {
+  "alternatives": [
+   {
+    "delta_vs_best": -1275519.5320606232,
+    "margin": 7451964091.464539,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 912133.1453230768,
+     "power": 1598.0008960399991,
+     "sugar": 5737.786352307693
+    },
+    "violations": []
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": {
+   "commitment": true,
+   "constraint": "compromiso de etanol",
+   "dual": 597.9524780901727,
+   "unit": "COP por L de etanol comprometido",
+   "weight": 544136755.0620571
+  },
+  "data_version": "v1",
+  "margin": 7453239610.996599,
+  "mix": {
+   "b": 15267.479999999998,
+   "g": 1598.0008960399991,
+   "v": 33741.13079999999,
+   "x_e": 5383.846447768832,
+   "x_s": 48756.15355223117
+  },
+  "plan_id": "p-c7ee6fe5",
+  "products": {
+   "ethanol": 910000.0000000002,
+   "power": 1598.0008960399991,
+   "sugar": 5741.337118643234
+  },
+  "resolved": {
+   "boiler_cap": 40010.0,
+   "cane": 54140.0,
+   "distillery_cap": 1954000.0,
+   "k": 1.0230769230769232,
+   "mill_cap": 60000.0,
+   "quality": 13.3,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "plant_id": "cana",
+   "prioritize": "margin"
+  },
+  "sensitivity": [
+   {
+    "commitment": true,
+    "constraint": "compromiso de etanol",
+    "dual": 597.9524780901727,
+    "unit": "COP por L de etanol comprometido",
+    "weight": 544136755.0620571
+   },
+   {
+    "commitment": false,
+    "constraint": "caña disponible y molienda",
+    "dual": 147716.5933885973,
+    "unit": "COP por t de caña",
+    "weight": 7997376366.058659
+   }
+  ],
+  "shortfalls": [],
+  "status": "optimal",
+  "synthetic": true,
+  "week": "2026-W48"
+ },
+ "p02": {
+  "alternatives": [
+   {
+    "delta_vs_best": 80536321.6570549,
+    "margin": 6334169477.744856,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 775313.1735246152,
+     "power": 1358.3007616339994,
+     "sugar": 4877.1183994615385
+    },
+    "violations": [
+     "compromiso de etanol"
+    ]
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": {
+   "commitment": true,
+   "constraint": "compromiso de etanol",
+   "dual": 597.9524780901727,
+   "unit": "COP por L de etanol comprometido",
+   "weight": 544136755.0620571
+  },
+  "data_version": "v1",
+  "margin": 6253633156.087801,
+  "mix": {
+   "b": 12977.357999999998,
+   "g": 1358.3007616339994,
+   "v": 28679.961179999995,
+   "x_e": 6505.7957229215535,
+   "x_s": 39513.20427707845
+  },
+  "plan_id": "p-0aed9288",
+  "products": {
+   "ethanol": 910000.0,
+   "power": 1358.3007616339994,
+   "sugar": 4652.9229618061545
+  },
+  "resolved": {
+   "boiler_cap": 40010.0,
+   "cane": 46019.0,
+   "delta_pct": -15.0,
+   "distillery_cap": 1954000.0,
+   "k": 1.0230769230769232,
+   "mill_cap": 60000.0,
+   "quality": 13.3,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "cane_delta_pct": -15.0,
+   "plant_id": "cana",
+   "prioritize": "margin"
+  },
+  "sensitivity": [
+   {
+    "commitment": true,
+    "constraint": "compromiso de etanol",
+    "dual": 597.9524780901727,
+    "unit": "COP por L de etanol comprometido",
+    "weight": 544136755.0620571
+   },
+   {
+    "commitment": false,
+    "constraint": "caña disponible y molienda",
+    "dual": 147716.5933885973,
+    "unit": "COP por t de caña",
+    "weight": 6797769911.149859
+   }
+  ],
+  "shortfalls": [],
+  "status": "optimal",
+  "synthetic": true,
+  "week": "2026-W48"
+ },
+ "p03": {
+  "alternatives": [
+   {
+    "delta_vs_best": 53265707.927352905,
+    "margin": 6706767682.318085,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 820919.8307907691,
+     "power": 1438.2008064359993,
+     "sugar": 5164.007717076924
+    },
+    "violations": [
+     "compromiso de etanol"
+    ]
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": {
+   "commitment": true,
+   "constraint": "compromiso de etanol",
+   "dual": 597.9524780901727,
+   "unit": "COP por L de etanol comprometido",
+   "weight": 544136755.0620571
+  },
+  "data_version": "v1",
+  "margin": 6653501974.390732,
+  "mix": {
+   "b": 13740.731999999998,
+   "g": 1438.2008064359995,
+   "v": 30367.017719999996,
+   "x_e": 6131.812631203982,
+   "x_s": 42594.18736879602
+  },
+  "plan_id": "p-c36d0520",
+  "products": {
+   "ethanol": 910000.0000000002,
+   "power": 1438.2008064359995,
+   "sugar": 5015.727680751847
+  },
+  "resolved": {
+   "boiler_cap": 40010.0,
+   "cane": 48726.0,
+   "delta_pct": -10.0,
+   "distillery_cap": 1954000.0,
+   "k": 1.0230769230769232,
+   "mill_cap": 60000.0,
+   "quality": 13.3,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "cane_delta_pct": -10.0,
+   "plant_id": "cana",
+   "prioritize": "margin"
+  },
+  "sensitivity": [
+   {
+    "commitment": true,
+    "constraint": "compromiso de etanol",
+    "dual": 597.9524780901727,
+    "unit": "COP por L de etanol comprometido",
+    "weight": 544136755.0620571
+   },
+   {
+    "commitment": false,
+    "constraint": "caña disponible y molienda",
+    "dual": 147716.5933885973,
+    "unit": "COP por t de caña",
+    "weight": 7197638729.452792
+   }
+  ],
+  "shortfalls": [],
+  "status": "optimal",
+  "synthetic": true,
+  "week": "2026-W48"
+ },
+ "p04": {
+  "alternatives": [
+   {
+    "delta_vs_best": 25995094.19764328,
+    "margin": 7079365886.891312,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 866526.488056923,
+     "power": 1518.1008512379992,
+     "sugar": 5450.897034692309
+    },
+    "violations": [
+     "compromiso de etanol"
+    ]
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": {
+   "commitment": true,
+   "constraint": "compromiso de etanol",
+   "dual": 597.9524780901727,
+   "unit": "COP por L de etanol comprometido",
+   "weight": 544136755.0620571
+  },
+  "data_version": "v1",
+  "margin": 7053370792.693668,
+  "mix": {
+   "b": 14504.106,
+   "g": 1518.1008512379997,
+   "v": 32054.074259999998,
+   "x_e": 5757.8295394864035,
+   "x_s": 45675.1704605136
+  },
+  "plan_id": "p-dc3c515d",
+  "products": {
+   "ethanol": 910000.0,
+   "power": 1518.1008512379997,
+   "sugar": 5378.532399697541
+  },
+  "resolved": {
+   "boiler_cap": 40010.0,
+   "cane": 51433.0,
+   "delta_pct": -5.0,
+   "distillery_cap": 1954000.0,
+   "k": 1.0230769230769232,
+   "mill_cap": 60000.0,
+   "quality": 13.3,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "cane_delta_pct": -5.0,
+   "plant_id": "cana",
+   "prioritize": "margin"
+  },
+  "sensitivity": [
+   {
+    "commitment": true,
+    "constraint": "compromiso de etanol",
+    "dual": 597.9524780901727,
+    "unit": "COP por L de etanol comprometido",
+    "weight": 544136755.0620571
+   },
+   {
+    "commitment": false,
+    "constraint": "caña disponible y molienda",
+    "dual": 147716.5933885973,
+    "unit": "COP por t de caña",
+    "weight": 7597507547.755725
+   }
+  ],
+  "shortfalls": [],
+  "status": "optimal",
+  "synthetic": true,
+  "week": "2026-W48"
+ },
+ "p05": {
+  "alternatives": [
+   {
+    "delta_vs_best": -55816746.991472244,
+    "margin": 8197160500.610993,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 1003346.4598553847,
+     "power": 1757.8009856439992,
+     "sugar": 6311.564987538462
+    },
+    "violations": []
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": {
+   "commitment": true,
+   "constraint": "compromiso de etanol",
+   "dual": 597.9524780901727,
+   "unit": "COP por L de etanol comprometido",
+   "weight": 544136755.0620571
+  },
+  "data_version": "v1",
+  "margin": 8252977247.602466,
+  "mix": {
+   "b": 16794.228,
+   "g": 1757.800985643999,
+   "v": 37115.243879999995,
+   "x_e": 4635.880264333675,
+   "x_s": 54918.11973566633
+  },
+  "plan_id": "p-7e4328db",
+  "products": {
+   "ethanol": 909999.9999999998,
+   "power": 1757.800985643999,
+   "sugar": 6466.946556534623
+  },
+  "resolved": {
+   "boiler_cap": 40010.0,
+   "cane": 59554.00000000001,
+   "delta_pct": 10.0,
+   "distillery_cap": 1954000.0,
+   "k": 1.0230769230769232,
+   "mill_cap": 60000.0,
+   "quality": 13.3,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "cane_delta_pct": 10.0,
+   "plant_id": "cana",
+   "prioritize": "margin"
+  },
+  "sensitivity": [
+   {
+    "commitment": true,
+    "constraint": "compromiso de etanol",
+    "dual": 597.9524780901727,
+    "unit": "COP por L de etanol comprometido",
+    "weight": 544136755.0620571
+   },
+   {
+    "commitment": false,
+    "constraint": "caña disponible y molienda",
+    "dual": 147716.5933885973,
+    "unit": "COP por t de caña",
+    "weight": 8797114002.664526
+   }
+  ],
+  "shortfalls": [],
+  "status": "optimal",
+  "synthetic": true,
+  "week": "2026-W48"
+ },
+ "p06": {
+  "alternatives": [
+   {
+    "delta_vs_best": 26176824.0214386,
+    "margin": 6258775771.584539,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 869524.9653230768,
+     "power": 1598.0008960399991,
+     "sugar": 5176.950092307692
+    },
+    "violations": [
+     "compromiso de etanol"
+    ]
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": {
+   "commitment": true,
+   "constraint": "compromiso de etanol",
+   "dual": 646.7400023343847,
+   "unit": "COP por L de etanol comprometido",
+   "weight": 588533402.1242901
+  },
+  "data_version": "v1",
+  "margin": 6232598947.563101,
+  "mix": {
+   "b": 15267.48,
+   "g": 1598.0008960399996,
+   "v": 33741.1308,
+   "x_e": 6057.761123871933,
+   "x_s": 48082.23887612807
+  },
+  "plan_id": "p-b0717398",
+  "products": {
+   "ethanol": 910000.0000000002,
+   "power": 1598.0008960399996,
+   "sugar": 5108.552948900622
+  },
+  "resolved": {
+   "boiler_cap": 40010.0,
+   "cane": 54140.0,
+   "distillery_cap": 1954000.0,
+   "k": 0.9230769230769231,
+   "mill_cap": 60000.0,
+   "quality": 12.0,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "cane_quality": 12.0,
+   "plant_id": "cana",
+   "prioritize": "margin"
+  },
+  "sensitivity": [
+   {
+    "commitment": true,
+    "constraint": "compromiso de etanol",
+    "dual": 646.7400023343847,
+    "unit": "COP por L de etanol comprometido",
+    "weight": 588533402.1242901
+   },
+   {
+    "commitment": false,
+    "constraint": "caña disponible y molienda",
+    "dual": 125990.62337804562,
+    "unit": "COP por t de caña",
+    "weight": 6821132349.68739
+   }
+  ],
+  "shortfalls": [],
+  "status": "optimal",
+  "synthetic": true,
+  "week": "2026-W48"
+ },
+ "p07": {
+  "alternatives": [
+   {
+    "delta_vs_best": -23288345.57512474,
+    "margin": 8553368694.430693,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 951463.7730153846,
+     "power": 1598.0008960399991,
+     "sugar": 6255.481361538461
+    },
+    "violations": []
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": {
+   "commitment": true,
+   "constraint": "compromiso de etanol",
+   "dual": 561.6552446031229,
+   "unit": "COP por L de etanol comprometido",
+   "weight": 511106272.58884186
+  },
+  "data_version": "v1",
+  "margin": 8576657040.005817,
+  "mix": {
+   "b": 15267.479999999998,
+   "g": 1598.0008960399991,
+   "v": 33741.13079999999,
+   "x_e": 4882.463384623028,
+   "x_s": 49257.53661537697
+  },
+  "plan_id": "p-cdacfb36",
+  "products": {
+   "ethanol": 909999.9999999998,
+   "power": 1598.0008960399991,
+   "sugar": 6323.720441094876
+  },
+  "resolved": {
+   "boiler_cap": 40010.0,
+   "cane": 54140.0,
+   "distillery_cap": 1954000.0,
+   "k": 1.1153846153846154,
+   "mill_cap": 60000.0,
+   "quality": 14.5,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "cane_quality": 14.5,
+   "plant_id": "cana",
+   "prioritize": "margin"
+  },
+  "sensitivity": [
+   {
+    "commitment": true,
+    "constraint": "compromiso de etanol",
+    "dual": 561.6552446031229,
+    "unit": "COP por L de etanol comprometido",
+    "weight": 511106272.58884186
+   },
+   {
+    "commitment": false,
+    "constraint": "caña disponible y molienda",
+    "dual": 167856.729083758,
+    "unit": "COP por t de caña",
+    "weight": 9087763312.594658
+   }
+  ],
+  "shortfalls": [],
+  "status": "optimal",
+  "synthetic": true,
+  "week": "2026-W48"
+ },
+ "p08": {
+  "alternatives": [
+   {
+    "delta_vs_best": -428167212.68237877,
+    "margin": 6566510857.892166,
+    "name": "priorizar energía",
+    "products": {
+     "ethanol": 909999.9999999999,
+     "power": 1420.8186180073126,
+     "sugar": 4936.799827972436
+    }
+   },
+   {
+    "delta_vs_best": 332992561.75619316,
+    "margin": 7327670632.330738,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 912133.1453230768,
+     "power": 1237.73,
+     "sugar": 5737.786352307693
+    },
+    "violations": [
+     "compromiso de energía exportada"
+    ]
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": {
+   "commitment": true,
+   "constraint": "compromiso de energía",
+   "dual": 4164296.515363846,
+   "unit": "COP por MWh comprometido",
+   "weight": 5488542807.249549
+  },
+  "data_version": "v1",
+  "margin": 6994678070.574545,
+  "mix": {
+   "b": 14525.311475409835,
+   "g": 1318.0,
+   "v": 30000.0,
+   "x_e": 5747.440805713566,
+   "x_s": 45760.75591559791
+  },
+  "plan_id": "p-e86c0c48",
+  "products": {
+   "ethanol": 910000.0000000005,
+   "power": 1318.0,
+   "sugar": 5388.610613713443
+  },
+  "resolved": {
+   "boiler_cap": 30000.0,
+   "cane": 54140.0,
+   "distillery_cap": 1954000.0,
+   "k": 1.0230769230769232,
+   "mill_cap": 60000.0,
+   "quality": 13.3,
+   "steam_limit": 30000.0,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "plant_id": "cana",
+   "prioritize": "margin",
+   "steam_limit": 30000.0
+  },
+  "sensitivity": [
+   {
+    "commitment": true,
+    "constraint": "compromiso de energía",
+    "dual": 4164296.515363846,
+    "unit": "COP por MWh comprometido",
+    "weight": 5488542807.249549
+   },
+   {
+    "commitment": true,
+    "constraint": "compromiso de etanol",
+    "dual": 597.9524780901725,
+    "unit": "COP por L de etanol comprometido",
+    "weight": 544136755.0620569
+   },
+   {
+    "commitment": false,
+    "constraint": "capacidad de calderas",
+    "dual": 434245.2544295383,
+    "unit": "COP por t de vapor",
+    "weight": 13027357632.88615
+   }
+  ],
+  "shortfalls": [],
+  "status": "optimal",
+  "synthetic": true,
+  "week": "2026-W48"
+ },
+ "p09": {
+  "alternatives": [
+   {
+    "delta_vs_best": 54065001.672395706,
+    "margin": 6961576754.909718,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 817098.3980381537,
+     "power": 1406.2407885151995,
+     "sugar": 5239.073493415384
+    },
+    "violations": [
+     "compromiso de etanol"
+    ]
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": {
+   "commitment": true,
+   "constraint": "compromiso de etanol",
+   "dual": 581.9598427871867,
+   "unit": "COP por L de etanol comprometido",
+   "weight": 529583456.9363399
+  },
+  "data_version": "v1",
+  "margin": 6907511753.237322,
+  "mix": {
+   "b": 13435.382399999997,
+   "g": 1406.240788515199,
+   "v": 29692.19510399999,
+   "x_e": 6023.6667375317265,
+   "x_s": 41619.53326246827
+  },
+  "plan_id": "p-0d74b40a",
+  "products": {
+   "ethanol": 910000.0000000002,
+   "power": 1406.240788515199,
+   "sugar": 5085.202634110719
+  },
+  "resolved": {
+   "boiler_cap": 40010.0,
+   "cane": 47643.2,
+   "delta_pct": -12.0,
+   "distillery_cap": 1954000.0,
+   "k": 1.0615384615384615,
+   "mill_cap": 60000.0,
+   "quality": 13.8,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "cane_delta_pct": -12.0,
+   "cane_quality": 13.8,
+   "plant_id": "cana",
+   "prioritize": "margin"
+  },
+  "sensitivity": [
+   {
+    "commitment": true,
+    "constraint": "compromiso de etanol",
+    "dual": 581.9598427871867,
+    "unit": "COP por L de etanol comprometido",
+    "weight": 529583456.9363399
+   },
+   {
+    "commitment": false,
+    "constraint": "caña disponible y molienda",
+    "dual": 156099.8255821117,
+    "unit": "COP por t de caña",
+    "weight": 7437095210.173663
+   }
+  ],
+  "shortfalls": [],
+  "status": "optimal",
+  "synthetic": true,
+  "week": "2026-W48"
+ },
+ "p10": {
+  "alternatives": [
+   {
+    "delta_vs_best": -698658015.1199265,
+    "margin": 7040554032.089115,
+    "name": "priorizar energía",
+    "products": {
+     "ethanol": 909999.9999999999,
+     "power": 1515.5398592078,
+     "sugar": 5366.903633855308
+    }
+   },
+   {
+    "delta_vs_best": -28546133.261764526,
+    "margin": 7710665913.947277,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 957739.8025892307,
+     "power": 1347.7665,
+     "sugar": 6024.675669923078
+    },
+    "violations": []
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": {
+   "commitment": true,
+   "constraint": "compromiso de etanol",
+   "dual": 597.9524780901725,
+   "unit": "COP por L de etanol comprometido",
+   "weight": 544136755.0620569
+  },
+  "data_version": "v1",
+  "margin": 7739212047.209042,
+  "mix": {
+   "b": 16030.854,
+   "g": 1347.7665,
+   "v": 32000.0,
+   "x_e": 5009.8633560512535,
+   "x_s": 51837.13664394875
+  },
+  "plan_id": "p-84b4443b",
+  "products": {
+   "ethanol": 910000.0,
+   "power": 1347.7665,
+   "sugar": 6104.141837588928
+  },
+  "resolved": {
+   "boiler_cap": 32000.0,
+   "cane": 56847.0,
+   "delta_pct": 5.0,
+   "distillery_cap": 1954000.0,
+   "k": 1.0230769230769232,
+   "mill_cap": 60000.0,
+   "quality": 13.3,
+   "steam_limit": 32000.0,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "cane_delta_pct": 5.0,
+   "plant_id": "cana",
+   "prioritize": "margin",
+   "steam_limit": 32000.0
+  },
+  "sensitivity": [
+   {
+    "commitment": true,
+    "constraint": "compromiso de etanol",
+    "dual": 597.9524780901725,
+    "unit": "COP por L de etanol comprometido",
+    "weight": 544136755.0620569
+   },
+   {
+    "commitment": false,
+    "constraint": "caña disponible y molienda",
+    "dual": 127011.0437185973,
+    "unit": "COP por t de caña",
+    "weight": 7220196802.271101
+   },
+   {
+    "commitment": false,
+    "constraint": "capacidad de calderas",
+    "dual": 33223.5,
+    "unit": "COP por t de vapor",
+    "weight": 1063152000.0
+   }
+  ],
+  "shortfalls": [],
+  "status": "optimal",
+  "synthetic": true,
+  "week": "2026-W48"
+ },
+ "p11": {
+  "alternatives": [
+   {
+    "delta_vs_best": -148860762.76721954,
+    "margin": 4843776659.45195,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 592886.5444599999,
+     "power": 1038.7005824259995,
+     "sugar": 3729.5611290000006
+    },
+    "violations": [
+     "compromiso de azúcar",
+     "compromiso de etanol",
+     "compromiso de energía exportada"
+    ]
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": null,
+  "data_version": "v1",
+  "margin": 4992637422.21917,
+  "mix": {
+   "b": 9923.862,
+   "g": 1038.7005824259995,
+   "v": 21931.735019999996,
+   "x_e": 0.0,
+   "x_s": 35191.0
+  },
+  "plan_id": "p-e8b7333b",
+  "products": {
+   "ethanol": 343935.71939999994,
+   "power": 1038.7005824259995,
+   "sugar": 4143.956810000001
+  },
+  "resolved": {
+   "boiler_cap": 40010.0,
+   "cane": 35191.0,
+   "delta_pct": -35.0,
+   "distillery_cap": 1954000.0,
+   "k": 1.0230769230769232,
+   "mill_cap": 60000.0,
+   "quality": 13.3,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "cane_delta_pct": -35.0,
+   "plant_id": "cana",
+   "prioritize": "margin"
+  },
+  "sensitivity": [],
+  "shortfalls": [
+   {
+    "commitment_id": "c-azucar-1",
+    "missing": 326.0431899999994,
+    "product": "sugar",
+    "unit": "t"
+   },
+   {
+    "commitment_id": "c-etanol-1",
+    "missing": 566064.2806,
+    "product": "ethanol",
+    "unit": "L"
+   },
+   {
+    "commitment_id": "c-energia-1",
+    "missing": 279.2994175740005,
+    "product": "power",
+    "unit": "MWh"
+   }
+  ],
+  "status": "infeasible_relaxed",
+  "synthetic": true,
+  "week": "2026-W48"
+ },
+ "p12": {
+  "alternatives": [
+   {
+    "delta_vs_best": 1372584020.29738,
+    "margin": 5246576724.248056,
+    "name": "mezcla actual",
+    "products": {
+     "ethanol": 684099.8589923077,
+     "power": 206.04750000000013,
+     "sugar": 4303.33976423077
+    },
+    "violations": [
+     "vapor disponible",
+     "compromiso de azúcar",
+     "compromiso de etanol",
+     "compromiso de energía exportada"
+    ]
+   }
+  ],
+  "assumptions": [
+   "modelo lineal semanal; rendimientos proporcionales a la caña y a su calidad",
+   "precios, costos, capacidades y contratos sintéticos (no son datos de Manuelita)",
+   "no incluye tiempos de transición ni mantenimientos no declarados en el estado"
+  ],
+  "binding": null,
+  "data_version": "v1",
+  "margin": 3873992703.9506764,
+  "mix": {
+   "b": 7856.350490732352,
+   "g": 594.7883334491605,
+   "v": 15000.0,
+   "x_e": 0.0,
+   "x_s": 27859.398903306217
+  },
+  "plan_id": "p-a6070c60",
+  "products": {
+   "ethanol": 272281.04924157297,
+   "power": 594.7883334491605,
+   "sugar": 3280.615663319097
+  },
+  "resolved": {
+   "boiler_cap": 15000.0,
+   "cane": 40605.0,
+   "delta_pct": -25.0,
+   "distillery_cap": 1954000.0,
+   "k": 1.0230769230769232,
+   "mill_cap": 60000.0,
+   "quality": 13.3,
+   "steam_limit": 15000.0,
+   "turbine_cap": 4000.0
+  },
+  "scenario": {
+   "cane_delta_pct": -25.0,
+   "plant_id": "cana",
+   "prioritize": "margin",
+   "steam_limit": 15000.0
+  },
+  "sensitivity": [],
+  "shortfalls": [
+   {
+    "commitment_id": "c-azucar-1",
+    "missing": 1189.3843366809028,
+    "product": "sugar",
+    "unit": "t"
+   },
+   {
+    "commitment_id": "c-etanol-1",
+    "missing": 637718.950758427,
+    "product": "ethanol",
+    "unit": "L"
+   },
+   {
+    "commitment_id": "c-energia-1",
+    "missing": 723.2116665508395,
+    "product": "power",
+    "unit": "MWh"
+   }
+  ],
+  "status": "infeasible_relaxed",
+  "synthetic": true,
+  "week": "2026-W48"
+ }
+}

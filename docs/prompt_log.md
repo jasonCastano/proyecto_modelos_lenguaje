@@ -519,6 +519,18 @@ El prompt no es la única garantía: la ruta `planning` solo la deciden las regl
 cifras que no estén en las salidas de las herramientas (`planning.check_answer`, research R12). La batería de
 herramientas vigente (53 casos) no cambia; los 6 casos del planificador se reportan aparte.
 
+### 3.23 Plataforma web: sin prompts nuevos (2026-11-24, spec 026)
+
+La spec 026 no cambia ningún prompt: `agent.md` sigue en 1.8 y `profiles.md` en 1.0.
+
+- **«Explicar con el agente»**: el botón de la consola envía al hilo, con el perfil planificador, un mensaje de
+  usuario generado: «Explica el plan recomendado para este escenario: …». Lleva los mismos parámetros del
+  escenario y el `plan_id`. Ese mensaje pasa por la ruta `planning` vigente (solo reglas) y por el validador de
+  cifras de la spec 025. No es texto de sistema.
+- **Esquema de dos herramientas**: `simulate_production_scenario` y `optimize_production_plan` heredan tres campos
+  opcionales de precio (`price_*_pct`, de −50 a +50). Su descripción está en `docs/herramientas.md`, regenerado.
+  Con los campos vacíos, los planes de la batería son idénticos (`tests/unit/test_scenario_prices.py`).
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

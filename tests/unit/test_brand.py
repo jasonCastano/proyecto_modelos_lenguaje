@@ -61,7 +61,7 @@ def test_tokens_expose_the_documented_shape() -> None:
         "attribution",
         "affiliation_note",
     }
-    assert len(tokens["palette"]) == 13
+    assert len(tokens["palette"]) == 14
     assert tokens["type_scale"] == {"display": 28, "heading": 22, "body": 16, "caption": 13}
     assert len(tokens["contrast_pairs"]) >= 10
 

@@ -201,6 +201,9 @@ Sin argumentos.
 | `cane_delta_pct` | number o null | no | Cambio % de la caña (−15 = 15 % menos). |
 | `cane_quality` | number o null | no | Pol % de la caña. |
 | `steam_limit` | number o null | no | Límite de vapor (t). |
+| `price_sugar_pct` | number o null | no | Cambio % del precio del azúcar. |
+| `price_ethanol_pct` | number o null | no | Cambio % del precio del etanol. |
+| `price_power_pct` | number o null | no | Cambio % del precio de la energía. |
 | `sugar_share` | number | sí | Fracción de la caña a azúcar (0 a 1). |
 
 ### 25. `optimize_production_plan`
@@ -213,6 +216,9 @@ Sin argumentos.
 | `cane_quality` | number o null | no | Pol % de la caña. |
 | `steam_limit` | number o null | no | Límite de vapor (t). |
 | `prioritize` | margin · power | no | margin (máximo margen) o power (máxima energía). |
+| `price_sugar_pct` | number o null | no | Cambio % del precio del azúcar. |
+| `price_ethanol_pct` | number o null | no | Cambio % del precio del etanol. |
+| `price_power_pct` | number o null | no | Cambio % del precio de la energía. |
 
 ### 26. `save_production_proposal`
 

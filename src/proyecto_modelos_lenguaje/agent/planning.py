@@ -230,6 +230,22 @@ class Scenario(BaseModel):
         default=None, ge=0, description="Límite adicional de vapor (t/semana)."
     )
     prioritize: Literal["margin", "power"] = "margin"
+    price_sugar_pct: float | None = Field(
+        default=None, ge=-50, le=50, description="Cambio % del precio del azúcar (spec 026)."
+    )
+    price_ethanol_pct: float | None = Field(
+        default=None, ge=-50, le=50, description="Cambio % del precio del etanol (spec 026)."
+    )
+    price_power_pct: float | None = Field(
+        default=None, ge=-50, le=50, description="Cambio % del precio de la energía (spec 026)."
+    )
+
+
+PRICE_FIELDS = {
+    "sugar": "price_sugar_pct",
+    "ethanol": "price_ethanol_pct",
+    "power": "price_power_pct",
+}
 
 
 def resolve(data: PlantData, scenario: Scenario) -> dict[str, float | None]:
@@ -241,7 +257,7 @@ def resolve(data: PlantData, scenario: Scenario) -> dict[str, float | None]:
     boiler = m.boiler_capacity * s.factor("caldera")
     if scenario.steam_limit is not None:
         boiler = min(boiler, scenario.steam_limit)
-    return {
+    resolved: dict[str, float | None] = {
         "cane": max(cane, 0.0),
         "quality": quality,
         "k": quality / m.quality_ref,
@@ -252,11 +268,31 @@ def resolve(data: PlantData, scenario: Scenario) -> dict[str, float | None]:
         "steam_limit": scenario.steam_limit,
         "delta_pct": scenario.cane_delta_pct,
     }
+    # Spec 026 (R7): solo aparecen si el escenario los cambia, así los planes vigentes no cambian.
+    for product, field_name in PRICE_FIELDS.items():
+        pct = getattr(scenario, field_name)
+        if pct is not None:
+            base = getattr(m, f"price_{product}")
+            resolved[f"price_{product}"] = base * (1 + pct / 100)
+    return resolved
+
+
+def prices_of(data: PlantData, r: dict[str, float | None]) -> dict[str, float]:
+    """Precios efectivos del escenario: el del modelo salvo que el escenario lo cambie."""
+    m = data.model
+    return {
+        product: float(r.get(f"price_{product}") or getattr(m, f"price_{product}"))
+        for product in PRICE_FIELDS
+    }
 
 
 def plan_id_for(data: PlantData, scenario: Scenario) -> str:
+    dumped = scenario.model_dump()
+    for field_name in PRICE_FIELDS.values():  # sin precios, el plan_id de la spec 025 no cambia
+        if dumped.get(field_name) is None:
+            dumped.pop(field_name, None)
     payload = json.dumps(
-        {"scenario": scenario.model_dump(), "version": data.version, "week": data.state.week},
+        {"scenario": dumped, "version": data.version, "week": data.state.week},
         sort_keys=True,
     )
     return "p-" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:8]
@@ -271,13 +307,16 @@ def products(m: PlantModel, k: float, x_s: float, x_e: float) -> tuple[float, fl
     return sugar, ethanol
 
 
-def margin_of(m: PlantModel, sugar: float, ethanol: float, power: float, cane: float) -> float:
-    return (
-        m.price_sugar * sugar
-        + m.price_ethanol * ethanol
-        + m.price_power * power
-        - m.cost_cane * cane
-    )
+def margin_of(
+    m: PlantModel,
+    sugar: float,
+    ethanol: float,
+    power: float,
+    cane: float,
+    prices: dict[str, float] | None = None,
+) -> float:
+    p = prices or {"sugar": m.price_sugar, "ethanol": m.price_ethanol, "power": m.price_power}
+    return p["sugar"] * sugar + p["ethanol"] * ethanol + p["power"] * power - m.cost_cane * cane
 
 
 @dataclass(frozen=True, slots=True)
@@ -357,7 +396,7 @@ def simulate(data: PlantData, scenario: Scenario, sugar_share: float) -> Simulat
         power_generated=generated,
         power_used=power_used,
         power_export=export,
-        margin=margin_of(m, sugar, ethanol, max(export, 0.0), cane),
+        margin=margin_of(m, sugar, ethanol, max(export, 0.0), cane, prices_of(data, r)),
         violations=tuple(violations),
         data_version=data.version,
     )
@@ -421,16 +460,18 @@ def _matrix(data: PlantData, r: dict[str, float | None]) -> tuple[list[list[floa
     return rows, rhs
 
 
-def _objective(data: PlantData, k: float) -> list[float]:
+def _objective(data: PlantData, r: dict[str, float | None]) -> list[float]:
     m = data.model
+    k = float(r["k"])  # type: ignore[arg-type]
+    p = prices_of(data, r)
     eth_s = m.ethanol_from_molasses * m.molasses_yield
     eth_e = m.ethanol_from_juice * k
     return [
-        -(m.price_sugar * m.sugar_yield * k + m.price_ethanol * eth_s - m.cost_cane),
-        -(m.price_ethanol * eth_e - m.cost_cane),
+        -(p["sugar"] * m.sugar_yield * k + p["ethanol"] * eth_s - m.cost_cane),
+        -(p["ethanol"] * eth_e - m.cost_cane),
         0.0,
         0.0,
-        -m.price_power,
+        -p["power"],
     ]
 
 
@@ -491,7 +532,7 @@ def _solve(
     data: PlantData, r: dict[str, float | None]
 ) -> tuple[Any, list[list[float]], list[float]]:
     rows, rhs = _matrix(data, r)
-    result = _linprog(_objective(data, float(r["k"])), rows, rhs)  # type: ignore[arg-type]
+    result = _linprog(_objective(data, r), rows, rhs)
     return result, rows, rhs
 
 
@@ -503,7 +544,7 @@ def _elastic(data: PlantData, r: dict[str, float | None]) -> Any:
     extended = [[*row, 0.0, 0.0, 0.0] for row in rows]
     for column, product in enumerate(("sugar", "ethanol", "power")):
         extended[COMMITMENT_ROWS[product]][5 + column] = -1.0
-    c = _objective(data, float(r["k"])) + [  # type: ignore[arg-type]
+    c = _objective(data, r) + [
         PENALTY_FACTOR * prices[p] / data.priority(p) for p in ("sugar", "ethanol", "power")
     ]
     return _linprog(c, extended, rhs)
@@ -548,7 +589,7 @@ def _power_first(data: PlantData, r: dict[str, float | None]) -> dict[str, Any] 
     best_power = float(first.x[4])
     rows2 = [*rows, [0, 0, 0, 0, -1.0]]
     rhs2 = [*rhs, -(best_power * (1 - 1e-09))]
-    second = _linprog(_objective(data, float(r["k"])), rows2, rhs2)  # type: ignore[arg-type]
+    second = _linprog(_objective(data, r), rows2, rhs2)
     if second.status != 0:
         return None
     return {"x": second.x, "margin": -float(second.fun)}
@@ -583,7 +624,12 @@ def optimize(scenario: Scenario, data: PlantData | None = None) -> PlanResult:
     x = result.x
     produced = _products_from(data, r, x)
     margin = margin_of(
-        data.model, produced["sugar"], produced["ethanol"], produced["power"], float(x[0] + x[1])
+        data.model,
+        produced["sugar"],
+        produced["ethanol"],
+        produced["power"],
+        float(x[0] + x[1]),
+        prices_of(data, r),
     )
     sensitivity = [] if status != "optimal" else _sensitivity(result, rows, rhs)
     plan = PlanResult(
@@ -665,6 +711,152 @@ def optimize(scenario: Scenario, data: PlantData | None = None) -> PlanResult:
     ]
     plan.plan_card = plan_card(plan)
     return plan
+
+
+# --------------------------------------------------------------------------- consola (spec 026)
+
+CAPACITY_AREAS = (
+    ("molino", "mill_capacity", "t de caña"),
+    ("destileria", "distillery_capacity", "L de etanol"),
+    ("caldera", "boiler_capacity", "t de vapor"),
+    ("turbogenerador", "turbine_capacity", "MWh"),
+)
+RANGE_FIELDS = (
+    "cane_delta_pct",
+    "cane_available",
+    "cane_quality",
+    "steam_limit",
+    "price_sugar_pct",
+    "price_ethanol_pct",
+    "price_power_pct",
+)
+
+
+def scenario_ranges() -> dict[str, dict[str, float]]:
+    """Límites de los controles del escenario, leídos del esquema de ``Scenario`` (sin duplicar)."""
+    properties = Scenario.model_json_schema()["properties"]
+    ranges: dict[str, dict[str, float]] = {}
+    for name in RANGE_FIELDS:
+        options = properties[name].get("anyOf", [properties[name]])
+        numeric = next(o for o in options if o.get("type") == "number")
+        bounds = {"min": numeric["minimum"]}
+        if "maximum" in numeric:
+            bounds["max"] = numeric["maximum"]
+        ranges[name] = bounds
+    return ranges
+
+
+def snapshot(data: PlantData) -> dict[str, Any]:
+    """Estado de planta para la consola web (data-model §3). Siempre sintético."""
+    m, s = data.model, data.state
+    capacities = []
+    for area, attribute, unit in CAPACITY_AREAS:
+        nominal = float(getattr(m, attribute))
+        factor = s.factor(area)
+        capacities.append(
+            {
+                "area": area,
+                "nominal": nominal,
+                "factor": factor,
+                "effective": nominal * factor,
+                "unit": unit,
+            }
+        )
+    return {
+        "week": s.week,
+        "data_version": data.version,
+        "seed": data.seed,
+        "cane_available": s.cane_available,
+        "cane_quality": s.cane_quality,
+        "capacities": capacities,
+        "equipment": [
+            {
+                "id": e.id,
+                "kind": e.kind,
+                "status": e.status,
+                "capacity_factor": e.capacity_factor,
+            }
+            for e in s.equipment
+        ],
+        "inventories": dict(s.inventories),
+        "current_mix": dict(s.current_mix),
+        "commitments": [
+            {
+                "id": c.id,
+                "product": c.product,
+                "min_quantity": c.min_quantity,
+                "unit": PRODUCT_UNITS.get(c.product, ""),
+                "priority": c.priority,
+                "counterparty": c.counterparty,
+            }
+            for c in data.commitments
+        ],
+        "prices": {"sugar": m.price_sugar, "ethanol": m.price_ethanol, "power": m.price_power},
+        "ranges": scenario_ranges(),
+        "synthetic": True,
+        "label": SYNTHETIC_LABEL,
+    }
+
+
+def _share(plan: PlanResult, key: str) -> float:
+    total = plan.mix["x_s"] + plan.mix["x_e"]
+    return 100 * plan.mix[key] / total if total > 0 else 0.0
+
+
+def _gap(plan: PlanResult, data: PlantData, product: str) -> float:
+    return max(0.0, data.required(product) - plan.products.get(product, 0.0))
+
+
+def compare(
+    base: PlanResult, scenario: PlanResult, data: PlantData | None = None
+) -> dict[str, Any]:
+    """Diferencias entre dos planes por destino, producto, compromiso y margen (R8)."""
+    data = data or load_plant()
+    mix_delta = {
+        name: {
+            "tonnes": scenario.mix[key] - base.mix[key],
+            "points": _share(scenario, key) - _share(base, key),
+        }
+        for name, key in (("sugar", "x_s"), ("ethanol", "x_e"))
+    }
+    products_delta = [
+        {
+            "product": product,
+            "base": base.products.get(product, 0.0),
+            "scenario": scenario.products.get(product, 0.0),
+            "delta": scenario.products.get(product, 0.0) - base.products.get(product, 0.0),
+            "unit": PRODUCT_UNITS[product],
+        }
+        for product in ("sugar", "ethanol", "power")
+    ]
+    commitments = []
+    for product in ("sugar", "ethanol", "power"):
+        ids = [c.id for c in data.commitments if c.product == product]
+        if not ids:
+            continue
+        gap_base, gap_scenario = _gap(base, data, product), _gap(scenario, data, product)
+        tolerance = 1e-6 * max(1.0, data.required(product))
+        commitments.append(
+            {
+                "id": ", ".join(ids),
+                "product": product,
+                "required": data.required(product),
+                "unit": PRODUCT_UNITS[product],
+                "met_base": gap_base <= tolerance,
+                "met_scenario": gap_scenario <= tolerance,
+                "gap_base": gap_base if gap_base > tolerance else 0.0,
+                "gap_scenario": gap_scenario if gap_scenario > tolerance else 0.0,
+            }
+        )
+    return {
+        "base": base.to_dict(),
+        "scenario": scenario.to_dict(),
+        "mix_delta": mix_delta,
+        "products_delta": products_delta,
+        "commitments": commitments,
+        "margin_delta": scenario.margin - base.margin,
+        "synthetic": True,
+    }
 
 
 # --------------------------------------------------------------------------- presentación

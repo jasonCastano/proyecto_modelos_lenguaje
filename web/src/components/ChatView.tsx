@@ -479,9 +479,39 @@ function LiveTurnCard({ live }: { live: LiveTurn }) {
   );
 }
 
-export function ChatView({ mode }: { mode: Mode }) {
+/** Spec 026: la plataforma controla el perfil y entrega mensajes desde otras áreas. Todo opcional:
+ * sin estas props, ChatView se comporta como en las specs 014–025. */
+export interface ChatViewProps {
+  mode: Mode;
+  /** Perfil elegido fuera (selector de la plataforma). `undefined` = el de la vista técnica. */
+  audience?: string | null;
+  /** Variante inicial si no hay un hilo guardado (la plataforma usa el agente). */
+  initialVariant?: ChatVariant;
+  /** Mensaje que otra área deja para el agente; se procesa una sola vez por `id`. */
+  outbox?: { id: number; text: string; kind: "send" | "draft" } | null;
+  onOutboxTaken?: (id: number) => void;
+  /** Cada incremento pide olvidar la memoria (misma acción con aprobación que «Olvidar»). */
+  forgetRequest?: number;
+  /** Último turno y su hilo, para los paneles de fuentes y de evidencia. */
+  onTurn?: (turn: ChatTurn | null, threadId: string | null) => void;
+  /** Memoria de largo plazo vigente, para el panel de memoria. */
+  onMemory?: (memory: { preferences: MemoryItem[]; profile: ProfileItem[] }) => void;
+}
+
+export function ChatView({
+  mode,
+  audience: externalAudience,
+  initialVariant,
+  outbox,
+  onOutboxTaken,
+  forgetRequest,
+  onTurn,
+  onMemory,
+}: ChatViewProps) {
   const stored = useRef(readThread());
-  const [variant, setVariant] = useState<ChatVariant>(stored.current?.variant ?? "chain");
+  const [variant, setVariant] = useState<ChatVariant>(
+    stored.current?.variant ?? initialVariant ?? "chain",
+  );
   const [threadId, setThreadId] = useState<string | null>(stored.current?.id ?? null);
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [message, setMessage] = useState("");
@@ -496,6 +526,7 @@ export function ChatView({ mode }: { mode: Mode }) {
   const [observability, setObservability] = useState<ObservabilityStatus | null>(null);
   // Spec 025: perfil de atención elegido en la vista técnica (null = el del hilo).
   const [audience, setAudience] = useState<string | null>(null);
+  const activeAudience = externalAudience !== undefined ? externalAudience : audience;
   const [profileOptions, setProfileOptions] = useState<ProfileOption[]>([]);
   // Spec 019: registro del contacto (CRM) del hilo; solo se muestra en la vista técnica.
   const [contact, setContact] = useState<ContactRecord | null>(null);
@@ -592,10 +623,12 @@ export function ChatView({ mode }: { mode: Mode }) {
       .then((view) => {
         setPreferences(view.items ?? []);
         setProfile(view.profile ?? []);
+        onMemory?.({ preferences: view.items ?? [], profile: view.profile ?? [] });
       })
       .catch(() => {
         setPreferences([]);
         setProfile([]);
+        onMemory?.({ preferences: [], profile: [] });
       });
   }
 
@@ -741,7 +774,7 @@ export function ChatView({ mode }: { mode: Mode }) {
       variant,
       mode,
       ...(inputMeta ? { input: inputMeta } : {}),
-      ...(audience ? { profile: audience } : {}),
+      ...(activeAudience ? { profile: activeAudience } : {}),
     };
     let current: LiveTurn = { question: clean, route: null, stage: "Enrutando…", text: "" };
     setLive(current);
@@ -811,6 +844,39 @@ export function ChatView({ mode }: { mode: Mode }) {
       setReplies((count) => count + 1);
     }
   }
+
+  // Spec 026: avisa a la plataforma del último turno (fuentes, traza) sin cambiar el flujo.
+  useEffect(() => {
+    onTurn?.(turns.length ? turns[turns.length - 1] : null, threadId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turns, threadId]);
+
+  // Spec 026: el perfil de la plataforma manda; el planificador exige la variante agente.
+  useEffect(() => {
+    if (externalAudience === "planificador" && variant !== "agent") startOver("agent");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalAudience]);
+
+  // Spec 026: mensaje de otra área («Explicar con el agente», consulta de ejemplo), una sola vez.
+  const handledOutbox = useRef<number | null>(null);
+  useEffect(() => {
+    if (!outbox || handledOutbox.current === outbox.id || busy || action !== null) return;
+    if (activeAudience === "planificador" && variant !== "agent") return; // espera el cambio
+    handledOutbox.current = outbox.id;
+    onOutboxTaken?.(outbox.id);
+    if (outbox.kind === "draft") setMessage(outbox.text);
+    else void send(outbox.text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outbox, busy, action, variant, activeAudience]);
+
+  // Spec 026: «Borrar mi memoria» del panel usa la misma acción con aprobación.
+  const lastForget = useRef(forgetRequest ?? 0);
+  useEffect(() => {
+    if (forgetRequest === undefined || forgetRequest === lastForget.current) return;
+    lastForget.current = forgetRequest;
+    void forgetPreferences();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forgetRequest]);
 
   function stopGeneration() {
     controller.current?.abort("user");

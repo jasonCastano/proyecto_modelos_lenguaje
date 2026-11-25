@@ -138,6 +138,15 @@ class SimulateScenarioArgs(BaseModel):
     )
     cane_quality: float | None = Field(default=None, ge=9, le=16, description="Pol % de la caña.")
     steam_limit: float | None = Field(default=None, ge=0, description="Límite de vapor (t).")
+    price_sugar_pct: float | None = Field(
+        default=None, ge=-50, le=50, description="Cambio % del precio del azúcar."
+    )
+    price_ethanol_pct: float | None = Field(
+        default=None, ge=-50, le=50, description="Cambio % del precio del etanol."
+    )
+    price_power_pct: float | None = Field(
+        default=None, ge=-50, le=50, description="Cambio % del precio de la energía."
+    )
     sugar_share: float = Field(ge=0, le=1, description="Fracción de la caña a azúcar (0 a 1).")
 
 
@@ -167,6 +176,15 @@ class OptimizePlanArgs(BaseModel):
     steam_limit: float | None = Field(default=None, ge=0, description="Límite de vapor (t).")
     prioritize: Literal["margin", "power"] = Field(
         default="margin", description="margin (máximo margen) o power (máxima energía)."
+    )
+    price_sugar_pct: float | None = Field(
+        default=None, ge=-50, le=50, description="Cambio % del precio del azúcar."
+    )
+    price_ethanol_pct: float | None = Field(
+        default=None, ge=-50, le=50, description="Cambio % del precio del etanol."
+    )
+    price_power_pct: float | None = Field(
+        default=None, ge=-50, le=50, description="Cambio % del precio de la energía."
     )
 
 

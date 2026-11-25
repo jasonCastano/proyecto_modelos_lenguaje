@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 2.1.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-24
+**Versión**: 2.1.1 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-25
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -299,7 +299,10 @@ uv.lock
     variable, el ancho marca el rol), un color fijo de la paleta de Manuelita por producto (caña, azúcar, etanol,
     energía), pictogramas propios sin piezas de la marca, contraste AA y sin desplazamiento horizontal de 360 a
     1920 px.
-- La app DEBE ejecutarse con `make app` o `uv run uvicorn proyecto_modelos_lenguaje.api:app`.
+- La app DEBE ejecutarse con `make app` o `uv run python -m proyecto_modelos_lenguaje.webbuild --serve` desde un
+  clon limpio. `web/dist` no se versiona: ambos compilan la web si falta o si sus fuentes cambiaron (huella en
+  `web/dist/.build-stamp`) y repiten `npm ci` si cambió `package-lock.json`. Arrancar `uvicorn` a mano con una
+  compilación vieja DEBE advertirlo en la consola.
 - DEBE mostrar tres funcionalidades: Consulta, Resumen y FAQ, con citas y fallback.
 - DEBE incluir una página del Módulo 1 con datos, arquitectura, prompts, app, métricas y límites.
 - DEBE incluir modo demostración explícito, estados de carga y errores accionables.
@@ -508,7 +511,7 @@ LangChain y una experiencia web React/FastAPI.
 4. **Aplicación web**:
    - Frontend React/Vite con Consulta, Resumen, FAQ y showcase del Módulo 1.
    - API FastAPI con citas, fallback y modo demostración.
-   - Ejecutable con `make app` o `uv run uvicorn proyecto_modelos_lenguaje.api:app`.
+   - Ejecutable con `make app` o `uv run python -m proyecto_modelos_lenguaje.webbuild --serve`.
    - Verificación E2E con `make e2e`.
 5. **Evaluación**:
    - 20 preguntas como mínimo, con respuesta, fuente, corrección, coherencia y alucinación.
@@ -950,6 +953,7 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
 | 2.1.0 | 2026-11-24 | **MINOR**: plataforma web en cuatro áreas con API v1 de planificación y evidencia (spec 026, ADR 0030); §3.7 amplía la aplicación web (autorización en backend, cifras solo del servidor, identidad visual por producto). |
+| 2.1.1 | 2026-11-25 | **PATCH**: la app se abre desde un clon limpio o tras un `git pull` con `make app` o `webbuild --serve`, que compilan la web solo si falta o está desactualizada; el servidor advierte si sirve una compilación vieja (§3.7). |
 | 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
@@ -1149,4 +1153,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 2.1.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-24
+**Versión**: 2.1.1 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-25

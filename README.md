@@ -503,9 +503,18 @@ git clone https://github.com/jasonCastano/proyecto_modelos_lenguaje.git
 cd proyecto_modelos_lenguaje
 git lfs pull
 uv sync --frozen
-cd web && npm ci && cd ..
-make check
+make app       # o, sin make: uv run python -m proyecto_modelos_lenguaje.webbuild --serve
 ```
+
+Abre `http://127.0.0.1:8000`. La web compilada (`web/dist`) **no se versiona**: cada equipo la compila.
+`make app` (o el comando sin `make`) instala las dependencias de la web si `package-lock.json` cambió, compila si
+falta o si sus fuentes cambiaron desde la última compilación, y abre la API. Después de cada `git pull` basta con
+repetirlo. `make web-status` dice si la web está al día; si arrancas `uvicorn` a mano con una compilación vieja, el
+servidor lo advierte en la consola.
+
+Para usar la consola de **planificación** en la web, copia `.env.example` a `.env` y activa
+`MANUELITA_PLANNER_WEB=1` (sin eso, `/planificacion` responde 403 a propósito). `make check` corre la verificación
+completa.
 
 Los datos de bronce, plata y oro se descargan con Git LFS (~489 MB). La cuarentena no se versiona ni se
 descarga.
@@ -518,7 +527,8 @@ descarga.
 make help      # lista los objetivos
 make dev       # uv sync + npm ci + hooks
 make check     # Python + tests/build web
-make app       # build web + tabla estructurada (si falta) + API local
+make app       # web compilada al día + tabla estructurada (si falta) + API local
+make web-status # ¿web/dist falta o está desactualizada?
 make demo-prep # índice, colección Qdrant y tabla estructurada listos para la demo
 make qdrant-up # Qdrant servidor con HNSW real (docker compose); luego QDRANT_URL=http://localhost:6333
 make e2e       # Playwright: flujo, responsive y demo
@@ -920,7 +930,9 @@ La entrada actual es una página React servida por FastAPI:
 make app
 ```
 
-Abre `http://127.0.0.1:8000`. Para desarrollo con recarga:
+Abre `http://127.0.0.1:8000`. Sin `make`: `uv run python -m proyecto_modelos_lenguaje.webbuild --serve`. Ambos
+compilan la web solo si falta o está desactualizada (por ejemplo, después de un `git pull`). Para desarrollo con
+recarga:
 
 ```bash
 uv run uvicorn proyecto_modelos_lenguaje.api:app --reload --port 8000

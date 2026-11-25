@@ -450,7 +450,7 @@ En cada historia, las pruebas se escriben primero y deben fallar.
   - **badge de pruebas**: con el conteo nuevo;
   - **roadmap**: spec 026;
   - **documentación**: enlaces a la spec, el plan, `design.md` y el ADR 0030.
-- [ ] T072 Actualizar Archify en `docs/arquitectura.json`:
+- [X] T072 Actualizar Archify en `docs/arquitectura.json`:
   - un nodo «Web v1: cuatro áreas» y un nodo «API v1 planificación y evidencia», con flujos a `planning` y `profiles`;
   - fijar `revision` al commit de la feature;
   - `finalize --quality showcase`, borrar los `*.browser-check.json` viejos y `visual-check --summary --require-provenance`;
@@ -547,8 +547,9 @@ T049 ProfilePicker · T050 SourcesPanel · T051 MemoryPanel · T052 ProfileSugge
 
 ### Implementación (2026-11-24)
 
-- **Pendiente T072 (Archify)**: el diagrama fija `revision` a un commit en el que existan las fuentes
-  (`api_planning.py`, `api_evidence.py`, `web/src/pages/`). Se completa cuando el cambio tenga su commit.
+- **T072 (Archify)**: hecho sobre la revisión `96d0888`. La arquitectura gana la plataforma web (cuatro áreas, API v1)
+  y el flujo planificación → web; el diagrama de planificación gana el carril de la consola web. Un nodo «API v1»
+  aparte saturaba la columna de consumo, así que la API queda como fuente del nodo «Plataforma web».
 - **Desviaciones menores, a propósito**:
   - **T002**: no se crearon `index.ts` vacíos; los componentes se importan por su ruta.
   - **T012**: los cuerpos de entrada y las respuestas pequeñas tienen modelo Pydantic. El plan, el estado y la

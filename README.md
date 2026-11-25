@@ -230,10 +230,12 @@ autorizado) lleva al carril de planificación del final del diagrama:
 
 *Diagrama interactivo (Archify): [`docs/diagramas/herramientas-router.html`](docs/diagramas/herramientas-router.html).*
 
-**Planificación industrial (spec 025)**. El planificador autorizado pide un programa de producción; el agente
-consulta el estado de la planta y los compromisos (datos **sintéticos**), optimiza con programación lineal y
+**Planificación industrial (specs 025 y 026)**. El planificador autorizado pide un programa de producción; el
+agente consulta el estado de la planta y los compromisos (datos **sintéticos**), optimiza con programación lineal y
 responde con el plan, la restricción que lo limita y una alternativa. Un validador comprueba que cada cifra salga
-de las herramientas; si no, muestra el plan calculado. Guardar la propuesta exige «SÍ»:
+de las herramientas; si no, muestra el plan calculado. Guardar la propuesta exige «SÍ». El carril inferior es la
+**consola web** (spec 026): llama al mismo optimizador por `/api/v1/planning` (403 sin permiso), dibuja el flujo de
+caña y el libro de compromisos con las cifras del servidor y guarda la propuesta en dos pasos:
 
 [![Planificación industrial](docs/capturas/diagramas/planificacion.png)](docs/diagramas/planificacion.html)
 
@@ -320,7 +322,7 @@ fuente tipada es un JSON versionado y el HTML no se edita a mano. Las imágenes 
 | Nodo del agente desplegado | `workflow` | [`docs/diagramas/nodo-agente.json`](docs/diagramas/nodo-agente.json) | [`nodo-agente.html`](docs/diagramas/nodo-agente.html) |
 | Memoria: checkpointer frente a Store | `architecture` | [`docs/diagramas/memoria.json`](docs/diagramas/memoria.json) | [`memoria.html`](docs/diagramas/memoria.html) |
 | Herramientas, perfiles y router | `workflow` | [`docs/diagramas/herramientas-router.json`](docs/diagramas/herramientas-router.json) | [`herramientas-router.html`](docs/diagramas/herramientas-router.html) |
-| Planificación industrial (spec 025) | `workflow` | [`docs/diagramas/planificacion.json`](docs/diagramas/planificacion.json) | [`planificacion.html`](docs/diagramas/planificacion.html) |
+| Planificación industrial: agente y consola web (specs 025 y 026) | `workflow` | [`docs/diagramas/planificacion.json`](docs/diagramas/planificacion.json) | [`planificacion.html`](docs/diagramas/planificacion.html) |
 | Trazas de un turno | `sequence` | [`docs/diagramas/trazas.json`](docs/diagramas/trazas.json) | [`trazas.html`](docs/diagramas/trazas.html) |
 
 Regenerar y validar (con la skill Archify instalada; cambiar el tipo y la ruta según la tabla):
@@ -341,8 +343,9 @@ Si la copia global de la skill está incompleta, clona
 
 El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → Qdrant, recuperación híbrida y
 tabla estructurada → enrutador (reglas, perfil, gatekeeper Jev opcional y LLM, con ruta mixta) y grafos
-LangGraph (cadena, agente, HITL, perfiles) → experiencia web y memoria (hilos, perfil y preferencias)**, más la
-**planificación industrial** (programación lineal sobre datos sintéticos) que alimenta al agente. En GitHub, el enlace abre el código del HTML; para verlo interactivo,
+LangGraph (cadena, agente, HITL, perfiles) → plataforma web en cuatro áreas y memoria (hilos, perfil y
+preferencias)**, más la **planificación industrial** (programación lineal sobre datos sintéticos) que alimenta al
+agente y, por la API v1, a la consola web con las mismas cifras. En GitHub, el enlace abre el código del HTML; para verlo interactivo,
 clona el repositorio y abre `docs/arquitectura.html` en el navegador.
 
 ## Capturas
@@ -418,7 +421,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Conversación guiada (spec 020) | ✅ | Respuestas redactadas y revisadas; similitud máxima en un hilo ≤ 0,5 frente a 1,0 con guiones; `docs/evaluacion_conversacion.md`, ADR 0024 |
 | Gatekeeper System One Jev (spec 022) | 🟡 | Implementado y probado: español 24/24, 73–77 % menos llamadas al LLM del enrutador, crisis 100 %; exactitud 93,2 % frente a 97,7 % ⇒ desactivado por defecto; `docs/evaluacion_jev.md`, ADR 0026 |
 | Plataforma de agentes y planificación (spec 025) | 🟡 | Cinco perfiles y planificador industrial sobre datos sintéticos: optimizador ≥ 99 % del óptimo de referencia en 10/10, 0 violaciones, 2/2 sin solución detectados; con DeepSeek 12/12 con secuencia completa y etiqueta, p95 10,8 s; perfiles 19/20 con DeepSeek; herramientas 90,7 % y 86,0 % en dos corridas (sin regresión clara frente a 88,4 %); `docs/evaluacion_planificacion.md`, `docs/evaluacion_perfiles.md`, ADR 0029. Falta la verificación por WhatsApp y aprobar la enmienda 2.0.0 |
-| Plataforma web en cuatro áreas (spec 026) | 🟡 | Entrada, agente por perfil, consola de planificación y evidencia; API `/api/v1` con el planificador exigido en el backend; paridad de cifras consola = herramienta = CLI en 12/12 escenarios; `axe-core` sin violaciones graves y sin desplazamiento horizontal de 360 a 1920 px; ADR 0030. Falta aprobar la constitución 2.1.0 y el diagrama Archify de la web |
+| Plataforma web en cuatro áreas (spec 026) | 🟡 | Entrada, agente por perfil, consola de planificación y evidencia; API `/api/v1` con el planificador exigido en el backend; paridad de cifras consola = herramienta = CLI en 12/12 escenarios; `axe-core` sin violaciones graves y sin desplazamiento horizontal de 360 a 1920 px; ADR 0030. Diagramas Archify de arquitectura y planificación con la consola web. Falta aprobar la constitución 2.1.0 |
 | Dictado por voz (spec 023) | ✅ | faster-whisper `base` local: WER 0,048, nombres propios 97 %, p90 1,1 s (clips de hasta 10 s), 0 textos en silencio o ruido; `docs/evaluacion_stt.md`, ADR 0027 |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
 | CI y Pull Requests | 🟡 | 72 PRs fusionados al 2026-11-21 (63 del equipo y 9 de Dependabot, anteriores a la v1.6.0); 13 PRs del equipo tienen aprobación formal y 17 alguna revisión. CI con `test`, `web` y `autoria` |

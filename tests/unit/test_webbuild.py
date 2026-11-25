@@ -127,3 +127,57 @@ def test_check_devuelve_1_si_la_web_no_esta_al_dia(
 
     assert webbuild.main(["--check"]) == 1
     assert "make app" in capsys.readouterr().out
+
+
+# --------------------------------------------------------------------------- make app y el puerto
+
+
+LOCAL = {"commit": "abc1234", "web": "ok", "web_build": "0123456789ab"}
+
+
+def _serve_with(monkeypatch: pytest.MonkeyPatch, *, busy: bool, running: dict | None) -> list[str]:
+    started: list[str] = []
+    monkeypatch.setattr(webbuild, "version_info", lambda *a, **k: dict(LOCAL))
+    monkeypatch.setattr(webbuild, "port_in_use", lambda host, port: busy)
+    monkeypatch.setattr(webbuild, "running_version", lambda host, port: running)
+    fake_uvicorn = type("U", (), {"run": staticmethod(lambda *a, **k: started.append("run"))})
+    monkeypatch.setitem(__import__("sys").modules, "uvicorn", fake_uvicorn)
+    return started
+
+
+def test_serve_starts_when_port_is_free(monkeypatch: pytest.MonkeyPatch, capsys) -> None:
+    started = _serve_with(monkeypatch, busy=False, running=None)
+    assert webbuild.serve("127.0.0.1", 8000) == 0
+    assert started == ["run"]
+    assert "abc1234" in capsys.readouterr().out
+
+
+def test_serve_refuses_an_old_server_on_the_port(monkeypatch: pytest.MonkeyPatch, capsys) -> None:
+    """El caso de Jason: un servidor viejo en el puerto haría ver la versión anterior."""
+    old = {"commit": "0ld0000", "web": "ok", "web_build": "ffffffffffff"}
+    started = _serve_with(monkeypatch, busy=True, running=old)
+    assert webbuild.serve("127.0.0.1", 8000) == 1
+    assert started == []
+    err = capsys.readouterr().err
+    assert "0ld0000" in err and "abc1234" in err and "make app PORT=8001" in err
+
+
+def test_serve_refuses_a_server_without_version(monkeypatch: pytest.MonkeyPatch, capsys) -> None:
+    started = _serve_with(monkeypatch, busy=True, running=None)
+    assert webbuild.serve("127.0.0.1", 8000) == 1
+    assert started == [] and "no informa su versión" in capsys.readouterr().err
+
+
+def test_serve_reports_the_same_version_already_open(
+    monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    started = _serve_with(monkeypatch, busy=True, running=dict(LOCAL))
+    assert webbuild.serve("127.0.0.1", 8000) == 0
+    assert started == [] and "ya está abierta" in capsys.readouterr().out
+
+
+def test_version_info_reads_the_build_stamp(web: Path) -> None:
+    webbuild.ensure_built(web, runner=FakeNpm(), npm="npm")
+    info = webbuild.version_info(web, commit="abc1234")
+    assert info["commit"] == "abc1234" and info["web"] == "ok"
+    assert info["web_build"] == webbuild.fingerprint(web)[:12]

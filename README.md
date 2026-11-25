@@ -513,6 +513,13 @@ falta o si sus fuentes cambiaron desde la última compilación, y abre la API. D
 repetirlo. `make web-status` dice si la web está al día; si arrancas `uvicorn` a mano con una compilación vieja, el
 servidor lo advierte en la consola.
 
+**¿Sigues viendo la versión anterior?** Casi siempre es un servidor viejo que sigue abierto en el puerto 8000: el
+navegador le habla a ese proceso, que tiene el código anterior en memoria. `make app` ahora lo detecta y no arranca
+encima: te dice qué versión ocupa el puerto y cuál es la tuya. Ciérralo (Ctrl+C en su terminal) y repite
+`make app`, o abre la tuya en otro puerto con `make app PORT=8001`. El pie de cada página muestra la versión que
+estás viendo (`Versión <commit>`), y `GET /api/version` la devuelve. Las páginas se sirven sin caché, así que basta
+con recargar.
+
 En la web, los cinco perfiles, incluido el **planificador industrial** y su consola `/planificacion`, son de libre
 elección: no hace falta configurar nada (spec 027). `make check` corre la verificación completa.
 

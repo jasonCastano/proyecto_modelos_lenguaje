@@ -2,7 +2,8 @@
 # RAG Ingenio Manuelita — automatización de tareas
 # =============================================================================
 
-APP_URL ?= http://127.0.0.1:8000
+PORT ?= 8000
+APP_URL ?= http://127.0.0.1:$(PORT)
 
 .DEFAULT_GOAL := help
 .PHONY: help install dev pre-commit-install pre-commit lint format format-check test python-check web-install web-dev web-test web-build web-status check-web check app structured demo-prep corpus openclaw-workspace ops-check mcp qdrant-up audit e2e build clean
@@ -23,7 +24,7 @@ help: ## Muestra esta ayuda
 	@echo   web-status         Dice si la web compilada falta o está vieja
 	@echo   check-web          web-install + tests + build
 	@echo   check              python-check + check-web
-	@echo   app                Web compilada al día + tabla estructurada + API local (FastAPI)
+	@echo   app                Web al día + API local; avisa si el puerto lo ocupa otra versión (PORT=8000)
 	@echo   structured         Tabla estructurada derivada del oro (si falta)
 	@echo   demo-prep          Indice, coleccion Qdrant y tabla listos para la demo
 	@echo   corpus             Plata, oro, indice y Qdrant en un directorio de trabajo (ARGS=...)
@@ -79,9 +80,8 @@ check-web: web-install web-test web-build ## Verificación del frontend
 
 check: python-check check-web ## Verificación completa
 
-app: structured ## Compila la web si falta o está vieja y abre la API local
-	uv run python -m proyecto_modelos_lenguaje.webbuild --if-needed
-	uv run uvicorn proyecto_modelos_lenguaje.api:app --host 127.0.0.1 --port 8000
+app: structured ## Compila la web si falta o está vieja y abre la versión actual (PORT=8000)
+	uv run python -m proyecto_modelos_lenguaje.webbuild --serve --port $(PORT)
 
 structured: ## Construye la tabla estructurada si falta (la app no escribe en data/)
 	-uv run python -m proyecto_modelos_lenguaje.agent build-structured

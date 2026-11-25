@@ -278,6 +278,11 @@ h3,
   color: var(--ink);
 }
 
+.academic-footer__version {
+  margin-left: auto;
+  font-variation-settings: "wdth" var(--wdth-data);
+}
+
 /* ------------------------------------------------------------------ encabezados de área */
 
 .area-head {

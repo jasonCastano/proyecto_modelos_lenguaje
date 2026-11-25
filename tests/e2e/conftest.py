@@ -38,8 +38,10 @@ def base_url() -> Iterator[str]:
         # Spec 023: dictado simulado (sin descargar el modelo) salvo que se pida el real.
         "MANUELITA_STT_ENGINE": os.environ.get("PML_E2E_STT_ENGINE", "fake"),
         "MANUELITA_STT_WARMUP": "0",
-        # Spec 026: la consola de planificación se prueba con el planificador habilitado en la web.
-        "MANUELITA_PLANNER_WEB": "1",
+        # Spec 027: la web abre los cinco perfiles sin autorización; se prueba sin ninguna variable.
+        "MANUELITA_PLANNER_WEB": "",
+        "MANUELITA_PLANNER_OPEN": "",
+        "VALERIA_PLANNERS": "",
     }
     process = subprocess.Popen(
         [

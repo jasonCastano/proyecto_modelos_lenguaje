@@ -12,7 +12,6 @@ Las baterías se fijaron antes de evaluar (principio V). Los informes van a ``do
 from __future__ import annotations
 
 import json
-import os
 import statistics
 import time
 from collections.abc import Callable, Sequence
@@ -356,8 +355,3 @@ def write_report(report: dict[str, Any], json_path: Path, markdown: str) -> None
     json_path.parent.mkdir(parents=True, exist_ok=True)
     json_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     json_path.with_suffix(".md").write_text(markdown, encoding="utf-8")
-
-
-def enable_planner_for_eval() -> None:
-    """La evaluación corre por la «web» del proceso: habilita el planificador solo aquí."""
-    os.environ.setdefault("MANUELITA_PLANNER_WEB", "1")

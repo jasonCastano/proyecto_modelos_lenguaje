@@ -127,7 +127,8 @@ def validate_profile(profile: str | None, user_id: str, channel: str = "web") ->
     """Spec 025: perfil explícito del turno (``None`` = conservar el del hilo).
 
     400 ``invalid_profile`` si no existe; 403 ``planner_not_authorized`` si es el planificador y
-    el usuario no está autorizado en ese canal.
+    el usuario no está autorizado en ese canal. En la web nunca ocurre: ahí los cinco perfiles son
+    de libre elección (spec 027); fuera de la web rige la lista de autorizados.
     """
     if profile is None:
         return None

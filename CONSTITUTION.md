@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 2.1.1 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-25
+**Versión**: 2.2.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-25
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -290,8 +290,9 @@ uv.lock
   `/planificacion` consola del planificador y `/evidencia` panel técnico del Módulo 3, cada una con su dirección.
   - Los servicios nuevos viven bajo `/api/v1/` (`api_planning.py`, `api_evidence.py`); las rutas sin versión que
     usan el canal y la web NO DEBEN cambiar de forma.
-  - Todo `/api/v1/planning/*`, salvo `/access`, DEBE exigir el planificador autorizado en el backend; ocultar la
-    consola en la UI no basta.
+  - En la web, los cinco perfiles y `/api/v1/planning/*` son de libre elección (spec 027, ADR 0031). La
+    autorización por canal vive en el backend (`profiles.is_authorized`) y la UI NO DEBE reemplazarla ni bloquear
+    perfiles por su cuenta. Cada llamada de la consola DEBE registrar el seudónimo de la sesión.
   - Las cifras de planta NO DEBEN calcularse en el navegador: la consola dibuja lo que devuelve el mismo optimizador
     del agente y del CLI, y una prueba de paridad lo verifica en la batería de 12 escenarios.
   - Guardar una propuesta desde la consola exige confirmación en dos pasos con vencimiento de 5 minutos.
@@ -743,7 +744,8 @@ añaden:
     - Si no hay solución factible, se declara el conflicto y no se inventa capacidad.
     - El agente recomienda y el equipo de planta decide.
 20. **Autorización**:
-    - El perfil planificador es solo para usuarios autorizados (lista fuera del repositorio).
+    - El perfil planificador es de libre elección en la web y solo para usuarios autorizados en WhatsApp (lista
+      fuera del repositorio; spec 027, ADR 0031).
     - Guardar una propuesta exige «SÍ/NO» con vencimiento de 10 minutos.
     - Ninguna herramienta se conecta con sistemas reales de planta.
     - El modo degradado no simula, no optimiza ni guarda.
@@ -954,6 +956,7 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 |---------|-------|--------|
 | 2.1.0 | 2026-11-24 | **MINOR**: plataforma web en cuatro áreas con API v1 de planificación y evidencia (spec 026, ADR 0030); §3.7 amplía la aplicación web (autorización en backend, cifras solo del servidor, identidad visual por producto). |
 | 2.1.1 | 2026-11-25 | **PATCH**: la app se abre desde un clon limpio o tras un `git pull` con `make app` o `webbuild --serve`, que compilan la web solo si falta o está desactualizada; el servidor advierte si sirve una compilación vieja (§3.7). |
+| 2.2.0 | 2026-11-25 | **MINOR**: perfiles abiertos en la web (spec 027, ADR 0031): la autorización del planificador depende del canal; en la web los cinco perfiles y la consola `/api/v1/planning` son de libre elección, en WhatsApp sigue la lista de autorizados. Se enmiendan §3.7 y la regla 20; se conservan los dos pasos, el registro por seudónimo, las cifras solo del optimizador y el modo degradado sin planificación. Requiere la aprobación de ambos integrantes. |
 | 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
@@ -1153,4 +1156,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 2.1.1 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-25
+**Versión**: 2.2.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-25

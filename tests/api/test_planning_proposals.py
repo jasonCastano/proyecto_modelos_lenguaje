@@ -17,7 +17,8 @@ PHONE_NOTE = "Llamar a Ana al 3001234567 para revisar"
 @pytest.fixture()
 def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.setenv("MANUELITA_STATE_DIR", str(tmp_path / "state"))
-    monkeypatch.setenv("MANUELITA_PLANNER_WEB", "1")
+    for var in ("VALERIA_PLANNERS", "MANUELITA_PLANNER_OPEN", "MANUELITA_PLANNER_WEB"):
+        monkeypatch.delenv(var, raising=False)  # spec 027: la web no exige autorización
     api_planning.PENDING.clear()
     api_planning.PENDING.clock = lambda: datetime.now(UTC)
     yield TestClient(api.app)
@@ -60,6 +61,25 @@ def test_yes_saves_with_redacted_note(client: TestClient, tmp_path: Path) -> Non
     assert len(rows) == 1
     assert rows[0]["plan_id"] == pending["plan_id"] and rows[0]["synthetic"] is True
     assert "3001234567" not in json.dumps(rows[0])
+
+
+def test_any_visitor_saves_with_pseudonym(client: TestClient, tmp_path: Path) -> None:
+    """Spec 027 (FR-010, FR-011): cualquiera guarda en dos pasos; queda su seudónimo."""
+    headers = {"X-User-Id": "visita-0a1b2c3d"}
+    created = client.post(
+        "/api/v1/planning/proposals", json={"scenario": {"cane_delta_pct": -15}}, headers=headers
+    )
+    assert created.status_code == 202
+    assert _proposals(tmp_path) == []
+    pending = created.json()
+    saved = client.post(
+        f"/api/v1/planning/proposals/{pending['confirmation_id']}",
+        json={"decision": "yes"},
+        headers=headers,
+    )
+    assert saved.status_code == 200
+    rows = _proposals(tmp_path)
+    assert len(rows) == 1 and "visita-0a1b2c3d" in json.dumps(rows[0])
 
 
 def test_no_discards_without_writing(client: TestClient, tmp_path: Path) -> None:

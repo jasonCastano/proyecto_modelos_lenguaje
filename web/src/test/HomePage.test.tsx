@@ -22,26 +22,28 @@ function Probe() {
 
 describe("Home (spec 026, T042)", () => {
   it("presenta la plataforma, la declaración y cinco perfiles", () => {
-    render(<Home health={null} plannerAuthorized={false} />);
+    render(<Home health={null} />);
     expect(
       screen.getByRole("heading", { level: 1, name: /Un agente para cada persona/ }),
     ).toBeInTheDocument();
     expect(screen.getByText(/No es\s+un canal oficial de Manuelita/)).toBeInTheDocument();
     const ledger = screen.getByRole("heading", { name: "¿Quién eres?" }).closest("section")!;
     expect(within(ledger).getAllByRole("listitem")).toHaveLength(5);
-    expect(within(ledger).getByText("Solo equipo de planta autorizado")).toBeInTheDocument();
   });
 
-  it("el planificador es enlace solo con acceso", () => {
-    render(<Home health={null} plannerAuthorized />);
-    expect(screen.queryByText("Solo equipo de planta autorizado")).toBeNull();
-    expect(screen.getByRole("button", { name: /15 % menos caña/ })).toBeInTheDocument();
+  it("el planificador está abierto como los demás perfiles (spec 027)", () => {
+    const { container } = render(<Home health={null} />);
+    const row = container.querySelector('[data-profile="planificador"]')!;
+    expect(within(row as HTMLElement).getByRole("button", { name: /15 % menos caña/ })).toBeInTheDocument();
+    expect(container.querySelector(".profile-ledger__locked")).toBeNull();
+    expect(screen.queryByText(/Solo equipo de planta autorizado/)).toBeNull();
+    expect(screen.getByRole("link", { name: "Abrir la planificación" })).toHaveAttribute("href", "/planificacion");
   });
 
   it("la consulta de ejemplo del cliente B2B abre el agente con ese perfil y el mensaje listo", async () => {
     render(
       <>
-        <Home health={null} plannerAuthorized={false} />
+        <Home health={null} />
         <Probe />
       </>,
     );
@@ -53,7 +55,7 @@ describe("Home (spec 026, T042)", () => {
   });
 
   it("conserva la consola de Consulta, Resumen y FAQ", () => {
-    render(<Home health={null} plannerAuthorized={false} />);
+    render(<Home health={null} />);
     expect(screen.getByTestId("rag-console")).toBeInTheDocument();
   });
 });

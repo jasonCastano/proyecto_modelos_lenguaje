@@ -11,14 +11,13 @@ import type { HealthStatus } from "../lib/types";
 
 interface HomeProps {
   health: HealthStatus | null;
-  plannerAuthorized: boolean;
 }
 
-export function Home({ health, plannerAuthorized }: HomeProps) {
+export function Home({ health }: HomeProps) {
   return (
     <div className="home">
-      <PlatformHero plannerAuthorized={plannerAuthorized} />
-      <ProfileLedger plannerAuthorized={plannerAuthorized} />
+      <PlatformHero />
+      <ProfileLedger />
       <Guarantees />
       <section aria-labelledby="modules-heading" className="modules">
         <h2 className="section-title" id="modules-heading">

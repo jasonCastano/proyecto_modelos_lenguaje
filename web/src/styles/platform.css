@@ -870,28 +870,6 @@ h3,
   gap: var(--space-2);
 }
 
-.planner-gate {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--space-4);
-  max-width: 48rem;
-  padding: var(--space-5) 0;
-}
-
-.planner-gate div {
-  display: grid;
-  gap: var(--space-3);
-  justify-items: start;
-}
-
-.planner-gate__glyph {
-  color: var(--cane);
-}
-
-.planner-gate__title {
-  font-size: var(--step-5);
-}
-
 /* ------------------------------------------------------------------ entrada */
 
 .home {
@@ -1055,11 +1033,6 @@ h3,
   cursor: pointer;
 }
 
-.profile-ledger__locked {
-  color: var(--ink-soft);
-  font-style: italic;
-}
-
 .guarantees__list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
@@ -1106,35 +1079,102 @@ h3,
 
 /* ------------------------------------------------------------------ agente */
 
+/* Registro de perfiles (spec 027, design.md): cinco columnas iguales separadas por filetes; el
+   perfil activo lleva un filete superior del color de su producto. Sin sombras ni opciones
+   deshabilitadas: los cinco se eligen libremente. */
 .profile-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  margin-bottom: var(--space-4);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: var(--space-2);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
 }
 
-.profile-picker__pill {
-  min-height: 2.5rem;
-  padding: 0.45rem 1rem;
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-pill);
-  background: var(--surface);
+.profile-picker__option {
+  --product: var(--cane);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "glyph name"
+    "for for";
+  align-content: start;
+  gap: var(--space-1) var(--space-2);
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-top: 3px solid transparent;
+  border-left: 1px solid var(--rule);
+  background: transparent;
   color: var(--ink);
   font: inherit;
-  font-weight: 600;
+  text-align: left;
   cursor: pointer;
 }
 
-.profile-picker__pill[aria-checked="true"] {
-  border-color: var(--cane);
-  background: var(--cane);
-  color: #ffffff;
+.profile-picker__option:first-child {
+  border-left: 0;
 }
 
-.profile-picker__pill:disabled {
-  cursor: not-allowed;
-  border-style: dashed;
-  color: var(--ink-soft);
+.profile-picker__option[data-product="sugar"] {
+  --product: var(--sugar);
+}
+
+.profile-picker__option[data-product="molasses"] {
+  --product: var(--molasses);
+}
+
+.profile-picker__option[data-product="power"] {
+  --product: var(--power);
+}
+
+.profile-picker__option:hover {
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+}
+
+.profile-picker__option:focus-visible {
+  outline: var(--focus);
+  outline-offset: -2px;
+}
+
+.profile-picker__option[aria-checked="true"] {
+  border-top-color: var(--product);
+  background: var(--surface);
+}
+
+.profile-picker__glyph {
+  grid-area: glyph;
+  color: var(--cane);
+}
+
+.profile-picker__name {
+  grid-area: name;
+  align-self: center;
+  font-variation-settings: "wdth" var(--wdth-text);
+  font-weight: 650;
+}
+
+.profile-picker__option[aria-checked="true"] .profile-picker__name {
+  color: var(--cane-deep);
+}
+
+.profile-picker__for {
+  grid-area: for;
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  line-height: 1.35;
+}
+
+.profile-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+  margin: 0 0 var(--space-4);
+  color: var(--ink);
+}
+
+.profile-notice__synthetic {
+  color: var(--ink-muted);
 }
 
 .agent__grid {
@@ -1456,8 +1496,7 @@ h3,
   }
 
   .profile-ledger__ask,
-  .profile-ledger__example,
-  .profile-ledger__locked {
+  .profile-ledger__example {
     grid-column: 2;
   }
 }
@@ -1486,6 +1525,39 @@ h3,
 }
 
 @media (max-width: 720px) {
+  .profile-picker {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-picker__option {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas: "glyph name for";
+    align-items: center;
+    min-height: 3rem;
+    padding: var(--space-1) var(--space-2);
+    border-top: 0;
+    border-left: 3px solid transparent;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .profile-picker__option:first-child {
+    border-left: 3px solid transparent;
+  }
+
+  .profile-picker__option:last-child {
+    border-bottom: 0;
+  }
+
+  .profile-picker__option[aria-checked="true"] {
+    border-left-color: var(--product);
+  }
+
+  .profile-picker__for {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   .app-shell {
     grid-template-columns: minmax(0, 1fr);
     padding-bottom: 4.25rem;
@@ -1533,13 +1605,8 @@ h3,
     text-underline-offset: 0.3em;
   }
 
-  .area-head__title,
-  .planner-gate__title {
+  .area-head__title {
     font-size: var(--step-4);
-  }
-
-  .planner-gate {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   .ledger__row {

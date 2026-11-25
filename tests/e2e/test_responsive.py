@@ -32,6 +32,9 @@ def test_area_has_no_horizontal_scroll(
     assert page.evaluate(
         "() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1"
     )
+    # Spec 027 (SC-004): ningún perfil aparece bloqueado en ningún ancho.
+    text = page.inner_text("body").lower()
+    assert "solo autorizados" not in text and "solo equipo de planta autorizado" not in text
     context.close()
 
 

@@ -915,9 +915,8 @@ export function ChatView({
                 >
                   <option value="">Del hilo</option>
                   {profileOptions.map((option) => (
-                    <option disabled={!option.authorized} key={option.key} value={option.key}>
+                    <option key={option.key} value={option.key}>
                       {option.label}
-                      {option.authorized ? "" : " (solo autorizados)"}
                     </option>
                   ))}
                 </select>

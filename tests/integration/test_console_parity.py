@@ -30,7 +30,8 @@ FIELDS = ("plan_id", "status", "mix", "products", "margin", "binding", "shortfal
 def client(tmp_path_factory: pytest.TempPathFactory) -> TestClient:
     mp = pytest.MonkeyPatch()
     mp.setenv("MANUELITA_STATE_DIR", str(tmp_path_factory.mktemp("state")))
-    mp.setenv("MANUELITA_PLANNER_WEB", "1")
+    for var in ("MANUELITA_PLANNER_WEB", "MANUELITA_PLANNER_OPEN", "VALERIA_PLANNERS"):
+        mp.delenv(var, raising=False)  # spec 027 (SC-005): paridad sin ninguna autorización
     yield TestClient(api.app)
     mp.undo()
 

@@ -1,13 +1,13 @@
 /**
  * Consola de planificación industrial (spec 026, historia 1). Todas las cifras vienen del backend
- * (`/api/v1/planning`, el mismo optimizador del agente); aquí solo se piden y se dibujan.
+ * (`/api/v1/planning`, el mismo optimizador del agente); aquí solo se piden y se dibujan. Desde la
+ * spec 027 la consola es de libre elección en la web: abrirla activa el perfil planificador.
  */
 import { useEffect, useState } from "react";
 
 import { CaneFlow } from "../components/planning/CaneFlow";
 import { CommitmentLedger } from "../components/planning/CommitmentLedger";
 import { ComparisonView } from "../components/planning/ComparisonView";
-import { PlannerGate } from "../components/planning/PlannerGate";
 import { PlanSummary } from "../components/planning/PlanSummary";
 import { PlantStatePanel } from "../components/planning/PlantStatePanel";
 import { ProposalDialog } from "../components/planning/ProposalDialog";
@@ -19,7 +19,6 @@ import { navigate } from "../lib/router";
 import {
   ApiClientError,
   type PlanComparison,
-  type PlanningAccess,
   type PlanResponse,
   type PlantSnapshot,
   type Scenario,
@@ -32,7 +31,6 @@ function message(caught: unknown): string {
 }
 
 export function Planning() {
-  const [access, setAccess] = useState<PlanningAccess | null>(null);
   const [snapshot, setSnapshot] = useState<PlantSnapshot | null>(null);
   const [plan, setPlan] = useState<PlanResponse | null>(null);
   const [scenario, setScenario] = useState<Scenario>({});
@@ -43,29 +41,20 @@ export function Planning() {
 
   useEffect(() => {
     let active = true;
-    void planningApi
-      .getAccess()
-      .then(async (result) => {
-        if (!active) return;
-        setAccess(result);
-        if (!result.authorized) return;
-        setBusy(true);
-        setStatus("Calculando el plan…");
-        const state = await planningApi.getState();
-        if (!active) return;
-        setSnapshot(state);
-        const base = await planningApi.postPlan({});
-        if (!active) return;
-        setPlan(base);
-        setStatus("Plan calculado");
-      })
+    setAudience("planificador");
+    setBusy(true);
+    setStatus("Calculando el plan…");
+    void (async () => {
+      const state = await planningApi.getState();
+      if (!active) return;
+      setSnapshot(state);
+      const base = await planningApi.postPlan({});
+      if (!active) return;
+      setPlan(base);
+      setStatus("Plan calculado");
+    })()
       .catch((caught) => {
-        if (!active) return;
-        if (caught instanceof ApiClientError && caught.apiError.code === "planner_forbidden") {
-          setAccess({ authorized: false, reason: caught.apiError.message });
-        } else {
-          setError(message(caught));
-        }
+        if (active) setError(message(caught));
       })
       .finally(() => active && setBusy(false));
     return () => {
@@ -117,8 +106,6 @@ export function Planning() {
     );
     navigate("/agente");
   }
-
-  if (access && !access.authorized) return <PlannerGate reason={access.reason} />;
 
   return (
     <div className="planning">

@@ -467,8 +467,9 @@ def _route_node(deps: GraphDeps):
 
 
 PLANNER_ONLY_NOTE = (
-    "La planificación de producción es solo para planificadores autorizados (perfil "
-    "planificador); puedo darte la información pública de Manuelita sobre el tema."
+    "Por WhatsApp, la planificación de producción es solo para planificadores autorizados; en la "
+    "web puedes elegir el perfil planificador. Aquí puedo darte la información pública de "
+    "Manuelita sobre el tema."
 )
 PLANNER_VARIANT_NOTE = (
     "Para planificar la producción usa la variante agente (en la vista técnica de la web)."
@@ -511,6 +512,10 @@ def _turn_profile(
                 "conversaciones, escribe «recuerda mi perfil»."
             )
     active = profiles_module.effective_profile(profile, user_id, channel)
+    if note is not None and active != profile:
+        # Spec 027: fuera de la web, presentarse como planificador sin estar autorizado no cambia
+        # el perfil; no se anuncia un perfil que no rige.
+        note = PLANNER_ONLY_NOTE
     if intent is None and not profile_query and is_planning_request(state["question"]):
         if active != profiles_module.PLANNER and profile == profiles_module.PLANNER:
             note = PLANNER_ONLY_NOTE

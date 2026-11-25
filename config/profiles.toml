@@ -62,7 +62,11 @@ tools = [
 key = "planificador"
 label = "Planificador industrial"
 requires_authorization = true
-triggers = []
+triggers = [
+    "\\bsoy (el |la |un |una )?(planificador|planificadora)\\b",
+    "\\b(planificador|planificadora|jefe|jefa) de (planta|produccion)\\b",
+    "\\btrabajo en planificacion\\b",
+]
 tools = [
     "search_documents", "query_structured", "aggregate_series", "list_indicators",
     "compare_indicator", "sustainability_lookup", "list_business_units", "list_company_entities",

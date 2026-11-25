@@ -130,9 +130,7 @@ def run_evaluate_tools(args: argparse.Namespace, root: Path) -> int:
     mode = "demo" if args.fake else args.mode
     service = cli_service(root, Path(tempfile.mkdtemp(prefix="pml-tools-eval-")))
 
-    from .planning_eval import enable_planner_for_eval
-
-    enable_planner_for_eval()  # spec 025: casos del planificador (reportados aparte)
+    # Spec 027: la evaluación corre por la «web», donde el planificador es de libre elección.
 
     def send(question: str, profile: str | None = None) -> Any:
         return service.send(
@@ -181,7 +179,6 @@ def run_planning(args: argparse.Namespace, root: Path) -> int:
         if args.mode == "direct":
             results = pe.evaluate_planning_direct(cases)
         else:
-            pe.enable_planner_for_eval()
             service = cli_service(root, Path(tempfile.mkdtemp(prefix="pml-planning-")))
 
             def send(question: str) -> Any:
@@ -204,7 +201,6 @@ def run_planning(args: argparse.Namespace, root: Path) -> int:
         target = docs / f"{name}.json"
     else:
         cases = pe.load_cases(pe.PROFILE_CASES)
-        pe.enable_planner_for_eval()
         service = cli_service(root, Path(tempfile.mkdtemp(prefix="pml-profiles-")))
 
         def send_profile(question: str, profile: str | None = None) -> Any:

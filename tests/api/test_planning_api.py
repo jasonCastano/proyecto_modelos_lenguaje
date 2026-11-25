@@ -17,7 +17,7 @@ from proyecto_modelos_lenguaje.agent.planning import (
     optimize,
 )
 
-PROTECTED = [
+OPEN_ROUTES = [
     ("get", "/api/v1/planning/state", None),
     ("post", "/api/v1/planning/plan", {}),
     ("post", "/api/v1/planning/compare", {}),
@@ -35,37 +35,37 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
 
 
 @pytest.fixture()
-def planner(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    monkeypatch.setenv("MANUELITA_PLANNER_WEB", "1")
+def planner(client: TestClient) -> TestClient:
+    """Spec 027: en la web no hace falta ninguna autorización."""
     return client
 
 
-@pytest.mark.parametrize(("method", "path", "body"), PROTECTED)
-def test_unauthorized_gets_403_without_plant_data(
+@pytest.mark.parametrize(("method", "path", "body"), OPEN_ROUTES)
+def test_any_visitor_reaches_planning_without_authorization(
     client: TestClient, method: str, path: str, body: dict | None
 ) -> None:
+    """Spec 027 (FR-002, SC-002): sin envs ni X-User-Id, nunca 403."""
     response = getattr(client, method)(path, **({"json": body} if body is not None else {}))
-    assert response.status_code == 403
-    payload = response.json()
-    assert payload["error"]["code"] == "planner_forbidden"
-    text = json.dumps(payload)
-    assert "cane" not in text and "commitments" not in text
+    assert response.status_code in (200, 202)
+    assert "planner_forbidden" not in response.text
 
 
-def test_access_answers_everyone(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
-    denied = client.get("/api/v1/planning/access").json()
-    assert denied["authorized"] is False and "equipo de planta" in denied["reason"]
-    monkeypatch.setenv("MANUELITA_PLANNER_WEB", "1")
-    assert client.get("/api/v1/planning/access").json()["authorized"] is True
+def test_access_is_always_open(client: TestClient) -> None:
+    body = client.get("/api/v1/planning/access").json()
+    assert body["authorized"] is True and "sintéticos" in body["reason"]
 
 
-def test_named_planner_is_authorized_by_user_header(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv("VALERIA_PLANNERS", "planta-01")
-    assert client.get("/api/v1/planning/state").status_code == 403
-    response = client.get("/api/v1/planning/state", headers={"X-User-Id": "planta-01"})
-    assert response.status_code == 200
+def test_old_web_flag_is_ignored(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Spec 027 (FR-005): la variable vieja no cambia nada ni da error."""
+    monkeypatch.setenv("MANUELITA_PLANNER_WEB", "0")
+    assert client.get("/api/v1/planning/state").status_code == 200
+
+
+def test_invalid_user_header_is_logged_as_anon(client: TestClient, tmp_path: Path) -> None:
+    client.get("/api/v1/planning/state", headers={"X-User-Id": "no valido / x"})
+    log = tmp_path / "state" / "planning" / "console.jsonl"
+    event = json.loads(log.read_text(encoding="utf-8").splitlines()[-1])
+    assert event["endpoint"] == "state" and event["user"] == "anon"
 
 
 def test_state_is_a_synthetic_snapshot(planner: TestClient) -> None:

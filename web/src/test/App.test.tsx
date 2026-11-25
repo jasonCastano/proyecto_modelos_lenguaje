@@ -14,9 +14,8 @@ vi.mock("../lib/api", () => ({
     demo_available: true,
   }),
 }));
-vi.mock("../lib/planning", () => ({
-  getAccess: vi.fn().mockResolvedValue({ authorized: false, reason: "no" }),
-}));
+const planning = vi.hoisted(() => ({ getAccess: vi.fn() }));
+vi.mock("../lib/planning", () => planning);
 
 const { default: App } = await import("../App");
 
@@ -45,6 +44,11 @@ describe("App (spec 026, T021)", () => {
     render(<App />);
     expect(screen.getByRole("status")).toHaveTextContent("Esa página no existe; te llevamos a la entrada.");
     expect(screen.getByRole("heading", { level: 1, name: "Entrada" })).toBeInTheDocument();
+  });
+
+  it("no consulta el acceso a la planificación al cargar (spec 027)", () => {
+    render(<App />);
+    expect(planning.getAccess).not.toHaveBeenCalled();
   });
 
   it("la declaración académica está en todas las áreas", () => {

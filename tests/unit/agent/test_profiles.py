@@ -117,15 +117,43 @@ def test_triggers() -> None:
     assert match_trigger("¿Qué produce Manuelita?") is None
 
 
-def test_authorization(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.fixture
+def no_planner_env(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
     for var in ("VALERIA_PLANNERS", "MANUELITA_PLANNER_OPEN", "MANUELITA_PLANNER_WEB"):
         monkeypatch.delenv(var, raising=False)
+    return monkeypatch
+
+
+def test_web_always_authorized(no_planner_env: pytest.MonkeyPatch) -> None:
+    """Spec 027 (FR-001, FR-005): en la web todos los perfiles son de libre elección."""
+    assert is_authorized("anon", "web")
+    assert is_authorized("visita-1234", "web")
+    no_planner_env.setenv("MANUELITA_PLANNER_WEB", "0")
+    assert is_authorized("anon", "web")
+
+
+def test_whatsapp_keeps_allowlist(no_planner_env: pytest.MonkeyPatch) -> None:
+    """Spec 027 (FR-014): WhatsApp conserva la lista de autorizados."""
     assert not is_authorized("wa-0123456789abcdef", "whatsapp")
-    monkeypatch.setenv("VALERIA_PLANNERS", "wa-aaaa, wa-0123456789abcdef")
+    no_planner_env.setenv("VALERIA_PLANNERS", "wa-aaaa, wa-0123456789abcdef")
     assert is_authorized("wa-0123456789abcdef", "whatsapp")
     assert not is_authorized("wa-ffff", "whatsapp")
-    monkeypatch.setenv("MANUELITA_PLANNER_WEB", "1")
-    assert is_authorized("anon", "web")
+    no_planner_env.setenv("MANUELITA_PLANNER_WEB", "1")
     assert not is_authorized("wa-ffff", "whatsapp")
-    monkeypatch.setenv("MANUELITA_PLANNER_OPEN", "1")
+    no_planner_env.setenv("MANUELITA_PLANNER_OPEN", "1")
     assert is_authorized("wa-ffff", "whatsapp")
+
+
+def test_effective_profile_by_channel(no_planner_env: pytest.MonkeyPatch) -> None:
+    assert profiles.effective_profile("planificador", "anon", "web") == "planificador"
+    assert profiles.effective_profile("planificador", "wa-ffff", "whatsapp") == "visitante"
+
+
+def test_describe_by_channel(no_planner_env: pytest.MonkeyPatch) -> None:
+    web = profiles.describe("anon", "web")
+    assert len(web) == 5
+    assert all(item["authorized"] and not item["requires_authorization"] for item in web)
+    whatsapp = {item["key"]: item for item in profiles.describe("wa-ffff", "whatsapp")}
+    assert whatsapp["planificador"]["requires_authorization"] is True
+    assert whatsapp["planificador"]["authorized"] is False
+    assert whatsapp["visitante"]["authorized"] is True

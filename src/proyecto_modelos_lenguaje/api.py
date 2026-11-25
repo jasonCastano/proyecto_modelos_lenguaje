@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hmac
 import json
+import logging
 import os
 import uuid
 from functools import lru_cache
@@ -17,7 +18,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
-from . import api_evidence, api_planning
+from . import api_evidence, api_planning, webbuild
 from .agent.adversarial import adversarial_enabled, adversarial_retriever
 from .agent.catalog import to_json_schema
 from .agent.config import AgentConfigError, load_agent_config, resolve_state_dir
@@ -1024,6 +1025,13 @@ app.include_router(api_planning.router)
 app.include_router(api_evidence.router)
 
 
+WEB_BUILD_STATUS = webbuild.status(WEB_DIST.parent)
+if WEB_BUILD_STATUS != "ok":
+    # Tras un clon o un `git pull`, web/dist puede faltar o ser de una versión anterior.
+    logging.getLogger("uvicorn.error").warning(
+        "%s %s", webbuild.MESSAGES[WEB_BUILD_STATUS], webbuild.FIX
+    )
+
 if WEB_DIST.is_dir():
     assets = WEB_DIST / "assets"
     if assets.is_dir():
@@ -1042,5 +1050,5 @@ else:
     def not_built():
         return {
             "app": APP_TITLE,
-            "message": "El frontend no está compilado. Ejecuta `cd web && npm run build`.",
+            "message": f"{webbuild.MESSAGES['missing']} {webbuild.FIX}",
         }

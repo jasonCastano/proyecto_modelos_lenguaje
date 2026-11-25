@@ -8,6 +8,8 @@ export interface AudienceCard {
   key: string;
   label: string;
   glyph: ProductKey;
+  /** Para quién es, en segunda persona y en ≤ 40 caracteres (spec 027, design.md). */
+  forWhom: string;
   canAsk: string;
   example: string;
   suggestions: string[];
@@ -18,6 +20,7 @@ export const AUDIENCE_CARDS: AudienceCard[] = [
     key: "visitante",
     label: "Visitante",
     glyph: "cane",
+    forWhom: "Quieres conocer Manuelita",
     canAsk: "Qué hace Manuelita, sus negocios, su historia y sus cifras públicas, con fuentes.",
     example: "¿Qué produce Manuelita y en qué países está?",
     suggestions: [
@@ -30,6 +33,7 @@ export const AUDIENCE_CARDS: AudienceCard[] = [
     key: "cliente",
     label: "Cliente B2B",
     glyph: "sugar",
+    forWhom: "Compras para tu empresa",
     canAsk: "Productos, certificaciones y fichas técnicas; una cotización pasa a un asesor con tu «Sí».",
     example: "Compro azúcar para mi empresa, ¿qué certificaciones tienen?",
     suggestions: [
@@ -42,6 +46,7 @@ export const AUDIENCE_CARDS: AudienceCard[] = [
     key: "proveedor",
     label: "Proveedor cañero",
     glyph: "cane",
+    forWhom: "Entregas caña al ingenio",
     canAsk: "Programas para proveedores y buenas prácticas publicadas; no reemplaza la asistencia de campo.",
     example: "Soy proveedor de caña, ¿qué programas de apoyo tienen?",
     suggestions: [
@@ -54,6 +59,7 @@ export const AUDIENCE_CARDS: AudienceCard[] = [
     key: "colaborador",
     label: "Colaborador",
     glyph: "molasses",
+    forWhom: "Trabajas en Manuelita",
     canAsk: "Ética, línea de transparencia, seguridad y salud en el trabajo, según documentos públicos.",
     example: "¿Cómo reporto un caso a la línea ética?",
     suggestions: [
@@ -66,6 +72,7 @@ export const AUDIENCE_CARDS: AudienceCard[] = [
     key: "planificador",
     label: "Planificador industrial",
     glyph: "power",
+    forWhom: "Planeas la producción de la semana",
     canAsk: "El reparto de la caña entre azúcar, etanol y energía con un optimizador, sobre datos sintéticos.",
     example: "Tenemos 15 % menos caña esta semana. ¿Cómo cumplimos azúcar, etanol y energía?",
     suggestions: [

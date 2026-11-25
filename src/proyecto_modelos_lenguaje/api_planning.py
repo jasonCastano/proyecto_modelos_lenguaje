@@ -2,8 +2,9 @@
 
 Reglas:
 
-- Todo, salvo ``/access``, exige el planificador autorizado (``profiles.is_authorized``, R5). El
-  403 del backend es la barrera; la UI solo refleja ``/access``.
+- En la web, la consola es de libre elección (spec 027, R3): ninguna ruta exige autorización.
+  ``/access`` se conserva por compatibilidad y siempre responde ``authorized: true``. Cada llamada
+  conserva el seudónimo de quien la hizo (``planner_user``).
 - Las cifras salen de ``planning.optimize``, la misma función de la herramienta y del CLI (R6).
 - Guardar es de dos pasos con vencimiento (R9): el plan se recalcula en el servidor y solo se
   escribe tras ``yes``, con ``actions.save_proposal`` (mismo archivo que la acción del agente).
@@ -42,7 +43,6 @@ from .agent.planning import (
     snapshot,
 )
 from .agent.privacy import redact_pii
-from .agent.profiles import is_authorized
 from .api_errors import ApiV1Error
 from .api_models import (
     PendingProposalModel,
@@ -57,11 +57,7 @@ router = APIRouter(prefix="/api/v1/planning", tags=["planificación v1"])
 USER_PATTERN = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 PROPOSAL_TTL = timedelta(minutes=5)
 MAX_PENDING = 100
-FORBIDDEN_TEXT = (
-    "La planificación es solo para el equipo de planta autorizado. Puedes hablar con el agente "
-    "en otro perfil."
-)
-AUTHORIZED_TEXT = "Planificación habilitada en la web para esta sesión."
+ACCESS_TEXT = "Planificación abierta en la web. Los datos de planta son sintéticos."
 REGENERATE = "uv run python scripts/generate_planning_data.py --seed 2026 --version v1"
 
 
@@ -74,13 +70,9 @@ def web_user(request: Request) -> str:
     return supplied if USER_PATTERN.match(supplied) else "anon"
 
 
-def require_planner(request: Request) -> str:
-    user = web_user(request)
-    if not is_authorized(user, "web"):
-        raise ApiV1Error(
-            "planner_forbidden", FORBIDDEN_TEXT, status_code=403, action="usar otro perfil"
-        )
-    return user
+def planner_user(request: Request) -> str:
+    """Seudónimo para el registro de la consola. En la web no hay barrera (spec 027)."""
+    return web_user(request)
 
 
 # --------------------------------------------------------------------------- registro
@@ -255,15 +247,12 @@ PENDING = PendingProposals()
 
 
 @router.get("/access", response_model=PlanningAccess)
-def access(request: Request) -> PlanningAccess:
-    authorized = is_authorized(web_user(request), "web")
-    return PlanningAccess(
-        authorized=authorized, reason=AUTHORIZED_TEXT if authorized else FORBIDDEN_TEXT
-    )
+def access() -> PlanningAccess:
+    return PlanningAccess(authorized=True, reason=ACCESS_TEXT)
 
 
 @router.get("/state")
-def state(user: str = Depends(require_planner)) -> dict[str, Any]:
+def state(user: str = Depends(planner_user)) -> dict[str, Any]:
     with _timed() as elapsed:
         view = snapshot(_plant())
     _log_event("state", user, scenario=None, plan_id=None, status="ok", duration_ms=elapsed())
@@ -271,7 +260,7 @@ def state(user: str = Depends(require_planner)) -> dict[str, Any]:
 
 
 @router.post("/plan")
-def plan(raw: dict[str, Any], user: str = Depends(require_planner)) -> dict[str, Any]:
+def plan(raw: dict[str, Any], user: str = Depends(planner_user)) -> dict[str, Any]:
     scenario = _scenario(raw)
     with _timed() as elapsed:
         result = _optimize(scenario)
@@ -287,7 +276,7 @@ def plan(raw: dict[str, Any], user: str = Depends(require_planner)) -> dict[str,
 
 
 @router.post("/compare")
-def compare_plans(raw: dict[str, Any], user: str = Depends(require_planner)) -> dict[str, Any]:
+def compare_plans(raw: dict[str, Any], user: str = Depends(planner_user)) -> dict[str, Any]:
     scenario = _scenario(raw)
     with _timed() as elapsed:
         base = _optimize(Scenario())
@@ -306,7 +295,7 @@ def compare_plans(raw: dict[str, Any], user: str = Depends(require_planner)) -> 
 
 @router.post("/proposals", status_code=202, response_model=PendingProposalModel)
 def create_proposal(
-    body: ProposalRequest, user: str = Depends(require_planner)
+    body: ProposalRequest, user: str = Depends(planner_user)
 ) -> PendingProposalModel:
     scenario = _scenario(body.scenario)
     with _timed() as elapsed:
@@ -342,7 +331,7 @@ def create_proposal(
 
 @router.post("/proposals/{confirmation_id}", response_model=ProposalOutcome)
 def decide_proposal(
-    confirmation_id: str, body: ProposalDecision, user: str = Depends(require_planner)
+    confirmation_id: str, body: ProposalDecision, user: str = Depends(planner_user)
 ) -> ProposalOutcome:
     with _timed() as elapsed:
         item = PENDING.take(confirmation_id)

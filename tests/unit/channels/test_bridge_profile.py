@@ -92,6 +92,17 @@ def test_unauthorized_planner_is_denied_and_logged(
     assert PHONE not in raw and "planificador" not in raw
 
 
+def test_web_flag_does_not_open_whatsapp(
+    bridge: ChannelBridge, service: FakeService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Spec 027 (FR-014, SC-006): abrir la web no abre el planificador en WhatsApp."""
+    monkeypatch.setenv("MANUELITA_PLANNER_WEB", "1")
+    reply = bridge.handle(msg("/perfil planificador", "m1"))
+    bridge.handle(msg("hola", "m2"))
+    assert reply.messages[0] == PLANNER_DENIED_TEXT
+    assert service.calls[0]["profile"] == "visitante"
+
+
 def test_authorized_planner(
     bridge: ChannelBridge, service: FakeService, monkeypatch: pytest.MonkeyPatch
 ) -> None:

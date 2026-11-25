@@ -65,18 +65,48 @@ def test_tools_stay_within_the_profile(profile: str) -> None:
     assert outcome.turn.profile == profile
 
 
-def test_planner_profile_without_authorization_falls_back_to_visitor_in_thread() -> None:
-    service = make_service(store=memory_store())
-    first = service.send("¿Qué produce Manuelita?", user_id=USER, variant="agent")
-    # Un hilo que traía «planificador» (p. ej. autorización retirada) atiende como visitante.
+def _thread_with_planner(service, channel: str) -> str:
+    first = service.send("¿Qué produce Manuelita?", user_id=USER, variant="agent", channel=channel)
     service.graph("agent", "demo").update_state(
         {"configurable": {"thread_id": first.thread_id}}, {"profile": "planificador"}
     )
+    return first.thread_id
+
+
+def test_planner_profile_holds_on_the_web() -> None:
+    """Spec 027 (FR-001): en la web el planificador del hilo no se degrada a visitante."""
+    service = make_service(store=memory_store())
+    thread_id = _thread_with_planner(service, "web")
     second = service.send(
         "Tenemos 15 % menos caña esta semana, ¿cómo cumplimos los contratos?",
-        thread_id=first.thread_id,
+        thread_id=thread_id,
         user_id=USER,
         variant="agent",
     )
+    assert second.turn.profile == "planificador" and second.turn.route.route == "planning"
+
+
+def test_planner_profile_without_authorization_falls_back_on_whatsapp() -> None:
+    service = make_service(store=memory_store())
+    thread_id = _thread_with_planner(service, "whatsapp")
+    second = service.send(
+        "Tenemos 15 % menos caña esta semana, ¿cómo cumplimos los contratos?",
+        thread_id=thread_id,
+        user_id=USER,
+        variant="agent",
+        channel="whatsapp",
+    )
     assert second.turn.profile == "visitante" and second.turn.route.route != "planning"
-    assert "solo para planificadores autorizados" in second.turn.answer
+    assert "Por WhatsApp" in second.turn.answer
+
+
+def test_self_introduced_planner_on_whatsapp_is_not_announced() -> None:
+    service = make_service(store=memory_store())
+    outcome = service.send(
+        "Soy planificador de planta, ¿qué produce Manuelita?",
+        user_id=USER,
+        variant="agent",
+        channel="whatsapp",
+    )
+    assert outcome.turn.profile == "visitante"
+    assert "Te atiendo como Planificador" not in outcome.turn.answer

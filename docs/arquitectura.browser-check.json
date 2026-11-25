@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "5a14e9f8-c7b5-4f32-b641-d6bbc252d7fb",
+  "deliveryReceiptId": "1f4ededc-6984-422a-9e6f-80f86ef952f3",
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "e0f97afb6cb1f74805edfe4e914a75264c2a355fe61bcd4fac654e1fa448db50",
-    "bytes": 868200
+    "sha256": "ff8ec87b76d95072acc1c7667e4fa91b425b641f3ea5359ef8193f927fd8feb8",
+    "bytes": 868226
   },
   "state": {
     "detail": "read",
@@ -691,6 +691,7 @@
     "contactSheet": null
   },
   "sidecars": {
+    "directory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\arch027\\fin-arquitectura",
     "receipt": "arquitectura.browser-check.json",
     "files": []
   }

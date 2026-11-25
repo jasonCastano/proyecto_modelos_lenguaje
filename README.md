@@ -230,11 +230,11 @@ autorizado) lleva al carril de planificación del final del diagrama:
 
 *Diagrama interactivo (Archify): [`docs/diagramas/herramientas-router.html`](docs/diagramas/herramientas-router.html).*
 
-**Planificación industrial (specs 025 y 026)**. El planificador autorizado pide un programa de producción; el
+**Planificación industrial (specs 025 a 027)**. El planificador pide un programa de producción; el
 agente consulta el estado de la planta y los compromisos (datos **sintéticos**), optimiza con programación lineal y
 responde con el plan, la restricción que lo limita y una alternativa. Un validador comprueba que cada cifra salga
 de las herramientas; si no, muestra el plan calculado. Guardar la propuesta exige «SÍ». El carril inferior es la
-**consola web** (spec 026): llama al mismo optimizador por `/api/v1/planning` (403 sin permiso), dibuja el flujo de
+**consola web** (spec 026): llama al mismo optimizador por `/api/v1/planning` (libre en la web), dibuja el flujo de
 caña y el libro de compromisos con las cifras del servidor y guarda la propuesta en dos pasos:
 
 [![Planificación industrial](docs/capturas/diagramas/planificacion.png)](docs/diagramas/planificacion.html)
@@ -410,7 +410,8 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Conversación guiada (spec 020) | ✅ | Respuestas redactadas y revisadas; similitud máxima en un hilo ≤ 0,5 frente a 1,0 con guiones; `docs/evaluacion_conversacion.md`, ADR 0024 |
 | Gatekeeper System One Jev (spec 022) | 🟡 | Implementado y probado: español 24/24, 73–77 % menos llamadas al LLM del enrutador, crisis 100 %; exactitud 93,2 % frente a 97,7 % ⇒ desactivado por defecto; `docs/evaluacion_jev.md`, ADR 0026 |
 | Plataforma de agentes y planificación (spec 025) | 🟡 | Cinco perfiles y planificador industrial sobre datos sintéticos: optimizador ≥ 99 % del óptimo de referencia en 10/10, 0 violaciones, 2/2 sin solución detectados; con DeepSeek 12/12 con secuencia completa y etiqueta, p95 10,8 s; perfiles 19/20 con DeepSeek; herramientas 90,7 % y 86,0 % en dos corridas (sin regresión clara frente a 88,4 %); `docs/evaluacion_planificacion.md`, `docs/evaluacion_perfiles.md`, ADR 0029. Falta la verificación por WhatsApp y aprobar la enmienda 2.0.0 |
-| Plataforma web en cuatro áreas (spec 026) | 🟡 | Entrada, agente por perfil, consola de planificación y evidencia; API `/api/v1` con el planificador exigido en el backend; paridad de cifras consola = herramienta = CLI en 12/12 escenarios; `axe-core` sin violaciones graves y sin desplazamiento horizontal de 360 a 1920 px; ADR 0030. Diagramas Archify de arquitectura y planificación con la consola web. Falta aprobar la constitución 2.1.0 |
+| Plataforma web en cuatro áreas (spec 026) | 🟡 | Entrada, agente por perfil, consola de planificación y evidencia; API `/api/v1` (desde la spec 027, de libre elección en la web); paridad de cifras consola = herramienta = CLI en 12/12 escenarios; `axe-core` sin violaciones graves y sin desplazamiento horizontal de 360 a 1920 px; ADR 0030. Diagramas Archify de arquitectura y planificación con la consola web. Falta aprobar la constitución 2.1.0 |
+| Perfiles abiertos en la web (spec 027) | 🟡 | Los cinco perfiles, incluido el planificador, se eligen libremente en la web sin configuración; selector con «para quién es» y perfil activo a la vista; WhatsApp conserva la lista de autorizados; ADR 0031. Falta aprobar la constitución 2.2.0 |
 | Dictado por voz (spec 023) | ✅ | faster-whisper `base` local: WER 0,048, nombres propios 97 %, p90 1,1 s (clips de hasta 10 s), 0 textos en silencio o ruido; `docs/evaluacion_stt.md`, ADR 0027 |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
 | CI y Pull Requests | 🟡 | 72 PRs fusionados al 2026-11-21 (63 del equipo y 9 de Dependabot, anteriores a la v1.6.0); 13 PRs del equipo tienen aprobación formal y 17 alguna revisión. CI con `test`, `web` y `autoria` |
@@ -503,9 +504,17 @@ git clone https://github.com/jasonCastano/proyecto_modelos_lenguaje.git
 cd proyecto_modelos_lenguaje
 git lfs pull
 uv sync --frozen
-cd web && npm ci && cd ..
-make check
+make app       # o, sin make: uv run python -m proyecto_modelos_lenguaje.webbuild --serve
 ```
+
+Abre `http://127.0.0.1:8000`. La web compilada (`web/dist`) **no se versiona**: cada equipo la compila.
+`make app` (o el comando sin `make`) instala las dependencias de la web si `package-lock.json` cambió, compila si
+falta o si sus fuentes cambiaron desde la última compilación, y abre la API. Después de cada `git pull` basta con
+repetirlo. `make web-status` dice si la web está al día; si arrancas `uvicorn` a mano con una compilación vieja, el
+servidor lo advierte en la consola.
+
+En la web, los cinco perfiles, incluido el **planificador industrial** y su consola `/planificacion`, son de libre
+elección: no hace falta configurar nada (spec 027). `make check` corre la verificación completa.
 
 Los datos de bronce, plata y oro se descargan con Git LFS (~489 MB). La cuarentena no se versiona ni se
 descarga.
@@ -518,7 +527,8 @@ descarga.
 make help      # lista los objetivos
 make dev       # uv sync + npm ci + hooks
 make check     # Python + tests/build web
-make app       # build web + tabla estructurada (si falta) + API local
+make app       # web compilada al día + tabla estructurada (si falta) + API local
+make web-status # ¿web/dist falta o está desactualizada?
 make demo-prep # índice, colección Qdrant y tabla estructurada listos para la demo
 make qdrant-up # Qdrant servidor con HNSW real (docker compose); luego QDRANT_URL=http://localhost:6333
 make e2e       # Playwright: flujo, responsive y demo
@@ -899,7 +909,7 @@ a costa de 1,6 veces más llamadas y 2,6 veces más tokens.
 Valer-IA atiende con un **perfil** por público (idea 7 de [`docs/alucinaciones/ideas_negocio_ia_manuelita.md`](docs/alucinaciones/ideas_negocio_ia_manuelita.md)): visitante, cliente B2B, proveedor, colaborador y planificador industrial. Cada perfil es una lista blanca de herramientas (`config/profiles.toml`) y un foco en el prompt (`prompts/profiles.md`); el agente, el enrutador, la memoria y el blindaje son los mismos.
 
 - **Elegir el perfil**: en WhatsApp, `/perfil` lista los perfiles y `/perfil proveedor` (o `b2b`, `colaborador`…) lo activa en el hilo; en la vista técnica de la web, el selector «Perfil». Si la persona se presenta («soy proveedor de caña…»), el agente la atiende con ese perfil y ofrece recordarlo: «recuerda mi perfil» lo guarda con «SÍ» (preferencia `audience`) y `/olvidar` lo borra.
-- **Planificador industrial** (solo autorizados: `VALERIA_PLANNERS` con seudónimos, `MANUELITA_PLANNER_WEB=1` para la vista técnica o `MANUELITA_PLANNER_OPEN=1` solo en la jornada). Ante «Tenemos 15 % menos caña esta semana. ¿Cómo cumplimos azúcar, etanol y energía?», el agente consulta el estado de la planta y los compromisos, optimiza con programación lineal (`scipy`, HiGHS) y responde con el plan, la restricción que lo limita, una alternativa y los supuestos. Las cifras salen de las herramientas; si el modelo escribe un número que no está en ellas, se muestra el plan calculado. «guarda esta propuesta» la guarda con «SÍ» en `$MANUELITA_STATE_DIR/planning/proposals.jsonl`. **Los datos son sintéticos** (`data/synthetic/planificacion/v1/`, ficha propia): demuestran la capacidad, no la operación real de Manuelita.
+- **Planificador industrial** (en la web, de libre elección desde la spec 027; en WhatsApp, solo autorizados: `VALERIA_PLANNERS` con seudónimos o `MANUELITA_PLANNER_OPEN=1` solo en la jornada). Ante «Tenemos 15 % menos caña esta semana. ¿Cómo cumplimos azúcar, etanol y energía?», el agente consulta el estado de la planta y los compromisos, optimiza con programación lineal (`scipy`, HiGHS) y responde con el plan, la restricción que lo limita, una alternativa y los supuestos. Las cifras salen de las herramientas; si el modelo escribe un número que no está en ellas, se muestra el plan calculado. «guarda esta propuesta» la guarda con «SÍ» en `$MANUELITA_STATE_DIR/planning/proposals.jsonl`. **Los datos son sintéticos** (`data/synthetic/planificacion/v1/`, ficha propia): demuestran la capacidad, no la operación real de Manuelita.
 
 ```bash
 uv run python scripts/generate_planning_data.py --seed 2026 --version v1 --check   # datos sintéticos
@@ -920,7 +930,9 @@ La entrada actual es una página React servida por FastAPI:
 make app
 ```
 
-Abre `http://127.0.0.1:8000`. Para desarrollo con recarga:
+Abre `http://127.0.0.1:8000`. Sin `make`: `uv run python -m proyecto_modelos_lenguaje.webbuild --serve`. Ambos
+compilan la web solo si falta o está desactualizada (por ejemplo, después de un `git pull`). Para desarrollo con
+recarga:
 
 ```bash
 uv run uvicorn proyecto_modelos_lenguaje.api:app --reload --port 8000
@@ -933,8 +945,8 @@ su propia dirección:
 | Ruta | Área | Qué muestra |
 |---|---|---|
 | `/` | Entrada | Qué es Valer-IA, los cinco perfiles como filas de un libro de registro, las garantías y la consola de Consulta, Resumen y FAQ |
-| `/agente` | Agente | Selector de perfil, la conversación (citas, voz, dictado, aprobación con «Sí»), fuentes del turno, memoria borrable y sugerencias del perfil |
-| `/planificacion` | Planificación | Solo para el planificador autorizado (`MANUELITA_PLANNER_WEB=1` en la jornada): escenario, flujo de caña, libro de compromisos, lo que limita el plan, comparación con el plan base, «Explicar con el agente» y «Guardar propuesta» en dos pasos |
+| `/agente` | Agente | Selector de los cinco perfiles con «para quién es» y el perfil activo a la vista, la conversación (citas, voz, dictado, aprobación con «Sí»), fuentes del turno, memoria borrable y sugerencias del perfil |
+| `/planificacion` | Planificación | Abierta a cualquier visitante (spec 027); abrirla activa el perfil planificador: escenario, flujo de caña, libro de compromisos, lo que limita el plan, comparación con el plan base, «Explicar con el agente» y «Guardar propuesta» en dos pasos |
 | `/evidencia` | Evidencia técnica | Estado de servicios, catálogo de 26 herramientas con sus perfiles, traza del turno y evaluaciones publicadas con su cifra honesta |
 
 Los servicios nuevos viven bajo `/api/v1/` y las rutas sin versión no cambian (contratos en
@@ -942,14 +954,16 @@ Los servicios nuevos viven bajo `/api/v1/` y las rutas sin versión no cambian (
 
 | Endpoint | Qué hace |
 |---|---|
-| `GET /api/v1/planning/access` | Dice si la sesión puede planificar (sin datos de planta) |
+| `GET /api/v1/planning/access` | Compatibilidad: en la web siempre `authorized: true` (spec 027) |
 | `GET /api/v1/planning/state` | Estado de planta sintético con los rangos de cada control |
 | `POST /api/v1/planning/plan` | Plan del optimizador para un escenario (las mismas cifras que el agente y el CLI) |
 | `POST /api/v1/planning/compare` | Diferencias contra el plan base por destino, producto, compromiso y margen |
 | `POST /api/v1/planning/proposals` y `/{id}` | Guardar propuesta en dos pasos; nada se escribe sin `yes` y vence a los 5 minutos |
 | `GET /api/v1/evidence/tools`, `/traces/{id}`, `/services`, `/evaluations` | Evidencia de solo lectura para el Módulo 3 |
 
-Fuera del planificador autorizado, `/api/v1/planning/*` responde 403 `planner_forbidden` sin datos de planta.
+En la web, `/api/v1/planning/*` es de libre elección ([ADR 0031](docs/decisions/0031-perfiles-abiertos-web.md)):
+cada llamada queda registrada con el seudónimo de la sesión y guardar sigue exigiendo los dos pasos. En WhatsApp, el
+planificador sigue siendo solo para autorizados.
 
 La entrada conserva:
 
@@ -1168,6 +1182,10 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   [dirección visual](specs/026-plataforma-web-manuelita/design.md),
   [tareas](specs/026-plataforma-web-manuelita/tasks.md) y
   [ADR 0030](docs/decisions/0030-plataforma-web-v1.md)
+- [Perfiles abiertos en la web (spec 027)](specs/027-perfiles-abiertos-web/spec.md),
+  [plan](specs/027-perfiles-abiertos-web/plan.md),
+  [diseño del selector](specs/027-perfiles-abiertos-web/design.md) y
+  [ADR 0031](docs/decisions/0031-perfiles-abiertos-web.md)
 - [Ficha de datos del corpus](docs/data_card.md)
 - [Alcance del Q&A y banco de 40 preguntas](docs/alcance.md)
 - [Especificación del bronce](specs/001-bronze-web-scraping/spec.md)
@@ -1318,6 +1336,7 @@ Specs 024 y 025; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/
 - [x] Plataforma de agentes por perfil y planificador industrial sobre datos sintéticos (spec 025, ADR 0029),
   con diagramas Archify actualizados.
 - [x] Plataforma web en cuatro áreas con consola de planificación y evidencia técnica (spec 026, ADR 0030).
+- [x] Perfiles abiertos en la web, incluido el planificador (spec 027, ADR 0031).
 - [ ] Verificar `/perfil` y la planificación por WhatsApp, y aprobar la constitución 2.0.0 y 2.1.0.
 - [ ] Ensayo cronometrado y tag `v3.0.0`.
 

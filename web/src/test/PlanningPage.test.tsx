@@ -26,17 +26,24 @@ function Probe() {
   );
 }
 
-describe("Planning (spec 026, T030)", () => {
-  it("sin acceso muestra el aviso y no pide el estado de planta", async () => {
-    vi.spyOn(planningApi, "getAccess").mockResolvedValue({ authorized: false, reason: "Solo equipo de planta." });
-    const state = vi.spyOn(planningApi, "getState");
-    render(<Planning />);
-    expect(await screen.findByTestId("planner-gate")).toHaveTextContent("Solo equipo de planta.");
-    expect(state).not.toHaveBeenCalled();
+describe("Planning (spec 026, T030; spec 027)", () => {
+  it("abre sin pedir acceso, sin aviso de bloqueo y fija el perfil planificador", async () => {
+    const access = vi.spyOn(planningApi, "getAccess");
+    vi.spyOn(planningApi, "getState").mockResolvedValue(snapshot);
+    vi.spyOn(planningApi, "postPlan").mockResolvedValue(plan);
+    render(
+      <>
+        <Planning />
+        <Probe />
+      </>,
+    );
+    expect(await screen.findByTestId("cane-flow")).toBeInTheDocument();
+    expect(access).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("planner-gate")).not.toBeInTheDocument();
+    expect(screen.getByTestId("probe").textContent?.startsWith("planificador|")).toBe(true);
   });
 
-  it("con acceso calcula, compara y lleva la explicación al agente", async () => {
-    vi.spyOn(planningApi, "getAccess").mockResolvedValue({ authorized: true, reason: "ok" });
+  it("calcula, compara y lleva la explicación al agente", async () => {
     vi.spyOn(planningApi, "getState").mockResolvedValue(snapshot);
     const postPlan = vi.spyOn(planningApi, "postPlan").mockResolvedValue(plan);
     const postCompare = vi.spyOn(planningApi, "postCompare").mockResolvedValue(comparison);

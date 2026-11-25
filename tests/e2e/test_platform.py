@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 
 import pytest
 from playwright.sync_api import Browser, expect
@@ -23,12 +24,34 @@ def test_b2b_profile_from_the_entrance(browser: Browser, base_url: str) -> None:
     page.get_by_role("button", name=example).click()
     expect(page).to_have_url(f"{base_url}/agente")
     expect(page.get_by_test_id("active-profile")).to_have_text("Perfil: Cliente B2B")
-    expect(page.get_by_role("radio", name="Cliente B2B")).to_have_attribute("aria-checked", "true")
+    expect(page.get_by_role("radio", name=re.compile("Cliente B2B"))).to_have_attribute(
+        "aria-checked", "true"
+    )
     field = page.get_by_test_id("chat-input")
     expect(field).to_have_value("Compro azúcar para mi empresa, ¿qué certificaciones tienen?")
     page.get_by_test_id("chat-send").click()
     turn = page.get_by_test_id("chat-turn").last
     turn.wait_for(timeout=TIMEOUT)
+    context.close()
+
+
+def test_any_visitor_chooses_the_planner_and_opens_the_console(
+    browser: Browser, base_url: str
+) -> None:
+    """Spec 027 (US1, US2): sin autorización, elegir el planificador y abrir la consola."""
+    context = browser.new_context(viewport={"width": 1440, "height": 900})
+    page = context.new_page()
+    page.goto(f"{base_url}/agente", wait_until="networkidle")
+    planner = page.get_by_role("radio", name=re.compile("Planificador industrial"))
+    expect(planner).to_be_enabled()
+    planner.click()
+    notice = page.get_by_test_id("profile-notice")
+    expect(notice).to_contain_text("Te atiende como Planificador industrial.")
+    expect(notice).to_contain_text("sintéticos")
+    page.get_by_role("link", name="Abrir la planificación").click()
+    expect(page).to_have_url(f"{base_url}/planificacion")
+    expect(page.get_by_test_id("cane-flow")).to_be_visible(timeout=TIMEOUT)
+    expect(page.get_by_test_id("planner-gate")).to_have_count(0)
     context.close()
 
 

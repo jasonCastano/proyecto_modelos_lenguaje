@@ -17,6 +17,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 
+from proyecto_modelos_lenguaje.agent.graph import PLANNER_ONLY_NOTE
 from proyecto_modelos_lenguaje.agent.memory import memory_store
 from proyecto_modelos_lenguaje.agent.planning import DECISION_PHRASE, SYNTHETIC_LABEL
 from proyecto_modelos_lenguaje.agent.service import ChatError
@@ -85,8 +86,9 @@ class PlannerModel(BaseChatModel):
 
 @pytest.fixture
 def planner_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
-    monkeypatch.setenv("MANUELITA_PLANNER_WEB", "1")
-    monkeypatch.delenv("MANUELITA_PLANNER_OPEN", raising=False)
+    # Spec 027: en la web el planificador no exige autorización; ninguna variable hace falta.
+    for var in ("MANUELITA_PLANNER_WEB", "MANUELITA_PLANNER_OPEN", "VALERIA_PLANNERS"):
+        monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv("MANUELITA_STATE_DIR", str(tmp_path))
     return tmp_path
 
@@ -150,12 +152,31 @@ def test_invented_numbers_are_replaced_by_the_plan_card(planner_env: Path) -> No
     assert any("validación de cifras" in step for step in outcome.turn.plan_steps)
 
 
-def test_unauthorized_planner_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
-    for var in ("MANUELITA_PLANNER_WEB", "MANUELITA_PLANNER_OPEN", "VALERIA_PLANNERS"):
-        monkeypatch.delenv(var, raising=False)
+def test_any_web_user_plans_without_authorization(planner_env: Path) -> None:
+    """Spec 027 (FR-003, FR-004): cualquier usuario web planifica con el perfil elegido."""
+    service = make_service(model=PlannerModel(), store=memory_store())
+    outcome = service.send(QUESTION, user_id="anon", variant="agent", profile="planificador")
+    names = {tool["name"] for tool in outcome.turn.tools}
+    assert outcome.turn.profile == "planificador" and outcome.turn.route.route == "planning"
+    assert "optimize_production_plan" in names
+    assert PLANNER_ONLY_NOTE not in outcome.turn.answer
+
+
+def test_self_introduced_planner_plans_on_the_web(planner_env: Path) -> None:
+    service = make_service(model=PlannerModel(), store=memory_store())
+    outcome = service.send(
+        "Soy planificador de planta. " + QUESTION, user_id="anon", variant="agent"
+    )
+    assert outcome.turn.profile == "planificador" and outcome.turn.route.route == "planning"
+
+
+def test_whatsapp_still_refuses_unlisted_planner(planner_env: Path) -> None:
+    """Spec 027 (FR-014): fuera de la web sigue la lista de autorizados."""
     service = make_service(model=PlannerModel(), store=memory_store())
     with pytest.raises(ChatError) as info:
-        service.send(QUESTION, user_id=USER, variant="agent", profile="planificador")
+        service.send(
+            QUESTION, user_id=USER, variant="agent", profile="planificador", channel="whatsapp"
+        )
     assert info.value.code == "planner_not_authorized" and info.value.status_code == 403
 
 

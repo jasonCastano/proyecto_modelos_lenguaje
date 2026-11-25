@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "receiptId": "e263737a-d650-4ac8-b8bf-824332aa5ecc",
+  "receiptId": "c5bd170b-7842-4595-92dd-5acd32b66f80",
   "status": "current",
   "command": "deliver",
   "type": "workflow",
   "input": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\planificacion.json",
   "output": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\planificacion.html",
   "specification": {
-    "sha256": "7641ffd7ff49756552959c8f2e74c5fc7c8b677b3bcfc091cfb5e9105130bb96",
-    "bytes": 8497
+    "sha256": "628f1a807d400cf1cdff3015721307ac9b8b8c769c016853c46b24af309d36a0",
+    "bytes": 8502
   },
   "artifact": {
-    "sha256": "d49e248cb05c6311ddbf1e0c921594d6b15c3fb60d427c51434f06564883e997",
-    "bytes": 854901
+    "sha256": "6cfd55eb135d164f18a17f726a0b27293f1cf85ad281b2b780ec5786d90e720f",
+    "bytes": 854930
   }
 }

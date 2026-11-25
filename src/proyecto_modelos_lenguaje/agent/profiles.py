@@ -5,9 +5,10 @@ blanca de herramientas de **lectura** del catálogo y, en ``prompts/profiles.md`
 añade al system prompt. El perfil no cambia el enrutador: solo restringe qué herramientas se
 ofrecen (``catalog.specs_for_route(..., profile=...)``).
 
-El perfil ``planificador`` exige autorización (constitución, regla 20): un seudónimo en
-``VALERIA_PLANNERS``, ``MANUELITA_PLANNER_OPEN=1`` durante la jornada o la vista técnica de la web
-con ``MANUELITA_PLANNER_WEB=1``. Ninguna lista de personas vive en el repositorio.
+La autorización depende del canal (spec 027, constitución regla 20): en la **web** los cinco
+perfiles, incluido el ``planificador``, son de libre elección; en **WhatsApp** el planificador
+exige un seudónimo en ``VALERIA_PLANNERS`` o ``MANUELITA_PLANNER_OPEN=1`` durante la jornada.
+Ninguna lista de personas vive en el repositorio. ``MANUELITA_PLANNER_WEB`` ya no se lee.
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ PROFILES_PROMPT = PROJECT_ROOT / "prompts" / "profiles.md"
 PROFILE_KEYS: tuple[str, ...] = ("visitante", "cliente", "proveedor", "colaborador", "planificador")
 DEFAULT_PROFILE = "visitante"
 PLANNER = "planificador"
+WEB = "web"
 ALIASES = {
     "b2b": "cliente",
     "cliente b2b": "cliente",
@@ -55,11 +57,15 @@ class Profile:
     triggers: tuple[re.Pattern[str], ...]
     focus: str
 
-    def to_dict(self, *, authorized: bool = True) -> dict[str, Any]:
+    def requires_authorization_in(self, channel: str) -> bool:
+        """¿Exige autorización en ``channel``? En la web, nunca (spec 027)."""
+        return self.requires_authorization and channel != WEB
+
+    def to_dict(self, *, channel: str = WEB, authorized: bool = True) -> dict[str, Any]:
         return {
             "key": self.key,
             "label": self.label,
-            "requires_authorization": self.requires_authorization,
+            "requires_authorization": self.requires_authorization_in(channel),
             "authorized": authorized,
         }
 
@@ -199,10 +205,12 @@ def planners() -> frozenset[str]:
 
 
 def is_authorized(user_id: str, channel: str = "web") -> bool:
-    """¿Puede ``user_id`` usar el perfil planificador? (R14; sin datos personales)."""
-    if _flag("MANUELITA_PLANNER_OPEN"):
-        return True
-    if channel == "web" and _flag("MANUELITA_PLANNER_WEB"):
+    """¿Puede ``user_id`` usar el perfil planificador en ``channel``? (spec 027, R1).
+
+    En la web, siempre. Fuera de la web, ``MANUELITA_PLANNER_OPEN=1`` o la lista
+    ``VALERIA_PLANNERS``.
+    """
+    if channel == WEB or _flag("MANUELITA_PLANNER_OPEN"):
         return True
     return user_id in planners()
 
@@ -210,7 +218,7 @@ def is_authorized(user_id: str, channel: str = "web") -> bool:
 def effective_profile(key: str | None, user_id: str, channel: str = "web") -> str:
     """Perfil que rige el turno: inválido o no autorizado → ``visitante``."""
     profile = get_profile(key)
-    if profile.requires_authorization and not is_authorized(user_id, channel):
+    if profile.requires_authorization_in(channel) and not is_authorized(user_id, channel):
         return DEFAULT_PROFILE
     return profile.key
 
@@ -219,7 +227,9 @@ def describe(user_id: str, channel: str = "web") -> list[dict[str, Any]]:
     """Lista para ``GET /api/profiles`` y ``/perfil``."""
     return [
         profile.to_dict(
-            authorized=not profile.requires_authorization or is_authorized(user_id, channel)
+            channel=channel,
+            authorized=not profile.requires_authorization_in(channel)
+            or is_authorized(user_id, channel),
         )
         for profile in load_profiles().values()
     ]

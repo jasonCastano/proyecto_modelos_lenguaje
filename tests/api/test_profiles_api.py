@@ -28,8 +28,8 @@ def _chat(client: TestClient, message: str, **extra: object):
     return client.post("/api/chat", json=body)
 
 
-def test_list_profiles(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
-    rows = client.get("/api/profiles").json()
+def test_list_profiles(client: TestClient) -> None:
+    rows = client.get("/api/profiles?user_id=anon").json()
     assert [row["key"] for row in rows] == [
         "visitante",
         "cliente",
@@ -38,9 +38,8 @@ def test_list_profiles(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> N
         "planificador",
     ]
     assert set(rows[0]) == {"key", "label", "requires_authorization", "authorized"}
-    assert rows[-1]["requires_authorization"] and not rows[-1]["authorized"]
-    monkeypatch.setenv("MANUELITA_PLANNER_WEB", "1")
-    assert client.get("/api/profiles").json()[-1]["authorized"] is True
+    # Spec 027 (FR-001): en la web los cinco son de libre elección, sin ninguna variable.
+    assert all(row["authorized"] and not row["requires_authorization"] for row in rows)
 
 
 def test_chat_with_profile_returns_it_in_the_turn(client: TestClient) -> None:
@@ -55,10 +54,11 @@ def test_invalid_profile_is_400(client: TestClient) -> None:
     assert response.json()["error"]["code"] == "invalid_profile"
 
 
-def test_unauthorized_planner_is_403(client: TestClient) -> None:
+def test_any_web_user_can_chat_as_planner(client: TestClient) -> None:
+    """Spec 027 (FR-003): el planificador no exige autorización en la web."""
     response = _chat(client, "Planifica la producción", profile="planificador")
-    assert response.status_code == 403
-    assert response.json()["error"]["code"] == "planner_not_authorized"
+    assert response.status_code == 200
+    assert response.json()["turn"]["profile"] == "planificador"
 
 
 def test_default_profile_is_visitante(client: TestClient) -> None:

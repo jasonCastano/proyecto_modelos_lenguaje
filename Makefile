@@ -5,7 +5,7 @@
 APP_URL ?= http://127.0.0.1:8000
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev pre-commit-install pre-commit lint format format-check test python-check web-install web-dev web-test web-build check-web check app structured demo-prep corpus openclaw-workspace ops-check mcp qdrant-up audit e2e build clean
+.PHONY: help install dev pre-commit-install pre-commit lint format format-check test python-check web-install web-dev web-test web-build web-status check-web check app structured demo-prep corpus openclaw-workspace ops-check mcp qdrant-up audit e2e build clean
 
 help: ## Muestra esta ayuda
 	@echo RAG Ingenio Manuelita — comandos disponibles
@@ -19,10 +19,11 @@ help: ## Muestra esta ayuda
 	@echo   web-install        npm ci en web/
 	@echo   web-dev            Vite en desarrollo
 	@echo   web-test           Vitest + Testing Library
-	@echo   web-build          Build de producción
+	@echo   web-build          Build de producción (npm ci si cambió el lock)
+	@echo   web-status         Dice si la web compilada falta o está vieja
 	@echo   check-web          web-install + tests + build
 	@echo   check              python-check + check-web
-	@echo   app                Build web + tabla estructurada + API local (FastAPI)
+	@echo   app                Web compilada al día + tabla estructurada + API local (FastAPI)
 	@echo   structured         Tabla estructurada derivada del oro (si falta)
 	@echo   demo-prep          Indice, coleccion Qdrant y tabla listos para la demo
 	@echo   corpus             Plata, oro, indice y Qdrant en un directorio de trabajo (ARGS=...)
@@ -60,7 +61,7 @@ test: ## Ejecuta las pruebas Python
 python-check: lint format-check test ## Verificación Python (lint + formato + pruebas)
 
 web-install: ## Instala dependencias del frontend
-	cd web && npm ci
+	uv run python -m proyecto_modelos_lenguaje.webbuild --install
 
 web-dev: ## Levanta Vite en desarrollo
 	cd web && npm run dev
@@ -68,14 +69,18 @@ web-dev: ## Levanta Vite en desarrollo
 web-test: ## Ejecuta Vitest + Testing Library
 	cd web && npm run test
 
-web-build: ## Construye el frontend de producción
-	cd web && npm run build
+web-build: ## Construye el frontend de producción (npm ci si cambió el lock)
+	uv run python -m proyecto_modelos_lenguaje.webbuild
+
+web-status: ## Dice si web/dist falta o está desactualizada
+	uv run python -m proyecto_modelos_lenguaje.webbuild --check
 
 check-web: web-install web-test web-build ## Verificación del frontend
 
 check: python-check check-web ## Verificación completa
 
-app: web-build structured ## Construye el frontend y abre la API local
+app: structured ## Compila la web si falta o está vieja y abre la API local
+	uv run python -m proyecto_modelos_lenguaje.webbuild --if-needed
 	uv run uvicorn proyecto_modelos_lenguaje.api:app --host 127.0.0.1 --port 8000
 
 structured: ## Construye la tabla estructurada si falta (la app no escribe en data/)

@@ -317,7 +317,7 @@ describe("ChatView", () => {
     expect(window.location.hash).toBe(`#/chat/${first.thread_id}`);
   });
 
-  it("spec 025: elige el perfil y lo envía; el planificador no autorizado queda deshabilitado", async () => {
+  it("spec 025/027: elige el perfil y lo envía; los cinco perfiles se pueden elegir", async () => {
     const answered: ChatResponse = {
       thread_id: "8f6c1e0a-0000-4000-8000-000000000025",
       turn: makeTurn({ profile: "proveedor", question: "¿Qué apoyo dan a los proveedores?" }),
@@ -345,7 +345,11 @@ describe("ChatView", () => {
 
     render(<ChatView mode="demo" />);
     const select = await screen.findByTestId("profile-select");
-    expect(within(select).getByRole("option", { name: /Planificador industrial/ })).toBeDisabled();
+    // Spec 027: la web nunca bloquea un perfil, aunque un servidor viejo lo marque sin autorizar.
+    const options = within(select).getAllByRole("option").filter((option) => option.getAttribute("value"));
+    expect(options).toHaveLength(profiles.length);
+    for (const option of options) expect(option).toBeEnabled();
+    expect(select).not.toHaveTextContent(/solo autorizados/i);
     await user.selectOptions(select, "proveedor");
     await user.type(screen.getByTestId("chat-input"), "¿Qué apoyo dan a los proveedores?");
     await user.click(screen.getByTestId("chat-send"));

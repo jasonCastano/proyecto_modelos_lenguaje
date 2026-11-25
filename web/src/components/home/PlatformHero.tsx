@@ -55,7 +55,7 @@ function ProductChain() {
   );
 }
 
-export function PlatformHero({ plannerAuthorized }: { plannerAuthorized: boolean }) {
+export function PlatformHero() {
   return (
     <section aria-labelledby="hero-title" className="platform-hero">
       <div className="platform-hero__copy">
@@ -76,7 +76,7 @@ export function PlatformHero({ plannerAuthorized }: { plannerAuthorized: boolean
             Hablar con el agente
           </Link>
           <Link className="action action--quiet" to="/planificacion">
-            {plannerAuthorized ? "Abrir la planificación" : "Ver la planificación"}
+            Abrir la planificación
           </Link>
         </div>
       </div>

@@ -1,16 +1,17 @@
 /**
  * Espacio de trabajo del agente (spec 026, historia 2): selector de perfil, la conversación de
  * siempre (ChatView: citas, voz, dictado, aprobación) y los paneles de fuentes, memoria y
- * sugerencias del perfil. Cambiar de perfil conserva el hilo.
+ * sugerencias del perfil. Cambiar de perfil conserva el hilo. Desde la spec 027 los cinco perfiles
+ * son de libre elección en la web: la persona escoge el que le conviene.
  */
 import { useEffect, useState } from "react";
 
 import { MemoryPanel } from "../components/agent/MemoryPanel";
+import { ProfileNotice } from "../components/agent/ProfileNotice";
 import { ProfilePicker } from "../components/agent/ProfilePicker";
 import { ProfileSuggestions } from "../components/agent/ProfileSuggestions";
 import { SourcesPanel } from "../components/agent/SourcesPanel";
 import { ChatView } from "../components/ChatView";
-import { audienceCard } from "../data/profileSuggestions";
 import { getProfiles } from "../lib/chat";
 import { AUDIENCES, queueMessage, setAudience, takeOutbox, usePlatform } from "../lib/platform";
 import { visitUser } from "../lib/session";
@@ -19,8 +20,8 @@ import type { ChatTurn, MemoryItem, Mode, ProfileItem, ProfileOption } from "../
 const FALLBACK: ProfileOption[] = AUDIENCES.map((item) => ({
   key: item.key,
   label: item.label,
-  requires_authorization: item.key === "planificador",
-  authorized: item.key !== "planificador",
+  requires_authorization: false,
+  authorized: true,
 }));
 
 export function Agent({ mode }: { mode: Mode }) {
@@ -47,20 +48,18 @@ export function Agent({ mode }: { mode: Mode }) {
     };
   }, []);
 
-  const allowed = options.find((option) => option.key === audience)?.authorized ?? false;
-  const effective = allowed ? audience : "visitante";
-  const card = audienceCard(effective);
+  const effective = options.some((option) => option.key === audience) ? audience : "visitante";
 
   return (
     <div className="agent">
       <header className="area-head">
         <h1 className="type-display area-head__title">Habla con Valer-IA</h1>
         <p className="area-head__lead">
-          Te atiende como {card.label.toLowerCase().replace("b2b", "B2B")}: {card.canAsk.charAt(0).toLowerCase()}
-          {card.canAsk.slice(1)}
+          Elige con qué perfil te atiende. Puedes cambiarlo cuando quieras sin perder la conversación.
         </p>
       </header>
       <ProfilePicker onChange={setAudience} options={options} value={effective} />
+      <ProfileNotice audience={effective} />
       <div className="agent__grid" data-drawer={drawerOpen ? "open" : "closed"}>
         <div className="agent__chat">
           <ChatView

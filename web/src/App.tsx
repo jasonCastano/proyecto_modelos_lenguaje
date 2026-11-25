@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 
 import { AppShell } from "./components/shell/AppShell";
 import { health as fetchHealth } from "./lib/api";
-import { getAccess } from "./lib/planning";
 import { useRoute } from "./lib/router";
 import type { HealthStatus, Mode } from "./lib/types";
 import { Agent } from "./pages/Agent";
@@ -19,7 +18,6 @@ const NOT_FOUND = "Esa página no existe; te llevamos a la entrada.";
 export default function App() {
   const { route, notFound } = useRoute();
   const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [plannerAuthorized, setPlannerAuthorized] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -36,9 +34,6 @@ export default function App() {
           detail: "No se pudo consultar el estado del proveedor.",
         });
       });
-    void getAccess()
-      .then((result) => active && setPlannerAuthorized(result.authorized))
-      .catch(() => undefined);
     return () => {
       active = false;
     };
@@ -62,7 +57,7 @@ export default function App() {
 
   return (
     <AppShell demo={mode === "demo"} notice={notFound ? NOT_FOUND : null} route={route}>
-      {route === "/" ? <Home health={health} plannerAuthorized={plannerAuthorized} /> : null}
+      {route === "/" ? <Home health={health} /> : null}
       {route === "/agente" ? <Agent mode={mode} /> : null}
       {route === "/planificacion" ? <Planning /> : null}
       {route === "/evidencia" ? <Evidence /> : null}

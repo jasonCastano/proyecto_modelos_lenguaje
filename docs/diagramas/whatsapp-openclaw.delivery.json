@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "a0a627f2-0cde-47df-9609-6831e6f4df36",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\whatsapp-openclaw.json",
+  "output": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\whatsapp-openclaw.html",
+  "specification": {
+    "sha256": "df18e65e0ee90946fc1eef71ad3d249a22e93d5215194c6d4929f02dc0236fef",
+    "bytes": 8629
+  },
+  "artifact": {
+    "sha256": "5b48d532c4681532830ff16d15d8867250f9bbaef899e73580b4763fe68f225e",
+    "bytes": 856849
+  }
+}

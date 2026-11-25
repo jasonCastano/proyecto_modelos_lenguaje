@@ -270,21 +270,9 @@ admitido (allowlist E.164 o emparejamiento) al mismo `ChatService` de la web, co
 nativo de OpenClaw con el servidor MCP propio `valeria-tools` (solo lectura): el **modo degradado**.
 Decisión: [ADR 0028](docs/decisions/0028-openclaw-whatsapp-puente.md).
 
-```mermaid
-flowchart LR
-    P["📱 Teléfono del invitado"] -->|WhatsApp| WA["WhatsApp Web<br/>(Baileys, conexión saliente)"]
-    WA --> GW["OpenClaw gateway<br/>loopback + token · allowlist/pairing<br/>sandbox · tools.deny · workspace"]
-    GW -->|"hook before_dispatch"| BR["Plugin valeria-bridge<br/>(TypeScript)"]
-    BR -->|"POST /api/channels/messages<br/>X-Channel-Token"| API["FastAPI<br/>channels/: seudónimo, hilo,<br/>SÍ/NO, formato, bitácora"]
-    API --> CS["ChatService / LangGraph<br/>router reglas → Jev → LLM<br/>SqliteSaver + SqliteStore"]
-    CS --> CAT["Catálogo de 26 herramientas<br/>20 lectura · 6 escritura con HITL<br/>filtradas por perfil"]
-    CAT --> PL["Planificación (spec 025)<br/>LP sobre datos sintéticos"]
-    CAT --> QD[("Qdrant servidor<br/>HNSW + híbrida")]
-    CS --> DS["DeepSeek API"]
-    BR -.->|"backend caído o > 45 s"| NA["Agente nativo OpenClaw<br/>deepseek-flash → deepseek-v4-pro"]
-    NA --> MCP["MCP valeria-tools<br/>(18 de lectura; sin simular ni optimizar)"]
-    MCP --> QD
-```
+[![Módulo 3: WhatsApp con OpenClaw](docs/capturas/diagramas/whatsapp-openclaw.png)](docs/diagramas/whatsapp-openclaw.html)
+
+*Diagrama interactivo (Archify): [`docs/diagramas/whatsapp-openclaw.html`](docs/diagramas/whatsapp-openclaw.html).*
 
 | Pieza | Dónde |
 |---|---|
@@ -321,6 +309,7 @@ fuente tipada es un JSON versionado y el HTML no se edita a mano. Las imágenes 
 | Grafo del agente (LangGraph) | `workflow` | [`docs/diagramas/grafo-agente.json`](docs/diagramas/grafo-agente.json) | [`grafo-agente.html`](docs/diagramas/grafo-agente.html) |
 | Nodo del agente desplegado | `workflow` | [`docs/diagramas/nodo-agente.json`](docs/diagramas/nodo-agente.json) | [`nodo-agente.html`](docs/diagramas/nodo-agente.html) |
 | Memoria: checkpointer frente a Store | `architecture` | [`docs/diagramas/memoria.json`](docs/diagramas/memoria.json) | [`memoria.html`](docs/diagramas/memoria.html) |
+| Módulo 3: WhatsApp con OpenClaw | `workflow` | [`docs/diagramas/whatsapp-openclaw.json`](docs/diagramas/whatsapp-openclaw.json) | [`whatsapp-openclaw.html`](docs/diagramas/whatsapp-openclaw.html) |
 | Herramientas, perfiles y router | `workflow` | [`docs/diagramas/herramientas-router.json`](docs/diagramas/herramientas-router.json) | [`herramientas-router.html`](docs/diagramas/herramientas-router.html) |
 | Planificación industrial: agente y consola web (specs 025 y 026) | `workflow` | [`docs/diagramas/planificacion.json`](docs/diagramas/planificacion.json) | [`planificacion.html`](docs/diagramas/planificacion.html) |
 | Trazas de un turno | `sequence` | [`docs/diagramas/trazas.json`](docs/diagramas/trazas.json) | [`trazas.html`](docs/diagramas/trazas.html) |

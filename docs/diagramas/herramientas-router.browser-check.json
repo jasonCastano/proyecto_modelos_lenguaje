@@ -6,11 +6,11 @@
   "status": "pass",
   "visualReview": "not-requested",
   "provenance": "current",
-  "deliveryReceiptId": "511de9e5-a1a9-49b0-b699-0b5ab8ca5e97",
+  "deliveryReceiptId": "92c27721-5dd6-450a-8089-83c5e2c31cda",
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\herramientas-router.html",
-    "sha256": "7ccec5340305732923951affbb0ee0cfa202080f82fe243c5733b56c3d5c90f5",
-    "bytes": 869331
+    "sha256": "27a746d7d9e172b1187ebe866b7b00a4d834f22f4c11e4b5a9acd7ccdce2f5f0",
+    "bytes": 869369
   },
   "state": {
     "detail": "read",
@@ -1579,6 +1579,7 @@
     "contactSheet": null
   },
   "sidecars": {
+    "directory": "C:\\Users\\rguerrero\\AppData\\Local\\Temp\\claude\\041f5125d5c68691\\f706e467-9c74-4f5e-b0e0-443771b43c32\\scratchpad\\arch027\\fin-herramientas-router",
     "receipt": "herramientas-router.browser-check.json",
     "files": []
   }

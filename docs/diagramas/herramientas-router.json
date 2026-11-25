@@ -9,7 +9,7 @@
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "f6a5642cdcd084b4bade6554b7ede86a916086ee"
+      "revision": "20e229a78340cd313508a9b17c044d2f26eb9533"
     }
   },
   "lanes": [
@@ -98,8 +98,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 1212,
-          "end_line": 1240
+          "line": 1217,
+          "end_line": 1245
         }
       ]
     },
@@ -113,8 +113,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 1167,
-          "end_line": 1193
+          "line": 1172,
+          "end_line": 1198
         }
       ]
     },
@@ -266,18 +266,18 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 489,
-          "end_line": 540
+          "line": 490,
+          "end_line": 541
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/profiles.py",
-          "line": 201,
-          "end_line": 216
+          "line": 207,
+          "end_line": 215
         },
         {
           "path": "config/profiles.toml",
           "line": 1,
-          "end_line": 73
+          "end_line": 77
         }
       ]
     },
@@ -307,13 +307,13 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
-          "line": 557,
-          "end_line": 670
+          "line": 598,
+          "end_line": 711
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/tools_planning.py",
-          "line": 173,
-          "end_line": 181
+          "line": 191,
+          "end_line": 199
         }
       ]
     },
@@ -327,13 +327,13 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
-          "line": 800,
-          "end_line": 822
+          "line": 992,
+          "end_line": 1014
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 2302,
-          "end_line": 2342
+          "line": 2307,
+          "end_line": 2347
         }
       ]
     }
@@ -470,7 +470,7 @@
       "title": "Plataforma de agentes (spec 025)",
       "items": [
         "Cinco perfiles sobre el mismo agente: cada uno ofrece solo su lista blanca de herramientas",
-        "La ruta planning la deciden solo las reglas, y solo para el planificador autorizado",
+        "La ruta planning la deciden solo las reglas, con el perfil planificador: libre en la web y solo autorizados en WhatsApp",
         "Las cifras del plan salen del simulador y del programa lineal; los datos son sintéticos"
       ]
     },

@@ -9,7 +9,7 @@
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "96d0888c35c01b53f4a56ba889b78b9bbd7d998b"
+      "revision": "20e229a78340cd313508a9b17c044d2f26eb9533"
     }
   },
   "stages": [
@@ -172,14 +172,14 @@
       "type": "frontend",
       "label": "Plataforma web",
       "sublabel": "4 áreas · React + FastAPI",
-      "tag": "API v1 · 403 sin permiso",
+      "tag": "API v1 · perfiles libres en la web",
       "stage": 4,
       "row": 1,
       "sources": [
         {
           "path": "web/src/App.tsx",
           "line": 1,
-          "end_line": 71
+          "end_line": 66
         },
         {
           "path": "web/src/components/planning/CaneFlow.tsx",
@@ -188,8 +188,8 @@
         },
         {
           "path": "src/proyecto_modelos_lenguaje/api_planning.py",
-          "line": 257,
-          "end_line": 376
+          "line": 249,
+          "end_line": 368
         }
       ]
     },

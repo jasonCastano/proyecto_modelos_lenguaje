@@ -252,7 +252,7 @@ enmienda.
   - Nota en el PR: requiere la aprobación de jasonCastano.
 - [X] T038 [P] [US3] En `docs/rubrica_modulo3.md`, actualizar las menciones de acceso al planificador en la web.
   Revisar también `docs/manual_whatsapp.md` solo para confirmar que no cambia.
-- [ ] T039 [P] [US3] Si `docs/diagramas/planificacion.json` o `docs/arquitectura.json` dicen «403 sin permiso»
+- [X] T039 [P] [US3] Si `docs/diagramas/planificacion.json` o `docs/arquitectura.json` dicen «403 sin permiso»
   para la web, cambiar el `tag` a «libre en la web». Regenerar con Archify (`finalize` + `visual-check`) y
   actualizar las capturas en `docs/capturas/`.
 
@@ -275,7 +275,7 @@ enmienda.
   10/10, 0 violaciones y 2/2 sin solución.
 - [X] T043 Hacer la autocrítica de diseño (frontend-design) con capturas a 360 y 1440 px de `/` y `/agente`.
   Anotar en la sección Notes de este archivo qué se ajustó y qué accesorio se retiró.
-- [ ] T044 Correr el `git grep` de quickstart.md §5 y confirmar SC-007. Hacer el commit a nombre de Robertto48 (sin
+- [X] T044 Correr el `git grep` de quickstart.md §5 y confirmar SC-007. Hacer el commit a nombre de Robertto48 (sin
   firmas de bot) con la constitución, el ADR y el código en el mismo commit. El PR hacia `main` lo revisa
   jasonCastano y su cuerpo termina con «Autor: Roberto José Guerrero».
 
@@ -388,3 +388,7 @@ Task: "T032 <option> habilitados en web/src/components/ChatView.tsx"
 - **Rastreo LangSmith**: con el `.env` local, las pruebas de integración enviaban trazas a LangSmith (límite
   mensual agotado, error 429). Las mediciones se corrieron con `LANGSMITH_TRACING=false`. No se cambia
   configuración en esta spec.
+- **Commits locales**: `20e229a` (código, pruebas, constitución 2.2.0, ADR 0031 y spec), un `fix(web)` que
+  añade `ProfileNotice.tsx` (omitido por `git add -u`) y `docs(arquitectura)` con los diagramas Archify fijados a
+  `20e229a`: arquitectura, planificación y herramientas-router. Los tres pasan finalize y visual-check. El push y el
+  PR esperan la petición del integrante.

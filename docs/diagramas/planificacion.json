@@ -9,7 +9,7 @@
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "96d0888c35c01b53f4a56ba889b78b9bbd7d998b"
+      "revision": "20e229a78340cd313508a9b17c044d2f26eb9533"
     }
   },
   "lanes": [
@@ -64,18 +64,18 @@
       "col": 1,
       "type": "security",
       "label": "Planificador",
-      "sublabel": "autorizado · ruta planning",
+      "sublabel": "libre en la web · ruta planning",
       "tag": "solo reglas",
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/profiles.py",
-          "line": 201,
-          "end_line": 216
+          "line": 207,
+          "end_line": 215
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 489,
-          "end_line": 540
+          "line": 490,
+          "end_line": 541
         }
       ]
     },
@@ -165,8 +165,8 @@
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
-          "line": 2302,
-          "end_line": 2342
+          "line": 2307,
+          "end_line": 2347
         }
       ]
     },
@@ -208,22 +208,22 @@
       "type": "external",
       "label": "Consola web",
       "sublabel": "escenario · /api/v1",
-      "tag": "403 sin permiso",
+      "tag": "libre en la web",
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/api_planning.py",
-          "line": 77,
-          "end_line": 86
+          "line": 73,
+          "end_line": 75
         },
         {
           "path": "src/proyecto_modelos_lenguaje/api_planning.py",
-          "line": 273,
-          "end_line": 287
+          "line": 262,
+          "end_line": 276
         },
         {
           "path": "web/src/pages/Planning.tsx",
           "line": 1,
-          "end_line": 188
+          "end_line": 175
         }
       ]
     },

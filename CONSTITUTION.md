@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 2.0.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-24
+**Versión**: 2.1.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-24
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -284,7 +284,21 @@ uv.lock
 
 ### 3.7 Aplicación web
 
-- La entrada del producto es una página React/Vite servida por FastAPI; Streamlit ya no es la interfaz.
+- La entrada del producto es una página React/Vite servida por FastAPI; Streamlit, Gradio y los notebooks NO DEBEN
+  ser la interfaz de ninguna pantalla.
+- **Plataforma en cuatro áreas** (spec 026, ADR 0030): `/` entrada pública, `/agente` espacio de trabajo por perfil,
+  `/planificacion` consola del planificador y `/evidencia` panel técnico del Módulo 3, cada una con su dirección.
+  - Los servicios nuevos viven bajo `/api/v1/` (`api_planning.py`, `api_evidence.py`); las rutas sin versión que
+    usan el canal y la web NO DEBEN cambiar de forma.
+  - Todo `/api/v1/planning/*`, salvo `/access`, DEBE exigir el planificador autorizado en el backend; ocultar la
+    consola en la UI no basta.
+  - Las cifras de planta NO DEBEN calcularse en el navegador: la consola dibuja lo que devuelve el mismo optimizador
+    del agente y del CLI, y una prueba de paridad lo verifica en la batería de 12 escenarios.
+  - Guardar una propuesta desde la consola exige confirmación en dos pasos con vencimiento de 5 minutos.
+  - Identidad visual (`specs/026-plataforma-web-manuelita/design.md`): una sola familia tipográfica (Archivo
+    variable, el ancho marca el rol), un color fijo de la paleta de Manuelita por producto (caña, azúcar, etanol,
+    energía), pictogramas propios sin piezas de la marca, contraste AA y sin desplazamiento horizontal de 360 a
+    1920 px.
 - La app DEBE ejecutarse con `make app` o `uv run uvicorn proyecto_modelos_lenguaje.api:app`.
 - DEBE mostrar tres funcionalidades: Consulta, Resumen y FAQ, con citas y fallback.
 - DEBE incluir una página del Módulo 1 con datos, arquitectura, prompts, app, métricas y límites.
@@ -935,6 +949,7 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 
 | Versión | Fecha | Cambio |
 |---------|-------|--------|
+| 2.1.0 | 2026-11-24 | **MINOR**: plataforma web en cuatro áreas con API v1 de planificación y evidencia (spec 026, ADR 0030); §3.7 amplía la aplicación web (autorización en backend, cifras solo del servidor, identidad visual por producto). |
 | 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
@@ -1134,4 +1149,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 2.0.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-24
+**Versión**: 2.1.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-24

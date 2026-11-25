@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "a4c53b5339f629c5a5770676c45a563c19629ff0ba1cdab3bfa64e9f4a9ab387",
-    "bytes": 12985
+    "sha256": "554099963e34a7bc74afc61e5921b5d3d3e0d320f3728b6e63215b035aa15ffe",
+    "bytes": 13380
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "cd8920a34e6b687b0793c5ec580b97bb9f9b1d26102769f5a069d8829af0cb3d",
-    "bytes": 866231
+    "sha256": "e0f97afb6cb1f74805edfe4e914a75264c2a355fe61bcd4fac654e1fa448db50",
+    "bytes": 868200
   },
   "gates": {
     "validate": "pass",
@@ -46,7 +46,7 @@
     "eventKey": "archify@sha256:b92b4d55446966fd74e5338a45d6de9a7a1b194420cd5eb14d2cdc39f1053b80"
   },
   "visualReview": "not-requested",
-  "durationMs": 4305,
+  "durationMs": 6495,
   "browserCheck": {
     "requested": true,
     "ran": true
@@ -54,8 +54,8 @@
   "visualReviewRecommendation": {
     "action": "inspect-route-readability",
     "signals": {
-      "resolvedCrossovers": 1,
-      "routesOverSuggestedBends": 1
+      "resolvedCrossovers": 2,
+      "routesOverSuggestedBends": 3
     },
     "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
     "affectedRoutes": {
@@ -81,6 +81,28 @@
             639,
             284
           ]
+        },
+        {
+          "left": {
+            "id": "answer",
+            "from": "llm",
+            "to": "app",
+            "label": "respuesta citada",
+            "collectionIndex": 6,
+            "artifactIndex": 7
+          },
+          "right": {
+            "id": "thread-state",
+            "from": "agent",
+            "to": "memory",
+            "label": "estado",
+            "collectionIndex": 13,
+            "artifactIndex": 14
+          },
+          "point": [
+            856.75,
+            286
+          ]
         }
       ],
       "detours": [
@@ -95,6 +117,30 @@
           },
           "bends": 4,
           "stretch": 1.35
+        },
+        {
+          "relationship": {
+            "id": "chat-answer",
+            "from": "agent",
+            "to": "app",
+            "label": "turno citado",
+            "collectionIndex": 14,
+            "artifactIndex": 15
+          },
+          "bends": 4,
+          "stretch": 1.34
+        },
+        {
+          "relationship": {
+            "id": "plan-console",
+            "from": "planning",
+            "to": "app",
+            "label": "consola web",
+            "collectionIndex": 16,
+            "artifactIndex": 17
+          },
+          "bends": 4,
+          "stretch": 1.165
         }
       ],
       "truncated": false

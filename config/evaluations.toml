@@ -1,0 +1,74 @@
+# Evaluaciones publicadas que muestra el panel de evidencia (spec 026, R11).
+# Cada cifra se copia tal como está en su informe; las que no cumplen la meta se muestran igual.
+# meets: true | false | "partial". La prueba tests/api/test_evidence_api.py verifica que cada
+# informe exista en docs/.
+
+[[evaluation]]
+id = "herramientas"
+name = "Exactitud de herramienta (43 consultas)"
+value = "88,4 % publicado; 86,0 % y 90,7 % en dos corridas"
+target = "≥ 90 %"
+meets = "partial"
+date = "2026-11-24"
+report = "docs/evaluacion_herramientas.md"
+note = "La diferencia entre corridas es variabilidad del modelo; se reporta sin ajustar la batería."
+
+[[evaluation]]
+id = "triviales"
+name = "Búsquedas en consultas triviales (10)"
+value = "0"
+target = "0"
+meets = true
+date = "2026-11-24"
+report = "docs/evaluacion_herramientas.md"
+note = "Saludos y agradecimientos no disparan búsquedas."
+
+[[evaluation]]
+id = "planificacion"
+name = "Planificación con DeepSeek (12 escenarios)"
+value = "12/12 ruta, secuencia y etiqueta; p95 10,8 s"
+target = "12/12; p95 ≤ 20 s"
+meets = true
+date = "2026-11-24"
+report = "docs/evaluacion_planificacion.md"
+note = "Datos sintéticos de demostración."
+
+[[evaluation]]
+id = "planificacion-directa"
+name = "Optimizador frente al óptimo de referencia"
+value = "10/10 ≥ 99 %; 2/2 sin solución detectados"
+target = "10/10 ≥ 99 %; 2/2"
+meets = true
+date = "2026-11-24"
+report = "docs/evaluacion_planificacion_directa.md"
+note = "Óptimo de referencia por malla independiente."
+
+[[evaluation]]
+id = "perfiles"
+name = "Perfiles con DeepSeek (20 consultas)"
+value = "perfil 19/20; herramientas dentro del perfil 20/20"
+target = "≥ 90 %"
+meets = true
+date = "2026-11-24"
+report = "docs/evaluacion_perfiles.md"
+note = "El caso r13 falla porque el guardado de perfil de la spec 014 toma el mensaje primero."
+
+[[evaluation]]
+id = "rag"
+name = "Recuperación híbrida (Recall@10 / nDCG@10)"
+value = "0,67 / 0,50 (línea base del Módulo 2)"
+target = "superar la línea base"
+meets = "partial"
+date = "2026-11-14"
+report = "docs/evaluacion_modulo2.md"
+note = "La corrida del Módulo 3 sobre Qdrant servidor está pendiente en el PC servidor."
+
+[[evaluation]]
+id = "blindaje"
+name = "Blindaje contra inyección indirecta"
+value = "0 ataques obedecidos en 72 turnos"
+target = "0"
+meets = true
+date = "2026-11-14"
+report = "docs/evaluacion_blindaje.md"
+note = "6 ataques con señales léxicas; no cubre ataques más sutiles."

@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-4B8BBE)](https://docs.astral.sh/uv/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1917%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-2020%20passing-brightgreen)](tests/)
 [![CI](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml/badge.svg)](https://github.com/jasonCastano/proyecto_modelos_lenguaje/actions/workflows/ci.yml)
 [![Status](https://img.shields.io/badge/M%C3%B3dulo%202-v0.2.0-brightgreen)](CONSTITUTION.md)
 
@@ -182,10 +182,12 @@ Construir una base de conocimiento semántico y un sistema Q&A/RAG con estas car
     una sola consulta de ~0,2 s; si Jev no está seguro o falla, decide el LLM. Viene desactivado por defecto.
 - **Evaluación empírica**: 40 preguntas (20 núcleo + 20 extendidas), comparación de prompts y análisis de errores;
   en el Módulo 2, Recall@10/nDCG@10/MRR, acierto del enrutador y comparación cadena vs. agente con juez LLM.
-- **Interfaz web propia** (React + FastAPI, sin Streamlit) con hero editorial, consola RAG, conversación en
-  streaming, fuentes citadas, conversaciones recientes y modo demostración.
-- **Recorrido de los Módulos 1 y 2** que explica datos, arquitectura, prompts, Qdrant, memoria, enrutador,
-  blindaje, app, métricas y límites.
+- **Plataforma web propia** (React + FastAPI, sin Streamlit, spec 026) en cuatro áreas:
+  - entrada pública con los cinco perfiles;
+  - espacio de trabajo del agente por perfil, con fuentes, memoria y sugerencias;
+  - **consola de planificación industrial** con el flujo de caña, compromisos, comparación y propuesta con «Sí»;
+  - panel de evidencia técnica del Módulo 3.
+- **Consulta, Resumen y FAQ** de los Módulos 1 y 2, conservados en la entrada.
 - **Verificación E2E** con Playwright y matriz responsive.
 
 ## Arquitectura
@@ -228,10 +230,12 @@ autorizado) lleva al carril de planificación del final del diagrama:
 
 *Diagrama interactivo (Archify): [`docs/diagramas/herramientas-router.html`](docs/diagramas/herramientas-router.html).*
 
-**Planificación industrial (spec 025)**. El planificador autorizado pide un programa de producción; el agente
-consulta el estado de la planta y los compromisos (datos **sintéticos**), optimiza con programación lineal y
+**Planificación industrial (specs 025 y 026)**. El planificador autorizado pide un programa de producción; el
+agente consulta el estado de la planta y los compromisos (datos **sintéticos**), optimiza con programación lineal y
 responde con el plan, la restricción que lo limita y una alternativa. Un validador comprueba que cada cifra salga
-de las herramientas; si no, muestra el plan calculado. Guardar la propuesta exige «SÍ»:
+de las herramientas; si no, muestra el plan calculado. Guardar la propuesta exige «SÍ». El carril inferior es la
+**consola web** (spec 026): llama al mismo optimizador por `/api/v1/planning` (403 sin permiso), dibuja el flujo de
+caña y el libro de compromisos con las cifras del servidor y guarda la propuesta en dos pasos:
 
 [![Planificación industrial](docs/capturas/diagramas/planificacion.png)](docs/diagramas/planificacion.html)
 
@@ -266,21 +270,9 @@ admitido (allowlist E.164 o emparejamiento) al mismo `ChatService` de la web, co
 nativo de OpenClaw con el servidor MCP propio `valeria-tools` (solo lectura): el **modo degradado**.
 Decisión: [ADR 0028](docs/decisions/0028-openclaw-whatsapp-puente.md).
 
-```mermaid
-flowchart LR
-    P["📱 Teléfono del invitado"] -->|WhatsApp| WA["WhatsApp Web<br/>(Baileys, conexión saliente)"]
-    WA --> GW["OpenClaw gateway<br/>loopback + token · allowlist/pairing<br/>sandbox · tools.deny · workspace"]
-    GW -->|"hook before_dispatch"| BR["Plugin valeria-bridge<br/>(TypeScript)"]
-    BR -->|"POST /api/channels/messages<br/>X-Channel-Token"| API["FastAPI<br/>channels/: seudónimo, hilo,<br/>SÍ/NO, formato, bitácora"]
-    API --> CS["ChatService / LangGraph<br/>router reglas → Jev → LLM<br/>SqliteSaver + SqliteStore"]
-    CS --> CAT["Catálogo de 26 herramientas<br/>20 lectura · 6 escritura con HITL<br/>filtradas por perfil"]
-    CAT --> PL["Planificación (spec 025)<br/>LP sobre datos sintéticos"]
-    CAT --> QD[("Qdrant servidor<br/>HNSW + híbrida")]
-    CS --> DS["DeepSeek API"]
-    BR -.->|"backend caído o > 45 s"| NA["Agente nativo OpenClaw<br/>deepseek-flash → deepseek-v4-pro"]
-    NA --> MCP["MCP valeria-tools<br/>(18 de lectura; sin simular ni optimizar)"]
-    MCP --> QD
-```
+[![Módulo 3: WhatsApp con OpenClaw](docs/capturas/diagramas/whatsapp-openclaw.png)](docs/diagramas/whatsapp-openclaw.html)
+
+*Diagrama interactivo (Archify): [`docs/diagramas/whatsapp-openclaw.html`](docs/diagramas/whatsapp-openclaw.html).*
 
 | Pieza | Dónde |
 |---|---|
@@ -317,8 +309,9 @@ fuente tipada es un JSON versionado y el HTML no se edita a mano. Las imágenes 
 | Grafo del agente (LangGraph) | `workflow` | [`docs/diagramas/grafo-agente.json`](docs/diagramas/grafo-agente.json) | [`grafo-agente.html`](docs/diagramas/grafo-agente.html) |
 | Nodo del agente desplegado | `workflow` | [`docs/diagramas/nodo-agente.json`](docs/diagramas/nodo-agente.json) | [`nodo-agente.html`](docs/diagramas/nodo-agente.html) |
 | Memoria: checkpointer frente a Store | `architecture` | [`docs/diagramas/memoria.json`](docs/diagramas/memoria.json) | [`memoria.html`](docs/diagramas/memoria.html) |
+| Módulo 3: WhatsApp con OpenClaw | `workflow` | [`docs/diagramas/whatsapp-openclaw.json`](docs/diagramas/whatsapp-openclaw.json) | [`whatsapp-openclaw.html`](docs/diagramas/whatsapp-openclaw.html) |
 | Herramientas, perfiles y router | `workflow` | [`docs/diagramas/herramientas-router.json`](docs/diagramas/herramientas-router.json) | [`herramientas-router.html`](docs/diagramas/herramientas-router.html) |
-| Planificación industrial (spec 025) | `workflow` | [`docs/diagramas/planificacion.json`](docs/diagramas/planificacion.json) | [`planificacion.html`](docs/diagramas/planificacion.html) |
+| Planificación industrial: agente y consola web (specs 025 y 026) | `workflow` | [`docs/diagramas/planificacion.json`](docs/diagramas/planificacion.json) | [`planificacion.html`](docs/diagramas/planificacion.html) |
 | Trazas de un turno | `sequence` | [`docs/diagramas/trazas.json`](docs/diagramas/trazas.json) | [`trazas.html`](docs/diagramas/trazas.html) |
 
 Regenerar y validar (con la skill Archify instalada; cambiar el tipo y la ruta según la tabla):
@@ -339,11 +332,23 @@ Si la copia global de la skill está incompleta, clona
 
 El diagrama recorre **fuentes públicas → adquisición → bronce → plata → oro → Qdrant, recuperación híbrida y
 tabla estructurada → enrutador (reglas, perfil, gatekeeper Jev opcional y LLM, con ruta mixta) y grafos
-LangGraph (cadena, agente, HITL, perfiles) → experiencia web y memoria (hilos, perfil y preferencias)**, más la
-**planificación industrial** (programación lineal sobre datos sintéticos) que alimenta al agente. En GitHub, el enlace abre el código del HTML; para verlo interactivo,
+LangGraph (cadena, agente, HITL, perfiles) → plataforma web en cuatro áreas y memoria (hilos, perfil y
+preferencias)**, más la **planificación industrial** (programación lineal sobre datos sintéticos) que alimenta al
+agente y, por la API v1, a la consola web con las mismas cifras. En GitHub, el enlace abre el código del HTML; para verlo interactivo,
 clona el repositorio y abre `docs/arquitectura.html` en el navegador.
 
 ## Capturas
+
+**Plataforma web (spec 026)**, en modo demostración y con datos sintéticos de planta:
+
+| Entrada | Agente por perfil |
+|---|---|
+| ![Entrada: un agente para cada persona que trabaja con Manuelita](docs/capturas/plataforma-entrada.png) | ![Agente con el perfil cliente B2B, fuentes y sugerencias](docs/capturas/plataforma-agente.png) |
+| **Planificación industrial** | **Evidencia técnica** |
+| ![Consola: flujo de caña, comparación con el plan base y libro de compromisos](docs/capturas/plataforma-planificacion.png) | ![Servicios, catálogo de 26 herramientas, traza y evaluaciones](docs/capturas/plataforma-evidencia.png) |
+
+<details>
+<summary><strong>Capturas anteriores</strong> (página editorial de los Módulos 1 y 2, 13 de noviembre de 2026)</summary>
 
 **Portada** (escritorio, 1440×900):
 
@@ -363,6 +368,8 @@ pregunta documental muestra la ruta, los fragmentos recuperados, las fuentes y l
 
 Las capturas corresponden a la página real del 13 de noviembre de 2026 en modo demostración. La validación
 E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la auditoría.
+
+</details>
 
 ## Estado del proyecto
 
@@ -403,6 +410,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Conversación guiada (spec 020) | ✅ | Respuestas redactadas y revisadas; similitud máxima en un hilo ≤ 0,5 frente a 1,0 con guiones; `docs/evaluacion_conversacion.md`, ADR 0024 |
 | Gatekeeper System One Jev (spec 022) | 🟡 | Implementado y probado: español 24/24, 73–77 % menos llamadas al LLM del enrutador, crisis 100 %; exactitud 93,2 % frente a 97,7 % ⇒ desactivado por defecto; `docs/evaluacion_jev.md`, ADR 0026 |
 | Plataforma de agentes y planificación (spec 025) | 🟡 | Cinco perfiles y planificador industrial sobre datos sintéticos: optimizador ≥ 99 % del óptimo de referencia en 10/10, 0 violaciones, 2/2 sin solución detectados; con DeepSeek 12/12 con secuencia completa y etiqueta, p95 10,8 s; perfiles 19/20 con DeepSeek; herramientas 90,7 % y 86,0 % en dos corridas (sin regresión clara frente a 88,4 %); `docs/evaluacion_planificacion.md`, `docs/evaluacion_perfiles.md`, ADR 0029. Falta la verificación por WhatsApp y aprobar la enmienda 2.0.0 |
+| Plataforma web en cuatro áreas (spec 026) | 🟡 | Entrada, agente por perfil, consola de planificación y evidencia; API `/api/v1` con el planificador exigido en el backend; paridad de cifras consola = herramienta = CLI en 12/12 escenarios; `axe-core` sin violaciones graves y sin desplazamiento horizontal de 360 a 1920 px; ADR 0030. Diagramas Archify de arquitectura y planificación con la consola web. Falta aprobar la constitución 2.1.0 |
 | Dictado por voz (spec 023) | ✅ | faster-whisper `base` local: WER 0,048, nombres propios 97 %, p90 1,1 s (clips de hasta 10 s), 0 textos en silencio o ruido; `docs/evaluacion_stt.md`, ADR 0027 |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
 | CI y Pull Requests | 🟡 | 72 PRs fusionados al 2026-11-21 (63 del equipo y 9 de Dependabot, anteriores a la v1.6.0); 13 PRs del equipo tienen aprobación formal y 17 alguna revisión. CI con `test`, `web` y `autoria` |
@@ -919,12 +927,33 @@ uv run uvicorn proyecto_modelos_lenguaje.api:app --reload --port 8000
 cd web && npm run dev
 ```
 
-La página incluye:
+La plataforma (spec 026, [ADR 0030](docs/decisions/0030-plataforma-web-v1.md)) tiene cuatro áreas, cada una con
+su propia dirección:
 
-- **Hero editorial** con la identidad “Cañaveral editorial”.
+| Ruta | Área | Qué muestra |
+|---|---|---|
+| `/` | Entrada | Qué es Valer-IA, los cinco perfiles como filas de un libro de registro, las garantías y la consola de Consulta, Resumen y FAQ |
+| `/agente` | Agente | Selector de perfil, la conversación (citas, voz, dictado, aprobación con «Sí»), fuentes del turno, memoria borrable y sugerencias del perfil |
+| `/planificacion` | Planificación | Solo para el planificador autorizado (`MANUELITA_PLANNER_WEB=1` en la jornada): escenario, flujo de caña, libro de compromisos, lo que limita el plan, comparación con el plan base, «Explicar con el agente» y «Guardar propuesta» en dos pasos |
+| `/evidencia` | Evidencia técnica | Estado de servicios, catálogo de 26 herramientas con sus perfiles, traza del turno y evaluaciones publicadas con su cifra honesta |
+
+Los servicios nuevos viven bajo `/api/v1/` y las rutas sin versión no cambian (contratos en
+[`specs/026-plataforma-web-manuelita/contracts/`](specs/026-plataforma-web-manuelita/contracts/)):
+
+| Endpoint | Qué hace |
+|---|---|
+| `GET /api/v1/planning/access` | Dice si la sesión puede planificar (sin datos de planta) |
+| `GET /api/v1/planning/state` | Estado de planta sintético con los rangos de cada control |
+| `POST /api/v1/planning/plan` | Plan del optimizador para un escenario (las mismas cifras que el agente y el CLI) |
+| `POST /api/v1/planning/compare` | Diferencias contra el plan base por destino, producto, compromiso y margen |
+| `POST /api/v1/planning/proposals` y `/{id}` | Guardar propuesta en dos pasos; nada se escribe sin `yes` y vence a los 5 minutos |
+| `GET /api/v1/evidence/tools`, `/traces/{id}`, `/services`, `/evaluations` | Evidencia de solo lectura para el Módulo 3 |
+
+Fuera del planificador autorizado, `/api/v1/planning/*` responde 403 `planner_forbidden` sin datos de planta.
+
+La entrada conserva:
+
 - **Consola RAG** con Consulta, Resumen y FAQ, citas `[U#]`, metadatos y fallback.
-- **Recorrido de los Módulos 1 y 2** (11 bloques): problema, datos, medallion, prompts, tareas, Qdrant,
-  memoria y enrutador, blindaje, interfaz en streaming, métricas y límites.
 - **Modo demostración** explícito, sin clave ni red. Con `MANUELITA_DEMO_CORPUS=malicious`, corpus adversarial
   para mostrar el blindaje, también con el modelo real.
 - **Conversación** (Módulo 2):
@@ -948,24 +977,28 @@ decisión en [`docs/decisions/0013-web-frontend.md`](docs/decisions/0013-web-fro
 make e2e
 ```
 
-Playwright recorre el flujo demo, el showcase, la matriz 360–1920 px, `prefers-reduced-motion` y la
+Playwright recorre el flujo demo, las cuatro áreas en 360, 768, 1440 y 1920 px, `axe-core` sin violaciones
+graves, `prefers-reduced-motion` en el flujo de caña, la consola (calcular, «No» y «Sí, guardar»), el teclado y la
 conversación (dos turnos, aprobar y rechazar, 375 px). Los tests
 de API y componentes se ejecutan con `make check`.
 
 #### Identidad visual
 
-La interfaz adopta la identidad pública de Grupo Manuelita (spec
-[`009-manuelita-visual-identity`](specs/009-manuelita-visual-identity/spec.md)): cabecera con firma
-institucional, tarjetas de fuente, badges de estado y pie con atribución. La paleta se extrae del logotipo
-oficial y no requiere conexión:
+La paleta se extrae del logotipo público de Grupo Manuelita (spec
+[`009-manuelita-visual-identity`](specs/009-manuelita-visual-identity/spec.md)). Desde la spec 026
+([`design.md`](specs/026-plataforma-web-manuelita/design.md)), cada color es siempre el mismo producto:
 
-| Color | Valor | Uso |
+| Color | Valor | Producto y uso |
 |-------|-------|-----|
-| Verde bosque | `#387C2B` | Primario |
-| Naranja | `#E86D1F` | Acento |
-| Verde lima | `#B0BC22` | Apoyo |
-| Amarillo | `#FFD200` | Apoyo |
-| Naranja claro | `#F6A01A` | Apoyo |
+| Verde bosque | `#387C2B` | Caña y marca: navegación activa y origen del flujo (`#173512` en el rail) |
+| Amarillo | `#FFD200` | Azúcar (solo relleno; el texto encima va en tinta) |
+| Naranja | `#E86D1F` | Etanol y acción principal (texto en tinta, no en blanco) |
+| Verde lima | `#B0BC22` | Energía de cogeneración |
+| Naranja claro | `#F6A01A` | Miel y avisos |
+
+La tipografía es una sola familia, Archivo variable, cuyo eje de ancho marca el rol: expandida en titulares,
+normal en texto y condensada con cifras tabulares en los datos de planta. Los pictogramas (caña, azúcar, etanol,
+energía, palma, uva, camarón y mejillón) son propios y no copian piezas de la marca.
 
 Los tokens viven en `src/proyecto_modelos_lenguaje/brand.py` y `web/src/styles/tokens.css`; el contraste
 (4.5:1 / 3:1) se verifica en `tests/unit/test_brand.py` y `tests/api/test_web_tokens.py`. Es un proyecto académico: la app lo
@@ -1130,6 +1163,11 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 ## Documentación
 
 - [Constitución del proyecto](CONSTITUTION.md)
+- [Especificación de la plataforma web (spec 026)](specs/026-plataforma-web-manuelita/spec.md),
+  [plan](specs/026-plataforma-web-manuelita/plan.md),
+  [dirección visual](specs/026-plataforma-web-manuelita/design.md),
+  [tareas](specs/026-plataforma-web-manuelita/tasks.md) y
+  [ADR 0030](docs/decisions/0030-plataforma-web-v1.md)
 - [Ficha de datos del corpus](docs/data_card.md)
 - [Alcance del Q&A y banco de 40 preguntas](docs/alcance.md)
 - [Especificación del bronce](specs/001-bronze-web-scraping/spec.md)
@@ -1279,7 +1317,8 @@ Specs 024 y 025; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/
 - [ ] `openclaw security audit` en verde, blindaje por el canal y prueba de carga.
 - [x] Plataforma de agentes por perfil y planificador industrial sobre datos sintéticos (spec 025, ADR 0029),
   con diagramas Archify actualizados.
-- [ ] Verificar `/perfil` y la planificación por WhatsApp, y aprobar la constitución 2.0.0.
+- [x] Plataforma web en cuatro áreas con consola de planificación y evidencia técnica (spec 026, ADR 0030).
+- [ ] Verificar `/perfil` y la planificación por WhatsApp, y aprobar la constitución 2.0.0 y 2.1.0.
 - [ ] Ensayo cronometrado y tag `v3.0.0`.
 
 ## Créditos

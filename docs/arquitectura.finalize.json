@@ -5,16 +5,16 @@
   "status": "pass",
   "type": "dataflow",
   "quality": "showcase",
-  "startedAt": "2026-11-24T19:45:21.000Z",
+  "startedAt": "2026-11-25T05:17:56.053Z",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "a4c53b5339f629c5a5770676c45a563c19629ff0ba1cdab3bfa64e9f4a9ab387",
-    "bytes": 12985
+    "sha256": "554099963e34a7bc74afc61e5921b5d3d3e0d320f3728b6e63215b035aa15ffe",
+    "bytes": 13380
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "cd8920a34e6b687b0793c5ec580b97bb9f9b1d26102769f5a069d8829af0cb3d",
-    "bytes": 866231
+    "sha256": "e0f97afb6cb1f74805edfe4e914a75264c2a355fe61bcd4fac654e1fa448db50",
+    "bytes": 868200
   },
   "stages": {
     "validate": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "a4c53b5339f629c5a5770676c45a563c19629ff0ba1cdab3bfa64e9f4a9ab387",
-          "bytes": 12985
+          "sha256": "554099963e34a7bc74afc61e5921b5d3d3e0d320f3728b6e63215b035aa15ffe",
+          "bytes": 13380
         },
         "validation": {
           "checksPassed": 9,
@@ -56,7 +56,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 1306,
+      "durationMs": 1526,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -72,19 +72,19 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "7a45a5a4-371b-415e-b537-d22c68f38f76",
+        "receiptId": "5a14e9f8-c7b5-4f32-b641-d6bbc252d7fb",
         "ok": true,
         "command": "deliver",
         "type": "dataflow",
         "input": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
         "output": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "specification": {
-          "sha256": "a4c53b5339f629c5a5770676c45a563c19629ff0ba1cdab3bfa64e9f4a9ab387",
-          "bytes": 12985
+          "sha256": "554099963e34a7bc74afc61e5921b5d3d3e0d320f3728b6e63215b035aa15ffe",
+          "bytes": 13380
         },
         "artifact": {
-          "sha256": "cd8920a34e6b687b0793c5ec580b97bb9f9b1d26102769f5a069d8829af0cb3d",
-          "bytes": 866231
+          "sha256": "e0f97afb6cb1f74805edfe4e914a75264c2a355fe61bcd4fac654e1fa448db50",
+          "bytes": 868200
         },
         "validation": {
           "checksPassed": 9,
@@ -97,7 +97,7 @@
         "evidence": {
           "verified": true,
           "repository": "https://github.com/jasonCastano/proyecto_modelos_lenguaje",
-          "revision": "f6a5642cdcd084b4bade6554b7ede86a916086ee",
+          "revision": "96d0888c35c01b53f4a56ba889b78b9bbd7d998b",
           "references": 30
         },
         "update": {
@@ -116,7 +116,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 282,
+      "durationMs": 386,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -128,8 +128,8 @@
         "ok": true,
         "file": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "artifact": {
-          "sha256": "cd8920a34e6b687b0793c5ec580b97bb9f9b1d26102769f5a069d8829af0cb3d",
-          "bytes": 866231
+          "sha256": "e0f97afb6cb1f74805edfe4e914a75264c2a355fe61bcd4fac654e1fa448db50",
+          "bytes": 868200
         },
         "checks": [
           {
@@ -190,7 +190,7 @@
           },
           "metrics": {
             "properCrossings": 0,
-            "resolvedCrossovers": 1,
+            "resolvedCrossovers": 2,
             "ambiguousCorridors": 0,
             "arrowheadCollisions": 0,
             "containerBorderRuns": 0,
@@ -199,9 +199,9 @@
             "minLabelRouteClearance": 6.2,
             "desktopReadabilityIssues": 0,
             "viewportHeightIssues": 0,
-            "minProjectedNodeTextPx": 6.0501858736059475,
+            "minProjectedNodeTextPx": 6.095505617977528,
             "maxBends": 4,
-            "routesOverSuggestedBends": 1,
+            "routesOverSuggestedBends": 3,
             "maxStretch": 1.35,
             "routesOverSuggestedStretch": 0,
             "minSegmentPx": 16,
@@ -240,6 +240,28 @@
                   639,
                   284
                 ]
+              },
+              {
+                "left": {
+                  "id": "answer",
+                  "from": "llm",
+                  "to": "app",
+                  "label": "respuesta citada",
+                  "collectionIndex": 6,
+                  "artifactIndex": 7
+                },
+                "right": {
+                  "id": "thread-state",
+                  "from": "agent",
+                  "to": "memory",
+                  "label": "estado",
+                  "collectionIndex": 13,
+                  "artifactIndex": 14
+                },
+                "point": [
+                  856.75,
+                  286
+                ]
               }
             ],
             "detours": [
@@ -254,6 +276,30 @@
                 },
                 "bends": 4,
                 "stretch": 1.35
+              },
+              {
+                "relationship": {
+                  "id": "chat-answer",
+                  "from": "agent",
+                  "to": "app",
+                  "label": "turno citado",
+                  "collectionIndex": 14,
+                  "artifactIndex": 15
+                },
+                "bends": 4,
+                "stretch": 1.34
+              },
+              {
+                "relationship": {
+                  "id": "plan-console",
+                  "from": "planning",
+                  "to": "app",
+                  "label": "consola web",
+                  "collectionIndex": 16,
+                  "artifactIndex": 17
+                },
+                "bends": 4,
+                "stretch": 1.165
               }
             ]
           },
@@ -276,19 +322,19 @@
               "id": "sources"
             },
             "minimumSourceTextPx": 7,
-            "minimumProjectedTextPx": 6.0501858736059475,
-            "semanticTextCount": 44
+            "minimumProjectedTextPx": 6.095505617977528,
+            "semanticTextCount": 45
           },
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "7a45a5a4-371b-415e-b537-d22c68f38f76"
+        "deliveryReceiptId": "5a14e9f8-c7b5-4f32-b641-d6bbc252d7fb"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 2310,
+      "durationMs": 3897,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -308,11 +354,11 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "7a45a5a4-371b-415e-b537-d22c68f38f76",
+        "deliveryReceiptId": "5a14e9f8-c7b5-4f32-b641-d6bbc252d7fb",
         "artifact": {
           "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-          "sha256": "cd8920a34e6b687b0793c5ec580b97bb9f9b1d26102769f5a069d8829af0cb3d",
-          "bytes": 866231
+          "sha256": "e0f97afb6cb1f74805edfe4e914a75264c2a355fe61bcd4fac654e1fa448db50",
+          "bytes": 868200
         },
         "state": {
           "detail": "read",
@@ -343,8 +389,8 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1312,
-              "diagramWidth": 1282,
+              "readerWidth": 1303,
+              "diagramWidth": 1273,
               "pageComposition": {
                 "bodyPaddingPx": 12,
                 "headerPx": 52,
@@ -353,7 +399,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -393,8 +439,8 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1371,
-              "diagramWidth": 1341,
+              "readerWidth": 1361,
+              "diagramWidth": 1331,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
@@ -403,7 +449,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -443,8 +489,8 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1508,
-              "diagramWidth": 1478,
+              "readerWidth": 1497,
+              "diagramWidth": 1467,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
@@ -453,7 +499,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -494,7 +540,7 @@
               "readerFit": "intrinsic-height",
               "ok": true,
               "readerWidth": 1920,
-              "diagramWidth": 1614,
+              "diagramWidth": 1602,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
@@ -503,7 +549,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -596,8 +642,8 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1312,
-              "diagramWidth": 1282,
+              "readerWidth": 1303,
+              "diagramWidth": 1273,
               "pageComposition": {
                 "bodyPaddingPx": 12,
                 "headerPx": 52,
@@ -606,7 +652,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -646,8 +692,8 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1371,
-              "diagramWidth": 1341,
+              "readerWidth": 1361,
+              "diagramWidth": 1331,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
@@ -656,7 +702,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -696,8 +742,8 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1508,
-              "diagramWidth": 1478,
+              "readerWidth": 1497,
+              "diagramWidth": 1467,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
@@ -706,7 +752,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -747,7 +793,7 @@
               "readerFit": "intrinsic-height",
               "ok": true,
               "readerWidth": 1920,
-              "diagramWidth": 1614,
+              "diagramWidth": 1602,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
@@ -756,7 +802,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -801,8 +847,8 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1312,
-              "diagramWidth": 1282,
+              "readerWidth": 1303,
+              "diagramWidth": 1273,
               "pageComposition": {
                 "bodyPaddingPx": 12,
                 "headerPx": 52,
@@ -811,7 +857,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -851,8 +897,8 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1371,
-              "diagramWidth": 1341,
+              "readerWidth": 1361,
+              "diagramWidth": 1331,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
@@ -861,7 +907,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -901,8 +947,8 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1508,
-              "diagramWidth": 1478,
+              "readerWidth": 1497,
+              "diagramWidth": 1467,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
@@ -911,7 +957,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -952,7 +998,7 @@
               "readerFit": "intrinsic-height",
               "ok": true,
               "readerWidth": 1920,
-              "diagramWidth": 1614,
+              "diagramWidth": 1602,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
@@ -961,7 +1007,7 @@
                 "cardsPx": 0,
                 "viewBoxHeight": 626
               },
-              "viewBoxWidth": 1076,
+              "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
               "minimumProjectedNonEdgeTextPx": 7,
               "minimumProjectedEdgeTextPx": 8,
@@ -1010,8 +1056,8 @@
     "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-11-24T19:45:25.306Z",
-  "durationMs": 4305,
+  "finishedAt": "2026-11-25T05:18:02.549Z",
+  "durationMs": 6495,
   "update": {
     "status": "update_available",
     "installedVersion": "3.2.0",

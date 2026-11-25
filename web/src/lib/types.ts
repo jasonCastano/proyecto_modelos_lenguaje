@@ -485,3 +485,196 @@ export interface InputMeta {
   edited: boolean;
   handsfree: boolean;
 }
+
+// ---------------------------------------------------------------- plataforma v1 (spec 026)
+
+export type ProductName = "sugar" | "ethanol" | "power";
+
+/** Escenario de la consola (data-model §1). Solo se envían los campos tocados. */
+export interface Scenario {
+  cane_delta_pct?: number;
+  cane_available?: number;
+  cane_quality?: number;
+  steam_limit?: number;
+  prioritize?: "margin" | "power";
+  price_sugar_pct?: number;
+  price_ethanol_pct?: number;
+  price_power_pct?: number;
+}
+
+export type ScenarioField = Exclude<keyof Scenario, "prioritize">;
+
+export interface PlanningAccess {
+  authorized: boolean;
+  reason: string;
+}
+
+export interface CapacityView {
+  area: string;
+  nominal: number;
+  factor: number;
+  effective: number;
+  unit: string;
+}
+
+export interface CommitmentView {
+  id: string;
+  product: ProductName;
+  min_quantity: number;
+  unit: string;
+  priority: number;
+  counterparty: string;
+}
+
+export interface PlantSnapshot {
+  week: string;
+  data_version: string;
+  seed: number;
+  cane_available: number;
+  cane_quality: number;
+  capacities: CapacityView[];
+  equipment: { id: string; kind: string; status: string; capacity_factor: number }[];
+  inventories: Record<string, number>;
+  current_mix: Record<string, number>;
+  commitments: CommitmentView[];
+  prices: Record<ProductName, number>;
+  ranges: Partial<Record<ScenarioField, { min: number; max?: number }>>;
+  synthetic: true;
+  label: string;
+}
+
+export interface Sensitivity {
+  constraint: string;
+  dual: number;
+  unit: string;
+  weight: number;
+  commitment: boolean;
+}
+
+export interface Shortfall {
+  commitment_id: string;
+  product: ProductName;
+  missing: number;
+  unit: string;
+}
+
+export interface PlanAlternative {
+  name: string;
+  margin: number;
+  products: Record<ProductName, number>;
+  delta_vs_best: number;
+  violations?: string[];
+}
+
+/** Plan recomendado: `PlanResult.to_dict(card=True)` más la etiqueta y la frase de decisión. */
+export interface PlanResponse {
+  plan_id: string;
+  status: "optimal" | "infeasible_relaxed";
+  scenario: Scenario & { plant_id?: string };
+  resolved: Record<string, number>;
+  mix: { x_s: number; x_e: number; b: number; v: number; g: number };
+  products: Record<ProductName, number>;
+  margin: number;
+  binding: Sensitivity | null;
+  sensitivity: Sensitivity[];
+  shortfalls: Shortfall[];
+  alternatives: PlanAlternative[];
+  assumptions: string[];
+  week: string;
+  data_version: string;
+  synthetic: true;
+  plan_card?: string;
+  label?: string;
+  decision_phrase?: string;
+}
+
+export interface PlanComparison {
+  base: PlanResponse;
+  scenario: PlanResponse;
+  mix_delta: Record<"sugar" | "ethanol", { tonnes: number; points: number }>;
+  products_delta: {
+    product: ProductName;
+    base: number;
+    scenario: number;
+    delta: number;
+    unit: string;
+  }[];
+  commitments: {
+    id: string;
+    product: ProductName;
+    required: number;
+    unit: string;
+    met_base: boolean;
+    met_scenario: boolean;
+    gap_base: number;
+    gap_scenario: number;
+  }[];
+  margin_delta: number;
+  synthetic: true;
+}
+
+export interface PendingProposal {
+  confirmation_id: string;
+  plan_id: string;
+  summary: string;
+  expires_at: string;
+  question: string;
+}
+
+export interface ProposalOutcome {
+  status: "saved" | "discarded";
+  plan_id: string;
+  message: string;
+}
+
+export interface ToolEvidence {
+  name: string;
+  description: string;
+  kind: "read" | "write";
+  requires_approval: boolean;
+  routes: string[];
+  profiles: string[];
+  mcp_allowed: boolean;
+}
+
+export interface ToolCatalogEvidence {
+  count: number;
+  tools: ToolEvidence[];
+}
+
+export interface TurnTrace {
+  thread_id: string;
+  turn: number;
+  turns: number;
+  question: string;
+  profile: string;
+  route: string;
+  decided_by: string;
+  plan_steps: string[];
+  tools: ToolInvocation[];
+  duration_ms: number;
+}
+
+export interface ServiceStatus {
+  id: "model" | "qdrant" | "whatsapp" | "gateway" | "voice" | "stt";
+  label: string;
+  status: "up" | "down" | "degraded" | "unknown";
+  reason: string;
+  action: string;
+}
+
+export interface ServicesEvidence {
+  checked_at: string;
+  services: ServiceStatus[];
+}
+
+export interface PublishedEvaluation {
+  id: string;
+  name: string;
+  value: string;
+  target: string;
+  meets: boolean | "partial";
+  date: string;
+  report: string;
+  note: string;
+}

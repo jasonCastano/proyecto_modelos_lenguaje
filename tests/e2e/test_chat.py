@@ -16,6 +16,9 @@ TIMEOUT = 120_000
 
 
 def _open_chat(page: Page) -> None:
+    # La ruta, los fragmentos y la tarjeta de aprobación son de la vista técnica (spec 018).
+    if "vista=tecnica" not in page.url:
+        page.goto(page.url.split("?")[0] + "?vista=tecnica", wait_until="networkidle")
     page.get_by_role("button", name="Usar modo demostración").click()
     page.get_by_role("tab", name="Conversación").click()
     page.get_by_test_id("chat-view").wait_for()

@@ -1,0 +1,362 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Módulo 3: WhatsApp con OpenClaw",
+    "locale": "es",
+    "output": "docs/diagramas/whatsapp-openclaw.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
+      "provider": "github",
+      "revision": "7eb0f0d22d5d70b429ece1843aa32c86df360373"
+    }
+  },
+  "lanes": [
+    {
+      "id": "canal",
+      "label": "Canal"
+    },
+    {
+      "id": "gateway",
+      "label": "Gateway OpenClaw (PC servidor)"
+    },
+    {
+      "id": "backend",
+      "label": "Backend Valer-IA"
+    },
+    {
+      "id": "conocimiento",
+      "label": "Herramientas y conocimiento"
+    },
+    {
+      "id": "degradado",
+      "label": "Modo degradado"
+    }
+  ],
+  "mainPath": [
+    "phone",
+    "whatsapp",
+    "gateway",
+    "plugin",
+    "api",
+    "chat",
+    "catalog"
+  ],
+  "nodes": [
+    {
+      "id": "phone",
+      "lane": "canal",
+      "col": 0,
+      "type": "external",
+      "label": "Teléfono del invitado",
+      "sublabel": "su propio WhatsApp",
+      "sources": [
+        {
+          "path": "docs/manual_whatsapp.md",
+          "line": 1,
+          "end_line": 40
+        }
+      ]
+    },
+    {
+      "id": "whatsapp",
+      "lane": "canal",
+      "col": 1,
+      "type": "external",
+      "label": "WhatsApp Web",
+      "sublabel": "Baileys · conexión saliente",
+      "sources": [
+        {
+          "path": "openclaw/openclaw.json5",
+          "line": 35,
+          "end_line": 46
+        }
+      ]
+    },
+    {
+      "id": "gateway",
+      "lane": "gateway",
+      "col": 1,
+      "type": "security",
+      "label": "Gateway",
+      "sublabel": "loopback + token · allowlist",
+      "tag": "sandbox · tools.deny",
+      "sources": [
+        {
+          "path": "openclaw/openclaw.json5",
+          "line": 6,
+          "end_line": 31
+        },
+        {
+          "path": "openclaw/workspace/AGENTS.md",
+          "line": 1,
+          "end_line": 30
+        }
+      ]
+    },
+    {
+      "id": "plugin",
+      "lane": "gateway",
+      "col": 2,
+      "type": "backend",
+      "label": "Plugin valeria-bridge",
+      "sublabel": "hook before_dispatch",
+      "tag": "45 s",
+      "sources": [
+        {
+          "path": "openclaw/plugins/valeria-bridge/index.ts",
+          "line": 1,
+          "end_line": 22
+        },
+        {
+          "path": "openclaw/plugins/valeria-bridge/src/bridge.ts",
+          "line": 75,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "lane": "backend",
+      "col": 2,
+      "type": "security",
+      "label": "Canal en FastAPI",
+      "sublabel": "seudónimo · hilo · SÍ/NO",
+      "tag": "X-Channel-Token",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/api.py",
+          "line": 946,
+          "end_line": 978
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/channels/bridge.py",
+          "line": 209,
+          "end_line": 278
+        }
+      ]
+    },
+    {
+      "id": "chat",
+      "lane": "backend",
+      "col": 3,
+      "type": "backend",
+      "label": "ChatService",
+      "sublabel": "router · perfiles · memoria",
+      "tag": "LangGraph",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/service.py",
+          "line": 268,
+          "end_line": 420
+        }
+      ]
+    },
+    {
+      "id": "deepseek",
+      "lane": "backend",
+      "col": 4,
+      "type": "external",
+      "label": "DeepSeek API",
+      "sublabel": "modelo en la nube",
+      "sources": [
+        {
+          "path": "config/llm.toml",
+          "line": 1,
+          "end_line": 23
+        }
+      ]
+    },
+    {
+      "id": "catalog",
+      "lane": "conocimiento",
+      "col": 3,
+      "type": "backend",
+      "label": "26 herramientas",
+      "sublabel": "20 lectura · 6 con HITL",
+      "tag": "por perfil",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/catalog.py",
+          "line": 210,
+          "end_line": 266
+        }
+      ]
+    },
+    {
+      "id": "planning",
+      "lane": "conocimiento",
+      "col": 2,
+      "type": "backend",
+      "label": "Planificación",
+      "sublabel": "LP · datos sintéticos",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
+          "line": 598,
+          "end_line": 713
+        }
+      ]
+    },
+    {
+      "id": "qdrant",
+      "lane": "conocimiento",
+      "col": 4,
+      "type": "database",
+      "label": "Qdrant servidor",
+      "sublabel": "HNSW · híbrida",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/rag/vectorstore.py",
+          "line": 1,
+          "end_line": 293
+        }
+      ]
+    },
+    {
+      "id": "native",
+      "lane": "degradado",
+      "col": 3,
+      "type": "external",
+      "label": "Agente nativo",
+      "sublabel": "deepseek-flash → v4-pro",
+      "tag": "solo si el backend falla",
+      "sources": [
+        {
+          "path": "openclaw/openclaw.json5",
+          "line": 13,
+          "end_line": 31
+        }
+      ]
+    },
+    {
+      "id": "mcp",
+      "lane": "degradado",
+      "col": 4,
+      "type": "security",
+      "label": "MCP valeria-tools",
+      "sublabel": "18 de lectura",
+      "tag": "sin simular ni optimizar",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/mcp_server.py",
+          "line": 110,
+          "end_line": 121
+        },
+        {
+          "path": "openclaw/openclaw.json5",
+          "line": 48,
+          "end_line": 58
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "phone-whatsapp",
+      "from": "phone",
+      "to": "whatsapp",
+      "label": "mensaje",
+      "variant": "emphasis"
+    },
+    {
+      "id": "whatsapp-gateway",
+      "from": "whatsapp",
+      "to": "gateway",
+      "variant": "emphasis"
+    },
+    {
+      "id": "gateway-plugin",
+      "from": "gateway",
+      "to": "plugin",
+      "label": "DM admitido",
+      "variant": "emphasis"
+    },
+    {
+      "id": "plugin-api",
+      "from": "plugin",
+      "to": "api",
+      "label": "loopback",
+      "variant": "emphasis"
+    },
+    {
+      "id": "api-chat",
+      "from": "api",
+      "to": "chat",
+      "variant": "emphasis"
+    },
+    {
+      "id": "chat-deepseek",
+      "from": "chat",
+      "to": "deepseek"
+    },
+    {
+      "id": "chat-catalog",
+      "from": "chat",
+      "to": "catalog",
+      "label": "herramientas",
+      "variant": "emphasis"
+    },
+    {
+      "id": "plugin-native",
+      "from": "plugin",
+      "to": "native",
+      "label": "caído o > 45 s",
+      "variant": "dashed"
+    },
+    {
+      "id": "native-mcp",
+      "from": "native",
+      "to": "mcp",
+      "variant": "dashed"
+    },
+    {
+      "id": "catalog-qdrant",
+      "from": "catalog",
+      "to": "qdrant",
+      "label": "búsqueda"
+    },
+    {
+      "id": "catalog-planning",
+      "from": "catalog",
+      "to": "planning",
+      "label": "perfil planificador",
+      "variant": "dashed"
+    },
+    {
+      "id": "mcp-qdrant",
+      "from": "mcp",
+      "to": "qdrant",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Un solo agente",
+      "items": [
+        "WhatsApp y la web usan el mismo ChatService: router, perfiles, memoria, blindaje, aprobación humana y citas",
+        "El plugin lleva cada mensaje admitido al backend por loopback con X-Channel-Token",
+        "Los usuarios del canal se guardan con un seudónimo; el número nunca llega al modelo"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Seguridad del gateway",
+      "items": [
+        "Gateway solo en loopback y con token; WhatsApp usa una conexión saliente",
+        "Allowlist E.164 o emparejamiento por código; sin grupos",
+        "Agente nativo en sandbox Docker sin red, con tools.deny y el workspace en solo lectura"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Modo degradado",
+      "items": [
+        "Si el backend no responde en 45 s, contesta el agente nativo de OpenClaw y avisa «modo básico»",
+        "Usa el MCP valeria-tools con 18 herramientas de lectura; no escribe ni planifica"
+      ]
+    }
+  ]
+}

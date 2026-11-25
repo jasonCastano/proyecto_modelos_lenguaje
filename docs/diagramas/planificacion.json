@@ -2,14 +2,14 @@
   "schema_version": 2,
   "diagram_type": "workflow",
   "meta": {
-    "title": "Planificación industrial (spec 025)",
+    "title": "Planificación industrial: agente y consola web (specs 025 y 026)",
     "locale": "es",
     "output": "docs/diagramas/planificacion.html",
     "quality_profile": "showcase",
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "f6a5642cdcd084b4bade6554b7ede86a916086ee"
+      "revision": "96d0888c35c01b53f4a56ba889b78b9bbd7d998b"
     }
   },
   "lanes": [
@@ -28,6 +28,10 @@
     {
       "id": "respuesta",
       "label": "Respuesta"
+    },
+    {
+      "id": "web",
+      "label": "Consola web (spec 026)"
     }
   ],
   "mainPath": [
@@ -110,8 +114,8 @@
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
-          "line": 825,
-          "end_line": 850
+          "line": 1017,
+          "end_line": 1042
         }
       ]
     },
@@ -125,8 +129,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
-          "line": 557,
-          "end_line": 670
+          "line": 598,
+          "end_line": 713
         }
       ]
     },
@@ -141,8 +145,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
-          "line": 498,
-          "end_line": 511
+          "line": 539,
+          "end_line": 552
         }
       ]
     },
@@ -156,8 +160,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
-          "line": 800,
-          "end_line": 822
+          "line": 992,
+          "end_line": 1014
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/graph.py",
@@ -177,8 +181,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
-          "line": 680,
-          "end_line": 724
+          "line": 872,
+          "end_line": 916
         }
       ]
     },
@@ -194,6 +198,52 @@
           "path": "src/proyecto_modelos_lenguaje/agent/actions.py",
           "line": 374,
           "end_line": 420
+        }
+      ]
+    },
+    {
+      "id": "console",
+      "lane": "web",
+      "col": 1,
+      "type": "external",
+      "label": "Consola web",
+      "sublabel": "escenario · /api/v1",
+      "tag": "403 sin permiso",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/api_planning.py",
+          "line": 77,
+          "end_line": 86
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/api_planning.py",
+          "line": 273,
+          "end_line": 287
+        },
+        {
+          "path": "web/src/pages/Planning.tsx",
+          "line": 1,
+          "end_line": 188
+        }
+      ]
+    },
+    {
+      "id": "caneflow",
+      "lane": "web",
+      "col": 4,
+      "type": "backend",
+      "label": "Flujo de caña",
+      "sublabel": "compromisos · comparación",
+      "sources": [
+        {
+          "path": "web/src/components/planning/CaneFlow.tsx",
+          "line": 1,
+          "end_line": 241
+        },
+        {
+          "path": "web/src/components/planning/CommitmentLedger.tsx",
+          "line": 1,
+          "end_line": 40
         }
       ]
     }
@@ -250,6 +300,26 @@
       "to": "save",
       "label": "aprobación",
       "variant": "dashed"
+    },
+    {
+      "id": "console-optimize",
+      "from": "console",
+      "to": "optimize",
+      "label": "mismo LP",
+      "variant": "dashed"
+    },
+    {
+      "id": "optimize-caneflow",
+      "from": "optimize",
+      "to": "caneflow",
+      "label": "cifras del servidor"
+    },
+    {
+      "id": "caneflow-save",
+      "from": "caneflow",
+      "to": "save",
+      "label": "dos pasos",
+      "variant": "dashed"
     }
   ],
   "cards": [
@@ -259,7 +329,8 @@
       "items": [
         "El modelo de lenguaje coordina y explica; el plan sale del programa lineal (scipy, HiGHS)",
         "Si la respuesta trae un número que no está en las herramientas, se muestra el plan calculado",
-        "Batería de 12 escenarios: ≥ 99 % del óptimo de referencia en 10/10 y 2/2 sin solución detectados"
+        "Batería de 12 escenarios: ≥ 99 % del óptimo de referencia en 10/10 y 2/2 sin solución detectados",
+        "La consola web llama al mismo optimizador: paridad consola = herramienta = CLI en 12/12 escenarios"
       ]
     },
     {

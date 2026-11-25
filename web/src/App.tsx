@@ -1,94 +1,71 @@
+/**
+ * Valer-IA, plataforma de agentes de Manuelita (spec 026): cuatro áreas con su propia dirección.
+ * `/` entrada · `/agente` espacio de trabajo · `/planificacion` consola · `/evidencia` panel.
+ */
 import { useEffect, useState } from "react";
 
-import { health as fetchHealth, showcase as fetchShowcase } from "./lib/api";
-import type { HealthStatus, ShowcaseResponse } from "./lib/types";
-import { fallbackSections } from "./data/showcase";
-import { Hero } from "./components/Hero";
-import { RagConsole } from "./components/RagConsole";
-import { ShowcaseStory } from "./components/ShowcaseStory";
-import { MetricsBand } from "./components/MetricsBand";
-import { ProductMotifs } from "./components/ProductMotifs";
-import { LimitsNote } from "./components/LimitsNote";
-import { Footer } from "./components/Footer";
+import { AppShell } from "./components/shell/AppShell";
+import { health as fetchHealth } from "./lib/api";
+import { getAccess } from "./lib/planning";
+import { useRoute } from "./lib/router";
+import type { HealthStatus, Mode } from "./lib/types";
+import { Agent } from "./pages/Agent";
+import { Evidence } from "./pages/Evidence";
+import { Home } from "./pages/Home";
+import { Planning } from "./pages/Planning";
+
+const NOT_FOUND = "Esa página no existe; te llevamos a la entrada.";
 
 export default function App() {
+  const { route, notFound } = useRoute();
   const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [showcase, setShowcase] = useState<ShowcaseResponse | null>(null);
+  const [plannerAuthorized, setPlannerAuthorized] = useState(false);
 
   useEffect(() => {
     let active = true;
     void fetchHealth()
-      .then((result) => {
-        if (active) setHealth(result);
-      })
+      .then((result) => active && setHealth(result))
       .catch(() => {
-        if (active) {
-          setHealth({
-            ok: false,
-            provider: "desconocido",
-            model: "desconocido",
-            configured: false,
-            demo_available: false,
-            detail: "No se pudo consultar el estado del proveedor.",
-          });
-        }
+        if (!active) return;
+        setHealth({
+          ok: false,
+          provider: "desconocido",
+          model: "desconocido",
+          configured: false,
+          demo_available: false,
+          detail: "No se pudo consultar el estado del proveedor.",
+        });
       });
-    void fetchShowcase()
-      .then((result) => {
-        if (active) setShowcase(result);
-      })
-      .catch(() => {
-        if (active) setShowcase(null);
-      });
+    void getAccess()
+      .then((result) => active && setPlannerAuthorized(result.authorized))
+      .catch(() => undefined);
     return () => {
       active = false;
     };
   }, []);
 
-  const sections = showcase?.sections ?? fallbackSections;
-  const metrics = showcase?.metrics ?? [];
+  useEffect(() => {
+    if (notFound) window.history.replaceState(null, "", "/");
+  }, [notFound]);
+
+  useEffect(() => {
+    const titles: Record<string, string> = {
+      "/": "Valer-IA · plataforma de agentes de Manuelita",
+      "/agente": "Agente · Valer-IA",
+      "/planificacion": "Planificación industrial · Valer-IA",
+      "/evidencia": "Evidencia técnica · Valer-IA",
+    };
+    document.title = titles[route];
+  }, [route]);
+
+  const mode: Mode = health && !health.configured ? "demo" : "real";
 
   return (
-    <div className="site-shell">
-      <a className="skip-link" href="#contenido">
-        Saltar al contenido
-      </a>
-      <header className="site-header">
-        <div className="header-inner">
-          <a className="brand" href="#inicio" aria-label="Manuelita, memoria del campo">
-            <span className="brand-mark" aria-hidden="true">
-              M
-            </span>
-            <span>
-              Manuelita
-              <small>RAG · Módulos 1 y 2</small>
-            </span>
-          </a>
-          <nav className="nav" aria-label="Navegación principal">
-            <a href="#consola">Consultar</a>
-            <a href="#recorrido">Recorrido</a>
-            <a href="#productos">Productos</a>
-            <a href="#limites">Límites</a>
-          </nav>
-          <a className="header-cta" href="#consola">
-            Preguntar <span aria-hidden="true">↘</span>
-          </a>
-        </div>
-      </header>
-
-      <main id="contenido">
-        <div id="inicio">
-          <Hero />
-        </div>
-        <RagConsole health={health} />
-        <ShowcaseStory sections={sections} />
-        <MetricsBand metrics={metrics} />
-        <ProductMotifs />
-        <div id="limites">
-          <LimitsNote />
-        </div>
-      </main>
-      <Footer />
-    </div>
+    <AppShell demo={mode === "demo"} notice={notFound ? NOT_FOUND : null} route={route}>
+      {route === "/" ? <Home health={health} plannerAuthorized={plannerAuthorized} /> : null}
+      {route === "/agente" ? <Agent mode={mode} /> : null}
+      {route === "/planificacion" ? <Planning /> : null}
+      {route === "/evidencia" ? <Evidence /> : null}
+    </AppShell>
   );
 }

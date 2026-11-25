@@ -1,11 +1,11 @@
-import "@fontsource-variable/bricolage-grotesque";
-import "@fontsource-variable/public-sans";
+import "@fontsource-variable/archivo/wdth.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import App from "./App";
 import "./styles/tokens.css";
 import "./styles/global.css";
+import "./styles/platform.css";
 
 const container = document.getElementById("root");
 

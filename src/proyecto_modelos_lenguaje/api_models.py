@@ -649,3 +649,110 @@ class ChannelStatus(BaseModel):
     model: dict[str, Any] = Field(default_factory=dict)
     qdrant: dict[str, Any] = Field(default_factory=dict)
     pending_approvals: int = 0
+
+
+# --- Spec 026: API v1 de planificación y evidencia --------------------------------------------
+
+
+class PlanningAccess(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    authorized: bool
+    reason: str
+
+
+class ProposalRequest(BaseModel):
+    """Paso 1 de la propuesta (R9): el plan se recalcula en el servidor, nunca viene del cliente."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    scenario: dict[str, Any] = Field(default_factory=dict)
+    note: str | None = Field(default=None, max_length=280)
+
+
+class PendingProposalModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirmation_id: str
+    plan_id: str
+    summary: str
+    expires_at: str
+    question: str
+
+
+class ProposalDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    decision: Literal["yes", "no"]
+
+
+class ProposalOutcome(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["saved", "discarded"]
+    plan_id: str
+    message: str
+
+
+class ToolEvidence(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    description: str
+    kind: Literal["read", "write"]
+    requires_approval: bool
+    routes: list[str] = Field(default_factory=list)
+    profiles: list[str] = Field(default_factory=list)
+    mcp_allowed: bool
+
+
+class ToolCatalogEvidence(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    count: int
+    tools: list[ToolEvidence]
+
+
+class TurnTraceModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    thread_id: str
+    turn: int
+    turns: int
+    question: str
+    profile: str
+    route: str
+    decided_by: str
+    plan_steps: list[str] = Field(default_factory=list)
+    tools: list[ToolInvocationModel] = Field(default_factory=list)
+    duration_ms: int = 0
+
+
+class ServiceStatusModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: Literal["model", "qdrant", "whatsapp", "gateway", "voice", "stt"]
+    label: str
+    status: Literal["up", "down", "degraded", "unknown"]
+    reason: str
+    action: str = ""
+
+
+class ServicesEvidence(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    checked_at: str
+    services: list[ServiceStatusModel]
+
+
+class PublishedEvaluationModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    name: str
+    value: str
+    target: str
+    meets: bool | Literal["partial"]
+    date: str
+    report: str
+    note: str = ""

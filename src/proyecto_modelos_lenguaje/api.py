@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
+from . import api_evidence, api_planning
 from .agent.adversarial import adversarial_enabled, adversarial_retriever
 from .agent.catalog import to_json_schema
 from .agent.config import AgentConfigError, load_agent_config, resolve_state_dir
@@ -24,6 +25,7 @@ from .agent.memory import build_checkpointer, build_store
 from .agent.observability import configure_tracing
 from .agent.service import ChatError, ChatService, build_deps
 from .agent.welcome import load_welcome
+from .api_errors import ApiV1Error
 from .api_models import (
     ApiError,
     AskRequest,
@@ -386,6 +388,9 @@ async def validation_error(_request: Request, exc: RequestValidationError) -> JS
             if code == "empty_question"
             else "La pregunta supera 500 caracteres."
         )
+    elif _request.url.path.startswith("/api/v1/planning"):  # spec 026
+        code = "invalid_scenario"
+        message = api_planning.scenario_error_message(exc.errors())
     else:
         code = "invalid_request"
         message = "La solicitud no cumple el contrato de la API."
@@ -1010,6 +1015,13 @@ def _retriever_ok() -> bool:
 def tools_catalog() -> list[dict[str, Any]]:
     """Catálogo de herramientas del agente (ítem 1.1): nombre, tipo, rutas y JSON Schema."""
     return to_json_schema()
+
+
+# --- Spec 026: API v1 de la plataforma web (planificación y evidencia) ----------------------
+
+app.add_exception_handler(ApiV1Error, api_planning.error_handler)  # type: ignore[arg-type]
+app.include_router(api_planning.router)
+app.include_router(api_evidence.router)
 
 
 if WEB_DIST.is_dir():

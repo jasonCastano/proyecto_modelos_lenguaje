@@ -9,7 +9,7 @@
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "f6a5642cdcd084b4bade6554b7ede86a916086ee"
+      "revision": "96d0888c35c01b53f4a56ba889b78b9bbd7d998b"
     }
   },
   "stages": [
@@ -170,26 +170,26 @@
     {
       "id": "app",
       "type": "frontend",
-      "label": "Experiencia web",
-      "sublabel": "React + FastAPI · chat",
-      "tag": "citas",
+      "label": "Plataforma web",
+      "sublabel": "4 áreas · React + FastAPI",
+      "tag": "API v1 · 403 sin permiso",
       "stage": 4,
       "row": 1,
       "sources": [
         {
-          "path": "web/src/components/ChatView.tsx",
+          "path": "web/src/App.tsx",
           "line": 1,
-          "end_line": 861
+          "end_line": 71
         },
         {
-          "path": "web/src/components/ApprovalCard.tsx",
+          "path": "web/src/components/planning/CaneFlow.tsx",
           "line": 1,
-          "end_line": 85
+          "end_line": 241
         },
         {
-          "path": "src/proyecto_modelos_lenguaje/api.py",
-          "line": 1,
-          "end_line": 740
+          "path": "src/proyecto_modelos_lenguaje/api_planning.py",
+          "line": 257,
+          "end_line": 376
         }
       ]
     },
@@ -319,8 +319,8 @@
       "sources": [
         {
           "path": "src/proyecto_modelos_lenguaje/agent/planning.py",
-          "line": 1,
-          "end_line": 52
+          "line": 598,
+          "end_line": 713
         },
         {
           "path": "src/proyecto_modelos_lenguaje/agent/tools_planning.py",
@@ -462,6 +462,13 @@
       "to": "agent",
       "label": "plan validado",
       "classification": "cifras desde código"
+    },
+    {
+      "id": "plan-console",
+      "from": "planning",
+      "to": "app",
+      "label": "consola web",
+      "classification": "mismas cifras del LP"
     }
   ],
   "cards": [
@@ -484,7 +491,8 @@
         "Sin evidencia suficiente, la app declara fallback y muestra los fragmentos recuperados.",
         "Conversación con memoria: enrutador en dos etapas, variantes cadena y agente sobre el mismo hilo.",
         "Fragmentos con instrucciones embebidas se marcan; respuestas que copian el prompt se descartan.",
-        "Plataforma de agentes (spec 025): perfiles por público y un planificador que optimiza la producción con programación lineal sobre datos sintéticos declarados."
+        "Plataforma de agentes (spec 025): perfiles por público y un planificador que optimiza la producción con programación lineal sobre datos sintéticos declarados.",
+        "Plataforma web (spec 026): cuatro áreas; la consola de planificación dibuja las cifras del mismo optimizador del agente (paridad 12/12) y la API v1 exige el planificador en el backend."
       ]
     },
     {

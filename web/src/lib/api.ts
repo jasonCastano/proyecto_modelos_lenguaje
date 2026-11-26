@@ -2,6 +2,7 @@ import {
   ApiClientError,
   type CitedAnswer,
   type FaqResponse,
+  type AppVersion,
   type HealthStatus,
   type Mode,
   type RetrievalFragment,
@@ -135,6 +136,11 @@ export function generateFaq(
     body: JSON.stringify({ limit, mode }),
     signal,
   });
+}
+
+/** Versión del servidor: el pie la muestra para saber qué versión se está viendo. */
+export function getVersion(): Promise<AppVersion> {
+  return request<AppVersion>("/version");
 }
 
 export function health(probe = false): Promise<HealthStatus> {

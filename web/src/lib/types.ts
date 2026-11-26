@@ -83,6 +83,13 @@ export interface FaqResponse {
   items: FaqItem[];
 }
 
+/** Versión que sirve el backend (`GET /api/version`): commit y compilación web. */
+export interface AppVersion {
+  commit: string;
+  web: "ok" | "stale" | "missing";
+  web_build: string | null;
+}
+
 export interface HealthStatus {
   ok: boolean;
   provider: string;

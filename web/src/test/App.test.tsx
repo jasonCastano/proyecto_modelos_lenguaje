@@ -6,6 +6,7 @@ vi.mock("../pages/Agent", () => ({ Agent: () => <h1>Agente</h1> }));
 vi.mock("../pages/Planning", () => ({ Planning: () => <h1>Planificación</h1> }));
 vi.mock("../pages/Evidence", () => ({ Evidence: () => <h1>Evidencia</h1> }));
 vi.mock("../lib/api", () => ({
+  getVersion: vi.fn().mockResolvedValue({ commit: "abc1234", web: "ok", web_build: "0123456789ab" }),
   health: vi.fn().mockResolvedValue({
     ok: false,
     provider: "deepseek",
@@ -49,6 +50,11 @@ describe("App (spec 026, T021)", () => {
   it("no consulta el acceso a la planificación al cargar (spec 027)", () => {
     render(<App />);
     expect(planning.getAccess).not.toHaveBeenCalled();
+  });
+
+  it("el pie muestra la versión que sirve el backend", async () => {
+    render(<App />);
+    expect(await screen.findByTestId("app-version")).toHaveTextContent("Versión abc1234");
   });
 
   it("la declaración académica está en todas las áreas", () => {

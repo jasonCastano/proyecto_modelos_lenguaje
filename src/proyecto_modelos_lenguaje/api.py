@@ -1032,6 +1032,30 @@ if WEB_BUILD_STATUS != "ok":
         "%s %s", webbuild.MESSAGES[WEB_BUILD_STATUS], webbuild.FIX
     )
 
+APP_COMMIT = webbuild.source_commit()
+
+
+@app.get("/api/version")
+def version() -> dict[str, Any]:
+    """Qué versión sirve este proceso: commit con el que arrancó y compilación web en disco.
+
+    ``make app`` lo consulta para no confundir un servidor viejo con la versión actual.
+    """
+    return webbuild.version_info(WEB_DIST.parent, commit=APP_COMMIT)
+
+
+@app.middleware("http")
+async def cache_policy(request: Request, call_next: Any) -> Response:
+    """``index.html`` sin caché (siempre la versión actual); recursos con hash, inmutables."""
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/assets/"):
+        response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    elif not path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 if WEB_DIST.is_dir():
     assets = WEB_DIST / "assets"
     if assets.is_dir():

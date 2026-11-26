@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { audienceLabel, usePlatform } from "../../lib/platform";
 import type { Route } from "../../lib/router";
+import type { AppVersion } from "../../lib/types";
 import { AREAS, CaneRail } from "./CaneRail";
 
 export const ACADEMIC_NOTE =
@@ -32,11 +33,21 @@ export function TopBar({ route, demo }: { route: Route; demo: boolean }) {
   );
 }
 
-export function AcademicFooter({ synthetic }: { synthetic: boolean }) {
+function versionText(version: AppVersion): string {
+  const web = version.web === "ok" ? "" : " · la web compilada está desactualizada: ejecuta make app";
+  return `Versión ${version.commit}${web}`;
+}
+
+export function AcademicFooter({ synthetic, version }: { synthetic: boolean; version?: AppVersion | null }) {
   return (
     <footer className="academic-footer">
       <p>{ACADEMIC_NOTE}</p>
       {synthetic ? <p className="academic-footer__synthetic">{SYNTHETIC_LABEL}</p> : null}
+      {version ? (
+        <p className="academic-footer__version" data-testid="app-version">
+          {versionText(version)}
+        </p>
+      ) : null}
     </footer>
   );
 }
@@ -45,10 +56,11 @@ interface AppShellProps {
   route: Route;
   demo: boolean;
   notice?: string | null;
+  version?: AppVersion | null;
   children: ReactNode;
 }
 
-export function AppShell({ route, demo, notice, children }: AppShellProps) {
+export function AppShell({ route, demo, notice, version, children }: AppShellProps) {
   const synthetic = route === "/planificacion";
   return (
     <div className="app-shell">
@@ -66,7 +78,7 @@ export function AppShell({ route, demo, notice, children }: AppShellProps) {
         <main className="app-main" id="contenido" tabIndex={-1}>
           {children}
         </main>
-        <AcademicFooter synthetic={synthetic} />
+        <AcademicFooter synthetic={synthetic} version={version} />
       </div>
     </div>
   );

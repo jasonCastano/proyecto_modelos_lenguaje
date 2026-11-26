@@ -5,9 +5,9 @@
 import { useEffect, useState } from "react";
 
 import { AppShell } from "./components/shell/AppShell";
-import { health as fetchHealth } from "./lib/api";
+import { health as fetchHealth, getVersion } from "./lib/api";
 import { useRoute } from "./lib/router";
-import type { HealthStatus, Mode } from "./lib/types";
+import type { AppVersion, HealthStatus, Mode } from "./lib/types";
 import { Agent } from "./pages/Agent";
 import { Evidence } from "./pages/Evidence";
 import { Home } from "./pages/Home";
@@ -18,9 +18,13 @@ const NOT_FOUND = "Esa página no existe; te llevamos a la entrada.";
 export default function App() {
   const { route, notFound } = useRoute();
   const [health, setHealth] = useState<HealthStatus | null>(null);
+  const [version, setVersion] = useState<AppVersion | null>(null);
 
   useEffect(() => {
     let active = true;
+    void getVersion()
+      .then((result) => active && setVersion(result))
+      .catch(() => undefined);
     void fetchHealth()
       .then((result) => active && setHealth(result))
       .catch(() => {
@@ -56,7 +60,12 @@ export default function App() {
   const mode: Mode = health && !health.configured ? "demo" : "real";
 
   return (
-    <AppShell demo={mode === "demo"} notice={notFound ? NOT_FOUND : null} route={route}>
+    <AppShell
+      demo={mode === "demo"}
+      notice={notFound ? NOT_FOUND : null}
+      route={route}
+      version={version}
+    >
       {route === "/" ? <Home health={health} /> : null}
       {route === "/agente" ? <Agent mode={mode} /> : null}
       {route === "/planificacion" ? <Planning /> : null}

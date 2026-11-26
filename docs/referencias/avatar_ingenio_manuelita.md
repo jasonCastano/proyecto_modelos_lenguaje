@@ -1,11 +1,11 @@
 ---
 file: avatar_ingenio_manuelita.png
 sha256: dac47b3faccc992731f0d4abdf011ad08e7d53482f8098663b06234410067e7e
-origin: ""
-rights: ""
-real_person: ""
-brand_elements: ""
-confirmed_by: ""
+origin: "Imagen generada con IA; no representa a una persona real"
+rights: "El integrante declara tener derechos de uso de la imagen"
+real_person: false
+brand_elements: false
+confirmed_by: "Roberto José Guerrero (2026-11-26)"
 ---
 
 # Ficha de origen: imagen de referencia del video pitch (spec 028)

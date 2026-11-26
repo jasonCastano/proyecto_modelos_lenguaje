@@ -8,7 +8,7 @@
 #
 # Al cambiar el texto de un bloque, la escena aprobada de ese bloque queda desactualizada y se revisa de nuevo.
 
-version = "1.0.0"
+version = "1.1.0"
 language = "es"
 max_seconds = 57
 
@@ -41,5 +41,5 @@ synthetic = true
 
 [[block]]
 id = "accion"
-narration = "Valer-IA es un proyecto académico, no un canal oficial de Manuelita. Entra, elige tu perfil y empieza a preguntar."
+narration = "Conocer Manuelita ya no es buscar: es preguntar. Entra a Valer-IA, elige tu perfil y haz tu primera pregunta hoy."
 claims = []

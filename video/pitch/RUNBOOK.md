@@ -1,10 +1,37 @@
 # Runbook: producir el video pitch con MAGI-2 (spec 028)
 
-El video de unos 57 s que abre la entrada se arma con 6 escenas generadas con **MAGI-2 Preview** de Sand.ai
-(Apache 2.0). Este runbook se sigue **una vez**, o cuando cambia una escena. La web y las pruebas no dependen de
-MAGI-2.
+El video de unos 57 s que abre la entrada se arma con 6 escenas generadas con **MAGI-2** de Sand.ai. Este runbook
+se sigue **una vez**, o cuando cambia una escena. La web y las pruebas no dependen de MAGI-2.
 
-Fuentes del modelo:
+**Vía principal (revisión 2026-11-26)**: la API de Higgsfield, desde el equipo del integrante, con
+`pml pitch generate` (sección A). La vía con los pesos abiertos en 8× H100 queda como alternativa (secciones 1 a 4).
+
+## A. Generar con la API de Higgsfield (vía principal)
+
+1. **Clave**: en `.env`, `HIGGSFIELD_API_KEY=<id>:<secreto>` (consola de Higgsfield). Nunca en otro archivo.
+2. **Saldo**: entre 5 y 20 USD. MAGI-2 cuesta unos 0,08 USD por segundo, así que 6 escenas de 10 s son 4,80 USD.
+   El tope total está en `config/pitch.toml` (`max_usd = 20`) y el comando se niega a pasarlo.
+3. **Plan sin gastar**: `uv run pml pitch generate --dry-run --json`. Muestra 6 escenas, 60 s, el costo y el
+   cuerpo de cada solicitud.
+4. **Calibración**: `uv run pml pitch generate --calibrate --yes --json`. Genera un clip de 4 s (unos 0,32 USD) en
+   `video/pitch/calibracion/` y comprueba:
+   - la duración pedida;
+   - el audio;
+   - que el clip salga vertical 1080×1920.
+
+   Si algo no coincide, se corrige `[higgsfield.fields]` o `aspect_ratio` en `config/pitch.toml` y se repite.
+5. **Escenas**: `uv run pml pitch generate --yes --json`. Se generan en serie; cada una tarda unos minutos.
+   - Cada clip queda en `video/pitch/escenas/escena-0N.mp4`.
+   - `escenas.json` registra su `job` (solicitud, estado, costo) y queda `generada`.
+   - Las escenas `generada` o `aprobada` no se regeneran sin `--force`.
+6. **Revisar**: paso 5 de este runbook. Una escena descartada se regenera con
+   `pml pitch generate --scene escena-0N`, con otra semilla o con el prompt ajustado.
+
+**Qué se sube a Higgsfield**: solo la imagen de referencia normalizada a 1080×1920 y el texto del prompt de cada
+escena. Nunca el guion narrado, datos del corpus, la clave ni datos personales. Higgsfield conserva las solicitudes
+y sus resultados 7 días.
+
+Fuentes del modelo abierto (alternativa):
 
 - <https://huggingface.co/sand-ai/MAGI-2-preview>
 - <https://github.com/SandAI-org/MAGI-2-preview>
@@ -27,7 +54,7 @@ Se consultaron el 2026-11-25. Si cambian, se actualiza este archivo y el ADR 003
 3. **Narración**. `uv run pml pitch narrate` genera la voz Phonon (spec 016) en `video/pitch/narracion/` y falla
    si un bloque no cabe en 9,5 s. Si falla, se recorta el texto del bloque en `guion.toml`; no se acelera la voz.
 
-## 1. Máquina de generación
+## 1. Alternativa: máquina de generación con los pesos abiertos
 
 | Requisito | Valor (README oficial) |
 |---|---|
@@ -127,8 +154,9 @@ uv run pml pitch check web/public/media/pitch-valeria.mp4 --json
 - 25 MB o menos;
 - subtítulos que cubran todo el video.
 
-El montaje graba el rótulo «Video generado con IA · Valer-IA es un proyecto académico, no un canal oficial de
-Manuelita» en los primeros 3 s y en los últimos 4 s.
+El video no lleva rótulo grabado. La declaración «Video generado con IA · Valer-IA es un proyecto académico, no un
+canal oficial de Manuelita» la muestra la web junto al video y está en la transcripción. Por eso el video se publica
+solo en la web.
 
 ## 7. Publicar
 

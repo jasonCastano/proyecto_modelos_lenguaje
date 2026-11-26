@@ -35,7 +35,11 @@
   un detalle de implementación elegido aquí. El resto (dónde se genera, cómo se sirve) queda para el plan.
 - **Supuestos para revisar en `/speckit-clarify`**:
   - El video guía de YouTube no se pudo revisar; se usa la estructura estándar del pitch.
-  - El origen de la imagen de referencia (FR-008) debe confirmarse antes de generar.
+  - El origen de la imagen de referencia (FR-008) quedó confirmado en su ficha el 2026-11-26.
   - El video se muestra primero en la entrada, sin sonido y con opción de saltarlo. Es la lectura de «mostrar de
     primero» compatible con accesibilidad.
 - Validación en una iteración: todos los ítems pasan.
+- **Revisión 2026-11-26 (API de Higgsfield)**: el usuario pidió generar con MAGI-2 por la API de Higgsfield y ya
+  tiene la clave en el archivo de entorno. Se agregaron FR-025 a FR-028, SC-008, SC-009, los casos borde de la API
+  y la entidad «Trabajo de generación». Higgsfield se nombra porque el usuario lo eligió; el identificador del
+  modelo, la autenticación y el formato vertical quedan para el plan. Validación de nuevo: todos los ítems pasan.

@@ -33,4 +33,4 @@
 - Contraste AA, verificado con axe-core sin violaciones serias.
 - Sin desplazamiento horizontal de 360 a 1920 px.
 - La declaración «Video generado con IA · proyecto académico, no canal oficial de Manuelita» es visible como texto
-  junto al video, además de estar grabada en él.
+  junto al video en todos los estados (abierto, compacto y con falla). El video no la lleva grabada.

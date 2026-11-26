@@ -6,6 +6,9 @@ Fuentes:
 - README: <https://github.com/SandAI-org/MAGI-2-preview>.
 - Ambas consultadas el 2026-11-25.
 - Lo que esas páginas no dicen se marca como *no indicado*.
+- Revisión 2026-11-26: documentación de la API de Higgsfield (<https://docs.higgsfield.ai>: autenticación,
+  solicitudes, archivos, errores, límites y webhooks), su blog «Best Ways to Access MAGI-2» (2026-11-25) y un
+  sondeo de la API con la clave del integrante (R11). R1 describe los pesos abiertos, que quedan como alternativa.
 
 ## R1. Capacidades y límites de MAGI-2 Preview
 
@@ -31,16 +34,21 @@ Fuentes:
 
 ## R2. Dónde se genera
 
-- **Decision**: la generación es un trabajo **fuera de línea y único**. Corre en una máquina alquilada con 8× H100 o
-  H200 usando la imagen Docker oficial. El repositorio guarda solo las entradas (guion, manifiesto de escenas,
-  imagen) y las salidas aprobadas (clips y video final).
-- **Rationale**: el equipo local (RTX 3080 Ti, 16 GB) no puede correr el modelo. La web no debe depender de una
-  GPU ni de un servicio externo para mostrar el video (spec, *Dónde se genera*).
+- **Decision** (revisada el 2026-11-26): las escenas se generan con **MAGI-2 alojado en Higgsfield**, por su API,
+  desde el equipo del integrante con `pml pitch generate`. Es un trabajo **único**, fuera de la app y de la CI. El
+  repositorio guarda las entradas (guion, manifiesto, prompts, imagen y su ficha) y las salidas aprobadas (clips y
+  video final).
+- **Rationale**:
+  - el integrante ya tiene la clave y saldo;
+  - cuesta unos 5 USD por las 6 escenas, frente a 40–80 USD de alquilar 8 GPU;
+  - no exige descargar 307 GB ni preparar Docker;
+  - el modelo alojado es el MAGI-2 completo, a 1080p.
 - **Alternatives considered**:
-  - **Space o API de terceros**: no hay proveedor oficial, y subir la imagen y el guion a un tercero sin acuerdo
-    es otro riesgo.
-  - **Esperar la variante destilada**: sin fecha.
-  - **Otro modelo**: la spec exige MAGI-2.
+  - **Pesos abiertos en 8× H100 alquiladas** (decisión anterior): queda documentada en `RUNBOOK.md` como
+    alternativa; `pml pitch samples` se mantiene.
+  - **API directa de Sand.ai**: sin recargas de autoservicio a noviembre de 2026.
+  - **SandBase u otros agregadores**: documentan el esquema, pero exigen otra cuenta y otra clave.
+  - **Editor web de Higgsfield a mano**: posible, pero sin registro reproducible de cada escena (FR-012).
 
 ## R3. Voz del pitch
 
@@ -103,13 +111,22 @@ Fuentes:
 - **Alternatives considered**: descargarlo de una URL externa al compilar. Se descarta porque rompe el clon sin red
   y crea otra fuente que mantener.
 
-## R7. Declaración de IA en pantalla (FR-009)
+## R7. Declaración de IA (FR-009, revisada el 2026-11-26)
 
-- **Decision**: el montaje **graba en el video** un rótulo en los primeros 3 s y en los últimos 4 s: «Video generado
-  con IA · Valer-IA es un proyecto académico, no un canal oficial de Manuelita». También va en la portada y en la
-  transcripción.
-- **Rationale**: grabado en el archivo, el rótulo acompaña al video aunque se descargue o comparta fuera de la web.
-- **Alternatives considered**: superponerlo solo en la web. Se pierde al compartir el archivo.
+- **Decision**: el video **no** lleva rótulo grabado, por decisión del integrante, para que funcione como un
+  elevator pitch limpio. La declaración «Video generado con IA · Valer-IA es un proyecto académico, no un canal
+  oficial de Manuelita» va:
+  - como texto visible junto al video en la entrada (`.pitch__disclaimer`);
+  - en la transcripción.
+
+  El cierre narrado es un llamado a la acción.
+- **Rationale**: la web es el único lugar donde se publica el video. Allí la declaración siempre está a la vista, así
+  que se cumple §10 sin cargar el pitch con un aviso.
+- **Alternatives considered**:
+  - rótulo grabado en 0–3 s y en los últimos 4 s (decisión anterior), descartado por el integrante;
+  - declaración narrada en el cierre, cambiada por un llamado a la acción.
+- **Consecuencia**: si el archivo se comparte fuera de la web, no lleva la declaración. Por eso el video no se
+  publica en otros canales.
 
 ## R8. Afirmaciones con fuente (FR-004)
 
@@ -147,3 +164,118 @@ Fuentes:
 - **Rationale**: la constitución exige que el avatar no imite a personas reales. La imagen no trae metadatos de
   origen, así que la confirmación debe ser explícita.
 - **Alternatives considered**: asumirlo sin registro. No es verificable.
+
+## R11. MAGI-2 en la API de Higgsfield: modelo y campos
+
+Sondeo del 2026-11-26 con la clave del integrante. Solo se enviaron cuerpos inválidos, que la API rechaza con 400
+sin crear trabajos ni cobrar.
+
+- **Catálogo** (`GET https://api.higgsfield.ai/models`, 108 modelos). Hay tres entradas de MAGI-2:
+  - `sand/magi-2/image-to-video`: «Animate a still image into a 1080p video, with an optional final frame to guide
+    the ending. […] choose a duration from 4 to 30 seconds, with optional generated audio»;
+  - `sand/magi-2/text-to-video`: menciona «one of six aspect ratios»;
+  - `sand/magi-2/reference-to-video`.
+
+  El catálogo no publica su `input_schema` (viene `null`), y la documentación de Higgsfield todavía no tiene página
+  de MAGI-2.
+- **Campos confirmados** en `sand/magi-2/image-to-video` por los mensajes del validador:
+
+  | Campo | Regla confirmada |
+  |---|---|
+  | `image_url` | Obligatorio, cadena |
+  | `prompt` | Cadena |
+  | `resolution` | Enum `["1080p"]` |
+  | `seed` | Entero |
+
+- **Confirmado por la calibración (2026-11-26)**:
+  - `duration` y `generate_audio` funcionan: se pidieron 4 s y salieron 4,24 s, con audio;
+  - **`aspect_ratio: "9:16"` es necesario**. Sin él, la primera calibración salió **1920×1080**: MAGI-2 extendió
+    la imagen vertical a 16:9 con más paisaje a los lados. Con `"9:16"`, la segunda salió **1080×1920**;
+  - cada trabajo de 4 s tardó unos 15 min en la cola de Higgsfield, así que `timeout_s` sube a 3600;
+  - las dos calibraciones costaron 0,64 USD.
+- **Antes de calibrar** estaban sin confirmar los nombres de los campos de duración, audio y cuadro final. El validador informa un error a
+  la vez y acepta campos desconocidos, así que un nombre mal escrito se ignoraría sin aviso. Los nombres probables
+  son `duration` y `generate_audio`, que usan los demás modelos del catálogo y SandBase.
+- **Decision**:
+  - **Calibración**: antes de las 6 escenas se corre una generación pagada de 4 s, que cuesta unos 0,32 USD
+    (`pml pitch generate --calibrate`). ffprobe confirma la duración, el tamaño y la pista de audio del resultado.
+  - **Nombres configurables**: los nombres de campo viven en `config/pitch.toml`, así que si la calibración muestra
+    otro nombre se corrige sin tocar código.
+- **Alternatives considered**:
+  - Asumir los nombres: un nombre mal escrito haría salir 6 clips de duración por defecto, con dinero gastado.
+  - Pedir el esquema a soporte: lento, y la calibración lo resuelve por 0,32 USD.
+
+## R12. Autenticación con Higgsfield
+
+- **Decision**:
+  - **Cabecera**: `Authorization: Key <id>:<secreto>`, contra `https://api.higgsfield.ai` (docs:
+    *Authentication*).
+  - **Clave**: `HIGGSFIELD_API_KEY` en `.env` ya trae el par `id:secreto`. Se verificó su forma sin imprimirla.
+    Con ella, `GET /models` responde 200 y el modelo responde 400 de validación, no 401.
+  - **Lectura**: el CLI la lee con `python-dotenv`, igual que `DEEPSEEK_API_KEY`.
+  - **Cliente**: se usa `httpx`, que ya es dependencia, y no el SDK `higgsfield-client`, que lee `HF_KEY`.
+- **Rationale**:
+  - sin dependencias nuevas;
+  - `HF_*` choca con `HF_TOKEN` de Hugging Face, que ya usa la voz Phonon;
+  - con un cliente propio, la clave no aparece en registros ni excepciones: se redacta en todo mensaje de error
+    (FR-026).
+- **Errores esperados** (docs: *Errors*):
+
+  | Código | Significado | Qué hace el comando |
+  |---|---|---|
+  | 401 | Credenciales inválidas | Pide revisar `.env` |
+  | 403 | Saldo insuficiente | Pide recargar; no reintenta |
+  | 404 | Modelo no disponible para la cuenta | Se detiene |
+  | 400, 422 | Validación | Se detiene y muestra el detalle |
+  | 429 | Cola llena | Espera `Retry-After` y reintenta |
+  | 503 | Admisión no disponible | Reintenta con espera |
+
+  Los trabajos `failed` y `nsfw` no se cobran.
+- **Alternatives considered**: el SDK oficial (dependencia nueva y variable `HF_KEY`), o cabeceras heredadas
+  `hf-api-key`/`hf-secret` (en retiro).
+
+## R13. Formato vertical e imagen como primer cuadro
+
+- **Primer cuadro**: sí. El modo `image-to-video` «anima una imagen fija», con cuadro final opcional; la imagen
+  es el inicio del clip. Es lo que pide FR-007 para la coherencia entre escenas.
+- **Vertical**:
+  - El catálogo solo menciona relaciones de aspecto para `text-to-video`, pero `image-to-video` también acepta
+    `aspect_ratio`. **Sin él, sale 16:9 aunque la imagen sea vertical**; esto lo mostró la calibración.
+  - La referencia mide 941×1672, una proporción de 0,5628, frente a 0,5625 de 9:16. Se envía
+    `aspect_ratio: "9:16"`.
+  - **Decision**: antes de subirla, `generate` normaliza la referencia a 1080×1920 con ffmpeg (lanczos y relleno
+    de 1 px) en un archivo temporal, para que el clip salga 9:16 a 1080p. La calibración lo confirma. El montaje
+    ya escala y recorta a 1080×1920 si el clip trae otra medida, por ejemplo 1088×1920.
+- **Cuadro final**: no se usa. Su nombre de campo no está confirmado y la continuidad entre escenas ya la da la
+  misma imagen inicial.
+- **Subida**: `image_url` exige una URL. El flujo de archivos de Higgsfield es:
+  1. `POST /files/generate-upload-url` con `{"content_type": "image/png"}`;
+  2. `PUT` del archivo a `upload_url` con `upload_headers` y sin credenciales;
+  3. usar `public_url`, de retención temporal.
+
+  Se sube una vez por corrida y se reutiliza en todas las escenas.
+
+## R14. Flujo, costo y control del gasto
+
+- **Envío**:
+  - `POST https://api.higgsfield.ai/sand/magi-2/image-to-video`;
+  - con cabecera `Idempotency-Key` = `escena-0N:<block_hash>:<seed>`, para que un reintento no cobre dos veces;
+  - responde `request_id` y `status_url`.
+- **Espera**:
+  - consulta `status_url` cada 10 s, con un tope de 15 min;
+  - estados: `queued`, `in_progress`, `completed`, `failed`, `nsfw` y `canceled`;
+  - al completar, `video.url` se descarga a `video/pitch/escenas/escena-0N.mp4`, porque los resultados se
+    conservan 7 días;
+  - sin webhooks, porque el equipo local no expone una URL pública.
+- **En serie**: el blog de MAGI-2 indica una generación concurrente por cuenta por defecto. Más trabajos quedarían
+  en cola; en serie, el costo y los errores son más claros.
+- **Costo**:
+  - 0,08 USD por segundo (blog de Higgsfield, 2026-11-25): 6 × 10 s = 4,80 USD, más 0,32 USD de calibración;
+  - `config/pitch.toml` fija `usd_per_second` y `max_usd = 20` (SC-008);
+  - antes de enviar, el comando muestra segundos y costo, suma lo ya gastado según `escenas.json` y se niega a
+    pasar el tope;
+  - pide confirmación (`--yes` la omite) y `--dry-run` no llama a la API (FR-027).
+- **Qué se sube**: solo la imagen de referencia normalizada y el texto del prompt de cada escena. Nunca el guion
+  narrado, datos del corpus, claves ni datos personales.
+- **Pruebas**: `httpx.MockTransport` simula catálogo, subida, envío, estados y errores (401, 403, 429, `failed`,
+  `nsfw`) sin red (FR-028).

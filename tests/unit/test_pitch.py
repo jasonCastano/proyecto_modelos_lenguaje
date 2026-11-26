@@ -21,7 +21,7 @@ BLOCKS = {
     "solucion": "Valer-IA reúne esa información pública en un solo agente para cinco públicos.",
     "diferencia": "Cita cada fuente, calcula las cifras en código y pide un sí antes de guardar.",
     "uso": "Elige tu perfil, pregunta y revisa las fuentes. Si planificas, usa datos sintéticos.",
-    "accion": "Proyecto académico, no canal oficial de Manuelita. Entra y empieza a preguntar.",
+    "accion": "Conocer Manuelita ya no es buscar: es preguntar. Entra y haz tu primera pregunta.",
 }
 UNITS = {
     "unit_1864": "Lo que inició como un trapiche para producir azúcar en 1864 es hoy el ingenio.",
@@ -194,7 +194,7 @@ def test_scene_manifest_rules(project: dict[str, Path]) -> None:
         },
     )
     errors = " ".join(run_validate(project).errors)
-    for fragment in ("9.5", "1080x1920", "MAGI-2", "estado", "revisión"):
+    for fragment in ("9.5", "1080x1920", "el modelo debe ser", "estado", "revisión"):
         assert fragment in errors
 
 
@@ -380,3 +380,44 @@ def test_repository_script_is_valid_except_external_confirmation() -> None:
     report = pitch.validate(pitch.PITCH_ROOT)
     others = [e for e in report.errors if "ficha" not in e and "imagen" not in e]
     assert others == [] and report.missing_units == [] and report.unsupported_numbers == []
+
+
+# --------------------------------------------------------------------------- Higgsfield (T042)
+
+
+def test_old_scenes_load_with_defaults(project: dict[str, Path]) -> None:
+    scene = pitch.load_scenes(project["root"])[0]
+    assert scene["provider"] == "local" and scene["model"] == pitch.LOCAL_MODEL
+    assert scene["request_seconds"] == 10 and scene["job"] is None and scene["history"] == []
+
+
+def test_higgsfield_scenes_validate(project: dict[str, Path]) -> None:
+    write_scenes(
+        project["root"],
+        **{
+            f"escena-{i:02d}": {"provider": "higgsfield", "model": pitch.MODEL} for i in range(1, 7)
+        },
+    )
+    assert run_validate(project).ok
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        ({"provider": "otro"}, "provider"),
+        ({"provider": "higgsfield", "model": pitch.LOCAL_MODEL}, "con higgsfield"),
+        ({"request_seconds": 3}, "request_seconds"),
+        ({"request_seconds": 31}, "request_seconds"),
+        ({"status": "rara"}, "estado"),
+    ],
+)
+def test_scene_rules_for_generation(project: dict[str, Path], change: dict, message: str) -> None:
+    write_scenes(project["root"], **{"escena-02": change})
+    report = run_validate(project)
+    assert not report.ok and any(message in error for error in report.errors)
+
+
+@pytest.mark.parametrize("status", ["generando", "generada", "error"])
+def test_generation_statuses_are_valid(project: dict[str, Path], status: str) -> None:
+    write_scenes(project["root"], **{"escena-02": {"status": status}})
+    assert run_validate(project).ok

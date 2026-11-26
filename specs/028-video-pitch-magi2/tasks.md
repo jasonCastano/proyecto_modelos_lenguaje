@@ -16,9 +16,13 @@ pruebas. Las pruebas de cada historia se escriben primero y deben fallar.
 **Organization**: tareas agrupadas por historia. Backend y CLI en `src/proyecto_modelos_lenguaje/`, producción en
 `video/pitch/`, web en `web/src/` y `web/public/media/`.
 
-**⚠️ Tareas con recurso externo**: T024 necesita una máquina con 8× H100/H200 (MAGI-2, research R1–R2), y T008
-necesita que el integrante confirme el origen de la imagen. Están marcadas con **[EXTERNO]**. Todo lo demás corre en
-el equipo local y en CI sin GPU ni red.
+**⚠️ Tareas con recurso externo**: están marcadas con **[EXTERNO]**. Todo lo demás corre en el equipo local y en CI
+sin GPU ni red.
+
+- **Gasto en Higgsfield** (revisión 2026-11-26, research R11–R14). T051, la calibración, y T024, las escenas,
+  llaman a la API de Higgsfield con `HIGGSFIELD_API_KEY` y gastan saldo. Solo se corren con la autorización
+  explícita del integrante.
+- **Imagen de referencia**: T008 ya está hecha; la ficha se confirmó el 2026-11-26.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -91,7 +95,7 @@ dependen de él.
   - `image: docs/referencias/avatar_ingenio_manuelita.png`;
   - `trim_s: 9.5`;
   - `clip`, `generated_at`, `duration_s` y `review` en `null` (contracts/production-files.md).
-- [ ] T008 **[EXTERNO]** El integrante confirma en `docs/referencias/avatar_ingenio_manuelita.md` el origen de la
+- [X] T008 **[EXTERNO]** El integrante confirma en `docs/referencias/avatar_ingenio_manuelita.md` el origen de la
   imagen (herramienta de IA y fecha), los derechos de uso, `real_person: false`, `brand_elements: false` y
   `confirmed_by`. Sin esto, `pml pitch validate` falla y no se genera (research R10, FR-008).
 
@@ -200,16 +204,20 @@ primer elemento de la entrada y termina con «Empezar con Valer-IA».
     derecha;
   - en teléfono, video arriba a todo el ancho con altura máxima de 70 vh;
   - sin desplazamiento horizontal de 360 a 1920 px.
-- [ ] T024 [US1] **[EXTERNO]** Generar las 6 escenas con MAGI-2 siguiendo `video/pitch/RUNBOOK.md` (T030) en una
-  máquina con 8× H100/H200:
-  1. `uv run pml pitch samples -o samples.json`.
-  2. Imagen Docker `sandai/magi-2-preview` y `SAMPLES=… SEED=… bash scripts/run_demo.sh`.
-  3. Traer cada `sample_00N.mp4` a `video/pitch/escenas/escena-0N.mp4`.
-  4. Registrar `model_revision` (tag o commit de la imagen), `generated_at` y `duration_s` en `escenas.json`.
-- [ ] T025 [US1] Revisar cada escena con los cuatro chequeos de `review`: `likeness`, `no_text`, `no_brand` y
-  `matches_script`. Marcar `aprobada` o `descartada` en `escenas.json`. Las descartadas vuelven a T024 con
-  `--scene` y otra semilla o indicación (FR-013).
-- [ ] T026 [US1] Producir el video final:
+- [X] T024 [US1] **[EXTERNO, gasta unos 4,80 USD]** Generar las 6 escenas con MAGI-2 por la API de Higgsfield
+  (revisado el 2026-11-26; requiere T040–T051):
+  1. `uv run pml pitch generate --dry-run`: 6 escenas, 60 s y unos 4,80 USD.
+  2. Con la autorización del integrante, `uv run pml pitch generate`. Cada clip queda en
+     `video/pitch/escenas/escena-0N.mp4`, y `escenas.json` registra `job`, `generated_at` y `duration_s` con
+     estado `generada`.
+  3. Confirmar en la salida `--json` que cada clip mide 1080×1920 (o 1088×1920), unos 10 s y tiene audio.
+
+  *Alternativa*: si Higgsfield no está disponible, seguir la sección de pesos abiertos del RUNBOOK
+  (`pml pitch samples` en 8× H100).
+- [X] T025 [US1] Revisar cada escena con los cuatro chequeos de `review`: `likeness`, `no_text`, `no_brand` y
+  `matches_script`. Marcar `aprobada` o `descartada` en `escenas.json`. Las descartadas se regeneran con
+  `pml pitch generate --scene escena-0N`, con otra semilla o indicación (FR-013).
+- [X] T026 [US1] Producir el video final:
   1. `uv run pml pitch narrate`;
   2. `uv run pml pitch assemble -o web/public/media/pitch-valeria.mp4`;
   3. `uv run pml pitch check web/public/media/pitch-valeria.mp4 --json`.
@@ -274,7 +282,7 @@ transcripción.
 de IA y de proyecto académico está en el video, la portada y la transcripción.
 
 **Independent Test**: con `RUNBOOK.md` y `escenas.json`, `pml pitch samples --scene escena-03` reproduce la entrada
-exacta de esa escena. El rótulo aparece en los primeros 3 s y los últimos 4 s del video.
+exacta de esa escena. La declaración de IA está junto al video en la web y en la transcripción, no grabada.
 
 - [X] T030 [P] [US3] Escribir `video/pitch/RUNBOOK.md`:
   - requisitos: 8× Hopper de clase 80 GB, unos 307 GB de checkpoints, Docker y ffmpeg;
@@ -291,7 +299,9 @@ exacta de esa escena. El rótulo aparece en los primeros 3 s y los últimos 4 s 
     `review`.
 
   Implementar esa comprobación en `pitch.py` (SC-007).
-- [X] T032 [P] [US3] En `tests/integration/test_pitch_assemble.py`, comprobar que el rótulo de IA está grabado:
+- [X] T032 [P] [US3] (Revisada el 2026-11-26: ahora prueba que **no** hay rótulo grabado,
+  `test_no_disclaimer_is_burned_in`.) En `tests/integration/test_pitch_assemble.py`, comprobar que el rótulo de IA
+  está grabado:
   - extraer con ffmpeg un cuadro en t=1 s y otro en t=duración−2 s;
   - verificar que difieren del clip de origen en la franja del rótulo (o, si hay OCR disponible, que contienen «IA»);
   - comprobar que `transcripcion.md` y la portada incluyen la declaración (FR-009, SC-006).
@@ -301,6 +311,184 @@ exacta de esa escena. El rótulo aparece en los primeros 3 s y los últimos 4 s 
     elemento de la entrada);
   - alternativas (servicio externo, horizontal, YouTube);
   - consecuencias (GPU alquilada, revisión humana).
+
+---
+
+## Phase 5b: User Story 3 - Generación por la API de Higgsfield y calibración (revisión 2026-11-26)
+
+**Goal**: `pml pitch generate` produce las escenas con MAGI-2 en Higgsfield, en serie, con:
+
+- tope de gasto;
+- confirmación previa;
+- `--dry-run`;
+- calibración previa de 4 s;
+- registro de cada trabajo en `escenas.json`;
+- la clave sin aparecer nunca (FR-025 a FR-028, SC-008, SC-009).
+
+**Independent Test**:
+
+- **Sin red**: `uv run pytest tests/unit/test_pitch_generate.py` en verde, con `httpx.MockTransport`.
+- **Con el repositorio**: `uv run pml pitch generate --dry-run --json` muestra 6 escenas, 60 s y 4,80 USD, sin
+  llamar a la API.
+
+### Tests for Higgsfield ⚠️
+
+- [X] T040 [P] [US3] Crear `config/pitch.toml` (contracts/production-files.md):
+  - `[higgsfield]`: `base_url = "https://api.higgsfield.ai"`, `model = "sand/magi-2/image-to-video"`,
+    `api_key_env = "HIGGSFIELD_API_KEY"`, `resolution = "1080p"`, `seconds = 10`, `audio = true`, `poll_s = 10` y
+    `timeout_s = 900`;
+  - `[higgsfield.fields]`: `duration = "duration"` y `audio = "generate_audio"`;
+  - `[budget]`: `usd_per_second = 0.08` y `max_usd = 20`.
+
+  Además:
+  - añadir `HIGGSFIELD_API_KEY=` a `.env.example`, sin valor, con el comentario «formato id:secreto, consola de
+    Higgsfield»;
+  - añadir `video/pitch/calibracion/` a `.gitignore`.
+- [X] T041 [P] [US3] Crear `tests/unit/test_pitch_generate.py`, sin red: `httpx.MockTransport`, clips sintéticos
+  de ffmpeg como respuesta de descarga y `tmp_path` como raíz. Casos:
+  1. **Clave**:
+     - sin `HIGGSFIELD_API_KEY`, falla antes de cualquier solicitud con un mensaje que nombra la variable y
+       `.env`;
+     - si no contiene `:`, falla igual.
+  2. **Cabecera**: es `Authorization: Key <id>:<secreto>`.
+  3. **Modelo**: si `GET /models` no lista `sand/magi-2/image-to-video`, falla sin enviar trabajos.
+  4. **Flujo feliz** de una escena:
+     - `POST /files/generate-upload-url` → `PUT upload_url` sin `Authorization` → `POST
+       /sand/magi-2/image-to-video`;
+     - el cuerpo es `{image_url, prompt, resolution: "1080p", seed, duration: 10, generate_audio: true}`, con la
+       cabecera `Idempotency-Key` = `escena-01:<block_hash>:2026`;
+     - estados `queued` → `in_progress` → `completed`;
+     - descarga `video.url` a `escenas/escena-01.mp4`;
+     - `escenas.json` queda con `status: "generada"`, `job.request_id`, `job.cost_usd == 0.8`, `generated_at` y
+       `duration_s`.
+  5. **Subida**: la imagen se sube una sola vez para varias escenas.
+  6. **En serie**: no se envía la escena 2 antes de que termine la 1.
+  7. **Aprobadas**: se omiten sin `--force` y se regeneran con `force=True`; el trabajo anterior pasa a
+     `history`.
+  8. **Tope**: con `max_usd` bajo, o con `history` que ya suma cerca del tope, se niega sin enviar.
+  9. **`dry_run=True`**: no hace solicitudes (MockTransport falla si recibe alguna) y devuelve el plan con
+     `seconds` y `cost_usd`.
+  10. **Errores**:
+      - 401 y 403 detienen la corrida sin tocar las escenas `aprobada`;
+      - 429 con `Retry-After: 1` reintenta y sigue;
+      - `failed` y `nsfw` dejan la escena en `error` con `cost_usd == 0` y el mensaje;
+      - si pasa `timeout_s`, la escena queda en `error`.
+  11. **Calibración**:
+      - `calibrate()` envía 4 s a la escena 1 y guarda en `calibracion/`, sin modificar `escenas.json`;
+      - informa ancho, alto, duración y audio;
+      - falla si la duración medida difiere de 4 s en más de 1 s o si falta el audio.
+  12. **SC-009**: en ningún caso la clave aparece en `str()` de excepciones, en la salida JSON, en `escenas.json`
+      ni en los registros (`caplog`).
+  13. **`prompt_text(scene)`**: arma el texto desde `prompts/escena-0N.json` (`scene`, `camera`, `audio`,
+      `constraints`) e incluye «sin texto en pantalla» y «sin logotipos».
+
+  Añadir una prueba con el marcador `network`, excluida por defecto: con la clave real, `GET /models` lista el
+  modelo. No genera nada.
+- [X] T042 [P] [US3] En `tests/unit/test_pitch.py`, actualizar la validación del manifiesto (data-model.md,
+  Escena):
+  - `status` ∈ {`pendiente`, `generando`, `generada`, `error`, `aprobada`, `descartada`};
+  - `provider` ∈ {`higgsfield`, `local`};
+  - `model == "sand/magi-2/image-to-video"` si `provider == "higgsfield"`, y `"sand-ai/MAGI-2-preview"` si
+    `local`;
+  - `request_seconds` entre 4 y 30;
+  - las entradas antiguas sin `provider`, `job` ni `history` se cargan con los valores por defecto.
+
+### Implementation for Higgsfield
+
+- [X] T043 [US3] Crear `src/proyecto_modelos_lenguaje/pitch_higgsfield.py` (research R12–R14):
+  - **Configuración y credenciales**:
+    - `HiggsfieldConfig.load(path="config/pitch.toml")`;
+    - `load_credentials(env)` lee `HIGGSFIELD_API_KEY` con `python-dotenv` y exige `id:secreto`.
+  - **Cliente** `HiggsfieldClient(config, credentials, transport=None)` sobre `httpx.Client`, con métodos:
+    - `list_models()`;
+    - `upload_image(path) -> public_url`: `POST /files/generate-upload-url` y luego `PUT` con `upload_headers`,
+      **sin** `Authorization`;
+    - `submit(body, idempotency_key) -> request_id, status_url`;
+    - `wait(status_url)`: consulta cada `poll_s` hasta `timeout_s` y devuelve el estado final;
+    - `download(url, dest)`.
+  - **Errores** tipados: `CredentialsError` (401 y clave ausente), `BalanceError` (403), `ModelUnavailable` (404,
+    423 y 503 tras reintentos), `ValidationFailed` (400 y 422) y `JobFailed` (`failed`, `nsfw` y `canceled`).
+    429 respeta `Retry-After`.
+  - **Clave**: un `redact()` la quita de todo mensaje de error y de los registros. Nunca se registra la URL de
+    subida.
+
+  T041 (casos 1–3, 10 y 12) en verde.
+- [X] T044 [US3] En `src/proyecto_modelos_lenguaje/pitch.py`, ampliar el modelo de escena (data-model.md):
+  - nuevos campos `provider`, `request_seconds`, `job` y `history`;
+  - estados `generando`, `generada` y `error`;
+  - la validación por `provider`;
+  - la carga compatible con el formato anterior.
+
+  `assemble` sigue exigiendo `aprobada`.
+
+  Actualizar `video/pitch/escenas.json`: las 6 escenas con `provider: "higgsfield"`, `model:
+  "sand/magi-2/image-to-video"`, `request_seconds: 10`, `job: null` e `history: []`.
+
+  Actualizar `docs/prompt_log.md` §3.24 con el modelo nuevo. T042 en verde.
+- [X] T045 [US3] Implementar en `src/proyecto_modelos_lenguaje/pitch.py` la función
+  `generate(root, *, scene=None, dry_run=False, force=False, client=None, confirm=None) -> GenerateReport`
+  (contracts/pitch-cli.md). Precondiciones:
+  - `validate` en verde;
+  - la ficha confirmada;
+  - el modelo en `list_models()`;
+  - el costo estimado más lo gastado (suma de `cost_usd` en `job` e `history`) ≤ `max_usd`.
+
+  Pasos:
+  1. `prompt_text(scene)` desde el caption.
+  2. Normalizar la referencia a 1080×1920 con ffmpeg (lanczos y relleno) en un archivo temporal.
+  3. Subirla una vez.
+  4. Por cada escena, en serie: escena a `generando`, `submit` con `Idempotency-Key` `escena-0N:<block_hash>:<seed>`,
+     `wait` y `download`.
+  5. Medir con `ffprobe`.
+  6. Guardar `job` y `generated_at` con estado `generada`; si falla, `error` con el mensaje redactado.
+
+  Guardar `escenas.json` después de cada escena, para no perder lo hecho si se interrumpe. T041 (casos 4–9 y 13) en
+  verde.
+- [X] T046 [US3] Implementar `calibrate(root, *, client=None, seconds=4) -> CalibrationReport` en `pitch.py`:
+  - escena 1 con `seconds=4`, guardada en `video/pitch/calibracion/calibracion.mp4`;
+  - informa `width`, `height`, `duration_s`, `audio` y `cost_usd`;
+  - `ok` exige duración 4 ± 1 s, audio y alto 1920 o 1920 ± 16;
+  - si falla, el mensaje sugiere revisar `[higgsfield.fields]` en `config/pitch.toml` (research R11).
+
+  No modifica `escenas.json`, pero suma su costo al gasto total en `video/pitch/calibracion/gasto.json`. T041
+  (caso 11) en verde.
+- [X] T047 [US3] Añadir a `src/proyecto_modelos_lenguaje/cli.py` el comando
+  `pml pitch generate [--scene escena-0N] [--calibrate] [--dry-run] [--yes] [--force] [--json]`:
+  - imprime el plan (escenas, segundos y costo) y pide confirmación por consola salvo `--yes` o `--dry-run`;
+  - devuelve 0 si todo quedó `generada` (o si la calibración pasa) y 1 si no.
+
+  Probar en `tests/unit/test_pitch_generate.py` que `--dry-run --json` no usa red y que sin `--yes` respeta la
+  respuesta «n».
+- [X] T048 [P] [US3] Reescribir `video/pitch/RUNBOOK.md`:
+  - **Higgsfield primero**:
+    - clave `id:secreto` en `.env`;
+    - saldo;
+    - `generate --dry-run`, `--calibrate` y `generate`;
+    - revisión;
+    - regenerar con `--scene`;
+    - costo esperado de 5 a 20 USD.
+  - **Pesos abiertos en 8× H100** como alternativa: se conservan los pasos actuales.
+  - **Datos**: qué se sube a Higgsfield (solo la imagen normalizada y los prompts) y por cuánto tiempo se conserva
+    (7 días).
+- [X] T049 [P] [US3] Actualizar la documentación de gobierno:
+  - **`docs/decisions/0032-video-pitch-magi2.md`**: la decisión 1 pasa a Higgsfield. En alternativas, la API
+    directa de Sand.ai, SandBase y las 8× H100. En consecuencias, el costo real, que se anota tras T024. También
+    los datos enviados a un tercero y la clave en `.env`.
+  - **`CONSTITUTION.md`** 2.3.0 (sin fusionar), §10 y fila del historial: «se genera con MAGI-2 por la API de
+    Higgsfield, una vez y fuera de la app; la clave vive solo en `.env`; a Higgsfield solo se suben la imagen
+    sintética y los prompts».
+  - **`README.md`**: sección «Video pitch» con `generate`.
+- [X] T050 [US3] Verificar sin gastar:
+  - `uv run pml pitch generate --dry-run --json` sobre el repositorio da 6 escenas, 60 s y 4,80 USD;
+  - una búsqueda de la clave en el repositorio da 0 resultados (SC-009).
+
+  Registrar ambos resultados en `specs/028-video-pitch-magi2/quickstart.md` §D.
+- [X] T051 [US3] **[EXTERNO, gasta unos 0,32 USD]** Con la autorización del integrante, correr
+  `uv run pml pitch generate --calibrate --json`. Si no pasa, corregir `[higgsfield.fields]` en `config/pitch.toml`
+  y repetir. Registrar en quickstart.md §D, «Calibración de 4 s»: tamaño, duración, audio, costo y nombres de
+  campo confirmados. También actualizar research R11, cambiando «sin confirmar» por los nombres que funcionaron.
+
+**Checkpoint**: con T040–T050, todo se prueba sin red. Con T051 aprobada, T024 genera las escenas reales.
 
 ---
 
@@ -330,6 +518,9 @@ exacta de esa escena. El rótulo aparece en los primeros 3 s y los últimos 4 s 
   meta es al menos 4 de 5.
 - [X] T039 Hacer commit a nombre de Robertto48, sin firmas de bot, con la constitución, el ADR y el código en el mismo
   commit. Los archivos de video van por LFS. No hacer push ni abrir el PR sin una petición explícita del integrante.
+- [X] T052 Tras T040–T050, correr `make check` y `make e2e` con `LANGSMITH_TRACING=false`. Registrar las cifras en
+  quickstart.md §D. Hacer commit a nombre de Robertto48, sin firmas de bot, con la spec, el plan, la ficha y el
+  código de Higgsfield. Sin push ni PR hasta que el integrante lo pida.
 
 ---
 
@@ -338,17 +529,23 @@ exacta de esa escena. El rótulo aparece en los primeros 3 s y los últimos 4 s 
 ### Phase Dependencies
 
 - **Setup (Phase 1)**: T001 → T002 → T003.
-- **Foundational (Phase 2)**: T004 → T005 → T006. T007 en paralelo. T008 (externo) bloquea solo la generación
-  (T024).
+- **Foundational (Phase 2)**: T004 → T005 → T006. T007 en paralelo. T008 hecha (2026-11-26).
 - **US1 (Phase 3)**:
   - Pruebas T009–T013 primero.
   - Código: T014, T015 → T016–T019.
   - Web: T020–T023, independiente de la generación.
-  - Producción: T024 (externo, requiere T008, T015, T016 y T030) → T025 → T026.
+  - Producción: T024 (externo, requiere T051) → T025 → T026.
+- **Higgsfield (Phase 5b)**:
+  - pruebas T040, T041 y T042 en paralelo;
+  - T043 → T044 → T045 → T046 → T047;
+  - T048 y T049 en paralelo con el código;
+  - T050 después de T047;
+  - T051 (gasto, con autorización) después de T050;
+  - luego T024.
 - **US2 (Phase 4)**: depende de T021 (mismo componente). No necesita el video real: las pruebas simulan el
   `<video>`.
 - **US3 (Phase 5)**: T030 antes de T024. T031 y T032 dependen de T016 y T018.
-- **Polish (Phase 6)**: al final. T038 requiere T026.
+- **Polish (Phase 6)**: al final. T038 requiere T026. T052 cierra la Phase 5b.
 
 ### User Story Dependencies
 
@@ -362,6 +559,7 @@ exacta de esa escena. El rótulo aparece en los primeros 3 s y los últimos 4 s 
 - US1: las pruebas T009–T013; T015 junto con T014; T020 junto con T016–T019.
 - US2: T027 junto con T028.
 - US3: T030, T031 y T032.
+- Higgsfield: T040, T041 y T042, y después T048 y T049 junto con T043–T047.
 - Polish: T035 junto con T036.
 
 ---
@@ -385,7 +583,8 @@ Task: "T020 transcripción y rutas en web/src/data/pitch.ts"
 1. Phases 1–2: estructura, LFS y validación.
 2. US1 sin GPU: guion con fuentes, captions, CLI (`samples`, `narrate`, `assemble`, `check`) y `PitchVideo` en
    primera posición. Con clips sintéticos se prueba toda la cadena.
-3. Con la ficha confirmada (T008) y GPU (T024): generar, revisar, montar y publicar el video real.
+3. Con la ficha confirmada (T008, hecha): comando de Higgsfield probado sin red (T040–T050), calibración de 4 s
+   (T051), y luego generar (T024), revisar, montar y publicar el video real.
 
 ### Incremental Delivery
 
@@ -399,8 +598,10 @@ Task: "T020 transcripción y rutas en web/src/data/pitch.ts"
 
 ## Notes
 
-- No se añade ninguna dependencia de Python ni de npm. ffmpeg y la voz Phonon ya están en el proyecto.
-- MAGI-2 nunca corre en CI ni en la aplicación. Las pruebas usan clips sintéticos de ffmpeg y una voz falsa.
+- No se añade ninguna dependencia de Python ni de npm. ffmpeg, `httpx`, `python-dotenv` y la voz Phonon ya están en
+  el proyecto.
+- MAGI-2 y Higgsfield nunca corren en CI ni en la aplicación. Las pruebas usan clips sintéticos de ffmpeg, una voz
+  falsa y `httpx.MockTransport`.
 - La portada (`pitch-valeria.webp`) y el VTT pueden existir antes del video real. El componente cae a ellos si el
   `.mp4` falta.
 

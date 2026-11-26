@@ -933,27 +933,29 @@ Requerimientos: [`specs/025-agentes-manuelita-idea7/`](specs/025-agentes-manueli
 ### Video pitch (spec 028)
 
 La entrada abre con un video de 57 s, formato elevator pitch, que explica qué es Valer-IA y cómo usarla. Sale de
-**MAGI-2 Preview** de Sand.ai, un modelo abierto de imagen y texto a video. MAGI-2 necesita 8 GPU H100, así que el
-video se genera **una vez, fuera de línea**, y la web solo lo sirve: arranca sin sonido y con subtítulos, se salta
-en un paso y, sin el archivo, muestra la portada y la transcripción. Llega con `git lfs pull`.
+**MAGI-2** de Sand.ai, un modelo de imagen y texto a video, que se usa por la **API de Higgsfield**. El video se
+genera **una vez**, fuera de la app, y la web solo lo sirve: arranca sin sonido y con subtítulos, se salta en un
+paso y, sin el archivo, muestra la portada y la transcripción. Llega con `git lfs pull`.
 
 ```bash
 uv run pml pitch validate --json   # guion con fuentes del oro, escenas y ficha de la imagen
-uv run pml pitch samples --scene escena-01 --prefix /workspace/repo/ -o samples-01.json   # entrada de MAGI-2
+uv run pml pitch generate --dry-run --json   # plan y costo, sin llamar a la API
+uv run pml pitch generate --calibrate --yes # clip de 4 s para confirmar campos y formato vertical
+uv run pml pitch generate --yes             # 6 escenas con MAGI-2 en Higgsfield (HIGGSFIELD_API_KEY en .env)
 uv run pml pitch narrate           # voz Phonon en español por bloque (≤ 9,5 s)
-uv run pml pitch assemble          # montaje con ffmpeg: rótulo de IA, subtítulos, portada
+uv run pml pitch assemble          # montaje con ffmpeg: narración, subtítulos, portada
 uv run pml pitch check web/public/media/pitch-valeria.mp4 --json
 ```
 
 La producción completa está en [`video/pitch/RUNBOOK.md`](video/pitch/RUNBOOK.md):
 
 1. Confirmar la ficha de la imagen de referencia.
-2. Generar las 6 escenas en la máquina con GPU.
+2. Generar las 6 escenas con `pml pitch generate` (tope de 20 USD; alternativa: pesos abiertos en 8× H100).
 3. Revisar cada escena.
 4. Montar el video.
 
-El video declara en pantalla que es generado con IA y que el proyecto es académico, no un canal oficial de
-Manuelita ([ADR 0032](docs/decisions/0032-video-pitch-magi2.md)).
+Junto al video, la entrada declara que es generado con IA y que el proyecto es académico, no un canal oficial de
+Manuelita. El video no lleva rótulo grabado ([ADR 0032](docs/decisions/0032-video-pitch-magi2.md)).
 
 ### Experiencia web y API
 

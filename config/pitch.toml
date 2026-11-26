@@ -1,0 +1,22 @@
+# Generación del video pitch con MAGI-2 por la API de Higgsfield (spec 028, research R11–R14).
+# La clave NO va aquí: vive solo en .env (HIGGSFIELD_API_KEY=<id>:<secreto>).
+
+[higgsfield]
+base_url = "https://api.higgsfield.ai"
+model = "sand/magi-2/image-to-video"
+api_key_env = "HIGGSFIELD_API_KEY"   # formato id:secreto, consola de Higgsfield
+resolution = "1080p"                 # único valor que acepta el modelo
+aspect_ratio = "9:16"                # sin este campo, MAGI-2 extiende la imagen a 16:9 (calibración)
+seconds = 10                         # 4–30 s por escena; el montaje usa 9,5 s
+audio = true                         # ambiente de MAGI-2 bajo la narración
+poll_s = 10
+timeout_s = 3600                     # la cola de MAGI-2 tardó ~15 min por trabajo (calibración)
+
+[higgsfield.fields]                  # nombres de campo; se confirman con `pml pitch generate --calibrate`
+duration = "duration"
+audio = "generate_audio"
+aspect_ratio = "aspect_ratio"
+
+[budget]
+usd_per_second = 0.08                # precio publicado por Higgsfield el 2026-11-25
+max_usd = 20                         # tope total de la producción (SC-008)

@@ -556,8 +556,18 @@ Prompts **de generación de video**, no del agente. `agent.md` y `profiles.md` n
 | `escena-05` | `uso` | `2030` | `video/pitch/prompts/escena-05.json` |
 | `escena-06` | `accion` | `2031` | `video/pitch/prompts/escena-06.json` |
 
-- **Estado**: escenas `pendiente`. La generación requiere 8× H100/H200 (`video/pitch/RUNBOOK.md`) y la ficha de la
-  imagen confirmada. Cada regeneración (nueva semilla o prompt) se anota aquí con su motivo.
+- **Guion 1.1.0** (2026-11-26): el cierre (`accion`) cambia de «Valer-IA es un proyecto académico, no un canal
+  oficial de Manuelita. Entra, elige tu perfil y empieza a preguntar.» a «Conocer Manuelita ya no es buscar: es
+  preguntar. Entra a Valer-IA, elige tu perfil y haz tu primera pregunta hoy.» **Motivo**: el integrante pidió un
+  cierre de elevator pitch y quitar el rótulo grabado. La declaración de IA queda como texto junto al video en la
+  web y en la transcripción.
+- **Generación por Higgsfield** (2026-11-26): el modelo es `sand/magi-2/image-to-video`. El texto que recibe es el
+  caption de cada escena unido por `pitch.prompt_text` (`subject`, `setting`, `action`, `Camera`, `Style`,
+  `Audio` y `Constraints`). El cuerpo lleva `resolution: "1080p"`, `duration: 10`, `generate_audio: true`,
+  `aspect_ratio: "9:16"` y la semilla de la tabla. La calibración mostró que sin `aspect_ratio` el clip sale 16:9.
+- **Estado** (2026-11-26): las 6 escenas se generaron en la primera pasada con las semillas de la tabla y quedaron
+  `aprobada`; no hubo regeneraciones. Detalle en `video/pitch/escenas.json` (`job` y `review` por escena). La alternativa con los pesos abiertos
+  requiere 8× H100/H200 (`video/pitch/RUNBOOK.md`). Cada regeneración (nueva semilla o prompt) se anota aquí con su motivo.
 
 ## 4. Pendiente
 

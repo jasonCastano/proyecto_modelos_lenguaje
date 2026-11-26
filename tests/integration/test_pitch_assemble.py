@@ -1,7 +1,7 @@
 """Montaje del video pitch con ffmpeg y clips sintéticos (spec 028, T011 y T032).
 
 No usa MAGI-2 ni la voz real: genera clips de 10 s con ``testsrc2`` y narraciones de tono puro, y
-comprueba el video, los subtítulos, la portada, la transcripción y el rótulo de IA grabado.
+comprueba el video, los subtítulos, la portada, la transcripción y que no lleva rótulo grabado.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ NARRATIONS = [
     ("solucion", "Valer-IA reúne esa información en un solo agente."),
     ("diferencia", "Cita cada fuente y calcula las cifras en código."),
     ("uso", "Elige tu perfil, pregunta y revisa las fuentes. Si planificas, usa datos sintéticos."),
-    ("accion", "Proyecto académico, no canal oficial de Manuelita. Empieza a preguntar."),
+    ("accion", "Conocer Manuelita ya no es buscar: es preguntar. Empieza hoy."),
 ]
 ON_SCREEN = "1 Perfil · 2 Pregunta · 3 Fuentes · 4 Planificación"
 
@@ -166,8 +166,8 @@ def _frame(video: Path, at: float, target: Path) -> Path:
     return target
 
 
-def test_ai_disclaimer_is_burned_in(produced: dict, tmp_path: Path) -> None:
-    """FR-009, SC-006: el rótulo oscurece su franja al inicio y al final, y no a mitad del video."""
+def test_no_disclaimer_is_burned_in(produced: dict, tmp_path: Path) -> None:
+    """FR-009 (revisión 2026-11-26): la declaración va en la web, no grabada en el video."""
     video, clip = Path(produced["video"]), produced["clip"]
     start = _band(_frame(video, 1.0, tmp_path / "out1.png")) - _band(
         _frame(clip, 1.0, tmp_path / "src1.png")
@@ -178,8 +178,7 @@ def test_ai_disclaimer_is_burned_in(produced: dict, tmp_path: Path) -> None:
     middle = _band(_frame(video, 25.0, tmp_path / "out3.png")) - _band(
         _frame(clip, 25.0 - 19.0, tmp_path / "src3.png")
     )
-    assert start < -20 and end < -20
-    assert abs(middle) < 12
+    assert abs(start) < 12 and abs(end) < 12 and abs(middle) < 12
 
 
 def test_assemble_refuses_unapproved_scenes(produced: dict, tmp_path: Path) -> None:

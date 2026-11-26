@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-25
 
-**Status**: Draft
+**Status**: Draft (revisión 2026-11-26: generación por la API de Higgsfield)
 
 **Input**: User description: "genera las especificaciones para usar el modelo de MAGI-2 de Sand.ai en este proyecto. Mi idea es usar la informacion de ingenio manuelita y crear un video generado que venda el producto de la plataforma web de Valer-IA. Usa la imagen de "D:\proyecto_modelos_lenguaje\docs\referencias\avatar_ingenio_manuelita.png" como referencia para el video y toda la informacion de Ingenio Manuelita. El video generado no debe exceder un minuto de duracion y debe tener el formato de un elevator pitch. Puedes usar este video como guia para el elevator pitch: https://www.youtube.com/watch?v=w0IX4mGw6Kk. El video se debe mostrar de primero cuando el cliente ingrese la aplicacion web y con el contenido del video conocer y saber como se debe usar a Valer-IA."
 
@@ -23,9 +23,13 @@ que venda la plataforma y enseñe a usarla:
 
 Es lo primero que ve el cliente al entrar a la web.
 
-MAGI-2 genera clips cortos, de unos 10 segundos, con audio a partir de texto o de una imagen más texto. Un pitch
-de hasta un minuto se compone, por tanto, de varias escenas que se generan, revisan y ensamblan **una vez**. La
-web sirve el video terminado; no lo genera en cada visita.
+MAGI-2 genera clips cortos con audio a partir de texto o de una imagen más texto. Un pitch de hasta un minuto se
+compone, por tanto, de varias escenas que se generan, revisan y ensamblan **una vez**. La web sirve el video
+terminado; no lo genera en cada visita.
+
+**Revisión 2026-11-26**: las escenas se generan con MAGI-2 a través de la **API de Higgsfield**, que lo ofrece por
+segundo generado. El integrante ya tiene la clave de la API en el archivo de entorno local. Esto reemplaza el
+alquiler de una máquina con 8 GPU, que queda solo como alternativa documentada.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -88,14 +92,17 @@ video aparece como opción para verlo de nuevo, no como bloqueo.
 
 ### User Story 3 - Producir el video de forma reproducible y honesta (Priority: P3)
 
-El equipo produce el video con MAGI-2 a partir de:
+El equipo produce el video con MAGI-2, por la API de Higgsfield, a partir de:
 
 - un guion breve basado en el corpus de Manuelita;
 - la imagen de referencia;
 - una indicación por escena.
 
-Cada escena queda registrada (indicación, imagen usada, duración y versión del modelo) para poder regenerarla o
-corregirla. El video declara que fue generado con inteligencia artificial y que el proyecto es académico.
+Un integrante lanza la generación desde su equipo con un comando del proyecto, escena por escena o todas a la vez.
+El comando usa la clave del archivo de entorno, espera cada clip y lo guarda en el repositorio. Cada escena queda
+registrada (indicación, imagen usada, duración, proveedor, modelo, identificador del trabajo y fecha) para poder
+regenerarla o corregirla. El video declara que fue generado con inteligencia artificial y que el proyecto es
+académico.
 
 **Why this priority**: sin reproducibilidad ni declaración de IA, la pieza incumple la constitución (§10). Es
 trabajo previo, pero no lo ve el cliente.
@@ -106,10 +113,16 @@ puede volver a generarla.
 **Acceptance Scenarios**:
 
 1. **Given** el guion aprobado, **When** se genera el video, **Then** cada escena tiene registradas su indicación,
-   la imagen de referencia, su duración y la versión del modelo.
-2. **Given** el video terminado, **When** se reproduce, **Then** muestra en pantalla que es contenido generado con
-   IA y que Valer-IA es un proyecto académico, no un canal oficial de Manuelita.
-3. **Given** el video, **When** se revisa la imagen, **Then** no aparece el logotipo ni piezas gráficas de la marca
+   la imagen de referencia, su duración, el proveedor, el modelo y el identificador del trabajo.
+2. **Given** la clave de Higgsfield en el archivo de entorno, **When** el integrante genera una escena, **Then** el
+   clip queda guardado y registrado como pendiente de revisión, y la clave no aparece en el repositorio, en los
+   registros ni en la salida del comando.
+3. **Given** que falta la clave o el saldo no alcanza, **When** se intenta generar, **Then** el comando se detiene
+   con un mensaje claro antes de gastar créditos y no modifica las escenas ya aprobadas.
+4. **Given** el video en la entrada, **When** se muestra, **Then** junto a él hay un texto visible que dice que es
+   contenido generado con IA y que Valer-IA es un proyecto académico, no un canal oficial de Manuelita. El video no
+   lleva ese rótulo grabado (revisión 2026-11-26).
+5. **Given** el video, **When** se revisa la imagen, **Then** no aparece el logotipo ni piezas gráficas de la marca
    Manuelita, y la presentadora no se identifica como empleada ni vocera de Manuelita.
 
 ---
@@ -129,6 +142,13 @@ puede volver a generarla.
   sin generarlo de nuevo.
 - **Contenido desactualizado**: el video menciona algo de Valer-IA que luego cambia (por ejemplo, un perfil). El
   registro de producción permite regenerar solo la escena afectada.
+- **Falla de la API**: Higgsfield rechaza el trabajo, se agota el tiempo de espera o la red se cae. La escena queda
+  como pendiente con el error registrado; las demás no se pierden y se puede reintentar solo esa.
+- **Una generación a la vez**: la API limita los trabajos simultáneos. Las escenas se generan en serie.
+- **Gasto**: cada generación cuesta. Antes de lanzar, el comando muestra cuántos segundos va a generar y su costo
+  estimado, y no regenera escenas ya aprobadas salvo que se pida.
+- **Datos enviados a un tercero**: la imagen de referencia y las indicaciones se suben a Higgsfield. Solo se envían
+  esas entradas, nunca datos del corpus fuera del guion, claves ni datos personales.
 
 ## Requirements *(mandatory)*
 
@@ -153,17 +173,30 @@ puede volver a generarla.
   `docs/referencias/avatar_ingenio_manuelita.png`, con apariencia coherente entre escenas.
 - **FR-008**: Antes de generar, el equipo MUST confirmar y registrar que la imagen de referencia es sintética o
   tiene derechos de uso, y que no representa a una persona real identificable.
-- **FR-009**: El video MUST mostrar en pantalla que es contenido generado con inteligencia artificial y que
-  Valer-IA es un proyecto académico, no un canal oficial de Manuelita.
+- **FR-009**: La entrada MUST mostrar, como texto visible junto al video y en su transcripción, que es contenido
+  generado con inteligencia artificial y que Valer-IA es un proyecto académico, no un canal oficial de Manuelita.
+  El video MUST NOT llevar ese rótulo grabado, y su narración cierra con un llamado a la acción, no con la
+  declaración (decisión del integrante, 2026-11-26).
 - **FR-010**: El video MUST NOT mostrar el logotipo ni piezas gráficas de la marca Manuelita. Tampoco MUST
   presentar a la presentadora como empleada, vocera o representante de Manuelita.
 
 **Producción**
 
 - **FR-011**: El video MUST generarse con el modelo MAGI-2 de Sand.ai, escena por escena, a partir del guion y de
-  la imagen de referencia.
-- **FR-012**: Cada escena MUST quedar registrada con su indicación, la imagen de referencia, su duración, la
-  versión del modelo y la fecha. Ese registro MUST permitir regenerar una escena sola.
+  la imagen de referencia. La vía principal MUST ser la API de Higgsfield; ejecutar los pesos abiertos en GPU
+  propias o alquiladas queda como alternativa documentada.
+- **FR-012**: Cada escena MUST quedar registrada con su indicación, la imagen de referencia, su duración, el
+  proveedor, el modelo, el identificador del trabajo, la semilla si la API la acepta y la fecha. Ese registro MUST
+  permitir regenerar una escena sola.
+- **FR-025**: El proyecto MUST ofrecer un comando para generar escenas por la API: una escena o todas, en serie,
+  esperando cada resultado y guardando el clip en el repositorio como pendiente de revisión.
+- **FR-026**: La clave de la API MUST leerse solo del archivo de entorno local. MUST NOT escribirse en el
+  repositorio, en el registro de escenas, en los registros ni en la salida del comando. Si falta, el comando MUST
+  fallar con un mensaje que diga cómo configurarla.
+- **FR-027**: Antes de generar, el comando MUST mostrar los segundos a generar y el costo estimado, y MUST ofrecer
+  un modo de prueba que no llame a la API. No MUST regenerar escenas aprobadas salvo que se pida explícitamente.
+- **FR-028**: La aplicación web y la integración continua MUST NOT llamar a la API de Higgsfield. Las pruebas MUST
+  cubrir el comando sin red, con un cliente simulado.
 - **FR-013**: Cada escena MUST pasar una revisión humana antes de entrar al montaje: parecido con la referencia,
   ausencia de texto ilegible o cifras inventadas en pantalla, y coherencia con el guion.
 - **FR-014**: El video terminado MUST incluir subtítulos sincronizados y una transcripción en texto.
@@ -188,18 +221,21 @@ puede volver a generarla.
 
 **Documentación**
 
-- **FR-024**: El uso de MAGI-2, el guion, el registro de producción y la declaración de IA MUST documentarse en el
-  proyecto: decisión de arquitectura, constitución y registro de prompts.
+- **FR-024**: El uso de MAGI-2 y de la API de Higgsfield, el guion, el registro de producción, los datos enviados al
+  proveedor y la declaración de IA MUST documentarse en el proyecto: decisión de arquitectura, constitución y
+  registro de prompts.
 
 ### Key Entities
 
 - **Guion del pitch**: el texto narrado por bloques (gancho, problema, solución, diferencia, cómo usarla, llamado
   a la acción). Cada bloque tiene duración estimada y las fuentes del corpus que respaldan sus afirmaciones.
-- **Escena**: un clip generado de hasta unos 10 segundos. Tiene indicación, imagen de referencia, duración, versión
-  del modelo, fecha y estado de revisión (aprobada o descartada).
+- **Escena**: un clip generado de unos 10 segundos. Tiene indicación, imagen de referencia, duración, proveedor,
+  modelo, identificador del trabajo, fecha y estado (pendiente, generada, aprobada, descartada o con error).
+- **Trabajo de generación**: una solicitud a la API de Higgsfield para una escena. Tiene identificador, estado,
+  segundos pedidos, costo estimado y, si falla, el error.
 - **Imagen de referencia**: la presentadora del pitch. Lleva su origen y sus derechos de uso registrados.
-- **Video del pitch**: el montaje final de las escenas aprobadas, con subtítulos, transcripción, portada y la
-  declaración de IA y de proyecto académico.
+- **Video del pitch**: el montaje final de las escenas aprobadas, con subtítulos, transcripción y portada. La
+  declaración de IA y de proyecto académico la muestra la web junto al video.
 
 ## Success Criteria *(mandatory)*
 
@@ -214,25 +250,35 @@ puede volver a generarla.
   paso al saltarlo.
 - **SC-005**: Con el video ausente o sin red, la entrada carga y funciona igual. Muestra la portada y la
   transcripción.
-- **SC-006**: La declaración de IA y de proyecto académico está en pantalla en el 100 % de las escenas que la
-  requieren (al menos al inicio y al final) y en la transcripción.
+- **SC-006**: La declaración de IA y de proyecto académico es visible junto al video en el 100 % de las cargas de
+  la entrada, incluido el modo compacto y la falla del video, y está en la transcripción.
 - **SC-007**: El registro de producción permite regenerar cualquier escena. Una prueba lo comprueba regenerando una
   escena desde su registro.
+- **SC-008**: Generar las 6 escenas por la API cuesta 20 USD o menos, incluidas las regeneraciones, y el costo real
+  queda anotado en la decisión de arquitectura.
+- **SC-009**: Una búsqueda de la clave en el repositorio, el registro de escenas y la salida del comando no la
+  encuentra (0 apariciones).
 
 ## Assumptions
 
-- **Modelo**: MAGI-2 Preview de Sand.ai, publicado el 2026-08-05 con licencia Apache 2.0. Genera clips de unos 10
-  segundos con audio a partir de texto o de imagen más texto. El pitch se arma con varias escenas, alrededor de 6
-  para 60 segundos. Las cifras de resolución y capacidad se confirmarán con la documentación oficial de Sand.ai
-  durante el plan.
-- **Dónde se genera**: el modelo es grande (114 mil millones de parámetros), así que la generación ocurre una vez,
-  fuera de la aplicación web, en un equipo o servicio con capacidad suficiente. La web solo sirve el video
-  terminado; la aplicación no depende de MAGI-2 para funcionar.
+- **Modelo**: MAGI-2 de Sand.ai. Por la API de Higgsfield se usa la versión alojada, que según fuentes de noviembre
+  de 2026 genera clips de 4 a 30 segundos en 1080p con audio, a unos 0,08 USD por segundo. Los pesos abiertos
+  (MAGI-2 Preview, Apache 2.0, clips de 10 s) siguen como alternativa. El pitch se arma con 6 escenas de unos
+  10 segundos, una por bloque del guion. El identificador exacto del modelo, la relación de aspecto vertical, el
+  uso de la imagen como primer cuadro y la autenticación se confirmarán con la documentación oficial de
+  Higgsfield durante el plan.
+- **Dónde se genera**: en el equipo del integrante, con un comando que llama a la API de Higgsfield. La generación
+  ocurre una vez, fuera de la aplicación web. La web solo sirve el video terminado; la aplicación no depende de
+  MAGI-2 ni de Higgsfield para funcionar.
+- **Clave y saldo**: el integrante ya tiene la clave en `HIGGSFIELD_API_KEY` dentro del archivo de entorno local y
+  saldo en su cuenta. Si la API exige un identificador y un secreto separados, el plan define la segunda variable.
+- **Proveedor**: subir la imagen de referencia y las indicaciones a Higgsfield es aceptable porque la imagen es
+  sintética, el integrante tiene sus derechos y las indicaciones no contienen datos personales.
 - **Video guía**: no se pudo revisar el contenido del video de YouTube indicado como guía. Se usa la estructura
   estándar de un elevator pitch (gancho, problema, solución, diferencia, uso y llamado a la acción). Si el video
   guía propone otra estructura, se ajusta en `/speckit-clarify`.
-- **Imagen de referencia**: se asume que es una imagen generada con IA, propiedad del equipo, y que no representa a
-  una persona real. FR-008 exige confirmarlo antes de generar. La presentadora del video es una figura distinta de
+- **Imagen de referencia**: es una imagen generada con IA, el integrante tiene derechos de uso y no representa a una
+  persona real ni contiene la marca Manuelita. Así quedó confirmado en su ficha el 2026-11-26 (FR-008). La presentadora del video es una figura distinta de
   la ilustración animada del chat (Valer-IA Caña); no la reemplaza.
 - **Idioma y público**: español, para los cinco públicos de la plataforma. El pitch habla a todos; no hay un video
   por perfil.

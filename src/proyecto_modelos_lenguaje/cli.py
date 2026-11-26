@@ -1030,6 +1030,52 @@ def cmd_pitch_validate(args: argparse.Namespace) -> int:
     return 0 if report.ok else 1
 
 
+def _confirm_generation(plan: dict[str, Any]) -> bool:
+    print(
+        f"Se generarán {len(plan['scenes'])} escenas ({plan['seconds']} s) con {plan['model']}: "
+        f"unos {plan['cost_usd']:.2f} USD. Gastado antes: {plan['spent_before_usd']:.2f} USD "
+        f"(tope {plan['max_usd']:.2f} USD)."
+    )
+    return input("¿Continuar? [s/N] ").strip().lower() in {"s", "si", "sí", "y", "yes"}
+
+
+def cmd_pitch_generate(args: argparse.Namespace) -> int:
+    from . import pitch
+    from .pitch_higgsfield import HiggsfieldError
+
+    root = Path(args.root)
+    try:
+        if args.calibrate:
+            if not (args.yes or args.dry_run) and not _confirm_generation(
+                {
+                    "scenes": [1],
+                    "seconds": pitch.CALIBRATION_SECONDS,
+                    "model": "MAGI-2 (calibración)",
+                    "cost_usd": 0.08 * pitch.CALIBRATION_SECONDS,
+                    "spent_before_usd": 0.0,
+                    "max_usd": 20.0,
+                }
+            ):
+                return _error("Calibración cancelada.", 1)
+            if args.dry_run:
+                _emit({"ok": True, "dry_run": True, "calibrate": True}, args.json)
+                return 0
+            report = pitch.calibrate(root, **_pitch_paths(args))
+        else:
+            report = pitch.generate(
+                root,
+                scene=args.scene,
+                dry_run=args.dry_run,
+                force=args.force,
+                confirm=None if (args.yes or args.dry_run) else _confirm_generation,
+                **_pitch_paths(args),
+            )
+    except (pitch.PitchError, HiggsfieldError) as exc:
+        return _error(str(exc), 1)
+    _emit(report, args.json)
+    return 0 if report.get("ok") else 1
+
+
 def cmd_pitch_samples(args: argparse.Namespace) -> int:
     from . import pitch
 
@@ -1052,7 +1098,12 @@ def cmd_pitch_samples(args: argparse.Namespace) -> int:
 
 
 def cmd_pitch_narrate(args: argparse.Namespace) -> int:
+    from dotenv import load_dotenv
+
     from . import pitch
+    from .config import PROJECT_ROOT
+
+    load_dotenv(PROJECT_ROOT / ".env", override=False)  # HF_TOKEN para la voz Phonon
 
     try:
         result = pitch.narrate(Path(args.root), block=args.block, voice=args.voice)
@@ -1127,6 +1178,14 @@ def _add_pitch_parser(sub: Any) -> None:
         return parser
 
     command("validate", "valida guion, escenas y ficha de la imagen", cmd_pitch_validate)
+    generate = command(
+        "generate", "genera escenas con MAGI-2 por la API de Higgsfield (gasta)", cmd_pitch_generate
+    )
+    generate.add_argument("--scene", default=None, help="solo esta escena (escena-0N)")
+    generate.add_argument("--calibrate", action="store_true", help="clip de prueba de 4 s")
+    generate.add_argument("--dry-run", action="store_true", help="muestra el plan sin llamar")
+    generate.add_argument("--yes", action="store_true", help="no pide confirmación")
+    generate.add_argument("--force", action="store_true", help="regenera generadas o aprobadas")
     samples = command("samples", "exporta SAMPLES para run_demo.sh de MAGI-2", cmd_pitch_samples)
     samples.add_argument("--scene", default=None, help="solo esta escena (escena-0N)")
     samples.add_argument("-o", "--output", default="samples.json")

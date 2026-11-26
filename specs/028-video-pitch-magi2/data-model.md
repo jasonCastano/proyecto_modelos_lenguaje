@@ -27,27 +27,66 @@
 | `block` | id de bloque | Debe existir en el guion |
 | `prompt_file` | ruta | `video/pitch/prompts/escena-0N.json` (caption estructurado de MAGI-2). Incluye «sin texto en pantalla» y no menciona la marca |
 | `image` | ruta | `docs/referencias/avatar_ingenio_manuelita.png` (FR-007) |
-| `seed` | entero | Fijo para regenerar |
-| `model` | string | `sand-ai/MAGI-2-preview` |
-| `model_revision` | string | Commit del repo o tag de la imagen Docker usada |
-| `resolution` | `"1080x1920"` | Fijo |
-| `generated_at` | ISO 8601 o `null` | Se llena al traer el clip |
+| `seed` | entero | Fijo para regenerar; se envía como `seed` a la API |
+| `provider` | `higgsfield` \| `local` | `higgsfield` por defecto; `local` = pesos abiertos en 8× H100 |
+| `model` | string | `sand/magi-2/image-to-video` (Higgsfield) o `sand-ai/MAGI-2-preview` (local) |
+| `model_revision` | string o `null` | Solo `local`: digest de la imagen Docker |
+| `request_seconds` | entero | Segundos pedidos a la API: 10 (rango 4–30) |
+| `resolution` | `"1080x1920"` | Fijo; se pide `"1080p"` y la imagen 9:16 fija el encuadre |
+| `job` | objeto o `null` | Último trabajo de generación (ver abajo) |
+| `generated_at` | ISO 8601 o `null` | Se llena al descargar el clip |
 | `clip` | ruta o `null` | `video/pitch/escenas/escena-0N.mp4` |
-| `duration_s` | número o `null` | Medida con ffprobe; MAGI-2 entrega 10 s |
+| `duration_s` | número o `null` | Medida con ffprobe |
 | `trim_s` | número | Duración usada en el montaje, ≤ 9,5 |
-| `status` | `pendiente` \| `aprobada` \| `descartada` | Ver transiciones |
-| `review` | objeto o `null` | `{by, at, likeness, no_text, no_brand, matches_script, notes}`; los cuatro chequeos en `true` para aprobar |
+| `status` | `pendiente` \| `generando` \| `generada` \| `error` \| `aprobada` \| `descartada` | Ver transiciones |
+| `review` | objeto o `null` | `{by, at, likeness, no_text, no_brand, matches_script, block_hash, notes}`; los cuatro chequeos en `true` para aprobar |
+
+### Trabajo de generación (`job`, dentro de cada escena)
+
+| Campo | Tipo | Regla |
+|---|---|---|
+| `request_id` | string | El que devuelve Higgsfield; permite consultar o cancelar |
+| `status` | `queued` \| `in_progress` \| `completed` \| `failed` \| `nsfw` \| `canceled` | Último estado visto |
+| `submitted_at`, `finished_at` | ISO 8601 | |
+| `seconds` | entero | Segundos cobrables pedidos |
+| `cost_usd` | número | `seconds × usd_per_second`; 0 si `failed` o `nsfw` (no se cobran) |
+| `idempotency_key` | string | `escena-0N:<block_hash>:<seed>` |
+| `error` | string o `null` | Mensaje de la API, sin la clave |
+
+Los trabajos anteriores de la misma escena se guardan en `history` (lista de `job`), para sumar el gasto total.
+**Nunca** se guarda la clave, la URL firmada de subida ni cabeceras.
 
 **Transiciones**:
 
 ```text
-pendiente --(clip traído)--> pendiente(con clip)
-pendiente(con clip) --(revisión: 4 chequeos true)--> aprobada
-pendiente(con clip) --(algún chequeo false)--> descartada --(regenerar con nueva seed o prompt)--> pendiente
+pendiente --(generate)--> generando --(completed + descarga)--> generada
+generando --(failed | nsfw | canceled | timeout | 4xx)--> error --(generate)--> generando
+generada --(revisión: 4 chequeos true)--> aprobada
+generada --(algún chequeo false)--> descartada --(generate con otra seed o prompt)--> generando
 aprobada --(cambia el bloque del guion)--> pendiente
+aprobada --(generate sin --force)--> aprobada (se omite)
 ```
 
-El montaje exige las 6 escenas en estado `aprobada` (FR-013).
+Con `provider = "local"`, el clip se trae a mano y la escena pasa de `pendiente` a `generada`.
+
+## Configuración de generación (`config/pitch.toml`)
+
+| Clave | Valor inicial | Regla |
+|---|---|---|
+| `higgsfield.base_url` | `https://api.higgsfield.ai` | |
+| `higgsfield.model` | `sand/magi-2/image-to-video` | Debe existir en `GET /models` antes de enviar |
+| `higgsfield.api_key_env` | `HIGGSFIELD_API_KEY` | Nombre de la variable, nunca su valor |
+| `higgsfield.fields` | `{duration = "duration", audio = "generate_audio", aspect_ratio = "aspect_ratio"}` | Confirmados con la calibración (research R11) |
+| `higgsfield.resolution` | `"1080p"` | Único valor aceptado |
+| `higgsfield.aspect_ratio` | `"9:16"` | Obligatorio para vertical: sin él sale 16:9 (calibración) |
+| `higgsfield.seconds` | `10` | 4–30 |
+| `higgsfield.audio` | `true` | Ambiente de MAGI-2 bajo la narración |
+| `higgsfield.poll_s` / `timeout_s` | `10` / `3600` | La cola tardó unos 15 min por trabajo |
+| `budget.usd_per_second` | `0.08` | Precio publicado el 2026-11-25 |
+| `budget.max_usd` | `20` | SC-008 |
+
+El montaje exige las 6 escenas en estado `aprobada` (FR-013). `generate` también exige la ficha de la imagen
+confirmada.
 
 ## Imagen de referencia (`docs/referencias/avatar_ingenio_manuelita.md`)
 
@@ -67,9 +106,9 @@ Frontmatter obligatorio:
 
 | Archivo | Regla |
 |---|---|
-| `pitch-valeria.mp4` | H.264 + AAC, 1080×1920, `faststart`, ≤ 60 s, ≤ 25 MB. Rótulo de IA grabado en 0–3 s y en los últimos 4 s (FR-009) |
+| `pitch-valeria.mp4` | H.264 + AAC, 1080×1920, `faststart`, ≤ 60 s, ≤ 25 MB. Sin rótulo grabado; la declaración va en la web (FR-009) |
 | `pitch-valeria.es.vtt` | WebVTT en español, una entrada por bloque, sincronizado con el montaje (FR-014) |
-| `pitch-valeria.webp` | Portada, cuadro de la escena 1 con el rótulo |
+| `pitch-valeria.webp` | Portada, cuadro de la escena 1 |
 | `video/pitch/transcripcion.md` | Texto completo de los 6 bloques más la declaración; la web lo muestra desde `web/src/data/pitch.ts` |
 
 ## Estado en la web (por sesión)

@@ -13,7 +13,7 @@ from pathlib import Path
 
 import httpx
 import pytest
-from playwright.sync_api import Browser, Page, sync_playwright
+from playwright.sync_api import Browser, BrowserContext, Page, Route, sync_playwright
 
 ROOT = Path(__file__).resolve().parents[2]
 DIST = ROOT / "web" / "dist" / "index.html"
@@ -78,6 +78,24 @@ def base_url() -> Iterator[str]:
             process.kill()
 
 
+PITCH_VIDEO = "**/media/pitch-valeria.mp4"
+
+
+def _pitch_video_missing(route: Route) -> None:
+    route.fulfill(status=404, body="")
+
+
+def skip_pitch_video(context: BrowserContext) -> BrowserContext:
+    """Sirve el video del pitch como ausente (spec 028).
+
+    Con el .mp4 real (19 MB) en reproducción automática, la red nunca queda inactiva y
+    ``wait_until="networkidle"`` agota el tiempo. Las pruebas del pitch lo controlan por su
+    cuenta (``test_pitch.py``) y el archivo real se valida con ``pml pitch check``.
+    """
+    context.route(PITCH_VIDEO, _pitch_video_missing)
+    return context
+
+
 @pytest.fixture(scope="session")
 def browser() -> Iterator[Browser]:
     with sync_playwright() as playwright:
@@ -88,6 +106,8 @@ def browser() -> Iterator[Browser]:
             )
         except Exception as exc:
             pytest.skip(f"Chrome no disponible para E2E: {exc}")
+        new_context = instance.new_context
+        instance.new_context = lambda *a, **kw: skip_pitch_video(new_context(*a, **kw))  # type: ignore[method-assign]
         yield instance
         instance.close()
 

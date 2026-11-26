@@ -30,9 +30,15 @@ El equipo local tiene una RTX 3080 Ti de 16 GB.
 
 ## Decisión
 
-1. **Producción fuera de línea y única**. MAGI-2 corre en una máquina alquilada de 8× H100/H200, con la imagen
-   Docker oficial, siguiendo `video/pitch/RUNBOOK.md`. La aplicación y la CI nunca lo ejecutan. El repositorio
-   guarda:
+1. **Producción única por la API de Higgsfield** (revisión 2026-11-26). Las escenas se generan con MAGI-2
+   alojado en Higgsfield (`sand/magi-2/image-to-video`), con `pml pitch generate`, desde el equipo del integrante:
+   - la clave vive solo en `.env` (`HIGGSFIELD_API_KEY`, formato `id:secreto`) y se borra de todo error;
+   - el gasto tiene tope (`config/pitch.toml`, 20 USD), confirmación previa y modo `--dry-run`;
+   - una calibración de 4 s confirmó los campos `duration`, `generate_audio` y `aspect_ratio` (research R11);
+   - solo se suben la imagen sintética normalizada y los prompts de escena.
+
+   La aplicación y la CI nunca llaman a Higgsfield. La vía con los pesos abiertos en 8× H100 (Docker oficial,
+   `RUNBOOK.md`) queda como alternativa. El repositorio guarda:
    - las entradas: guion, prompts, manifiesto y la imagen con su ficha de origen;
    - las salidas aprobadas, por Git LFS.
 2. **Seis escenas I2V**, una por bloque del pitch: gancho, problema, solución, diferencia, uso y acción. Todas parten
@@ -41,11 +47,13 @@ El equipo local tiene una RTX 3080 Ti de 16 GB.
    entran escenas aprobadas.
 3. **Guion con fuentes**. `video/pitch/guion.toml` cita unidades del oro para cada afirmación de Manuelita.
    `pml pitch validate` rechaza cifras sin respaldo y exige «datos sintéticos» donde se menciona la planificación.
-4. **Voz y rótulo en el montaje**:
+4. **Voz y montaje**:
    - la narración en español es la voz **Phonon** del proyecto, porque la presentadora no habla a cámara y así se
      evitan labios desincronizados;
-   - ffmpeg mezcla la voz sobre el ambiente de MAGI-2 y graba el rótulo «Video generado con IA · Valer-IA es un
-     proyecto académico, no un canal oficial de Manuelita»;
+   - ffmpeg mezcla la voz sobre el ambiente de MAGI-2;
+   - el video **no** lleva rótulo grabado y su narración cierra con un llamado a la acción (revisión 2026-11-26).
+     La declaración «Video generado con IA · Valer-IA es un proyecto académico, no un canal oficial de Manuelita»
+     va como texto visible junto al video en la web y en la transcripción. El video solo se publica en la web;
    - el montaje genera también los subtítulos WebVTT, la portada y la transcripción;
    - la tasa de bits se limita a 3 Mbps para que el archivo pese 25 MB o menos.
 5. **Primer elemento de la entrada** (`PitchVideo`):
@@ -63,8 +71,11 @@ El equipo local tiene una RTX 3080 Ti de 16 GB.
 
 - **Generar en la aplicación o bajo demanda**: imposible con el hardware disponible. Además, la entrada quedaría
   atada a una GPU o a un tercero.
-- **Servicio alojado o Space de terceros**: la ficha dice que ningún proveedor de inferencia lo despliega. Subir la
-  imagen y el guion a un tercero sin acuerdo es otro riesgo.
+- **Pesos abiertos en 8× H100 alquiladas** (decisión original): de 40 a 80 USD, con 307 GB de pesos y Docker.
+  Queda como alternativa si Higgsfield no está disponible.
+- **API directa de Sand.ai**: sin recargas de autoservicio a noviembre de 2026.
+- **SandBase u otros agregadores**: documentan el esquema, pero exigen otra cuenta y otra clave.
+- **Editor web de Higgsfield a mano**: sin registro reproducible de cada escena (FR-012).
 - **Video horizontal**: recorta a la presentadora y no es el modo nativo del modelo.
 - **Alojar el video en YouTube**: depende de la red y de un tercero, y falla sin conexión en la sustentación.
 - **Voz de MAGI-2 o grabar a una persona**: la voz en español no está documentada, y grabar introduce a una persona
@@ -72,8 +83,13 @@ El equipo local tiene una RTX 3080 Ti de 16 GB.
 
 ## Consecuencias
 
-- Hace falta alquilar unas 2 horas de 8× H100. Sin eso, la entrada muestra la portada y la transcripción, y todo lo
-  demás funciona y se prueba.
+- Generar costó **5,44 USD** en Higgsfield (2026-11-26): 0,64 de dos calibraciones y 4,80 de las 6 escenas, sin
+  regeneraciones. El costo real queda en `escenas.json` (`job`
+  e `history`) y en `video/pitch/calibracion/gasto.json`. Sin el video, la entrada muestra la portada y la
+  transcripción, y todo lo demás funciona y se prueba.
+- La imagen de referencia y los prompts pasan por un tercero (Higgsfield), que los conserva 7 días. Es aceptable
+  porque la imagen es sintética y el integrante tiene sus derechos.
+- Las pruebas de `pml pitch generate` simulan la API con `httpx.MockTransport` (`tests/unit/test_pitch_generate.py`).
 - Las pruebas cubren toda la cadena sin GPU, con clips sintéticos de ffmpeg (`tests/integration/test_pitch_assemble.py`).
 - Cambiar el texto de un bloque invalida su escena aprobada. El validador lo detecta y obliga a revisarla.
 - Constitución **2.3.0** (§3.7 y §10).

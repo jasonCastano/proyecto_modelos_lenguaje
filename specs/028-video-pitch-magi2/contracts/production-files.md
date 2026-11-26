@@ -28,10 +28,46 @@ Las cifras o hechos de Manuelita (fundación, negocios, países) solo entran con
 [
   {"id": "escena-01", "block": "gancho", "prompt_file": "video/pitch/prompts/escena-01.json",
    "image": "docs/referencias/avatar_ingenio_manuelita.png", "seed": 2026,
-   "model": "sand-ai/MAGI-2-preview", "model_revision": null, "resolution": "1080x1920",
+   "provider": "higgsfield", "model": "sand/magi-2/image-to-video", "model_revision": null,
+   "request_seconds": 10, "resolution": "1080x1920", "job": null, "history": [],
    "generated_at": null, "clip": null, "duration_s": null, "trim_s": 9.5,
    "status": "pendiente", "review": null}
 ]
+```
+
+Con un trabajo terminado, `job` queda así:
+
+```json
+{"request_id": "…", "status": "completed", "submitted_at": "2026-11-27T15:02:11Z",
+ "finished_at": "2026-11-27T15:05:40Z", "seconds": 10, "cost_usd": 0.8,
+ "idempotency_key": "escena-01:3f2a…:2026", "error": null}
+```
+
+Al cargar el archivo se aceptan las entradas antiguas sin `provider`, `job` ni `history`: se completan con los
+valores por defecto.
+
+## `config/pitch.toml`
+
+```toml
+[higgsfield]
+base_url = "https://api.higgsfield.ai"
+model = "sand/magi-2/image-to-video"
+api_key_env = "HIGGSFIELD_API_KEY"   # formato id:secreto, solo en .env
+resolution = "1080p"
+aspect_ratio = "9:16"                # sin él, MAGI-2 extiende la imagen a 16:9
+seconds = 10
+audio = true
+poll_s = 10
+timeout_s = 3600
+
+[higgsfield.fields]                  # confirmados con --calibrate (research R11)
+duration = "duration"
+audio = "generate_audio"
+aspect_ratio = "aspect_ratio"
+
+[budget]
+usd_per_second = 0.08
+max_usd = 20
 ```
 
 ## `video/pitch/prompts/escena-0N.json`

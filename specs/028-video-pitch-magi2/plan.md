@@ -1,25 +1,32 @@
 # Implementation Plan: Video elevator pitch de Valer-IA generado con MAGI-2
 
-**Branch**: `028-video-pitch-magi2` | **Date**: 2026-11-25 | **Spec**: [spec.md](spec.md)
+**Branch**: `028-video-pitch-magi2` | **Date**: 2026-11-25, revisado 2026-11-26 (API de Higgsfield) |
+**Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `/specs/028-video-pitch-magi2/spec.md`
 
 ## Summary
 
-Un video vertical de 57 s con formato de elevator pitch, generado con **MAGI-2 Preview** de Sand.ai. Se abre al
-entrar a la web y explica qué es Valer-IA y cómo usarla.
+Un video vertical de 57 s con formato de elevator pitch, generado con **MAGI-2** de Sand.ai a través de la **API de
+Higgsfield**. Se abre al entrar a la web y explica qué es Valer-IA y cómo usarla.
 
 Producción en tres etapas:
 
 1. **Guion verificable**: `video/pitch/guion.toml`, con 6 bloques y sus fuentes del oro.
-2. **Escenas I2V**: 6 clips de 10 s, generados una sola vez fuera de línea en una máquina alquilada de 8× H100.
-   Parten de la imagen de referencia y de una indicación por escena, y se registran en `video/pitch/escenas.json`
-   con revisión humana.
+2. **Escenas I2V**: 6 clips de 10 s generados una sola vez con `pml pitch generate`, que llama a
+   `sand/magi-2/image-to-video` en Higgsfield desde el equipo del integrante (research R11–R14):
+   - la imagen de referencia, normalizada a 1080×1920, es el primer cuadro de cada escena; así sale vertical;
+   - autentica con `Authorization: Key <id>:<secreto>`, tomado de `HIGGSFIELD_API_KEY` en `.env`;
+   - una calibración de 4 s, de unos 0,32 USD, confirma los nombres de los campos de duración y audio antes de
+     gastar en las 6 escenas;
+   - cada escena registra en `video/pitch/escenas.json` el trabajo, su costo y la revisión humana;
+   - las 8× H100 con los pesos abiertos quedan como alternativa (`pml pitch samples` y el RUNBOOK).
 3. **Montaje**: ffmpeg une las escenas aprobadas recortadas a 9,5 s, añade la narración en español con la voz
-   **Phonon** del proyecto y graba en el video el rótulo de IA y de proyecto académico. También genera los
-   subtítulos WebVTT, la portada y la transcripción.
+   **Phonon** del proyecto. También genera los subtítulos WebVTT, la portada y la transcripción. El video no lleva
+   rótulo grabado; la declaración de IA va como texto junto al video en la web (R7, revisión 2026-11-26).
 
-Un CLI `pml pitch` valida el guion, exporta las escenas para MAGI-2, narra, monta y comprueba el resultado.
+Un CLI `pml pitch` valida el guion, genera las escenas por la API (o las exporta para los pesos abiertos), narra,
+monta y comprueba el resultado.
 
 En la web, un componente `PitchVideo` es el primer elemento de la entrada:
 
@@ -33,12 +40,18 @@ El video viaja por Git LFS (research R6).
 
 ## Technical Context
 
-**Language/Version**: Python 3.14 (CLI y validación, `uv`); TypeScript 5 + React 19 (web), Node 24. La generación
-con MAGI-2 corre en su propio entorno (Docker oficial, Python 3.12 y CUDA) fuera del repositorio.
+**Language/Version**: Python 3.14 (CLI y validación, `uv`); TypeScript 5 + React 19 (web), Node 24.
 
 **Primary Dependencies**:
 
-- **Generación** (fuera de línea): MAGI-2 Preview (Docker `sandai/magi-2-preview`, 8× H100 o H200).
+- **Generación** (una vez, desde el equipo del integrante): API de Higgsfield, modelo `sand/magi-2/image-to-video`.
+  - **Cliente**: `httpx`, que ya es dependencia; sin el SDK `higgsfield-client` (R12).
+  - **Campos confirmados**: `image_url`, `prompt`, `resolution: "1080p"` y `seed`.
+  - **Duración y audio**: van en `config/pitch.toml` y se confirman con la calibración (R11).
+  - **Imagen**: se sube por `POST /files/generate-upload-url` y se pasa como `public_url` (R13).
+  - **Trabajo**: asíncrono. Se envía con `Idempotency-Key`, se consulta `status_url` cada 10 s y se descarga
+    `video.url` (R14).
+  - **Alternativa**: los pesos abiertos MAGI-2 Preview en Docker `sandai/magi-2-preview` con 8× H100.
 - **Montaje**: ffmpeg (ya instalado; también lo usa la voz).
 - **Narración**: voz Phonon del proyecto (spec 016).
 - **Python y web**: sin dependencias nuevas.
@@ -53,11 +66,14 @@ con MAGI-2 corre en su propio entorno (Docker oficial, Python 3.12 y CUDA) fuera
 
 - pytest: validador del guion, manifiesto, exportación a `SAMPLES` y montaje con clips sintéticos generados por
   ffmpeg en la prueba.
+- pytest con `httpx.MockTransport`: el cliente de Higgsfield sin red. Cubre subida, envío, estados, descarga,
+  errores 401/403/429/`failed`/`nsfw`, tope de gasto, `--dry-run`, que no se regeneren escenas aprobadas y que la
+  clave no aparezca en la salida (SC-009).
 - Vitest + Testing Library: `PitchVideo`.
 - Playwright + axe-core: primera posición, saltar, sin desplazamiento de 360 a 1920 px, falta de video.
 
-**Target Platform**: generación en Linux con 8 GPU Hopper (una vez). Montaje y web en Windows o Linux con ffmpeg.
-Navegadores modernos de escritorio y teléfono.
+**Target Platform**: generación por la API de Higgsfield, lanzada desde Windows o Linux con red (una vez). Montaje
+y web en Windows o Linux con ffmpeg. Navegadores modernos de escritorio y teléfono.
 
 **Project Type**: aplicación web (backend Python + SPA React) más un flujo de producción de medios.
 
@@ -72,17 +88,20 @@ Navegadores modernos de escritorio y teléfono.
 - ≤ 60 s (FR-001).
 - Narración y subtítulos en español.
 - Sin logo de Manuelita.
-- Rótulo de IA grabado en el video.
+- Declaración de IA visible junto al video y en la transcripción, no grabada.
 - Solo escenas aprobadas.
 - La web funciona sin el video.
-- La generación no corre en CI ni en la app.
+- La generación no corre en CI ni en la app (FR-028).
+- La clave solo se lee de `.env`; nunca se escribe en archivos, registros ni salida (FR-026).
+- Gasto ≤ 20 USD con tope configurable, `--dry-run` y confirmación previa (FR-027, SC-008).
+- Generación en serie: una solicitud a la vez.
 
 **Scale/Scope**:
 
 - 6 escenas y 1 video.
 - 1 componente web nuevo y cambios en `Home`.
-- 1 módulo Python (`pitch.py`) con su CLI.
-- Unas 25 pruebas.
+- 1 módulo Python (`pitch.py`) con su CLI, más el cliente `pitch_higgsfield.py`.
+- Unas 25 pruebas, más unas 15 del cliente de Higgsfield.
 
 ## Constitution Check
 
@@ -91,19 +110,20 @@ Navegadores modernos de escritorio y teléfono.
 | Regla (CONSTITUTION.md) | Estado | Nota |
 |---|---|---|
 | §10: solo información pública, atribuida | ✅ | Guion con `unit_id` del oro y validador (R8). |
-| §10: no presentarse como canal oficial de Manuelita | ✅ | Rótulo grabado en el video, portada y transcripción (R7). FR-010: sin logo y sin vocera. |
-| §3.7: avatar original que no imita personas reales ni usa la marca | ⚠️ **Requiere confirmación** | La imagen de referencia es fotorrealista. La ficha de origen (R10) debe confirmar que es sintética y propia antes de generar; si no, se detiene la producción. |
+| §10: no presentarse como canal oficial de Manuelita | ✅ | Declaración visible junto al video y en la transcripción (R7). El video solo se publica en la web. FR-010: sin logo y sin vocera. |
+| §3.7: avatar original que no imita personas reales ni usa la marca | ✅ | Ficha de origen confirmada el 2026-11-26: generada con IA, con derechos de uso, sin persona real ni marca (R10). `generate` también se niega a correr sin ella. |
+| §10 y secretos: claves solo en `.env`, sin datos a terceros sin necesidad | ✅ | `HIGGSFIELD_API_KEY` solo en `.env`, redactada en errores (R12). A Higgsfield se suben solo la imagen sintética y los prompts de escena (R14). |
 | §10: uso de IA declarado; prompts no inventados | ✅ | Indicación, semilla y versión por escena (R9). Entrada en `docs/prompt_log.md`. |
 | §3.7: entrada React servida por FastAPI; accesibilidad AA, `prefers-reduced-motion`, sin desplazamiento horizontal | ✅ | `PitchVideo` cumple FR-016 a FR-022. |
 | Datos pesados por Git LFS | ✅ | `.mp4` y `.webp` del pitch por LFS (R6). |
-| Tecnología nueva: actualizar la constitución en el mismo commit | ✅ | Enmienda **MINOR 2.3.0** (MAGI-2 como herramienta de producción fuera de línea y reglas del video), ADR 0032. Requiere la aprobación de jasonCastano. |
-| Pruebas sin red ni claves | ✅ | Las pruebas usan clips sintéticos de ffmpeg. MAGI-2 y Phonon real quedan fuera (marcador `voice` para la voz real). |
+| Tecnología nueva: actualizar la constitución en el mismo commit | ✅ | La enmienda **2.3.0** (aún sin fusionar) se ajusta: MAGI-2 por la API de Higgsfield como herramienta de producción, con la clave en `.env`. El ADR 0032 se revisa. Requiere la aprobación de jasonCastano. |
+| Pruebas sin red ni claves | ✅ | Clips sintéticos de ffmpeg y `httpx.MockTransport` para Higgsfield. La API real y Phonon real quedan fuera (marcadores `network` y `voice`). |
 | §4.3 autoría | ✅ | Commits a nombre de Robertto48. |
 
-**Resultado**: pasa, con una condición previa (ficha de la imagen, R10) que la producción comprueba antes de correr.
+**Resultado**: pasa. La condición previa (ficha de la imagen, R10) quedó cumplida el 2026-11-26.
 
-**Re-check post-design**: sin desviaciones nuevas. El diseño mantiene la web independiente de MAGI-2 y añade solo
-un componente y un módulo de producción. ✅
+**Re-check post-design (revisión Higgsfield)**: sin desviaciones. La web sigue sin depender de MAGI-2 ni de
+Higgsfield. La única llamada de red nueva es un comando manual con tope de gasto, cubierto por pruebas sin red. ✅
 
 ## Project Structure
 
@@ -117,7 +137,7 @@ specs/028-video-pitch-magi2/
 ├── data-model.md           # guion, escena, imagen de referencia, video
 ├── quickstart.md           # validación y runbook de producción
 ├── contracts/
-│   ├── pitch-cli.md        # pml pitch validate|samples|narrate|assemble|check
+│   ├── pitch-cli.md        # pml pitch validate|generate|samples|narrate|assemble|check
 │   ├── production-files.md # guion.toml, escenas.json, ficha de la imagen
 │   └── web-ui.md           # PitchVideo en la entrada
 ├── checklists/requirements.md
@@ -129,12 +149,16 @@ specs/028-video-pitch-magi2/
 ```text
 video/pitch/                          # nuevo: producción del pitch
 ├── guion.toml                        # 6 bloques: texto narrado, claims [unit_id], tope de palabras
-├── escenas.json                      # manifiesto: prompt, image, seed, model, revision, status, review
+├── escenas.json                      # manifiesto: prompt, image, seed, model, job (Higgsfield), status, review
+├── calibracion/                      # clip de 4 s de la calibración (no va al montaje; ignorado por git)
 ├── prompts/escena-0N.json            # caption estructurado de MAGI-2 por escena
 ├── escenas/escena-0N.mp4             # LFS: clips aprobados (salida de MAGI-2)
 ├── narracion/bloque-0N.wav           # LFS: voz Phonon por bloque
 ├── transcripcion.md                  # texto completo con la declaración
-└── RUNBOOK.md                        # cómo generar en 8× H100 con la imagen Docker oficial
+└── RUNBOOK.md                        # Higgsfield paso a paso; 8× H100 como alternativa
+
+config/pitch.toml                     # nuevo: modelo, URL base, campos, segundos, usd_per_second, max_usd, esperas
+.env.example                          # HIGGSFIELD_API_KEY= (formato id:secreto), sin valor
 
 docs/referencias/
 ├── avatar_ingenio_manuelita.png      # LFS: imagen de referencia
@@ -142,6 +166,7 @@ docs/referencias/
 
 src/proyecto_modelos_lenguaje/
 ├── pitch.py                          # nuevo: validar guion, exportar SAMPLES, narrar, montar (ffmpeg), comprobar
+├── pitch_higgsfield.py               # nuevo: cliente httpx (subir, enviar, consultar, descargar), costo, redacción
 └── cli.py                            # subcomando `pml pitch …`
 
 web/public/media/
@@ -156,7 +181,8 @@ web/src/
 └── styles/platform.css               # estilos del bloque del pitch
 
 tests/
-├── unit/test_pitch.py                # guion, manifiesto, SAMPLES, duración, rótulo, ficha
+├── unit/test_pitch.py                # guion, manifiesto, SAMPLES, duración, ficha
+├── unit/test_pitch_generate.py       # cliente Higgsfield con MockTransport, gasto, dry-run, redacción de la clave
 ├── integration/test_pitch_assemble.py  # montaje con clips sintéticos de ffmpeg
 └── e2e/test_pitch.py                 # primera posición, saltar, sesión, falla, 360–1920 px
 web/src/test/PitchVideo.test.tsx
@@ -168,19 +194,25 @@ docs/decisions/0032-video-pitch-magi2.md, CONSTITUTION.md (2.3.0), docs/prompt_l
 **Structure Decision**:
 
 - La producción vive en `video/pitch/` como datos versionados, igual que `data/synthetic/`.
-- La lógica reproducible está en `pitch.py` con su CLI. La generación con MAGI-2 queda documentada en
-  `RUNBOOK.md` y se alimenta de lo que exporta `pml pitch samples`.
+- La lógica reproducible está en `pitch.py` con su CLI.
+- El acceso a Higgsfield va aparte, en `pitch_higgsfield.py`, para poder simularlo en pruebas y para que la clave no
+  cruce otros módulos. `pml pitch samples` y el RUNBOOK conservan la vía de los pesos abiertos.
 - La web solo consume archivos estáticos de `web/public/media/`.
 
 ## Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
-| No hay acceso a 8× H100 o H200 | Presupuestar una sesión de alquiler de unas 2 horas (6 escenas más regeneraciones). Sin GPU, la producción se detiene; la web y las pruebas no dependen del video. |
+| Los nombres de los campos de duración o audio no son los supuestos (la API ignora campos desconocidos) | Calibración de 4 s antes de las 6 escenas; ffprobe verifica duración y audio. Los nombres se corrigen en `config/pitch.toml` (R11). |
+| Higgsfield cambia el modelo, el precio o el esquema | Modelo y precio en `config/pitch.toml`. El comando valida contra `GET /models` que el modelo existe antes de cobrar. |
+| Gasto fuera de control por reintentos | `Idempotency-Key` por escena, tope `max_usd`, confirmación previa, sin regenerar escenas aprobadas sin `--force` (R14). |
+| Saldo insuficiente (403) o cola llena (429) | 403 detiene con un mensaje y no toca el manifiesto. 429 espera `Retry-After`. La escena queda `error` y se reintenta sola (R12). |
+| La clave se filtra en una traza | Cliente propio con redacción en todo error y prueba de búsqueda de la clave (SC-009). |
+| Higgsfield no disponible | Alternativa documentada con los pesos abiertos en 8× H100 (`pml pitch samples`, RUNBOOK). La web no depende del video. |
 | La presentadora no se parece entre escenas | I2V con la misma imagen como primer cuadro en todas las escenas. La revisión humana descarta las que se desvían (FR-013). |
 | MAGI-2 pone texto o cifras falsas en pantalla | El caption de cada escena pide «sin texto en pantalla». La revisión lo verifica y el texto real va en subtítulos y rótulos del montaje. |
 | El guion supera 57 s al narrar | `pml pitch check` mide cada `.wav` y falla si un bloque supera 9,5 s. Se recorta el texto, no se acelera. |
-| La imagen resulta ser de una persona real | La ficha de origen bloquea la producción (R10). |
+| La imagen resulta ser de una persona real | La ficha de origen bloquea la producción (R10). Está confirmada desde el 2026-11-26. |
 
 ## Complexity Tracking
 

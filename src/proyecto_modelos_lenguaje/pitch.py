@@ -1,17 +1,18 @@
 """Producción del video pitch de Valer-IA con MAGI-2 (spec 028, ADR 0032).
 
-El video no se genera en la aplicación: MAGI-2 Preview (Sand.ai, 8 GPU Hopper) corre una vez
-fuera de línea (``video/pitch/RUNBOOK.md``). Este módulo cubre lo reproducible y verificable en
-cualquier equipo:
+El video no se genera en la aplicación: las escenas se generan una vez con MAGI-2 por la API de
+Higgsfield (``pml pitch generate``) o, como alternativa, con los pesos abiertos en 8 GPU Hopper
+(``video/pitch/RUNBOOK.md``). Este módulo cubre:
+
+- ``generate`` y ``calibrate``: las escenas por la API de Higgsfield, en serie y con tope de
+  gasto (FR-025 a FR-028); es lo único que usa la red;
 
 - ``validate``: el guion tiene 6 bloques con fuentes del oro, las escenas cumplen el manifiesto y
   la ficha de la imagen de referencia está confirmada (FR-004, FR-008, FR-012, FR-013);
 - ``export_samples``: las entradas ``SAMPLES`` de ``scripts/run_demo.sh`` de MAGI-2, por escena;
 - ``narrate``: la voz en español con Phonon (spec 016), un WAV por bloque;
-- ``assemble``: el montaje con ffmpeg (recorte, narración, rótulo de IA, subtítulos, portada);
+- ``assemble``: el montaje con ffmpeg (recorte, narración, subtítulos, portada);
 - ``check``: duración, resolución, audio, tamaño y subtítulos del video final.
-
-Nada aquí llama a la red ni a MAGI-2.
 """
 
 from __future__ import annotations
@@ -25,8 +26,9 @@ import subprocess
 import tempfile
 import tomllib
 import unicodedata
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -51,26 +53,27 @@ MAX_WORDS = 22
 MAX_TRIM = 9.5
 MAX_SECONDS = 60
 MAX_MEGABYTES = 25
-MODEL = "sand-ai/MAGI-2-preview"
+MODEL = "sand/magi-2/image-to-video"
+LOCAL_MODEL = "sand-ai/MAGI-2-preview"
+MODELS = {"higgsfield": MODEL, "local": LOCAL_MODEL}
 RESOLUTION = "1080x1920"
 WIDTH, HEIGHT = 1080, 1920
 FPS = 24
-STATUSES = ("pendiente", "aprobada", "descartada")
+STATUSES = ("pendiente", "generando", "generada", "error", "aprobada", "descartada")
+SKIP_UNLESS_FORCED = ("aprobada", "generada")
+REQUEST_SECONDS = 10
+MIN_SECONDS, MAX_REQUEST_SECONDS = 4, 30
+CALIBRATION_SECONDS = 4
 REVIEW_CHECKS = ("likeness", "no_text", "no_brand", "matches_script")
 BED_GAIN_DB = -18
 # 3 Mbps × 60 s ≈ 22 MB con el audio: el video cabe en 25 MB sea cual sea el contenido.
 VIDEO_MAXRATE = "3M"
 VIDEO_BUFSIZE = "6M"
+# La declaración va como texto junto al video en la web y en la transcripción; el video no la
+# lleva grabada (decisión del integrante, 2026-11-26).
 DISCLAIMER = (
     "Video generado con IA · Valer-IA es un proyecto académico, no un canal oficial de Manuelita"
 )
-DISCLAIMER_LINES = (
-    "Video generado con IA",
-    "Valer-IA es un proyecto académico,",
-    "no un canal oficial de Manuelita",
-)
-DISCLAIMER_HEAD_S = 3.0
-DISCLAIMER_TAIL_S = 4.0
 NUMBER = re.compile(r"\d+(?:[.,]\d+)*")
 STEP_NUMBER = re.compile(r"(?:^|·)\s*\d\s")
 FONTS = (
@@ -185,11 +188,21 @@ def load_script(root: Path = PITCH_ROOT) -> PitchScript:
     )
 
 
+def normalize_scene(scene: dict[str, Any]) -> dict[str, Any]:
+    """Completa una escena del formato anterior (sin ``provider``, ``job`` ni ``history``)."""
+    if "provider" not in scene:
+        scene["provider"] = "local" if scene.get("model") == LOCAL_MODEL else "higgsfield"
+    scene.setdefault("request_seconds", REQUEST_SECONDS)
+    scene.setdefault("job", None)
+    scene.setdefault("history", [])
+    return scene
+
+
 def load_scenes(root: Path = PITCH_ROOT) -> list[dict[str, Any]]:
     scenes = json.loads((root / "escenas.json").read_text(encoding="utf-8"))
     if not isinstance(scenes, list):
         raise PitchError("escenas.json debe ser una lista de escenas.")
-    return scenes
+    return [normalize_scene(scene) for scene in scenes]
 
 
 def save_scenes(root: Path, scenes: Sequence[dict[str, Any]]) -> None:
@@ -320,8 +333,17 @@ def _validate_scenes(
             report.errors.append(f"{sid}: trim_s debe estar entre 0 y {MAX_TRIM} s.")
         if scene.get("resolution") != RESOLUTION:
             report.errors.append(f"{sid}: la resolución debe ser {RESOLUTION}.")
-        if scene.get("model") != MODEL:
-            report.errors.append(f"{sid}: el modelo debe ser {MODEL} (MAGI-2).")
+        provider = scene.get("provider")
+        if provider not in MODELS:
+            report.errors.append(f"{sid}: provider debe ser higgsfield o local.")
+        elif scene.get("model") != MODELS[provider]:
+            report.errors.append(f"{sid}: con {provider} el modelo debe ser {MODELS[provider]}.")
+        seconds = scene.get("request_seconds")
+        if not isinstance(seconds, int) or not MIN_SECONDS <= seconds <= MAX_REQUEST_SECONDS:
+            report.errors.append(
+                f"{sid}: request_seconds debe ser un entero entre {MIN_SECONDS} y "
+                f"{MAX_REQUEST_SECONDS}."
+            )
         status = scene.get("status")
         if status not in STATUSES:
             report.errors.append(f"{sid}: estado {status!r} inválido ({', '.join(STATUSES)}).")
@@ -400,6 +422,320 @@ def scene_seed(root: Path, scene: str) -> int:
         if item["id"] == scene:
             return int(item["seed"])
     raise PitchError(f"No existe la escena {scene}.")
+
+
+# --------------------------------------------------------------------------- Higgsfield
+
+
+def prompt_text(root: Path, scene: dict[str, Any]) -> str:
+    """Texto que recibe MAGI-2, armado desde el caption de ``prompts/escena-0N.json``."""
+    path = _resolve(root, scene.get("prompt_file"))
+    if path is None or not path.is_file():
+        raise PitchError(f"{scene.get('id')}: falta su prompt_file.")
+    caption = json.loads(path.read_text(encoding="utf-8"))
+    parts = [caption.get(key, "") for key in ("subject", "setting", "action")]
+    if caption.get("scene"):
+        parts.append(caption["scene"])
+    for key, label in (("camera", "Camera"), ("style", "Style"), ("audio", "Audio")):
+        if caption.get(key):
+            parts.append(f"{label}: {caption[key]}")
+    constraints = caption.get("constraints") or []
+    if isinstance(constraints, str):
+        constraints = [constraints]
+    if constraints:
+        parts.append("Constraints: " + " ".join(constraints))
+    return " ".join(p.strip() for p in parts if p and p.strip())
+
+
+def _now() -> str:
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _relative(root: Path, path: Path) -> str:
+    for base in (PROJECT_ROOT, root):
+        try:
+            return path.resolve().relative_to(base.resolve()).as_posix()
+        except ValueError:
+            continue
+    return str(path)
+
+
+def _spent(root: Path, scenes: Sequence[dict[str, Any]]) -> float:
+    total = 0.0
+    for scene in scenes:
+        for job in [*(scene.get("history") or []), scene.get("job")]:
+            if job:
+                total += float(job.get("cost_usd") or 0)
+    ledger = root / "calibracion" / "gasto.json"
+    if ledger.is_file():
+        total += sum(float(item.get("cost_usd") or 0) for item in json.loads(ledger.read_text()))
+    return round(total, 2)
+
+
+def _normalized_reference(image: Path, work: Path) -> Path:
+    """La referencia a 1080×1920 (9:16) para que MAGI-2 genere vertical (research R13)."""
+    target = work / "referencia-1080x1920.png"
+    vf = (
+        f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase:flags=lanczos,"
+        f"crop={WIDTH}:{HEIGHT}"
+    )
+    _run([_tool("ffmpeg"), "-y", "-i", str(image), "-vf", vf, "-frames:v", "1", str(target)])
+    return target
+
+
+def _clip_facts(path: Path) -> dict[str, Any]:
+    info = ffprobe(path)
+    video = next((s for s in info.get("streams", []) if s.get("codec_type") == "video"), {})
+    return {
+        "duration_s": round(float(info.get("format", {}).get("duration") or 0), 2),
+        "width": int(video.get("width") or 0),
+        "height": int(video.get("height") or 0),
+        "audio": any(s.get("codec_type") == "audio" for s in info.get("streams", [])),
+    }
+
+
+def _hf():  # import diferido: solo generate/calibrate usan la red
+    from . import pitch_higgsfield
+
+    return pitch_higgsfield
+
+
+def generate(
+    root: Path = PITCH_ROOT,
+    *,
+    scene: str | None = None,
+    dry_run: bool = False,
+    force: bool = False,
+    client: Any = None,
+    config: Any = None,
+    confirm: Callable[[dict[str, Any]], bool] | None = None,
+    gold_dir: Path | None = None,
+    reference: Path | None = None,
+    env: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Genera escenas con MAGI-2 por la API de Higgsfield, en serie (contracts/pitch-cli.md)."""
+    hf = _hf()
+    cfg = config or hf.HiggsfieldConfig.load()
+    _require_valid(root, gold_dir, reference)
+    script = load_script(root)
+    scenes = load_scenes(root)
+    if scene and scene not in {s["id"] for s in scenes}:
+        raise PitchError(f"No existe la escena {scene}.")
+    chosen = [
+        s
+        for s in scenes
+        if (scene is None or s["id"] == scene)
+        and s.get("provider") == "higgsfield"
+        and (force or s.get("status") not in SKIP_UNLESS_FORCED)
+    ]
+    skipped = [s["id"] for s in scenes if (scene is None or s["id"] == scene) and s not in chosen]
+    seconds = sum(int(s.get("request_seconds") or cfg.seconds) for s in chosen)
+    cost = cfg.cost(seconds)
+    spent = _spent(root, scenes)
+    plan = {
+        "ok": True,
+        "dry_run": dry_run,
+        "model": cfg.model,
+        "scenes": [
+            {
+                "id": s["id"],
+                "block": s["block"],
+                "seed": int(s["seed"]),
+                "seconds": int(s.get("request_seconds") or cfg.seconds),
+                "cost_usd": cfg.cost(int(s.get("request_seconds") or cfg.seconds)),
+            }
+            for s in chosen
+        ],
+        "skipped": skipped,
+        "seconds": seconds,
+        "cost_usd": cost,
+        "spent_before_usd": spent,
+        "max_usd": cfg.max_usd,
+    }
+    if spent + cost > cfg.max_usd:
+        raise PitchError(
+            f"El costo estimado ({cost:.2f} USD) más lo gastado ({spent:.2f} USD) pasa el tope de "
+            f"{cfg.max_usd:.2f} USD (config/pitch.toml)."
+        )
+    if dry_run:
+        for item, s in zip(plan["scenes"], chosen, strict=True):
+            item["body"] = cfg.body(
+                image_url="<imagen subida>",
+                prompt=prompt_text(root, s),
+                seed=int(s["seed"]),
+                seconds=item["seconds"],
+            )
+        return plan
+    if not chosen:
+        return {**plan, "spent_usd": 0.0, "total_spent_usd": spent}
+    if confirm is not None and not confirm(plan):
+        return {**plan, "ok": False, "cancelled": True}
+
+    own = client is None
+    client = client or hf.HiggsfieldClient.from_env(cfg, env)
+    blocks = {block.id: block for block in script.blocks}
+    results: list[dict[str, Any]] = []
+    spent_now = 0.0
+    try:
+        if cfg.model not in client.list_models():
+            raise PitchError(f"Higgsfield no lista el modelo {cfg.model} para esta cuenta.")
+        with tempfile.TemporaryDirectory(prefix="pitch-ref-") as tmp:
+            image = _resolve(root, chosen[0]["image"])
+            if image is None or not image.is_file():
+                raise PitchError("Falta la imagen de referencia (git lfs pull).")
+            image_url = client.upload_image(_normalized_reference(image, Path(tmp)))
+        for s in chosen:
+            secs = int(s.get("request_seconds") or cfg.seconds)
+            key = f"{s['id']}:{block_hash(blocks[s['block']])}:{int(s['seed'])}"
+            if s.get("job"):
+                s["history"] = [*(s.get("history") or []), s["job"]]
+            job: dict[str, Any] = {
+                "request_id": None,
+                "status": "queued",
+                "submitted_at": _now(),
+                "finished_at": None,
+                "seconds": secs,
+                "cost_usd": 0.0,
+                "idempotency_key": key,
+                "error": None,
+            }
+            s.update(job=job, status="generando", model=cfg.model)
+            save_scenes(root, scenes)
+            body = cfg.body(
+                image_url=image_url, prompt=prompt_text(root, s), seed=int(s["seed"]), seconds=secs
+            )
+            try:
+                sent = client.submit(body, key)
+                job["request_id"] = sent["request_id"]
+                save_scenes(root, scenes)
+                done = client.wait(sent["request_id"], sent["status_url"])
+                dest = root / "escenas" / f"{s['id']}.mp4"
+                client.download(hf.video_url(done), dest)
+            except hf.JobFailed as exc:
+                job.update(status=exc.status, finished_at=_now(), error=str(exc))
+                s["status"] = "error"
+                save_scenes(root, scenes)
+                results.append({"id": s["id"], "status": "error", "error": str(exc)})
+                continue
+            except hf.HiggsfieldError as exc:
+                job.update(status="error", finished_at=_now(), error=str(exc))
+                s["status"] = "error"
+                save_scenes(root, scenes)
+                raise PitchError(str(exc)) from None
+            facts = _clip_facts(dest)
+            job.update(status="completed", finished_at=_now(), cost_usd=cfg.cost(secs))
+            spent_now += job["cost_usd"]
+            s.update(
+                status="generada",
+                clip=_relative(root, dest),
+                generated_at=job["finished_at"],
+                duration_s=facts["duration_s"],
+                review=None,
+            )
+            save_scenes(root, scenes)
+            results.append(
+                {
+                    "id": s["id"],
+                    "status": "generada",
+                    "request_id": job["request_id"],
+                    "seconds": secs,
+                    "cost_usd": job["cost_usd"],
+                    "clip": s["clip"],
+                    "duration_s": facts["duration_s"],
+                    "size": f"{facts['width']}x{facts['height']}",
+                    "audio": facts["audio"],
+                }
+            )
+    finally:
+        if own:
+            client.close()
+    return {
+        **plan,
+        "ok": all(r["status"] == "generada" for r in results),
+        "scenes": results,
+        "spent_usd": round(spent_now, 2),
+        "total_spent_usd": round(spent + spent_now, 2),
+    }
+
+
+def calibrate(
+    root: Path = PITCH_ROOT,
+    *,
+    client: Any = None,
+    config: Any = None,
+    seconds: int = CALIBRATION_SECONDS,
+    gold_dir: Path | None = None,
+    reference: Path | None = None,
+    env: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Un trabajo corto con la escena 1 para confirmar campos, tamaño y audio (research R11)."""
+    hf = _hf()
+    cfg = config or hf.HiggsfieldConfig.load()
+    _require_valid(root, gold_dir, reference)
+    scenes = load_scenes(root)
+    first = scenes[0]
+    cost = cfg.cost(seconds)
+    spent = _spent(root, scenes)
+    if spent + cost > cfg.max_usd:
+        raise PitchError(f"La calibración pasaría el tope de {cfg.max_usd:.2f} USD.")
+    own = client is None
+    client = client or hf.HiggsfieldClient.from_env(cfg, env)
+    out_dir = root / "calibracion"
+    dest = out_dir / "calibracion.mp4"
+    try:
+        if cfg.model not in client.list_models():
+            raise PitchError(f"Higgsfield no lista el modelo {cfg.model} para esta cuenta.")
+        with tempfile.TemporaryDirectory(prefix="pitch-ref-") as tmp:
+            image = _resolve(root, first["image"])
+            if image is None or not image.is_file():
+                raise PitchError("Falta la imagen de referencia (git lfs pull).")
+            image_url = client.upload_image(_normalized_reference(image, Path(tmp)))
+        body = cfg.body(
+            image_url=image_url,
+            prompt=prompt_text(root, first),
+            seed=int(first["seed"]),
+            seconds=seconds,
+        )
+        try:
+            sent = client.submit(body, f"calibracion:{first['seed']}:{seconds}:{_now()}")
+            done = client.wait(sent["request_id"], sent["status_url"])
+            client.download(hf.video_url(done), dest)
+        except hf.HiggsfieldError as exc:
+            raise PitchError(str(exc)) from None
+    finally:
+        if own:
+            client.close()
+    ledger = out_dir / "gasto.json"
+    entries = json.loads(ledger.read_text()) if ledger.is_file() else []
+    entries.append(
+        {"request_id": sent["request_id"], "seconds": seconds, "cost_usd": cost, "at": _now()}
+    )
+    ledger.write_text(json.dumps(entries, indent=2) + "\n", encoding="utf-8")
+    facts = _clip_facts(dest)
+    problems = []
+    if abs(facts["duration_s"] - seconds) > 1:
+        problems.append(
+            f"la duración medida es {facts['duration_s']} s y se pidieron {seconds} s: revisa "
+            f"[higgsfield.fields] duration en config/pitch.toml"
+        )
+    if not facts["audio"]:
+        problems.append(
+            "el clip no trae audio: revisa [higgsfield.fields] audio en config/pitch.toml"
+        )
+    if abs(facts["height"] - HEIGHT) > 16 or facts["width"] >= facts["height"]:
+        problems.append(
+            f"el clip mide {facts['width']}x{facts['height']}, no es vertical 1080x1920"
+        )
+    return {
+        "ok": not problems,
+        "request_id": sent["request_id"],
+        "clip": _relative(root, dest),
+        "requested_seconds": seconds,
+        **facts,
+        "cost_usd": cost,
+        "fields": dict(cfg.fields),
+        "problems": problems,
+    }
 
 
 # --------------------------------------------------------------------------- narración
@@ -549,34 +885,11 @@ def write_web_data(root: Path = PITCH_ROOT, target: Path = WEB_DATA) -> Path:
     return target
 
 
-def _write_disclaimer(work: Path) -> None:
-    # En bytes: en Windows write_text pondría CRLF y drawtext dibuja cada CR como otra línea.
-    (work / "disclaimer.txt").write_bytes("\n".join(DISCLAIMER_LINES).encode("utf-8"))
-
-
-def _disclaimer_filter(enable: str, size: int = 40) -> str:
-    return (
-        "drawtext=fontfile=font.ttf:textfile=disclaimer.txt:fontcolor=white:"
-        f"fontsize={size}:line_spacing=10:box=1:boxcolor=black@0.6:boxborderw=24:"
-        f"x=(w-text_w)/2:y=h-text_h-140:enable='{enable}'"
-    )
-
-
 def poster_from_image(image: Path, output: Path) -> Path:
-    """Portada a partir de la imagen de referencia con la declaración, antes del video real."""
+    """Portada a partir de la imagen de referencia, antes del video real."""
     output.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="pitch-poster-") as tmp:
-        work = Path(tmp)
-        shutil.copyfile(_font(), work / "font.ttf")
-        _write_disclaimer(work)
-        vf = (
-            f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase,"
-            f"crop={WIDTH}:{HEIGHT}," + _disclaimer_filter("1")
-        )
-        _run(
-            [_tool("ffmpeg"), "-y", "-i", str(image), "-vf", vf, "-frames:v", "1", str(output)],
-            cwd=work,
-        )
+    vf = f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase,crop={WIDTH}:{HEIGHT}"
+    _run([_tool("ffmpeg"), "-y", "-i", str(image), "-vf", vf, "-frames:v", "1", str(output)])
     return output
 
 
@@ -618,7 +931,6 @@ def assemble(
     with tempfile.TemporaryDirectory(prefix="pitch-assemble-") as tmp:
         work = Path(tmp)
         shutil.copyfile(_font(), work / "font.ttf")
-        _write_disclaimer(work)
         parts: list[str] = []
         overlays: list[str] = []
         start = 0.0
@@ -654,8 +966,7 @@ def assemble(
             start += length
         joined = "".join(f"[v{i}][a{i}]" for i in range(count))
         parts.append(f"{joined}concat=n={count}:v=1:a=1[vc][ac]")
-        enable = f"lt(t,{DISCLAIMER_HEAD_S})+gte(t,{total - DISCLAIMER_TAIL_S:.2f})"
-        parts.append("[vc]" + ",".join([*overlays, _disclaimer_filter(enable)]) + "[vout]")
+        parts.append("[vc]" + (",".join(overlays) or "null") + "[vout]")
         command = [_tool("ffmpeg"), "-y"]
         for path in [*clips, *voices]:
             command += ["-i", str(path)]

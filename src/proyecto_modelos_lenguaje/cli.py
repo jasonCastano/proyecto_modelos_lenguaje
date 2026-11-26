@@ -1007,7 +1007,142 @@ def build_parser() -> argparse.ArgumentParser:
     ops_check.add_argument("--json", action="store_true")
     ops_check.set_defaults(func=cmd_ops_check)
 
+    _add_pitch_parser(sub)
+
     return parser
+
+
+# --------------------------------------------------------------------------- video pitch (spec 028)
+
+
+def _pitch_paths(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "gold_dir": Path(args.gold) if args.gold else None,
+        "reference": Path(args.reference) if args.reference else None,
+    }
+
+
+def cmd_pitch_validate(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    report = pitch.validate(Path(args.root), **_pitch_paths(args))
+    _emit(report.to_dict(), args.json)
+    return 0 if report.ok else 1
+
+
+def cmd_pitch_samples(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    root = Path(args.root)
+    try:
+        samples = pitch.export_samples(root, args.scene, prefix=args.prefix, **_pitch_paths(args))
+    except pitch.PitchError as exc:
+        return _error(str(exc), 1)
+    Path(args.output).write_text(json.dumps(samples, ensure_ascii=False, indent=2), "utf-8")
+    scenes = [s for s in pitch.load_scenes(root) if args.scene in (None, s["id"])]
+    _emit(
+        {
+            "output": args.output,
+            "samples": len(samples),
+            "seeds": {s["id"]: s["seed"] for s in scenes},
+        },
+        args.json,
+    )
+    return 0
+
+
+def cmd_pitch_narrate(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    try:
+        result = pitch.narrate(Path(args.root), block=args.block, voice=args.voice)
+    except pitch.PitchError as exc:
+        return _error(str(exc), 1)
+    _emit({"narration": result}, args.json)
+    return 0
+
+
+def cmd_pitch_assemble(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    try:
+        result = pitch.assemble(
+            Path(args.root),
+            Path(args.output),
+            web_data=pitch.WEB_DATA,
+            preset=args.preset,
+            **_pitch_paths(args),
+        )
+    except pitch.PitchError as exc:
+        return _error(str(exc), 1)
+    _emit(result, args.json)
+    return 0
+
+
+def cmd_pitch_check(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    try:
+        report = pitch.check(Path(args.video), Path(args.vtt) if args.vtt else None)
+    except pitch.PitchError as exc:
+        return _error(str(exc), 1)
+    _emit(report, args.json)
+    return 0 if report["ok"] else 1
+
+
+def cmd_pitch_poster(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    sheet = pitch.load_reference(
+        Path(args.reference) if args.reference else pitch.DEFAULT_REFERENCE
+    )
+    try:
+        output = pitch.poster_from_image(sheet.image, Path(args.output))
+    except pitch.PitchError as exc:
+        return _error(str(exc), 1)
+    _emit({"poster": str(output)}, args.json)
+    return 0
+
+
+def cmd_pitch_webdata(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    _emit({"web_data": str(pitch.write_web_data(Path(args.root)))}, args.json)
+    return 0
+
+
+def _add_pitch_parser(sub: Any) -> None:
+    from . import pitch
+
+    node = sub.add_parser("pitch", help="video pitch de Valer-IA con MAGI-2 (spec 028)")
+    pitch_sub = node.add_subparsers(dest="pitch_command", required=True)
+
+    def command(name: str, help_text: str, func: Any) -> argparse.ArgumentParser:
+        parser = pitch_sub.add_parser(name, help=help_text)
+        parser.add_argument("--root", default=str(pitch.PITCH_ROOT))
+        parser.add_argument("--gold", default=None, help="directorio oro (por defecto data/gold)")
+        parser.add_argument("--reference", default=None, help="ficha de la imagen de referencia")
+        parser.add_argument("--json", action="store_true")
+        parser.set_defaults(func=func)
+        return parser
+
+    command("validate", "valida guion, escenas y ficha de la imagen", cmd_pitch_validate)
+    samples = command("samples", "exporta SAMPLES para run_demo.sh de MAGI-2", cmd_pitch_samples)
+    samples.add_argument("--scene", default=None, help="solo esta escena (escena-0N)")
+    samples.add_argument("-o", "--output", default="samples.json")
+    samples.add_argument("--prefix", default="", help="ruta del repo en la máquina de MAGI-2")
+    narrate = command("narrate", "narración en español con la voz Phonon", cmd_pitch_narrate)
+    narrate.add_argument("--block", default=None, choices=pitch.BLOCK_ORDER)
+    narrate.add_argument("--voice", default=None)
+    assemble = command("assemble", "monta el video final con ffmpeg", cmd_pitch_assemble)
+    assemble.add_argument("-o", "--output", default=str(pitch.MEDIA_DIR / pitch.VIDEO_NAME))
+    assemble.add_argument("--preset", default="medium", help="preset de libx264")
+    check = command("check", "comprueba el video final", cmd_pitch_check)
+    check.add_argument("video")
+    check.add_argument("--vtt", default=None)
+    poster = command("poster", "portada desde la imagen de referencia", cmd_pitch_poster)
+    poster.add_argument("-o", "--output", default=str(pitch.MEDIA_DIR / pitch.POSTER_NAME))
+    command("webdata", "regenera web/src/data/pitch.ts desde el guion", cmd_pitch_webdata)
 
 
 def cmd_channels(args: argparse.Namespace) -> int:

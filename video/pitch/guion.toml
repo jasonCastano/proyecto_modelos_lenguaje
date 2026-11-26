@@ -1,0 +1,45 @@
+# Guion del video pitch de Valer-IA (spec 028). Seis bloques de elevator pitch, uno por escena de MAGI-2.
+#
+# Reglas (pml pitch validate):
+# - narration: español, como máximo 22 palabras (cabe en 9,5 s de voz);
+# - claims: unit_id del oro que respaldan lo que se afirma de Manuelita; cada cifra debe estar en ellas;
+# - si un bloque menciona la planificación, narration dice «datos sintéticos»;
+# - el bloque uso nombra perfil, pregunta, fuentes y planificación.
+#
+# Al cambiar el texto de un bloque, la escena aprobada de ese bloque queda desactualizada y se revisa de nuevo.
+
+version = "1.0.0"
+language = "es"
+max_seconds = 57
+
+[[block]]
+id = "gancho"
+narration = "Manuelita nació en 1864 como un trapiche para producir azúcar. Valer-IA te ayuda a conocerla con un agente que cita fuentes."
+claims = ["unit_05fb8675575bb5a7"]
+
+[[block]]
+id = "problema"
+narration = "Su información pública está repartida en informes, noticias y páginas de cuatro plataformas: caña, palma, acuicultura y frutas."
+claims = ["unit_121e7e190f26cf4e"]
+
+[[block]]
+id = "solucion"
+narration = "Valer-IA reúne esa información en un solo agente para visitantes, clientes, proveedores, colaboradores y el equipo de planta."
+claims = []
+
+[[block]]
+id = "diferencia"
+narration = "Cita cada fuente, calcula las cifras en código y te pide un sí antes de guardar algo."
+claims = []
+
+[[block]]
+id = "uso"
+narration = "Elige tu perfil, haz tu pregunta y revisa las fuentes. Si planificas producción, abre la consola con datos sintéticos."
+on_screen = "1 Perfil · 2 Pregunta · 3 Fuentes · 4 Planificación"
+claims = []
+synthetic = true
+
+[[block]]
+id = "accion"
+narration = "Valer-IA es un proyecto académico, no un canal oficial de Manuelita. Entra, elige tu perfil y empieza a preguntar."
+claims = []

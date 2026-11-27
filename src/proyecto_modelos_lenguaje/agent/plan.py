@@ -66,7 +66,8 @@ SPANISH_FUNCTION = re.compile(
 )
 ENGLISH_FUNCTION = re.compile(
     r"\b(the|what|where|when|how|does|do|is|are|please|company|who|you|your|and|of|to|in|"
-    r"can|about|tell|me|it)\b"
+    r"can|about|tell|me|it|was|were|which|why|did|has|have|had|this|that|there|for|with|from|"
+    r"by|an|much|many|any|know|we|our|they|their|its|my|could|would|should|will|been)\b"
 )
 EMOJI_ONLY = re.compile(r"^[^\w]+$")
 

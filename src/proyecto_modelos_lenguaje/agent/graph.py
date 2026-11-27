@@ -96,7 +96,7 @@ from .memory import (
     turns_to_keep,
 )
 from .models import RouteDecision, Turn, TurnMetrics
-from .plan import TurnPlan, build_plan
+from .plan import TurnPlan, build_plan, detect_language
 from .privacy import build_pii_middleware
 from .prompts import load_agent_prompt, load_care, load_conduct, load_converse
 from .review import (
@@ -139,7 +139,9 @@ LABEL_PATTERN = re.compile(r"\[([UF]\d+)\]")
 ROUTER_HISTORY_TURNS = 3
 FAREWELL = re.compile(r"\b(gracias|adios|chao|hasta luego|hasta pronto|nos vemos|eso es todo)\b")
 # Spec 018: respuestas deterministas de Valer-IA Caña, versionadas en prompts/conduct.md.
-SENSITIVE_NOTICES = frozenset({"credit_card", "document", "phone"})
+# Spec 029 (R3): un teléfono (p. ej. el del encabezado del canal) no amerita aviso; una
+# contraseña sí.
+SENSITIVE_NOTICES = frozenset({"credit_card", "document", "password"})
 IDENTITY_STAGE_NONE: dict[str, Any] = {"stage": "none", "attempts": 0, "offered": False}
 
 
@@ -150,6 +152,34 @@ def conduct(key: str, **values: str) -> str:
     for name, value in values.items():
         text = text.replace("{" + name + "}", value)
     return text
+
+
+def turn_language(state: Any) -> str:
+    """Idioma del turno (spec 029): el que indica el canal o, si no, el del mensaje."""
+    value = state.get("turn_language")
+    if value in ("es", "en"):
+        return str(value)
+    return "en" if detect_language(str(state.get("question") or "")) == "en" else "es"
+
+
+def localized(key: str, language: str, **values: str) -> str | None:
+    """Texto fijo en el idioma del turno; ``None`` si no hay variante (nunca se mezcla idioma)."""
+    if language != "en":
+        return conduct(key, **values)
+    return conduct(f"{key}_en", **values) if f"{key}_en" in load_conduct() else None
+
+
+def new_sensitive_kinds(state: Any) -> list[str]:
+    """Tipos de datos sensibles del turno que todavía no tuvieron aviso en el hilo."""
+    kinds = SENSITIVE_NOTICES & set(state.get("pii_notice") or [])
+    return sorted(kinds - set(state.get("sensitive_notice_given") or []))
+
+
+def sensitive_notice(state: Any) -> str | None:
+    """Spec 029 (FR-008 a FR-011): aviso natural, al final y una sola vez por hilo y tipo."""
+    if not new_sensitive_kinds(state):
+        return None
+    return localized("sensitive_notice", turn_language(state))
 
 
 NO_RETRIEVAL_ROUTES = frozenset({"direct", "out_of_scope", "clarify"})
@@ -195,6 +225,8 @@ class ChatState(TypedDict, total=False):
     tool_calls: list[dict[str, Any]]  # spec 024: herramientas invocadas en el turno
     plan_steps: list[str]  # spec 024: plan visible del turno
     pii_notice: list[str]
+    sensitive_notice_given: list[str]  # spec 029: tipos ya avisados en el hilo
+    turn_language: str | None  # spec 029: idioma del turno que indica el canal
     client: dict[str, Any] | None
     identity_next: str
     notices: list[str]
@@ -391,11 +423,15 @@ def _route_node(deps: GraphDeps):
         if gate_outcome is not None and deps.gate is not None:
             signals = merge_signals(signals, gate_outcome, deps.gate.config)  # type: ignore[assignment]
         thread_profile, active, profile_note = _turn_profile(state, intent, profile_query)
+        # Spec 028 (R9): la planificación se activa por contexto para cualquier persona, solo en
+        # este turno (y en la repregunta inmediata); el perfil del hilo no cambia.
         planned = (
-            planning_decision(state["question"], active, authorized=True)
+            planning_decision(state["question"], previous_route=_previous_route(state))
             if intent is None and not profile_query and state.get("variant") == "agent"
             else None
         )
+        if planned is not None and profiles_module.profiles_enabled():
+            active = profiles_module.PLANNER
         if intent is not None:
             decision = RouteDecision(
                 route="direct",
@@ -466,11 +502,15 @@ def _route_node(deps: GraphDeps):
     return route
 
 
-PLANNER_ONLY_NOTE = (
-    "Por WhatsApp, la planificación de producción es solo para planificadores autorizados; en la "
-    "web puedes elegir el perfil planificador. Aquí puedo darte la información pública de "
-    "Manuelita sobre el tema."
-)
+def _previous_route(state: ChatState) -> str | None:
+    """Ruta del turno anterior del hilo (continuidad de la planificación, spec 028)."""
+    turns = state.get("turns") or []
+    if not turns:
+        return None
+    route = turns[-1].get("route") or {}
+    return str(route.get("route")) if isinstance(route, dict) and route.get("route") else None
+
+
 PLANNER_VARIANT_NOTE = (
     "Para planificar la producción usa la variante agente (en la vista técnica de la web)."
 )
@@ -492,9 +532,9 @@ def _turn_profile(
 ) -> tuple[str, str, str | None]:
     """Spec 025 (R15): (perfil del hilo, perfil efectivo del turno, aviso para la respuesta).
 
-    Orden: perfil del hilo (``/perfil`` o selector) → preferencia ``audience`` → visitante. Una
-    autopresentación («soy proveedor…») activa ese perfil en el hilo y ofrece recordarlo. El
-    planificador sin autorización atiende como visitante.
+    Orden: perfil del hilo (selector de la web o atajo del operador) → preferencia ``audience`` →
+    visitante. Una autopresentación («soy proveedor…») activa ese perfil en el hilo y ofrece
+    recordarlo. Desde la spec 028 el planificador es libre en todos los canales.
     """
     user_id = state.get("user_id", "anon")
     channel = state.get("channel") or "web"
@@ -512,15 +552,13 @@ def _turn_profile(
                 "conversaciones, escribe «recuerda mi perfil»."
             )
     active = profiles_module.effective_profile(profile, user_id, channel)
-    if note is not None and active != profile:
-        # Spec 027: fuera de la web, presentarse como planificador sin estar autorizado no cambia
-        # el perfil; no se anuncia un perfil que no rige.
-        note = PLANNER_ONLY_NOTE
-    if intent is None and not profile_query and is_planning_request(state["question"]):
-        if active != profiles_module.PLANNER and profile == profiles_module.PLANNER:
-            note = PLANNER_ONLY_NOTE
-        elif active == profiles_module.PLANNER and state.get("variant") != "agent":
-            note = PLANNER_VARIANT_NOTE
+    if (
+        intent is None
+        and not profile_query
+        and is_planning_request(state["question"])
+        and state.get("variant") != "agent"
+    ):
+        note = PLANNER_VARIANT_NOTE
     return profile, active, note
 
 
@@ -563,10 +601,9 @@ def _lead(
     texts, notices = care.prefixes(
         signals, decision.model_dump(mode="json"), load_care(), care_state, guided=True
     )
-    lead = list(texts)
-    if SENSITIVE_NOTICES & set(state.get("pii_notice") or []):
-        lead.insert(0, conduct("sensitive_notice"))
-        notices = [*notices, "sensitive_data"]
+    # Spec 029: el aviso de datos sensibles va al final (finalize) y los prefijos del guion solo
+    # existen en español: en un turno en inglés se omiten para no mezclar idiomas.
+    lead = list(texts) if turn_language(state) == "es" else []
     return lead, list(notices)
 
 
@@ -824,10 +861,9 @@ def _writer() -> Any:
 
 
 def _emit_lead(out: Emitter, state: ChatState) -> None:
-    """Frases previas calculadas en ``route`` (aviso de datos sensibles y límite por hostilidad)."""
+    """Frases previas calculadas en ``route`` (límite por hostilidad; el aviso va al final)."""
     for item in state.get("lead") or []:
-        notice = item == conduct("sensitive_notice")
-        out.emit(item, separator_after="\n\n" if notice else None)
+        out.emit(item)
 
 
 def _stream_chunks(
@@ -1640,6 +1676,9 @@ def _finalize_node(deps: GraphDeps):
             "contact": contact,
             "conversation": conversation or care.empty_conversation(),
             "identity": identity,
+            "sensitive_notice_given": sorted(
+                {*(state.get("sensitive_notice_given") or []), *new_sensitive_kinds(state)}
+            ),
         }
 
     return finalize
@@ -1657,8 +1696,10 @@ def _remember_offer(
         and identity.get("stage") != "recognized"
     )
     if anonymous and not identity.get("offered"):
-        identity["offered"] = True
-        return conduct("remember_offer")
+        offer = localized("remember_offer", turn_language(state))
+        if offer:
+            identity["offered"] = True
+        return offer
     return None
 
 
@@ -1700,6 +1741,8 @@ def _assemble_answer(
     after, after_notices = care.suffixes(
         signals, decision, playbook, care_state, retrieval=retrieval, guided=guided
     )
+    if turn_language(state) != "es":
+        before, after = [], []  # spec 029: el guion de cuidado solo existe en español
     answer = " ".join(piece for piece in [*before, answer, *after] if piece).strip()
     notices.extend(before_notices + after_notices)
     notices.extend(state.get("turn_notices") or [])
@@ -1709,10 +1752,11 @@ def _assemble_answer(
     if state.get("profile_note"):
         answer = f"{answer}\n\n{state['profile_note']}".strip()
         notices.append("profile_note")
-    if SENSITIVE_NOTICES & set(state.get("pii_notice") or []):
-        # Spec 018 (FR-020): aviso determinista si el visitante compartió datos sensibles.
+    notice = sensitive_notice(state)
+    if notice:
+        # Spec 018 (FR-020) y spec 029: aviso natural al final, solo con datos sensibles nuevos.
         notices.append("sensitive_data")
-        answer = f"{conduct('sensitive_notice')}\n\n{answer}".strip()
+        answer = f"{answer}\n\n{notice}".strip()
     return answer, fallback, citations
 
 
@@ -1732,7 +1776,8 @@ def _deliver_tail(
     after, notices = care.suffixes(
         signals, decision, playbook, care_state, retrieval=retrieval, guided=True
     )
-    for text in after:
+    spanish = turn_language(state) == "es"
+    for text in after if spanish else []:
         out.emit(text)
     notices = [*notices, *(state.get("turn_notices") or [])]
     offer = _remember_offer(state, plan, identity)
@@ -1744,8 +1789,13 @@ def _deliver_tail(
     converse = (state.get("plan") or {}).get("node") == "converse"
     if plan is not None and converse and state.get("reviewed") != "fallback":
         # Frases que el plan exige y el modelo no dijo: se agregan al final (FR-008).
-        for section in missing_required(out.text, plan):
+        for section in missing_required(out.text, plan) if spanish else []:
             out.emit(care.pick(playbook, section, care_state))
+    notice = sensitive_notice(state)
+    if notice:
+        out.next_separator = "\n\n"
+        out.emit(notice)
+        notices = [*notices, "sensitive_data"]
     return out.text.strip(), notices
 
 

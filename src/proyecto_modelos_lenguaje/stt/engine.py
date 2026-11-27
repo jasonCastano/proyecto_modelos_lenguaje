@@ -20,7 +20,15 @@ from typing import Any, Literal, Protocol
 
 import numpy as np
 
-from .config import LICENSE, PRIVACY, SttConfig, SttConfigError, load_stt_config
+from .config import (
+    AUTO_LANGUAGE,
+    LICENSE,
+    PRIVACY,
+    SUPPORTED_LANGUAGES,
+    SttConfig,
+    SttConfigError,
+    load_stt_config,
+)
 from .text import apply_corrections, clip_message, initial_prompt, is_hallucination
 
 logger = logging.getLogger(__name__)
@@ -62,6 +70,18 @@ class FakeTranscriber:
             return []
         return [Segment(self.text)]
 
+    def transcribe_with_language(
+        self, samples: np.ndarray, language: str | None
+    ) -> tuple[list[Segment], str]:
+        """Spec 028: con ``language=None`` «detecta» inglés si el texto fijo parece inglés."""
+        detected = language or ("en" if _looks_english(self.text) else "es")
+        return self.transcribe(samples), detected
+
+
+def _looks_english(text: str) -> bool:
+    words = set(text.lower().replace("?", " ").replace("¿", " ").split())
+    return bool(words & {"what", "does", "the", "how", "is", "are", "who", "where", "when"})
+
 
 def _friendly_load_error(exc: BaseException) -> str:
     text = f"{type(exc).__name__}: {exc}".lower()
@@ -95,18 +115,26 @@ class WhisperTranscriber:
         self.model_label = config.model_label
 
     def transcribe(self, samples: np.ndarray) -> list[Segment]:
-        segments, _info = self._model.transcribe(
+        language = None if self._config.language == AUTO_LANGUAGE else self._config.language
+        return self.transcribe_with_language(samples, language)[0]
+
+    def transcribe_with_language(
+        self, samples: np.ndarray, language: str | None
+    ) -> tuple[list[Segment], str]:
+        """``language=None`` deja que Whisper detecte el idioma (spec 028, research R5)."""
+        segments, info = self._model.transcribe(
             samples,
-            language=self._config.language,
+            language=language,
             beam_size=self._config.beam_size,
             vad_filter=True,
             condition_on_previous_text=False,
             initial_prompt=self._prompt,
         )
-        return [
+        kept = [
             Segment(str(item.text).strip(), float(getattr(item, "no_speech_prob", 0.0) or 0.0))
             for item in segments
         ]
+        return kept, str(getattr(info, "language", None) or language or "es")
 
 
 @dataclass(frozen=True)
@@ -136,9 +164,13 @@ class Transcription:
     audio_ms: int
     stt_ms: int
     model: str
+    language_fallback: bool = False  # spec 028: idioma distinto de es/en → se trata como «es»
 
     def to_dict(self) -> dict[str, Any]:
-        return dict(self.__dict__)
+        """Contrato de ``/api/stt`` (spec 023): sin el campo interno del canal."""
+        data = dict(self.__dict__)
+        data.pop("language_fallback", None)
+        return data
 
 
 class SttService:
@@ -235,16 +267,31 @@ class SttService:
             self._warmup.join(timeout)
 
     # -- reconocimiento -----------------------------------------------------------------------
-    def transcribe(self, samples: np.ndarray, audio_ms: int) -> Transcription:
+    def transcribe(
+        self, samples: np.ndarray, audio_ms: int, *, language: str | None = None
+    ) -> Transcription:
+        """``language`` (spec 028) reemplaza el de la configuración; «auto» detecta es/en."""
         transcriber = self.ensure_loaded()
+        requested = language or self.config.language
         if not self._slots.acquire(timeout=self.config.queue_timeout_seconds):
             raise SttBusyError("El dictado está ocupado.")
         try:
             started = time.perf_counter()
-            segments = transcriber.transcribe(samples)
+            detect = getattr(transcriber, "transcribe_with_language", None)
+            if detect is not None:
+                whisper_language = None if requested == AUTO_LANGUAGE else requested
+                segments, detected = detect(samples, whisper_language)
+            else:
+                segments, detected = transcriber.transcribe(samples), requested
             elapsed = round((time.perf_counter() - started) * 1000)
         finally:
             self._slots.release()
+        fallback = False
+        if requested == AUTO_LANGUAGE:
+            if detected not in SUPPORTED_LANGUAGES:
+                detected, fallback = SUPPORTED_LANGUAGES[0], True
+        else:
+            detected = requested
         kept = [
             segment.text.strip()
             for segment in segments
@@ -257,10 +304,11 @@ class SttService:
             text=text,
             empty=not text,
             truncated=truncated,
-            language=self.config.language,
+            language=detected,
             audio_ms=int(audio_ms),
             stt_ms=int(elapsed),
             model=getattr(transcriber, "model_label", self.config.model_label),
+            language_fallback=fallback,
         )
 
 

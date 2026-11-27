@@ -64,6 +64,14 @@ SPANISH_VOICES: tuple[VoiceInfo, ...] = (
     VoiceInfo("Leonel", "BkuASiOJRrJEB5qA", "MX", "male"),
     VoiceInfo("Nico", "PwgPEaweQILZdGc4", "MX", "male"),
 )
+# Spec 028 (research R4): candidatas en inglés del catálogo de Phonon (modelo phonon-31m-en).
+ENGLISH_VOICES = (
+    VoiceInfo("Harper", "4SZHfMpw-p46Ywgs", "US", "female"),
+    VoiceInfo("Everly", "vjFyp2BcCyTlUmYb", "US", "female"),
+    VoiceInfo("Juniper", "NIWIOv5vTi5eRMj8", "US", "female"),
+    VoiceInfo("Hadley", "bXwrkHhURL1VFJdG", "US", "female"),
+)
+VOICES_BY_LANGUAGE = {"es": SPANISH_VOICES, "en": ENGLISH_VOICES}
 
 
 class VoiceUnavailableError(RuntimeError):
@@ -96,9 +104,15 @@ class FakeSynthesizer:
 
     engine = "fake"
 
-    def __init__(self, sample_rate: int = FAKE_SAMPLE_RATE, ms_per_char: float = 60.0) -> None:
+    def __init__(
+        self,
+        sample_rate: int = FAKE_SAMPLE_RATE,
+        ms_per_char: float = 60.0,
+        language: str = "es",
+    ) -> None:
         self.sample_rate = sample_rate
         self.ms_per_char = ms_per_char
+        self.language = language
         self.calls: list[tuple[str, str]] = []
 
     def synth(self, text: str, voice: str) -> np.ndarray:
@@ -108,7 +122,7 @@ class FakeSynthesizer:
         return (0.05 * np.sin(2 * np.pi * 220.0 * t)).astype(np.float32)
 
     def voices(self) -> list[VoiceInfo]:
-        return list(SPANISH_VOICES)
+        return list(VOICES_BY_LANGUAGE.get(self.language, SPANISH_VOICES))
 
 
 def _friendly_load_error(exc: BaseException) -> str:
@@ -148,8 +162,9 @@ class PhononSynthesizer:
 
             raw = ptts.catalog_voices()
         except Exception:
-            return list(SPANISH_VOICES)
-        known = {info.voice_id: info for info in SPANISH_VOICES}
+            return list(VOICES_BY_LANGUAGE.get(self._language, SPANISH_VOICES))
+        documented = VOICES_BY_LANGUAGE.get(self._language, SPANISH_VOICES)
+        known = {info.voice_id: info for info in documented}
         catalog: list[VoiceInfo] = []
         for item in raw:
             if not str(item.get("language") or "").lower().startswith(self._language):
@@ -159,7 +174,7 @@ class PhononSynthesizer:
             catalog.append(
                 info or VoiceInfo(str(item.get("name") or voice_id), voice_id, "", "male")
             )
-        return catalog or list(SPANISH_VOICES)
+        return catalog or list(documented)
 
     def synth(self, text: str, voice: str) -> np.ndarray:
         samples = self._tts.synth(text, voice=voice)
@@ -241,7 +256,7 @@ class VoiceService:
     # -- carga --------------------------------------------------------------------------------
     def _build(self) -> Synthesizer:
         if self.config.engine == "fake":
-            return FakeSynthesizer()
+            return FakeSynthesizer(language=self.config.language)
         return PhononSynthesizer(self.config)
 
     def ensure_loaded(self) -> Synthesizer:
@@ -308,19 +323,32 @@ class VoiceService:
 
 
 _SERVICE: VoiceService | None = None
+_SERVICES_BY_LANGUAGE: dict[str, VoiceService] = {}
 _SERVICE_LOCK = threading.Lock()
 
 
-def get_voice_service() -> VoiceService:
+def get_voice_service(language: str | None = None) -> VoiceService:
+    """Servicio de voz del idioma principal o, con ``language`` (spec 028), de otro idioma."""
     global _SERVICE
     with _SERVICE_LOCK:
         if _SERVICE is None:
             _SERVICE = VoiceService()
-        return _SERVICE
+        if language is None or language == _SERVICE.config.language:
+            return _SERVICE
+        service = _SERVICES_BY_LANGUAGE.get(language)
+        if service is None:
+            try:
+                config = _SERVICE.config.for_language(language)
+            except VoiceConfigError as exc:
+                raise VoiceUnavailableError(str(exc)) from exc
+            service = VoiceService(config)
+            _SERVICES_BY_LANGUAGE[language] = service
+        return service
 
 
 def reset_voice_service(service: VoiceService | None = None) -> None:
-    """Para pruebas: descarta el singleton (o lo reemplaza)."""
+    """Para pruebas: descarta los singletons (o reemplaza el principal)."""
     global _SERVICE
     with _SERVICE_LOCK:
         _SERVICE = service
+        _SERVICES_BY_LANGUAGE.clear()

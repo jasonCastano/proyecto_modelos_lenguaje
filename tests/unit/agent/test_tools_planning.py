@@ -22,7 +22,7 @@ def test_specs(number: int, name: str) -> None:
     assert spec.number == number and spec.kind == "read"
     assert spec.routes == frozenset({"planning"})
     assert spec.args_schema.model_config.get("extra") == "forbid"
-    assert spec.mcp == (name not in {"simulate_production_scenario", "optimize_production_plan"})
+    assert spec.mcp is False  # spec 028 (D1): la planificación nunca va al MCP
 
 
 def test_state_and_commitments_are_labeled() -> None:

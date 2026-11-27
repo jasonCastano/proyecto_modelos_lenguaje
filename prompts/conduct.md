@@ -1,4 +1,4 @@
-<!-- prompt_version: 1.2 -->
+<!-- prompt_version: 1.3 -->
 # Valer-IA Caña — respuestas de conducta e identidad
 
 Respuestas deterministas de Valer-IA Caña (spec 018, `contracts/conduct.md` y `contracts/identity-flow.md`). No
@@ -8,6 +8,10 @@ reemplazan en tiempo de ejecución.
 Desde la spec 019, `off_topic`, `advice` y `clarify` son el respaldo cuando `[care] enabled = false`
 (`config/agent.toml`): con la atención activa, esas respuestas se componen desde `prompts/care.md`.
 `abuse` se usa en el primer insulto sin consulta; los demás motivos no cambian.
+
+Desde la spec 029, una sección `<clave>_en` es la variante en inglés: en un turno en inglés se
+usa esa variante y, si no existe, el texto se omite (nunca se mezcla idioma). El aviso de datos
+sensibles va al final de la respuesta, una sola vez por hilo y tipo de dato.
 
 ## greeting
 
@@ -28,6 +32,10 @@ Fue un gusto ayudarte. Si quieres que te reconozca en tu próxima visita, puedes
 ## remember_offer
 
 Si quieres que te reconozca en tu próxima visita, puedes compartirme tu correo cuando gustes; es opcional.
+
+## remember_offer_en
+
+If you'd like me to recognize you next time, you can share your email whenever you want; it's optional.
 
 ## clarify
 
@@ -63,7 +71,11 @@ No puedo darte asesoría legal, médica ni financiera; para eso te recomiendo co
 
 ## sensitive_notice
 
-Por tu seguridad, no compartas números de tarjeta, documentos de identidad ni contraseñas en este chat; no los necesito y no los guardé.
+Ojo: por aquí no hace falta que compartas datos como tarjetas, documentos o contraseñas; para lo que necesites me basta con tu pregunta.
+
+## sensitive_notice_en
+
+Just so you know, there's no need to share card, ID or password details here; your question is all I need.
 
 ## identity_confirm_name
 

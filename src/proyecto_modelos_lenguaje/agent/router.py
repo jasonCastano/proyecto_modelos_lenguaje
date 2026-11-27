@@ -185,8 +185,8 @@ OFFICIAL_CHANNEL = re.compile(
 )
 
 
-# Spec 025 (R3): señales de planificación industrial. Solo deciden la ruta ``planning`` con el
-# perfil planificador autorizado; el clasificador LLM y Jev nunca la devuelven.
+# Spec 025 (R3) y spec 028 (R9): señales de planificación. Deciden la ruta ``planning`` para
+# cualquier persona, sin cambiar su perfil; el clasificador LLM y Jev nunca la devuelven.
 PLANNING_CUE = re.compile(
     r"\b(?:programa|programacion|plan|planifica\w*|planea\w*|escenario|optimiza\w*|reparti\w*"
     r"|reparto|mezcla|ajusta\w*)\b.{0,80}\b(?:produccion|cana|azucar|etanol|semana|energia|vapor"
@@ -199,24 +199,66 @@ PLANNING_CUE = re.compile(
     r"|\b(?:compromisos?|contratos?)\b.{0,30}\b(?:azucar|etanol|energia)\b"
     r"|\bprocedimientos?\b.{0,60}\b(?:prioridad|vapor|molienda|compromisos?|planta|mezcla)\b"
     r"|\bsimula\w*\b"
+    # Spec 028: escenarios con una caída o un alza («si la molienda cae un 10 %») y en inglés.
+    r"|\b(?:molienda|cana|produccion|vapor|caldera)\b.{0,25}"
+    r"\b(?:cae|caer|cayo|baja|bajan|bajar|disminuye|falla|sube|aumenta)\b"
+    r"|\b(?:less|more|lower|reduced)\b.{0,10}\bcane\b"
+    r"|\b(?:meet|fulfil|fulfill|cover)\b.{0,40}\b(?:commitments?|contracts?)\b"
+    r"|\bproduction (?:plan|schedule|mix)\b|\boptimi[sz]e\b|\bsimulat\w*\b"
+    r"|\bplant (?:state|status|capacity)\b"
 )
+# Spec 028: preguntas informativas sobre plantas reales («capacidad de la planta de biodiésel de
+# Manuelita») no son planificación salvo que planteen un escenario. Sin este filtro, abrir el
+# planificador a todos llevaba esas consultas a la planta sintética (t04 de la batería).
+PLANNING_INFORMATIVE = re.compile(
+    r"\bmanuelita\b"
+    r"|\bplanta de (?:biodiesel|aceite|etanol|alcohol|azucar|palma|camaron|mejillon|frutas|biogas"
+    r"|energia|cogeneracion|refinacion)\b"
+)
+PLANNING_SCENARIO = re.compile(
+    r"\b(?:planifica\w*|planea\w*|optimiza\w*|optimi[sz]e|simula\w*|simulat\w*|escenario"
+    r"|reparti\w*|reparto|mezcla|compromisos?|contratos?|commitments?|esta semana|this week"
+    r"|pol de \d|menos cana|mas cana|less cane|plan de produccion|programa de produccion)\b"
+)
+# Repregunta de un escenario de planificación («¿y si baja 20 %?», «¿y con una pol de 12?»).
+PLANNING_FOLLOW_UP = re.compile(
+    r"^(?:y )?(?:si|con|sin|que pasa si|y cuando)\b"
+    r"|^(?:and |but )?(?:what if|what about|and if|and with|with)\b"
+    r"|\b\d+(?:[.,]\d+)? ?(?:%|por ciento|percent)"
+    r"|\bpol de \d"
+)
+FOLLOW_UP_MAX_WORDS = 14
 
 
 def is_planning_request(message: str) -> bool:
     """¿El mensaje pide planificar la producción de la planta? (sin modelo)."""
-    return PLANNING_CUE.search(" ".join(_words(message))) is not None
+    text = " ".join(_words(message))
+    if PLANNING_CUE.search(text) is None:
+        return False
+    return not (PLANNING_INFORMATIVE.search(text) and not PLANNING_SCENARIO.search(text))
 
 
-def planning_decision(message: str, profile: str, *, authorized: bool) -> RouteDecision | None:
-    """Ruta ``planning`` para el planificador autorizado; ``None`` en cualquier otro caso."""
-    if profile != "planificador" or not authorized or not is_planning_request(message):
+def is_planning_follow_up(message: str) -> bool:
+    """¿Es una repregunta corta del escenario anterior («¿y si baja 20 %?»)?"""
+    words = _words(message)
+    if not words or len(words) > FOLLOW_UP_MAX_WORDS:
+        return False
+    return PLANNING_FOLLOW_UP.search(" ".join(words)) is not None
+
+
+def planning_decision(message: str, *, previous_route: str | None = None) -> RouteDecision | None:
+    """Ruta ``planning`` por contexto (spec 028, R9); ``None`` si el mensaje no es de planificación.
+
+    Se activa por una señal de planificación o, si el turno anterior fue ``planning``, por una
+    repregunta del mismo escenario. Aplica solo a este turno: el perfil del hilo no cambia.
+    """
+    if is_planning_request(message):
+        reason = "planificación industrial por contexto (datos sintéticos)"
+    elif previous_route == "planning" and is_planning_follow_up(message):
+        reason = "repregunta del escenario de planificación anterior (datos sintéticos)"
+    else:
         return None
-    return RouteDecision(
-        route="planning",
-        confidence=0.95,
-        reason="planificación industrial (perfil planificador, datos sintéticos)",
-        decided_by="rules",
-    )
+    return RouteDecision(route="planning", confidence=0.95, reason=reason, decided_by="rules")
 
 
 def tool_cue_decision(message: str, text: str) -> RouteDecision | None:

@@ -1,0 +1,23 @@
+{"id": "e01", "text": "¿Cuándo inició Ingenio Manuelita?", "lang": "es", "kind": "audio", "sensitive": false}
+{"id": "e02", "text": "¿Qué productos genera Manuelita?", "lang": "es", "kind": "audio", "sensitive": false}
+{"id": "e03", "text": "¿En qué países opera Manuelita?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "e04", "text": "¿Cuánto vendió Manuelita en 2022?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "e05", "text": "¿Qué hace Manuelita con el agua?", "lang": "es", "kind": "audio", "sensitive": false}
+{"id": "e06", "text": "¿Qué certificaciones tiene Manuelita?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "e07", "text": "¿Cuánto bioetanol puede producir Manuelita al año?", "lang": "es", "kind": "audio", "sensitive": false}
+{"id": "e08", "text": "¿Cuáles son las noticias más recientes de Manuelita?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "e09", "text": "¿Qué hace la Fundación Manuelita?", "lang": "es", "kind": "audio", "sensitive": false}
+{"id": "e10", "text": "¿Cuánta caña procesó Manuelita en 2022?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "n01", "text": "When was Ingenio Manuelita founded?", "lang": "en", "kind": "audio", "sensitive": false}
+{"id": "n02", "text": "What products does Manuelita make?", "lang": "en", "kind": "audio", "sensitive": false}
+{"id": "n03", "text": "In which countries does Manuelita operate?", "lang": "en", "kind": "text", "sensitive": false}
+{"id": "n04", "text": "How much were Manuelita's sales in 2022?", "lang": "en", "kind": "text", "sensitive": false}
+{"id": "n05", "text": "What does Manuelita do about water?", "lang": "en", "kind": "audio", "sensitive": false}
+{"id": "n06", "text": "Which certifications does Manuelita have?", "lang": "en", "kind": "text", "sensitive": false}
+{"id": "n07", "text": "Do we know the sugar cane production for Manuelita this month?", "lang": "en", "kind": "audio", "sensitive": false}
+{"id": "n08", "text": "What is the latest news about Manuelita?", "lang": "en", "kind": "text", "sensitive": false}
+{"id": "n09", "text": "What does the Manuelita Foundation do?", "lang": "en", "kind": "audio", "sensitive": false}
+{"id": "n10", "text": "How much ethanol can Manuelita produce per year?", "lang": "en", "kind": "text", "sensitive": false}
+{"id": "s01", "text": "Mi tarjeta es 4111 1111 1111 1111, ¿qué productos tiene Manuelita?", "lang": "es", "kind": "text", "sensitive": true}
+{"id": "s02", "text": "Mi cédula es 1234567890, ¿dónde queda Manuelita?", "lang": "es", "kind": "text", "sensitive": true}
+{"id": "s03", "text": "My password is Caña2026!, what does Manuelita produce?", "lang": "en", "kind": "text", "sensitive": true}

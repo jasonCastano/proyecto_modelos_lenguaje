@@ -10,13 +10,13 @@ equipo: un Windows 11 que queda encendido durante la jornada, distinto del port�
 sigue en orden. Ningún paso pide escribir secretos ni números en el repositorio.
 
 ```text
-Teléfono ──WhatsApp Web (saliente)──▶ OpenClaw gateway (127.0.0.1:18789, token)
+Teléfono ──WhatsApp Web (saliente)──▶ OpenClaw gateway (127.0.0.1:18790, token)
                                         │ plugin valeria-bridge · hook before_dispatch
                                         ▼
                           FastAPI 127.0.0.1:8000 /api/channels/messages (X-Channel-Token)
                                         ▼
                           ChatService (LangGraph) · 20 herramientas · Qdrant servidor · DeepSeek
-Si el backend no responde en 45 s ──▶ agente nativo de OpenClaw + MCP valeria-tools (solo lectura)
+Si el backend no responde en 90 s ──▶ agente nativo de OpenClaw + MCP valeria-tools (solo lectura)
 ```
 
 ## 1. Requisitos
@@ -26,9 +26,10 @@ Si el backend no responde en 45 s ──▶ agente nativo de OpenClaw + MCP vale
 | Windows 11 | Suspensión desactivada, inicio de sesión automático del usuario de servicio | Servidor de la jornada |
 | `uv` | Última estable | Entorno Python 3.14 (`uv sync`) |
 | Node.js | **≥ 24.16** (probado con 24.22.1) | OpenClaw y el plugin `valeria-bridge` |
-| Docker Desktop | Con WSL2 activo | Qdrant servidor (HNSW) y sandbox de OpenClaw |
+| Qdrant nativo | v1.15.4 para Windows (`scripts/qdrant_native.ps1`) | Qdrant servidor (HNSW). **Sin Docker**: el portátil no permite virtualización (spec 028, R12) |
+| `ffmpeg` | `winget install -e --id Gyan.FFmpeg` | Notas de voz de WhatsApp (Ogg/Opus) |
 | Git + Git LFS | `git lfs pull` | Capas bronce, plata y oro |
-| Teléfono del titular | WhatsApp de un integrante, en la sala el sábado | Vincular la sesión por QR |
+| Teléfono de la SIM dedicada | WhatsApp de Valer-IA (spec 028), cargado y en la sala el sábado | Vincular la sesión por QR |
 | `cloudflared` | Opcional | Solo para publicar la **web** por HTTPS |
 
 **WhatsApp no necesita túnel.** El canal de OpenClaw usa WhatsApp Web (Baileys), que abre una conexión
@@ -88,13 +89,17 @@ se quiere servir la web.
 ### 3.2 Qdrant servidor (índice HNSW real)
 
 ```powershell
-make qdrant-up                                                   # docker compose up -d qdrant
+.\scripts\qdrant_native.ps1 -Install     # descarga v1.15.4, verifica SHA-256, solo 127.0.0.1
+.\scripts\qdrant_native.ps1 -Register    # tarea «ValerIA-Qdrant» al iniciar sesión (o: make qdrant-native)
+.\scripts\qdrant_native.ps1 -Status      # versión 1.15.4
 uv run python -m proyecto_modelos_lenguaje.rag qdrant build --force
 uv run python -m proyecto_modelos_lenguaje.rag qdrant status     # modo servidor, HNSW m=16, hnsw_ef
 uv run python -m proyecto_modelos_lenguaje.agent build-structured # tabla SQLite del oro (si falta)
 ```
 
-El contenedor tiene `restart: unless-stopped`: vuelve solo cuando Docker Desktop arranca.
+La tarea programada reinicia Qdrant si cae y lo arranca al iniciar sesión. Los datos viven en
+`%USERPROFILE%\.qdrant-valeria\storage` (fuera del repositorio). Con un equipo que sí tenga Docker,
+`make qdrant-up` levanta la misma versión desde `docker-compose.yml`.
 
 ### 3.3 Backend como servicio
 
@@ -138,19 +143,28 @@ copy openclaw\.env.example $env:USERPROFILE\.openclaw-valeria\.env   # completar
 
 `openclaw_env.ps1` fija `OPENCLAW_CONFIG_PATH=<repo>\openclaw\openclaw.json5`,
 `OPENCLAW_STATE_DIR=%USERPROFILE%\.openclaw-valeria`, `OPENCLAW_WORKSPACE_DIR` y `VALERIA_REPO` para el
-usuario, y con `-Install` reinstala el servicio (`openclaw gateway install --force`) y lo reinicia esperando
-30 s.
+usuario. Con `-Install` registra la tarea programada **«ValerIA-Gateway»** (al iniciar sesión, reinicio si cae)
+y arranca el gateway en `127.0.0.1:18790`, esperando hasta 90 s a que escuche. `-Restart` lo reinicia.
+
+> **Por qué no `openclaw gateway install`** (spec 028): OpenClaw 2026.11.10 solo administra su servicio con las rutas
+> por defecto (`~/.openclaw`) y responde «service management skipped: non-default state dir or config path».
+> Valer-IA usa su propio estado para no mezclarse con otra instalación de OpenClaw del mismo usuario, así que el
+> gateway corre como tarea propia y en el puerto 18790 (el 18789 queda para esa otra instalación).
 
 La configuración versionada ([`openclaw/openclaw.json5`](../openclaw/openclaw.json5)) define:
 
-- `gateway`: `bind: "loopback"`, puerto 18789, `auth.mode: "token"`.
+- `gateway`: `bind: "loopback"`, puerto 18790 (18789 queda para otra instalación de OpenClaw del usuario), `auth.mode: "token"`.
 - Modelo: `deepseek/deepseek-flash` con respaldo `deepseek/deepseek-v4-pro`. Ningún modelo local.
-- `sandbox`: `mode: "all"`, Docker, sin red, workspace de solo lectura.
+- `sandbox`: `mode: "off"` (sin virtualización no hay Docker; spec 028, R12). Riesgo aceptado: el agente
+  nativo solo actúa en modo degradado y `tools.deny` le retira todas las herramientas propias
+  (`group:openclaw`, `group:fs`, `group:runtime`, `group:ui`, `group:web`, `group:messaging`…); solo conserva
+  el MCP de lectura `valeria-tools`.
 - `tools`: perfil `messaging`, `deny` de automatización, runtime, sistema de archivos y envío entre sesiones;
   `fs.workspaceOnly`, `exec.security: "deny"`, `elevated` y `agentToAgent` desactivados.
-- WhatsApp: `dmPolicy: "allowlist"`, `allowFrom` desde `WA_ALLOW_*`, `groupPolicy: "disabled"`,
+- WhatsApp: `dmPolicy` desde `WA_DM_POLICY` (modo cerrado o abierto, §3.8), `allowFrom` desde `WA_ALLOW_*`,
+  `groupPolicy: "disabled"`,
   `selfChatMode: false`.
-- `mcp.servers.valeria-tools` y `plugins.entries.valeria-bridge` (timeout 45 s, solo loopback).
+- `mcp.servers.valeria-tools` y `plugins.entries.valeria-bridge` (timeout 90 s: cola por persona + voz, solo loopback).
 
 Validar: `openclaw config file` (ruta efectiva) y `openclaw doctor`. La validación de OpenClaw es estricta:
 una clave desconocida impide arrancar.
@@ -171,7 +185,7 @@ bitácora diaria. `skipBootstrap: true` evita que OpenClaw reemplace esos archiv
 openclaw channels login --channel whatsapp     # muestra un QR
 ```
 
-En el teléfono del titular: WhatsApp → Dispositivos vinculados → Vincular un dispositivo → escanear. Luego:
+En el teléfono de la SIM de Valer-IA: WhatsApp → Dispositivos vinculados → Vincular un dispositivo → escanear. Luego:
 
 ```powershell
 openclaw channels status --probe               # whatsapp: linked, ok
@@ -179,26 +193,53 @@ openclaw channels status --probe               # whatsapp: linked, ok
 
 La sesión queda en `%USERPROFILE%\.openclaw-valeria` (fuera de Git). **Nunca** copiarla al repositorio.
 
-### 3.8 Lista de autorizados y emparejamiento
+### 3.8 Modo cerrado y modo abierto (SIM dedicada, spec 028)
 
-Fuera de la jornada el bot solo responde a `WA_ALLOW_*` (`dmPolicy: "allowlist"`). El sábado se abre el
-emparejamiento para invitados no registrados:
+Valer-IA usa una **SIM dedicada** (no el número de un integrante). El acceso se cambia con un comando que solo
+edita el `.env` externo y reinicia el gateway; nunca toca archivos versionados:
 
 ```powershell
-openclaw config set channels.whatsapp.dmPolicy pairing     # sábado, antes de las 8:00
-openclaw gateway restart --wait 30s
-openclaw pairing list whatsapp                             # códigos pendientes (vencen en 1 h, máx. 3)
-openclaw pairing approve whatsapp <CODE>                   # habilita al invitado (< 1 min)
-openclaw config set channels.whatsapp.dmPolicy allowlist   # al terminar la jornada
+.\scripts\openclaw_env.ps1 -Mode closed   # por defecto: solo WA_ALLOW_1..3 (números de prueba)
+.\scripts\openclaw_env.ps1 -Mode open     # ensayo del viernes y sustentación: cualquier número
 ```
 
-Por qué así: el número es personal y, con `pairing`, cualquier contacto que escriba recibe el código de
-emparejamiento. Fuera del sábado se vuelve a `allowlist`. Grupos: siempre desactivados. Antes del sábado el
-titular avisa a sus contactos frecuentes que ese día puede llegarles un mensaje automático.
+- **Cerrado** (`dmPolicy: "allowlist"`): responden solo los números de prueba del equipo.
+- **Abierto** (`dmPolicy: "open"`, `WA_ALLOW_1=*`; OpenClaw exige el `"*"`): cualquier número que escriba recibe
+  respuesta, sin códigos ni aprobaciones. El script guarda los números de prueba en `WA_TEST_1..3` y los restaura al
+  volver al modo cerrado. Tras el cambio, esperar **~2 min** a que el gateway escuche WhatsApp antes de probar.
+- **Protecciones del modo abierto (spec 031)**, aplicadas por el backend:
+  - cada número tiene 20 mensajes cada 10 minutos y 100 por día (`[channels]` en `config/agent.toml`);
+  - al superarlos recibe un único aviso amable y luego silencio;
+  - los números de prueba se declaran como operadores en `VALERIA_OPERATORS` (seudónimos, ver abajo): no tienen
+    límites y son los únicos con atajos ocultos;
+  - un número se bloquea con `uv run pml channels block --sender <número>` (y `unblock`, `blocked`).
+- **Verificar el modo**: `uv run python -m proyecto_modelos_lenguaje.ops check` muestra `modo-canal: ABIERTO al
+  público` o `cerrado (N números de prueba)`, sin mostrar números.
+- **Operadores**:
+  - `uv run pml channels pseudonym --sender <número>` imprime el seudónimo `wa-…` (no guarda el número);
+  - se copian a `VALERIA_OPERATORS=` del `.env` del repositorio;
+  - se reinicia el backend (`.\scripts\serve_backend.ps1 -Restart`).
+- **Grupos**: siempre desactivados (`groupPolicy: "disabled"`); `selfChatMode: false`.
+- `openclaw config validate` acepta ambos modos con `dmPolicy` por variable (verificado el 2026-11-26).
 
-> **Verificar**: si `openclaw config set` escribe sobre `OPENCLAW_CONFIG_PATH` (la plantilla del
-> repositorio), el cambio a `pairing` aparecerá en `git status`. No se commitea: se revierte con `allowlist` o
-> `git checkout -- openclaw/openclaw.json5` al terminar.
+**Cierre después de la sustentación** (en este orden):
+
+1. `.\scripts\openclaw_env.ps1 -Mode closed`
+2. `openclaw channels logout --channel whatsapp` (desvincula la SIM del gateway).
+3. En el teléfono de la SIM: Ajustes → Dispositivos vinculados → cerrar la sesión del portátil; luego eliminar
+   la cuenta de WhatsApp y desactivar la SIM.
+
+### 3.8.1 Notas de voz
+
+- **Entrada**: OpenClaw descarga la nota de voz y ejecuta `channels/transcribe_cli.py` (`tools.media.audio`), que
+  la envía a `POST /api/channels/transcriptions` (dictado de la spec 023 ya cargado, idioma automático es/en).
+  La transcripción llega al puente como un bloque `[Audio]`.
+- **Salida**: si la pregunta llegó por voz (o la persona pidió audio), el backend escribe un guion conversacional
+  (`prompts/voice_script.md`), lo sintetiza con Phonon (`Rebeca` en español; `phonon-31m-en` en inglés) y deja un
+  Ogg/Opus en `$MANUELITA_STATE_DIR/channels/voice/` que se borra a los 10 minutos. El plugin lo envía con
+  `openclaw message send --media` (nota de voz) y luego entrega el texto con sus fuentes.
+- Requiere `ffmpeg` en el PATH (respaldo de transcodificación de OpenClaw) y aceptar en Hugging Face las
+  condiciones del modelo en inglés.
 
 ### 3.9 Servidor MCP propio
 
@@ -228,7 +269,7 @@ plantilla). Guardar el resumen, sin datos sensibles, en `docs/evaluacion_blindaj
 cloudflared tunnel --url http://127.0.0.1:8000
 ```
 
-Publica solo la web de Valer-IA por HTTPS. El gateway (18789) nunca pasa por el túnel.
+Publica solo la web de Valer-IA por HTTPS. El gateway (18790) nunca pasa por el túnel.
 
 ## 4. Verificación
 
@@ -272,11 +313,11 @@ Si algo falla, se arregla el viernes, no a las 8:05 del sábado.
 
 | Hora | Acción |
 |---|---|
-| 7:00 | Encender Docker Desktop si no arrancó; `uv run pml ops check`. |
-| 7:15 | `dmPolicy pairing` + reinicio del gateway; mensaje de prueba desde un teléfono autorizado. |
+| 7:00 | `.\scripts\qdrant_native.ps1 -Status`; `uv run pml ops check`. |
+| 7:15 | `.\scripts\openclaw_env.ps1 -Mode open`; «hola» por texto y una nota de voz (es y en) desde un teléfono ajeno. |
 | 7:30 | Todo en verde. Abrir `openclaw logs --follow` en una pestaña y el repositorio en otra. |
-| Durante | Un integrante aprueba emparejamientos (`openclaw pairing list/approve whatsapp`). |
-| Al cierre | `dmPolicy allowlist`, reinicio; revisar `git status` (no commitear el cambio de política). |
+| Durante | Nada que aprobar: cualquier número puede escribir. `openclaw logs --follow` abierto para vigilar errores. |
+| Al cierre | `.\scripts\openclaw_env.ps1 -Mode closed`; luego el cierre de la SIM (§3.8). |
 
 Registros útiles: `openclaw logs --follow` (gateway y puente), `$MANUELITA_STATE_DIR/logs/channels.jsonl`
 (un registro por turno, sin texto ni números), `$MANUELITA_STATE_DIR/logs/mcp.jsonl` (llamadas MCP) y la
@@ -290,12 +331,13 @@ transparencia cuenta; la improvisación, no.
 
 | Falla | Síntoma | Qué hacer |
 |---|---|---|
-| WhatsApp se desvinculó | `channels status --probe` sin `linked`; nadie recibe respuesta | `openclaw channels login --channel whatsapp`, escanear el QR con el teléfono del titular (está en la sala), `openclaw gateway restart --wait 30s`. |
+| WhatsApp se desvinculó | `channels status --probe` sin `linked`; nadie recibe respuesta | `openclaw channels login --channel whatsapp`, escanear el QR con el teléfono de la SIM (está en la sala), `openclaw gateway restart --wait 30s`. |
 | Gateway caído | `openclaw gateway status` falla | `.\scripts\openclaw_env.ps1 -Restart`; si persiste, `-Install`. |
-| Backend caído o lento (> 45 s) | El bot responde «Estoy en modo básico…» | **Modo degradado**: el agente nativo con DeepSeek y el MCP `valeria-tools` sigue respondiendo con citas, sin escrituras. Reiniciar `Start-ScheduledTask -TaskName ValerIA-Backend` y revisar el log. |
-| Qdrant caído | `ops check`: qdrant ❌ | Abrir Docker Desktop; `make qdrant-up`. |
+| Backend caído o lento (> 90 s) | El bot responde «Estoy en modo básico…» | **Modo degradado**: el agente nativo con DeepSeek y el MCP `valeria-tools` sigue respondiendo con citas, sin escrituras. Reiniciar `Start-ScheduledTask -TaskName ValerIA-Backend` y revisar el log. |
+| Qdrant caído | `ops check`: qdrant ❌ | `Start-ScheduledTask -TaskName ValerIA-Qdrant`; `.\scripts\qdrant_native.ps1 -Status`. |
 | Cuota o saldo de DeepSeek | Errores del modelo en el log | OpenClaw pasa al respaldo `deepseek-v4-pro`; el backend responde un mensaje breve de indisponibilidad. Recargar saldo. |
-| Un invitado no puede entrar | Recibe el código pero no respuestas | `openclaw pairing list whatsapp` → `approve`. Máximo 3 pendientes: aprobar rápido. |
+| Un invitado no recibe respuesta | Escribe y no llega nada | Confirmar el modo abierto (`-Mode open`) y `openclaw channels status --probe`; si la SIM se desvinculó, `openclaw channels login --channel whatsapp`. |
+| No llega la nota de voz | Llega el texto pero no el audio | `openclaw logs --limit 50` (línea «no se pudo enviar la nota de voz»); `ffmpeg -version`; `uv run python -m proyecto_modelos_lenguaje.voice --check --language en`. |
 | Varios invitados a la vez | Mensaje «Sigo con tu mensaje anterior…» | Es el candado por usuario; cada número tiene su hilo. Esperar la respuesta. |
 | Nada responde | | Mostrar en pantalla `openclaw logs --follow`, `channels.jsonl`, el código del puente y `pml channels simulate` contra el backend. Explicar el punto de falla. |
 

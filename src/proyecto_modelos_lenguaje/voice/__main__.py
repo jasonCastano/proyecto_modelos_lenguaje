@@ -3,6 +3,7 @@
     uv run python -m proyecto_modelos_lenguaje.voice --check [--json]
     uv run python -m proyecto_modelos_lenguaje.voice --list-voices [--json]
     uv run python -m proyecto_modelos_lenguaje.voice --say "Hola." [--voice Regina] [-o salida.wav]
+    uv run python -m proyecto_modelos_lenguaje.voice --check --language en   # spec 028
 
 Códigos de salida: 0 OK · 1 argumentos o error de síntesis · 2 motor no disponible.
 """
@@ -22,10 +23,12 @@ from dotenv import load_dotenv
 
 from ..config import PROJECT_ROOT
 from .audio import to_wav_bytes
+from .config import VoiceConfigError
 from .engine import UnknownVoiceError, VoiceService, VoiceUnavailableError
 from .text import clean_for_speech
 
 CHECK_PHRASE = "Hola, soy el asistente de Ingenio Manuelita."
+CHECK_PHRASES = {"en": "Hi, I'm Valeria, Manuelita's virtual assistant."}
 EXIT_OK, EXIT_ERROR, EXIT_UNAVAILABLE = 0, 1, 2
 
 
@@ -42,7 +45,8 @@ def _check(service: VoiceService, as_json: bool) -> int:
     try:
         service.ensure_loaded()
         load_ms = round((time.perf_counter() - started) * 1000.0, 1)
-        result = service.synthesize(CHECK_PHRASE)
+        phrase = CHECK_PHRASES.get(service.config.language, CHECK_PHRASE)
+        result = service.synthesize(phrase)
     except VoiceUnavailableError:
         _print(service.status().to_dict(), as_json)
         return EXIT_UNAVAILABLE
@@ -135,6 +139,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--voice", help="voz para esta ejecución (nombre o id)")
     parser.add_argument("-o", "--output", help="ruta del WAV (por defecto, un archivo temporal)")
     parser.add_argument("--json", action="store_true", help="salida JSON")
+    parser.add_argument(
+        "--language",
+        default=None,
+        help="spec 028: idioma de la voz (es por defecto; en usa el modelo phonon-31m-en)",
+    )
     return parser
 
 
@@ -145,6 +154,12 @@ def main(argv: list[str] | None = None) -> int:
     except SystemExit as exc:
         return EXIT_ERROR if exc.code else EXIT_OK
     service = VoiceService()
+    if args.language and args.language != service.config.language:
+        try:
+            service = VoiceService(service.config.for_language(args.language))
+        except VoiceConfigError as exc:
+            print(str(exc), file=sys.stderr)
+            return EXIT_ERROR
     if args.voice:
         service.config = replace(service.config, voice=args.voice)
     if args.check:

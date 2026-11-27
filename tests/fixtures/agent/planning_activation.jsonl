@@ -1,0 +1,33 @@
+{"id": "p01", "text": "Tenemos 15 % menos caña esta semana, ¿cómo cumplimos los compromisos de azúcar, etanol y energía?", "expected": true}
+{"id": "p02", "text": "Optimiza el programa de producción de esta semana", "expected": true}
+{"id": "p03", "text": "¿Cómo repartimos la caña entre azúcar y etanol esta semana?", "expected": true}
+{"id": "p04", "text": "Simula producir más etanol y menos azúcar", "expected": true}
+{"id": "p05", "text": "¿Cuál es el estado de la planta hoy?", "expected": true}
+{"id": "p06", "text": "Tenemos una restricción de vapor, ¿qué plan recomiendas?", "expected": true}
+{"id": "p07", "text": "¿Podemos cumplir los contratos de etanol si baja la caña?", "expected": true}
+{"id": "p08", "text": "¿Qué compromisos de azúcar tenemos esta semana?", "expected": true}
+{"id": "p09", "text": "Propón una mezcla de producción que maximice el margen", "expected": true}
+{"id": "p10", "text": "Si la molienda cae un 10 %, ¿qué hacemos con la energía comprometida?", "expected": true}
+{"id": "p11", "text": "¿Qué dice el procedimiento sobre prioridad de compromisos en la planta?", "expected": true}
+{"id": "p12", "text": "Planifica la producción de la semana con pol de 13", "expected": true}
+{"id": "p13", "text": "¿Qué capacidad tienen los equipos de la planta?", "expected": true}
+{"id": "p14", "text": "We have 20% less cane this week, how do we meet the sugar and ethanol commitments?", "expected": true}
+{"id": "p15", "text": "Ajusta el plan de producción para cumplir la energía comprometida", "expected": true}
+{"id": "q01", "text": "¿Qué programas sociales tiene Manuelita con los cultivadores de caña?", "expected": false}
+{"id": "q02", "text": "¿Cuánta caña molió Manuelita en 2022?", "expected": false}
+{"id": "q03", "text": "¿Qué produce Manuelita con la caña de azúcar?", "expected": false}
+{"id": "q04", "text": "¿Cuántas toneladas de azúcar produjo Manuelita en 2021?", "expected": false}
+{"id": "q05", "text": "¿Manuelita produce etanol?", "expected": false}
+{"id": "q06", "text": "¿Qué hace Manuelita con la energía que genera?", "expected": false}
+{"id": "q07", "text": "¿Cuál fue la variación de las ventas entre 2021 y 2022?", "expected": false}
+{"id": "q08", "text": "¿Dónde está la planta de Manuelita en Palmira?", "expected": false}
+{"id": "q09", "text": "¿Qué certificaciones de calidad tiene la planta de azúcar?", "expected": false}
+{"id": "q10", "text": "¿Cuál es el plan de sostenibilidad de Manuelita?", "expected": false}
+{"id": "q11", "text": "Cuéntame la historia del ingenio Manuelita", "expected": false}
+{"id": "q12", "text": "¿Qué programa de educación apoya la Fundación Manuelita?", "expected": false}
+{"id": "q13", "text": "¿Cómo puedo trabajar en la planta de Manuelita?", "expected": false}
+{"id": "q14", "text": "How much ethanol did Manuelita produce in 2022?", "expected": false}
+{"id": "q15", "text": "¿Qué compromisos ambientales tiene Manuelita con el agua?", "expected": false}
+{"id": "f01", "text": "¿Y si baja 20 %?", "expected": true, "follow_up": true}
+{"id": "f02", "text": "¿y con una pol de 12?", "expected": true, "follow_up": true}
+{"id": "f03", "text": "what if we produce only sugar?", "expected": true, "follow_up": true}

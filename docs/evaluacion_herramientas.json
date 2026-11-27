@@ -1,17 +1,17 @@
 {
-  "run_id": "tools-real-20261123T220245Z",
+  "run_id": "tools-real-20261127T161933Z",
   "mode": "real",
-  "created_at": "2026-11-23T22:02:45+00:00",
+  "created_at": "2026-11-27T16:19:33+00:00",
   "command": "uv run python -m proyecto_modelos_lenguaje.agent evaluate --tools --mode real",
   "summary": {
     "cases": 53,
     "scored": 43,
-    "accuracy": 0.8837,
+    "accuracy": 0.8605,
     "trivial": 10,
     "searches_in_trivial": 0,
     "errors": 0,
-    "latency_p50_ms": 3723,
-    "latency_p90_ms": 9230,
+    "latency_p50_ms": 2603,
+    "latency_p90_ms": 9795,
     "by_tool": {
       "search_documents": {
         "cases": 2,
@@ -39,7 +39,7 @@
       },
       "list_business_units": {
         "cases": 2,
-        "hits": 2
+        "hits": 1
       },
       "list_company_entities": {
         "cases": 2,
@@ -51,7 +51,7 @@
       },
       "faq_lookup": {
         "cases": 2,
-        "hits": 0
+        "hits": 1
       },
       "summarize_topic": {
         "cases": 2,
@@ -59,7 +59,7 @@
       },
       "latest_news": {
         "cases": 2,
-        "hits": 2
+        "hits": 1
       },
       "get_fragment": {
         "cases": 2,
@@ -94,7 +94,12 @@
         "hits": 1
       }
     },
-    "meets_target": false
+    "meets_target": false,
+    "planner": {
+      "cases": 6,
+      "hits": 6,
+      "accuracy": 1.0
+    }
   },
   "results": [
     {
@@ -109,23 +114,25 @@
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 16400,
-      "error": null
+      "latency_ms": 15469,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t02",
       "route": "documental",
       "expected_tool": "search_documents",
       "called": [
-        "search_documents",
         "sustainability_lookup",
+        "search_documents",
         "search_documents"
       ],
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 9230,
-      "error": null
+      "latency_ms": 11770,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t03",
@@ -134,26 +141,29 @@
       "called": [
         "query_structured",
         "search_documents",
-        "query_structured"
+        "search_documents"
       ],
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 6983,
-      "error": null
+      "latency_ms": 10103,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t04",
       "route": "structured",
       "expected_tool": "query_structured",
       "called": [
+        "query_structured",
         "query_structured"
       ],
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 3878,
-      "error": null
+      "latency_ms": 3627,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t05",
@@ -165,8 +175,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 3723,
-      "error": null
+      "latency_ms": 3841,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t06",
@@ -178,8 +189,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 4369,
-      "error": null
+      "latency_ms": 3529,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t07",
@@ -191,23 +203,23 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 5676,
-      "error": null
+      "latency_ms": 4096,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t08",
       "route": "structured",
       "expected_tool": "list_indicators",
       "called": [
-        "list_indicators",
-        "aggregate_series",
-        "aggregate_series"
+        "list_indicators"
       ],
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 7119,
-      "error": null
+      "latency_ms": 4821,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t09",
@@ -219,23 +231,25 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 2126,
-      "error": null
+      "latency_ms": 2395,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t10",
       "route": "structured",
       "expected_tool": "compare_indicator",
       "called": [
-        "search_documents",
         "compare_indicator",
+        "search_documents",
         "search_documents"
       ],
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 6960,
-      "error": null
+      "latency_ms": 5513,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t11",
@@ -247,8 +261,9 @@
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 4851,
-      "error": null
+      "latency_ms": 4230,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t12",
@@ -260,48 +275,55 @@
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 5816,
-      "error": null
+      "latency_ms": 4850,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t13",
       "route": "documental",
       "expected_tool": "sustainability_lookup",
       "called": [
-        "sustainability_lookup",
-        "search_documents"
+        "search_documents",
+        "sustainability_lookup"
       ],
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 9357,
-      "error": null
+      "latency_ms": 6309,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t14",
       "route": "structured",
       "expected_tool": "list_business_units",
       "called": [
+        "list_business_units",
         "list_business_units"
       ],
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 6236,
-      "error": null
+      "latency_ms": 6111,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t15",
-      "route": "structured",
+      "route": "documental",
       "expected_tool": "list_business_units",
       "called": [
-        "list_business_units"
+        "search_documents",
+        "query_structured",
+        "search_documents"
       ],
       "proposed": null,
-      "hit": true,
-      "searched": false,
-      "latency_ms": 6337,
-      "error": null
+      "hit": false,
+      "searched": true,
+      "latency_ms": 10506,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t16",
@@ -313,8 +335,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 4729,
-      "error": null
+      "latency_ms": 4176,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t17",
@@ -326,24 +349,12 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 4740,
-      "error": null
+      "latency_ms": 4017,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t18",
-      "route": "documental",
-      "expected_tool": "get_official_channels",
-      "called": [
-        "get_official_channels"
-      ],
-      "proposed": null,
-      "hit": true,
-      "searched": false,
-      "latency_ms": 5342,
-      "error": null
-    },
-    {
-      "case_id": "t19",
       "route": "documental",
       "expected_tool": "get_official_channels",
       "called": [
@@ -353,8 +364,23 @@
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 6031,
-      "error": null
+      "latency_ms": 4922,
+      "error": null,
+      "profile": null
+    },
+    {
+      "case_id": "t19",
+      "route": "documental",
+      "expected_tool": "get_official_channels",
+      "called": [
+        "get_official_channels"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 4017,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t20",
@@ -367,8 +393,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 3156,
-      "error": null
+      "latency_ms": 2603,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t21",
@@ -376,14 +403,14 @@
       "expected_tool": "faq_lookup",
       "called": [
         "search_documents",
-        "summarize_topic",
-        "search_documents"
+        "summarize_topic"
       ],
       "proposed": null,
       "hit": false,
       "searched": true,
-      "latency_ms": 7633,
-      "error": null
+      "latency_ms": 4235,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t22",
@@ -391,13 +418,15 @@
       "expected_tool": "faq_lookup",
       "called": [
         "summarize_topic",
+        "faq_lookup",
         "search_documents"
       ],
       "proposed": null,
-      "hit": false,
+      "hit": true,
       "searched": true,
-      "latency_ms": 8376,
-      "error": null
+      "latency_ms": 9058,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t23",
@@ -411,26 +440,40 @@
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 13594,
-      "error": null
+      "latency_ms": 9795,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t24",
       "route": "documental",
       "expected_tool": "summarize_topic",
       "called": [
-        "search_documents",
         "summarize_topic",
+        "search_documents",
         "search_documents"
       ],
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 9440,
-      "error": null
+      "latency_ms": 11163,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t25",
+      "route": "clarify",
+      "expected_tool": "latest_news",
+      "called": [],
+      "proposed": null,
+      "hit": false,
+      "searched": false,
+      "latency_ms": 4361,
+      "error": null,
+      "profile": null
+    },
+    {
+      "case_id": "t26",
       "route": "documental",
       "expected_tool": "latest_news",
       "called": [
@@ -439,22 +482,9 @@
       "proposed": null,
       "hit": true,
       "searched": true,
-      "latency_ms": 5301,
-      "error": null
-    },
-    {
-      "case_id": "t26",
-      "route": "documental",
-      "expected_tool": "latest_news",
-      "called": [
-        "latest_news",
-        "search_documents"
-      ],
-      "proposed": null,
-      "hit": true,
-      "searched": true,
-      "latency_ms": 9800,
-      "error": null
+      "latency_ms": 6645,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t27",
@@ -466,8 +496,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 3044,
-      "error": null
+      "latency_ms": 2244,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t28",
@@ -479,8 +510,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 2813,
-      "error": null
+      "latency_ms": 2184,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t29",
@@ -492,8 +524,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 2601,
-      "error": null
+      "latency_ms": 2560,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t30",
@@ -505,8 +538,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 2296,
-      "error": null
+      "latency_ms": 2106,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t31",
@@ -518,8 +552,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 4557,
-      "error": null
+      "latency_ms": 5011,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t32",
@@ -529,8 +564,9 @@
       "proposed": null,
       "hit": false,
       "searched": false,
-      "latency_ms": 2271,
-      "error": null
+      "latency_ms": 1280,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t33",
@@ -540,8 +576,9 @@
       "proposed": null,
       "hit": false,
       "searched": false,
-      "latency_ms": 2399,
-      "error": null
+      "latency_ms": 1905,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t34",
@@ -551,8 +588,9 @@
       "proposed": "save_profile",
       "hit": true,
       "searched": false,
-      "latency_ms": 2287,
-      "error": null
+      "latency_ms": 1788,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t35",
@@ -562,8 +600,9 @@
       "proposed": "save_profile",
       "hit": true,
       "searched": false,
-      "latency_ms": 4324,
-      "error": null
+      "latency_ms": 2083,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t36",
@@ -573,8 +612,9 @@
       "proposed": "save_preference",
       "hit": true,
       "searched": false,
-      "latency_ms": 1322,
-      "error": null
+      "latency_ms": 1858,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t37",
@@ -584,8 +624,9 @@
       "proposed": "save_preference",
       "hit": true,
       "searched": false,
-      "latency_ms": 2131,
-      "error": null
+      "latency_ms": 1562,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t38",
@@ -595,8 +636,9 @@
       "proposed": "forget_memory",
       "hit": true,
       "searched": false,
-      "latency_ms": 1390,
-      "error": null
+      "latency_ms": 1324,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t39",
@@ -606,8 +648,9 @@
       "proposed": "forget_memory",
       "hit": true,
       "searched": false,
-      "latency_ms": 1535,
-      "error": null
+      "latency_ms": 1022,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t40",
@@ -617,8 +660,9 @@
       "proposed": "export_conversation",
       "hit": true,
       "searched": false,
-      "latency_ms": 992,
-      "error": null
+      "latency_ms": 1088,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t41",
@@ -628,8 +672,9 @@
       "proposed": "export_conversation",
       "hit": true,
       "searched": false,
-      "latency_ms": 1707,
-      "error": null
+      "latency_ms": 1001,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t42",
@@ -639,8 +684,9 @@
       "proposed": null,
       "hit": false,
       "searched": false,
-      "latency_ms": 3731,
-      "error": null
+      "latency_ms": 3392,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "t43",
@@ -650,8 +696,9 @@
       "proposed": "request_human_contact",
       "hit": true,
       "searched": false,
-      "latency_ms": 1511,
-      "error": null
+      "latency_ms": 1558,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "z01",
@@ -661,8 +708,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 1611,
-      "error": null
+      "latency_ms": 1498,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "z02",
@@ -672,8 +720,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 1688,
-      "error": null
+      "latency_ms": 970,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "z03",
@@ -683,8 +732,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 2818,
-      "error": null
+      "latency_ms": 1332,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "z04",
@@ -694,8 +744,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 1814,
-      "error": null
+      "latency_ms": 1131,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "z05",
@@ -705,8 +756,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 2171,
-      "error": null
+      "latency_ms": 1437,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "z06",
@@ -716,8 +768,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 2309,
-      "error": null
+      "latency_ms": 1610,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "z07",
@@ -727,8 +780,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 2229,
-      "error": null
+      "latency_ms": 1821,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "z08",
@@ -738,8 +792,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 1194,
-      "error": null
+      "latency_ms": 886,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "z09",
@@ -749,8 +804,9 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 2303,
-      "error": null
+      "latency_ms": 2585,
+      "error": null,
+      "profile": null
     },
     {
       "case_id": "z10",
@@ -760,8 +816,102 @@
       "proposed": null,
       "hit": true,
       "searched": false,
-      "latency_ms": 1672,
-      "error": null
+      "latency_ms": 1500,
+      "error": null,
+      "profile": null
+    },
+    {
+      "case_id": "t54",
+      "route": "planning",
+      "expected_tool": "get_plant_state",
+      "called": [
+        "get_plant_state",
+        "get_commitments"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 3909,
+      "error": null,
+      "profile": "planificador"
+    },
+    {
+      "case_id": "t55",
+      "route": "planning",
+      "expected_tool": "get_commitments",
+      "called": [
+        "get_plant_state",
+        "get_commitments"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 3733,
+      "error": null,
+      "profile": "planificador"
+    },
+    {
+      "case_id": "t56",
+      "route": "planning",
+      "expected_tool": "search_operating_procedures",
+      "called": [
+        "search_operating_procedures"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 3335,
+      "error": null,
+      "profile": "planificador"
+    },
+    {
+      "case_id": "t57",
+      "route": "planning",
+      "expected_tool": "simulate_production_scenario",
+      "called": [
+        "get_plant_state",
+        "get_commitments",
+        "simulate_production_scenario",
+        "optimize_production_plan"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 9804,
+      "error": null,
+      "profile": "planificador"
+    },
+    {
+      "case_id": "t58",
+      "route": "planning",
+      "expected_tool": "optimize_production_plan",
+      "called": [
+        "get_plant_state",
+        "get_commitments",
+        "optimize_production_plan"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 5047,
+      "error": null,
+      "profile": "planificador"
+    },
+    {
+      "case_id": "t59",
+      "route": "planning",
+      "expected_tool": "optimize_production_plan",
+      "called": [
+        "get_plant_state",
+        "get_commitments",
+        "optimize_production_plan"
+      ],
+      "proposed": null,
+      "hit": true,
+      "searched": false,
+      "latency_ms": 5028,
+      "error": null,
+      "profile": "planificador"
     }
   ]
 }

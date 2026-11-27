@@ -6,7 +6,7 @@ PORT ?= 8000
 APP_URL ?= http://127.0.0.1:$(PORT)
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev pre-commit-install pre-commit lint format format-check test python-check web-install web-dev web-test web-build web-status check-web check app structured demo-prep corpus openclaw-workspace ops-check mcp qdrant-up audit e2e build clean
+.PHONY: help install dev pre-commit-install pre-commit lint format format-check test python-check web-install web-dev web-test web-build web-status check-web check app structured demo-prep corpus openclaw-workspace ops-check mcp qdrant-up qdrant-native audit e2e build clean
 
 help: ## Muestra esta ayuda
 	@echo RAG Ingenio Manuelita — comandos disponibles
@@ -32,6 +32,7 @@ help: ## Muestra esta ayuda
 	@echo   ops-check          Prueba de 3 minutos del Anuncio 007 (backend, gateway, canal, auditoria)
 	@echo   mcp                Lista las herramientas del servidor MCP valeria-tools
 	@echo   qdrant-up          Qdrant servidor (HNSW) con Docker Compose
+	@echo   qdrant-native      Qdrant servidor (HNSW) nativo en Windows, sin Docker
 	@echo   audit              E2E visual y funcional con Playwright
 	@echo   build              sdist + wheel
 	@echo   clean              Limpia cachés y artefactos locales
@@ -106,6 +107,11 @@ mcp: ## Herramientas del servidor MCP propio valeria-tools (spec 024)
 
 qdrant-up: ## Qdrant servidor con indice HNSW real (exportar QDRANT_URL=http://localhost:6333)
 	docker compose up -d qdrant
+
+qdrant-native: ## Qdrant servidor nativo de Windows sin Docker (spec 028): instala, registra y verifica
+	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/qdrant_native.ps1 -Install
+	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/qdrant_native.ps1 -Register
+	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/qdrant_native.ps1 -Status
 
 audit: e2e ## Auditoría E2E de la experiencia web
 

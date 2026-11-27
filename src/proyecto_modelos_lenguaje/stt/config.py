@@ -23,6 +23,9 @@ PRIVACY = "Tu voz se convierte en texto en el servidor del proyecto y el audio n
 FALSE_VALUES = {"0", "false", "no", "off"}
 TRUE_VALUES = {"1", "true", "yes", "on"}
 WAV_HEADER_BYTES = 44
+# Spec 028 (R5): «auto» detecta el idioma; el canal solo acepta español e inglés.
+AUTO_LANGUAGE = "auto"
+SUPPORTED_LANGUAGES = ("es", "en")
 
 DEFAULT_VOCABULARY = (
     "Manuelita",
@@ -87,8 +90,10 @@ class SttConfig:
             raise SttConfigError(f"compute_type inválido: {self.compute_type!r} (usa {allowed}).")
         if not str(self.model).strip():
             raise SttConfigError("El modelo de dictado no puede estar vacío.")
-        if not re.fullmatch(r"[a-z]{2}", str(self.language)):
-            raise SttConfigError("language debe ser un código ISO de dos letras (p. ej. «es»).")
+        if self.language != AUTO_LANGUAGE and not re.fullmatch(r"[a-z]{2}", str(self.language)):
+            raise SttConfigError(
+                "language debe ser un código ISO de dos letras (p. ej. «es») o «auto»."
+            )
         _between("cpu_threads", self.cpu_threads, 0, 32)
         _between("beam_size", self.beam_size, 1, 5)
         _between("no_speech_threshold", self.no_speech_threshold, 0, 1)

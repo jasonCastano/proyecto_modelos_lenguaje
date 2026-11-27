@@ -38,14 +38,39 @@ def test_hardening(config: dict) -> None:
     assert tools["fs"]["workspaceOnly"] is True
     assert {"group:runtime", "group:fs", "group:automation"} <= set(tools["deny"])
     assert tools["elevated"]["enabled"] is False
-    assert config["agents"]["defaults"]["sandbox"]["mode"] == "all"
+    assert tools["exec"]["security"] == "deny"
+
+
+def test_sandbox_off_only_leaves_the_mcp(config: dict) -> None:
+    """Spec 028 (R12): sin virtualización no hay Docker; el agente nativo solo conserva el MCP."""
+    sandbox = config["agents"]["defaults"]["sandbox"]
+    assert sandbox == {"mode": "off"} and "docker" not in str(sandbox)
+    deny = set(config["tools"]["deny"])
+    assert {"group:openclaw", "group:ui", "group:web", "group:messaging", "group:nodes"} <= deny
+    assert "group:plugins" not in deny  # el MCP valeria-tools sigue disponible
+
+
+def test_voice_notes_are_transcribed_by_our_cli(config: dict) -> None:
+    media = config["tools"]["media"]
+    assert media["audio"]["enabled"] is True
+    (model,) = media["models"]
+    assert model["type"] == "cli" and model["capabilities"] == ["audio"]
+    assert "proyecto_modelos_lenguaje.channels.transcribe_cli" in model["args"]
+    assert "{{AttachmentPath}}" in model["args"]
 
 
 def test_whatsapp_never_in_groups(config: dict) -> None:
     whatsapp = config["channels"]["whatsapp"]
     assert whatsapp["groupPolicy"] == "disabled"
-    assert whatsapp["dmPolicy"] in {"allowlist", "pairing"}
+    assert whatsapp["selfChatMode"] is False
+    # Spec 028: el modo abierto/cerrado vive en el .env externo, nunca en el archivo versionado.
+    assert whatsapp["dmPolicy"] == "${WA_DM_POLICY}"
     assert all(value.startswith("${") for value in whatsapp["allowFrom"])
+
+
+def test_bridge_timeout_covers_queue_and_voice(config: dict) -> None:
+    bridge = config["plugins"]["entries"]["valeria-bridge"]
+    assert bridge["config"]["timeoutMs"] == 90000
 
 
 def test_bridge_and_mcp(config: dict) -> None:
@@ -61,3 +86,10 @@ def test_no_literal_secrets_or_numbers() -> None:
     assert not re.search(r"sk-[A-Za-z0-9]{8,}|lsv2_|ghp_", text)
     for value in re.findall(r'token:\s*"([^"]*)"', text):
         assert value.startswith("${")
+
+
+def test_env_example_documents_the_access_modes() -> None:
+    """Spec 028 (T038): modo cerrado por defecto, sin números reales."""
+    example = (OPENCLAW_CONFIG.parent / ".env.example").read_text(encoding="utf-8")
+    assert "WA_DM_POLICY=allowlist" in example and "WA_TEST_1=" in example
+    assert not E164.search(example.replace("+57XXXXXXXXXX", ""))

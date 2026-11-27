@@ -178,3 +178,34 @@ def test_delivery_settings_and_validation(tmp_path: Path) -> None:
             load_agent_config(path, project_root=tmp_path)
     scripted = _write(tmp_path, f'{VALID_TOML}\n[conversation]\nmode = "scripted"\n')
     assert not load_agent_config(scripted, project_root=tmp_path).conversation.sentences
+
+
+# ------------------------------------------------------------------ canal (spec 028, T004)
+
+
+def test_channel_config_has_voice_and_queue_values() -> None:
+    from proyecto_modelos_lenguaje.agent.config import load_agent_config
+
+    channels = load_agent_config().channels
+    assert channels.voice_notes is True
+    assert channels.bridge_timeout_seconds == 90 and channels.queue_wait_seconds == 60
+    assert channels.voice_max_seconds == 60 and channels.voice_retention_minutes == 10
+    assert channels.voice_dir == "channels/voice"
+    assert (channels.rate_window_minutes, channels.rate_max_messages) == (10, 20)  # spec 031
+    assert channels.daily_max_messages == 100
+
+
+@pytest.mark.parametrize(
+    ("section", "message"),
+    [
+        ({"queue_wait_seconds": 90, "bridge_timeout_seconds": 90}, "menor que"),
+        ({"voice_dir": "C:/fuera"}, "relativa"),
+        ({"voice_dir": "../repo"}, "salir"),
+        ({"voice_max_seconds": 5}, "voice_max_seconds"),
+    ],
+)
+def test_channel_config_rejects_unsafe_values(section: dict, message: str) -> None:
+    from proyecto_modelos_lenguaje.agent.config import AgentConfigError, channels_config
+
+    with pytest.raises(AgentConfigError, match=message):
+        channels_config(section)

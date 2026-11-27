@@ -13,3 +13,12 @@ voice = "Rebeca"                        # voz oficial (T037): femenina, español
 voice_gender = "female"
 max_chars = 600
 warmup = true
+
+# Spec 028 (research R4): voz en inglés para las notas de voz de WhatsApp. Modelo por defecto de
+# Phonon en inglés (37 voces); la voz definitiva se elige en la prueba técnica (Harper, Everly o
+# Juniper). Misma licencia CC BY-NC 4.0; requiere aceptar las condiciones en Hugging Face.
+[voice.languages.en]
+model = "hf://gradium/phonon-31m-en"
+voice = "Harper"
+quant = "q8_0"
+voice_gender = "female"

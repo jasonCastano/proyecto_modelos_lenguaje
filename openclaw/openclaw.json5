@@ -1,12 +1,14 @@
-// Configuración versionada del gateway OpenClaw de Valer-IA Caña (spec 024, contracts/openclaw-config.md).
+// Plantilla versionada del gateway OpenClaw de Valer-IA Caña (spec 024 y spec 028).
 // Sin secretos: todo valor sensible es ${VAR} y vive en %USERPROFILE%\.openclaw-valeria\.env.
-// Arranque: OPENCLAW_CONFIG_PATH=<repo>\openclaw\openclaw.json5 (ver scripts/openclaw_env.ps1).
-// Validación estricta: una clave desconocida impide arrancar; verificar con `openclaw doctor`.
+// OpenClaw NO usa este archivo directamente: `scripts/openclaw_env.ps1 -Install` lo copia a
+// %USERPROFILE%\.openclaw-valeria\openclaw.json5 con permisos solo del usuario (la auditoría marca como
+// crítico un archivo de configuración que otros pueden escribir) y OpenClaw edita esa copia, nunca el repo.
+// Validación estricta: una clave desconocida impide arrancar; verificar con `openclaw config validate`.
 {
   gateway: {
     mode: "local",
     bind: "loopback", // nunca expuesto: WhatsApp usa una conexión saliente (research R3)
-    port: 18789,
+    port: 18790, // spec 028: tarea propia «ValerIA-Gateway»; el 18789 queda para otra instalación
     auth: { mode: "token", token: "${OPENCLAW_GATEWAY_TOKEN}" },
   },
 
@@ -16,8 +18,10 @@
       skipBootstrap: true, // el workspace lo sincroniza `pml ops workspace sync`
       // Modelo en la nube (FR-010): DeepSeek primario y respaldo; nada de modelos locales.
       model: { primary: "deepseek/deepseek-flash", fallbacks: ["deepseek/deepseek-v4-pro"] },
-      // Sandbox (ítem 4.2): toda ejecución del agente nativo en un contenedor sin red.
-      sandbox: { mode: "all", scope: "session", workspaceAccess: "ro", backend: "docker", network: "none" },
+      // Sandbox (ítem 4.2, spec 028 research R12): el portátil servidor no permite virtualización, así
+      // que no hay Docker. El agente nativo (solo en modo degradado) queda sin herramientas propias:
+      // `tools.deny` le retira todo salvo el MCP de lectura `valeria-tools` (riesgo aceptado, ADR 0032).
+      sandbox: { mode: "off" },
     },
   },
 
@@ -25,18 +29,51 @@
 
   tools: {
     profile: "messaging",
-    deny: ["group:automation", "group:runtime", "group:fs", "sessions_spawn", "sessions_send"],
+    // group:openclaw = todas las herramientas propias salvo read/write/edit/apply_patch/exec/process/canvas,
+    // que cubren group:fs, group:runtime y group:ui. Solo quedan las del MCP (group:plugins).
+    deny: [
+      "group:openclaw",
+      "group:automation",
+      "group:runtime",
+      "group:fs",
+      "group:ui",
+      "group:nodes",
+      "group:web",
+      "group:messaging",
+      "sessions_spawn",
+      "sessions_send",
+    ],
     fs: { workspaceOnly: true },
     exec: { security: "deny", ask: "always" },
     elevated: { enabled: false },
     agentToAgent: { enabled: false },
+    // Notas de voz (spec 028, research R5): OpenClaw descarga el audio y llama a nuestro dictado
+    // (faster-whisper ya cargado en el backend); la transcripción llega al puente como texto.
+    media: {
+      models: [
+        {
+          type: "cli",
+          command: "uv",
+          args: [
+            "run", "--project", "${VALERIA_REPO}", "python", "-m",
+            "proyecto_modelos_lenguaje.channels.transcribe_cli", "{{AttachmentPath}}",
+          ],
+          timeoutSeconds: 45,
+          capabilities: ["audio"],
+        },
+      ],
+      audio: { enabled: true },
+    },
   },
 
   channels: {
     whatsapp: {
-      // Número de un integrante (aclaración de la spec): "allowlist" fuera de la jornada,
-      // "pairing" solo el sábado (`openclaw config set channels.whatsapp.dmPolicy pairing`).
-      dmPolicy: "allowlist",
+      // SIM dedicada (spec 028): "allowlist" (números de prueba) fuera de la ventana y "open" con
+      // WA_ALLOW_1="*" en el ensayo y la sustentación. Se cambia con `scripts/openclaw_env.ps1 -Mode`.
+      // Spec 031: OpenClaw exige que dmPolicy="open" lleve "*" en allowFrom (lo pone -Mode open). No se usa
+      // "pairing": enviaría un código de emparejamiento a cada persona nueva. Los límites por número y el
+      // bloqueo los aplica el backend (VALERIA_OPERATORS no tiene límites).
+      dmPolicy: "${WA_DM_POLICY}",
       allowFrom: ["${WA_ALLOW_1}", "${WA_ALLOW_2}", "${WA_ALLOW_3}"],
       groupPolicy: "disabled", // nunca en grupos (FR-001a)
       selfChatMode: false, // ignora lo que escribe el propio titular
@@ -45,7 +82,7 @@
     // telegram: { enabled: true, botToken: "${TELEGRAM_BOT_TOKEN}", dmPolicy: "pairing" },
   },
 
-  // Servidor MCP propio (ítem 3.4): solo las 15 herramientas de lectura del catálogo.
+  // Servidor MCP propio (ítem 3.4): solo las 15 herramientas de lectura de atención (spec 028).
   mcp: {
     servers: {
       "valeria-tools": {
@@ -57,13 +94,17 @@
     },
   },
 
-  // Plugin puente (ADR 0028): cada DM admitido va a Valer-IA por loopback.
+  // Plugin puente (ADR 0028): cada DM admitido va a Valer-IA por loopback. La ruta del plugin la añade
+  // `openclaw plugins install --link` en la copia de ejecución (no se versiona porque es de cada equipo).
   plugins: {
     entries: {
+      // Plugin oficial del canal: sin confianza explícita, el canal queda «configured, stopped»
+      // (`openclaw doctor`: «installed without explicit trust»).
+      whatsapp: { enabled: true },
       "valeria-bridge": {
         enabled: true,
         hooks: { allowConversationAccess: true },
-        config: { backendUrl: "http://127.0.0.1:8000", timeoutMs: 45000, channels: ["whatsapp", "telegram"] },
+        config: { backendUrl: "http://127.0.0.1:8000", timeoutMs: 90000, channels: ["whatsapp", "telegram"] },
       },
     },
   },

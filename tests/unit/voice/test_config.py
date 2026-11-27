@@ -86,3 +86,32 @@ def test_unknown_engine_from_env_is_rejected(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setenv("MANUELITA_VOICE_ENGINE", "espeak")
     with pytest.raises(VoiceConfigError):
         load_voice_config(CONFIG_PATH)
+
+
+# ------------------------------------------------------------- idiomas (spec 028, T005)
+
+
+def test_repository_config_has_english_voice() -> None:
+    from proyecto_modelos_lenguaje.voice.config import load_voice_config
+
+    config = load_voice_config()
+    assert config.supported_languages == ("es", "en")
+    english = config.for_language("en")
+    assert english.model == "hf://gradium/phonon-31m-en" and english.language == "en"
+    assert config.for_language("es").voice == config.voice  # el español no cambia
+
+
+def test_language_tables_are_validated(tmp_path) -> None:
+    import pytest
+
+    from proyecto_modelos_lenguaje.voice.config import VoiceConfigError, load_voice_config
+
+    path = tmp_path / "voice.toml"
+    path.write_text('[voice]\nengine = "fake"\n[voice.languages.en]\nmodel = "hf://x"\n')
+    with pytest.raises(VoiceConfigError, match="model y voice"):
+        load_voice_config(path)
+    path.write_text('[voice]\nengine = "fake"\n[voice.languages.es]\nmodel = "m"\nvoice = "v"\n')
+    with pytest.raises(VoiceConfigError, match="repetido"):
+        load_voice_config(path)
+    with pytest.raises(VoiceConfigError, match="fr"):
+        load_voice_config(tmp_path / "missing.toml").for_language("fr")

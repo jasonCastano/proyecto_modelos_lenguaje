@@ -127,7 +127,16 @@ class ChannelsConfig:
     approval_ttl_minutes: int = 10
     dedupe_hours: int = 48
     voice_notes: bool = False
-    bridge_timeout_seconds: int = 45
+    bridge_timeout_seconds: int = 90
+    # Spec 028: cola por usuario (FR-018) y notas de voz temporales (FR-003, FR-008).
+    queue_wait_seconds: int = 60
+    voice_max_seconds: int = 60
+    voice_retention_minutes: int = 10
+    voice_dir: str = "channels/voice"
+    # Spec 031: límites por número (seudónimo) con el canal abierto; los operadores no cuentan.
+    rate_window_minutes: int = 10
+    rate_max_messages: int = 20
+    daily_max_messages: int = 100
 
 
 @dataclass(frozen=True, slots=True)
@@ -273,7 +282,13 @@ def channels_config(section: Any) -> ChannelsConfig:
         "max_messages": (1, 10),
         "approval_ttl_minutes": (1, 120),
         "dedupe_hours": (1, 720),
-        "bridge_timeout_seconds": (5, 120),
+        "bridge_timeout_seconds": (5, 180),
+        "queue_wait_seconds": (1, 170),
+        "voice_max_seconds": (10, 120),
+        "voice_retention_minutes": (1, 1440),
+        "rate_window_minutes": (1, 1440),
+        "rate_max_messages": (1, 1000),
+        "daily_max_messages": (1, 10000),
     }
     numbers: dict[str, int] = {}
     for key, (low, high) in limits.items():
@@ -281,7 +296,16 @@ def channels_config(section: Any) -> ChannelsConfig:
         if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
             raise AgentConfigError(f"channels.{key} debe ser un entero entre {low} y {high}.")
         numbers[key] = value
-    return ChannelsConfig(**flags, **numbers)
+    if numbers["queue_wait_seconds"] >= numbers["bridge_timeout_seconds"]:
+        raise AgentConfigError(
+            "channels.queue_wait_seconds debe ser menor que channels.bridge_timeout_seconds."
+        )
+    voice_dir = section.get("voice_dir", defaults.voice_dir)
+    if not isinstance(voice_dir, str) or not voice_dir.strip() or Path(voice_dir).is_absolute():
+        raise AgentConfigError("channels.voice_dir debe ser una ruta relativa al estado.")
+    if ".." in Path(voice_dir).parts:
+        raise AgentConfigError("channels.voice_dir no puede salir del directorio de estado.")
+    return ChannelsConfig(**flags, **numbers, voice_dir=voice_dir.strip())
 
 
 def _bounded(

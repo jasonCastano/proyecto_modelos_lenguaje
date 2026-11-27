@@ -9,7 +9,7 @@
     "repository": {
       "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
       "provider": "github",
-      "revision": "20e229a78340cd313508a9b17c044d2f26eb9533"
+      "revision": "bf9e01bfa9e87a40434b57ee4842ffe43ae8f6bb"
     }
   },
   "stages": [
@@ -333,6 +333,32 @@
           "end_line": 20
         }
       ]
+    },
+    {
+      "id": "pitch",
+      "type": "cloud",
+      "label": "Video pitch",
+      "sublabel": "planos sincronizados · fuera de línea",
+      "tag": "Higgsfield · Kling 4.0",
+      "stage": 4,
+      "row": 4,
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch.py",
+          "line": 763,
+          "end_line": 973
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch_sync.py",
+          "line": 348,
+          "end_line": 431
+        },
+        {
+          "path": "video/pitch/guion.toml",
+          "line": 17,
+          "end_line": 236
+        }
+      ]
     }
   ],
   "flows": [
@@ -390,7 +416,8 @@
       "to": "app",
       "label": "respuesta citada",
       "classification": "respuesta, fallback y traza",
-      "variant": "emphasis"
+      "variant": "emphasis",
+      "labelDx": 100
     },
     {
       "id": "embedding-index",
@@ -469,6 +496,14 @@
       "to": "app",
       "label": "consola web",
       "classification": "mismas cifras del LP"
+    },
+    {
+      "id": "pitch-video",
+      "from": "pitch",
+      "to": "app",
+      "label": "video de la entrada",
+      "classification": "pml pitch publish",
+      "variant": "dashed"
     }
   ],
   "cards": [

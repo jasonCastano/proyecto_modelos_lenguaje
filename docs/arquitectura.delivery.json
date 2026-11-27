@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "receiptId": "1f4ededc-6984-422a-9e6f-80f86ef952f3",
+  "receiptId": "eacff838-dad0-4a28-baa3-b1ed3e7c71bd",
   "status": "current",
   "command": "deliver",
   "type": "dataflow",
   "input": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
   "output": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
   "specification": {
-    "sha256": "0bcc9f1acf776823f309bd249d690a0a8d062c48848b13ac6b9378a02b669919",
-    "bytes": 13390
+    "sha256": "ba080166ddf7347d82dc404e5b34dc019a19b57914db8fde5b6f18609be82873",
+    "bytes": 14264
   },
   "artifact": {
-    "sha256": "ff8ec87b76d95072acc1c7667e4fa91b425b641f3ea5359ef8193f927fd8feb8",
-    "bytes": 868226
+    "sha256": "c38255393ecccbaa49c6069a7cf39eda9230d199c1e35c8b7468b6db4a1b0d69",
+    "bytes": 871973
   }
 }

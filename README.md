@@ -963,6 +963,12 @@ uv run pml pitch check video/pitch/borrador/pitch-valeria.mp4 --json
 uv run pml pitch publish           # reemplaza el video de la web solo si el chequeo pasa
 ```
 
+El flujo de producción, de guion a entrada web, con la revisión humana de cada plano:
+
+[![Video pitch sincronizado: producción fuera de línea](docs/capturas/diagramas/video-pitch.png)](docs/diagramas/video-pitch.html)
+
+*Diagrama interactivo (Archify): [`docs/diagramas/video-pitch.html`](docs/diagramas/video-pitch.html).*
+
 La producción completa está en [`video/pitch/RUNBOOK.md`](video/pitch/RUNBOOK.md):
 
 1. Confirmar la ficha de la imagen de referencia.

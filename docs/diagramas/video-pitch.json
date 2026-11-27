@@ -1,0 +1,326 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Video pitch sincronizado: producción fuera de línea (specs 028 y 029)",
+    "locale": "es",
+    "output": "docs/diagramas/video-pitch.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/jasonCastano/proyecto_modelos_lenguaje.git",
+      "provider": "github",
+      "revision": "bf9e01bfa9e87a40434b57ee4842ffe43ae8f6bb"
+    }
+  },
+  "lanes": [
+    {
+      "id": "guion",
+      "label": "Guion y voz"
+    },
+    {
+      "id": "generacion",
+      "label": "Generación (Higgsfield)"
+    },
+    {
+      "id": "revision",
+      "label": "Revisión humana"
+    },
+    {
+      "id": "montaje",
+      "label": "Montaje y chequeo"
+    },
+    {
+      "id": "web",
+      "label": "Entrada web"
+    }
+  ],
+  "mainPath": [
+    "guion",
+    "planos",
+    "revision",
+    "montaje",
+    "chequeo",
+    "web"
+  ],
+  "nodes": [
+    {
+      "id": "guion",
+      "lane": "guion",
+      "col": 0,
+      "type": "database",
+      "label": "Guion 1.2.0",
+      "sublabel": "6 bloques · 23 momentos",
+      "tag": "cifras del oro",
+      "sources": [
+        {
+          "path": "video/pitch/guion.toml",
+          "line": 17,
+          "end_line": 236
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch.py",
+          "line": 332,
+          "end_line": 419
+        }
+      ]
+    },
+    {
+      "id": "voz",
+      "lane": "guion",
+      "col": 1,
+      "type": "backend",
+      "label": "Voz Phonon",
+      "sublabel": "un WAV por bloque",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch.py",
+          "line": 1090,
+          "end_line": 1135
+        }
+      ]
+    },
+    {
+      "id": "alineacion",
+      "lane": "guion",
+      "col": 2,
+      "type": "backend",
+      "label": "Alineación",
+      "sublabel": "faster-whisper local",
+      "tag": "sincronia.json",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch_sync.py",
+          "line": 142,
+          "end_line": 206
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch_sync.py",
+          "line": 65,
+          "end_line": 82
+        }
+      ]
+    },
+    {
+      "id": "sondeo",
+      "lane": "generacion",
+      "col": 0,
+      "type": "security",
+      "label": "Sondeo sin costo",
+      "sublabel": "MAGI-2 → Kling 4.0",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch.py",
+          "line": 703,
+          "end_line": 740
+        },
+        {
+          "path": "config/pitch.toml",
+          "line": 10,
+          "end_line": 63
+        }
+      ]
+    },
+    {
+      "id": "planos",
+      "lane": "generacion",
+      "col": 1,
+      "type": "cloud",
+      "label": "Planos de video",
+      "sublabel": "8 planos · 1080×1920",
+      "tag": "tope 20 USD",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch.py",
+          "line": 763,
+          "end_line": 973
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch_higgsfield.py",
+          "line": 111,
+          "end_line": 136
+        }
+      ]
+    },
+    {
+      "id": "revision",
+      "lane": "revision",
+      "col": 2,
+      "type": "security",
+      "label": "Revisión por plano",
+      "sublabel": "parecido · sin texto · anclas",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch.py",
+          "line": 420,
+          "end_line": 484
+        }
+      ]
+    },
+    {
+      "id": "graficos",
+      "lane": "montaje",
+      "col": 2,
+      "type": "backend",
+      "label": "Gráficos propios",
+      "sublabel": "iconos y perfiles SVG → PNG",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch_graphics.py",
+          "line": 66,
+          "end_line": 139
+        }
+      ]
+    },
+    {
+      "id": "montaje",
+      "lane": "montaje",
+      "col": 3,
+      "type": "backend",
+      "label": "Montaje ffmpeg",
+      "sublabel": "reajuste 0,7–1,25× · overlays",
+      "tag": "borrador",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch.py",
+          "line": 1310,
+          "end_line": 1467
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch_sync.py",
+          "line": 252,
+          "end_line": 297
+        },
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch_sync.py",
+          "line": 348,
+          "end_line": 431
+        }
+      ]
+    },
+    {
+      "id": "chequeo",
+      "lane": "montaje",
+      "col": 4,
+      "type": "security",
+      "label": "Chequeo",
+      "sublabel": "≤ 60 s · pausas · momentos",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch.py",
+          "line": 1476,
+          "end_line": 1528
+        }
+      ]
+    },
+    {
+      "id": "web",
+      "lane": "web",
+      "col": 5,
+      "type": "frontend",
+      "label": "Entrada web",
+      "sublabel": "video primero · saltable",
+      "tag": "pml pitch publish",
+      "sources": [
+        {
+          "path": "src/proyecto_modelos_lenguaje/pitch.py",
+          "line": 1529,
+          "end_line": 1571
+        },
+        {
+          "path": "web/src/components/home/PitchVideo.tsx",
+          "line": 1,
+          "end_line": 164
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "guion-voz",
+      "from": "guion",
+      "to": "voz",
+      "label": "narración"
+    },
+    {
+      "id": "voz-alineacion",
+      "from": "voz",
+      "to": "alineacion",
+      "label": "WAV"
+    },
+    {
+      "id": "sondeo-planos",
+      "from": "sondeo",
+      "to": "planos",
+      "label": "modelo disponible",
+      "variant": "dashed"
+    },
+    {
+      "id": "guion-planos",
+      "from": "guion",
+      "to": "planos",
+      "label": "prompts por plano",
+      "variant": "emphasis"
+    },
+    {
+      "id": "planos-revision",
+      "from": "planos",
+      "to": "revision",
+      "label": "clips",
+      "variant": "emphasis"
+    },
+    {
+      "id": "revision-montaje",
+      "from": "revision",
+      "to": "montaje",
+      "label": "aprobados + anclas",
+      "variant": "emphasis"
+    },
+    {
+      "id": "alineacion-montaje",
+      "from": "alineacion",
+      "to": "montaje",
+      "label": "tiempo de cada palabra"
+    },
+    {
+      "id": "graficos-montaje",
+      "from": "graficos",
+      "to": "montaje",
+      "label": "PNG"
+    },
+    {
+      "id": "montaje-chequeo",
+      "from": "montaje",
+      "to": "chequeo",
+      "variant": "emphasis"
+    },
+    {
+      "id": "chequeo-web",
+      "from": "chequeo",
+      "to": "web",
+      "label": "publicar",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Lo que se ve sigue a la narración",
+      "items": [
+        "Cada escena dura su narración más 0,5 s; el video de la v2 dura 52,1 s",
+        "Iconos y tarjetas de perfil entran en el segundo de su palabra",
+        "Las anclas de la revisión reajustan cada tramo para que el evento caiga sobre su palabra",
+        "21 de 23 momentos a ±0,5 s; los otros dos son desfases aceptados y declarados"
+      ]
+    },
+    {
+      "dot": "orange",
+      "title": "Límites declarados",
+      "items": [
+        "Se genera una vez, fuera de la app; la web solo sirve el video y funciona sin él",
+        "MAGI-2 dejó de responder en Higgsfield (403): la v2 se hizo con Kling 4.0 por 11,02 USD",
+        "Sin logotipos de Manuelita; la declaración de IA va como texto junto al video",
+        "La v1 queda en el historial; publish solo reemplaza el video si el chequeo pasa"
+      ]
+    }
+  ]
+}

@@ -338,7 +338,13 @@ hasta `publish`.
 - [X] T050 [P] Marcar `video/pitch/cambios.md` como aplicado: una línea al inicio con la fecha y la versión 1.2.0.
 - [X] T051 Correr `ruff check`, `ruff format`, `make check` y `make e2e` con `LANGSMITH_TRACING=false`. Registrar
   las cifras en `quickstart.md` §C.
-- [ ] T052 Hacer commit a nombre de Robertto48, sin firmas de bot, con el código, la spec, el ADR, el registro y los
+- [X] T053 Actualizar los diagramas Archify (decisión del integrante, 2026-11-27):
+  - nuevo `docs/diagramas/video-pitch.json` (workflow de producción) con su captura en
+    `docs/capturas/diagramas/video-pitch.png`;
+  - el nodo «Video pitch» en `docs/arquitectura.json`, que alimenta la plataforma web;
+  - evidencia fijada al commit de la publicación, `finalize --quality showcase` en verde y enlace
+    en el README.
+- [X] T052 Hacer commit a nombre de Robertto48, sin firmas de bot, con el código, la spec, el ADR, el registro y los
   clips (por LFS). Sin push ni PR hasta que el integrante lo pida.
 
 ---

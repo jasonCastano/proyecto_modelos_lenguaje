@@ -642,6 +642,16 @@ def test_web_data_matches_the_published_script() -> None:
         assert 'PITCH_SCRIPT_VERSION = "1.1.0"' in actual
 
 
+def _gold_is_downloaded() -> bool:
+    """El CI clona sin Git LFS: la capa oro llega como puntero y no se puede leer."""
+    units = pitch.default_gold_dir() / "knowledge_units.jsonl"
+    if not units.is_file():
+        return False
+    with units.open(encoding="utf-8") as handle:
+        return not handle.read(200).startswith("version https://git-lfs")
+
+
+@pytest.mark.skipif(not _gold_is_downloaded(), reason="Requiere la capa oro (Git LFS).")
 def test_repository_pitch_is_valid() -> None:
     """El guion 1.2.0 y el registro v2 del repositorio validan sin errores."""
     report = pitch.validate(pitch.PITCH_ROOT)

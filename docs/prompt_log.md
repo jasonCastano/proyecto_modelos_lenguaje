@@ -531,6 +531,44 @@ La spec 026 no cambia ningún prompt: `agent.md` sigue en 1.8 y `profiles.md` en
   opcionales de precio (`price_*_pct`, de −50 a +50). Su descripción está en `docs/herramientas.md`, regenerado.
   Con los campos vacíos, los planes de la batería son idénticos (`tests/unit/test_scenario_prices.py`).
 
+### 3.24 Video pitch: guion 1.0.0 y prompts de escena para MAGI-2 (2026-11-26, spec 028)
+
+Prompts **de generación de video**, no del agente. `agent.md` y `profiles.md` no cambian.
+
+- **Modelo**: MAGI-2 Preview (`sand-ai/MAGI-2-preview`, Apache 2.0), imagen + texto a video (I2V). El primer cuadro
+  es `docs/referencias/avatar_ingenio_manuelita.png`. Genera clips de 10 s fijos en 1080×1920, con audio ambiente.
+- **Guion** `video/pitch/guion.toml` 1.0.0: 6 bloques (gancho, problema, solución, diferencia, uso y acción) de 22
+  palabras o menos. Las afirmaciones de Manuelita citan unidades del oro: `unit_05fb8675575bb5a7` (1864, trapiche) y
+  `unit_121e7e190f26cf4e` (cuatro plataformas). `pml pitch validate` rechaza cifras sin fuente.
+- **Prompts de escena** (captions estructurados en JSON):
+  - Partes comunes: misma presentadora, cañaduzal con el ingenio al fondo, estilo fotorrealista y audio ambiente
+    sin voz.
+  - Restricciones: sin texto, números ni logotipos en pantalla; la presentadora no habla a cámara.
+  - La narración no va en el prompt: es la voz Phonon en el montaje, porque MAGI-2 no documenta voz en español ni
+    sincronía de labios.
+
+| Escena | Bloque | Semilla | Prompt |
+|---|---|---|---|
+| `escena-01` | `gancho` | `2026` | `video/pitch/prompts/escena-01.json` |
+| `escena-02` | `problema` | `2027` | `video/pitch/prompts/escena-02.json` |
+| `escena-03` | `solucion` | `2028` | `video/pitch/prompts/escena-03.json` |
+| `escena-04` | `diferencia` | `2029` | `video/pitch/prompts/escena-04.json` |
+| `escena-05` | `uso` | `2030` | `video/pitch/prompts/escena-05.json` |
+| `escena-06` | `accion` | `2031` | `video/pitch/prompts/escena-06.json` |
+
+- **Guion 1.1.0** (2026-11-26): el cierre (`accion`) cambia de «Valer-IA es un proyecto académico, no un canal
+  oficial de Manuelita. Entra, elige tu perfil y empieza a preguntar.» a «Conocer Manuelita ya no es buscar: es
+  preguntar. Entra a Valer-IA, elige tu perfil y haz tu primera pregunta hoy.» **Motivo**: el integrante pidió un
+  cierre de elevator pitch y quitar el rótulo grabado. La declaración de IA queda como texto junto al video en la
+  web y en la transcripción.
+- **Generación por Higgsfield** (2026-11-26): el modelo es `sand/magi-2/image-to-video`. El texto que recibe es el
+  caption de cada escena unido por `pitch.prompt_text` (`subject`, `setting`, `action`, `Camera`, `Style`,
+  `Audio` y `Constraints`). El cuerpo lleva `resolution: "1080p"`, `duration: 10`, `generate_audio: true`,
+  `aspect_ratio: "9:16"` y la semilla de la tabla. La calibración mostró que sin `aspect_ratio` el clip sale 16:9.
+- **Estado** (2026-11-26): las 6 escenas se generaron en la primera pasada con las semillas de la tabla y quedaron
+  `aprobada`; no hubo regeneraciones. Detalle en `video/pitch/escenas.json` (`job` y `review` por escena). La alternativa con los pesos abiertos
+  requiere 8× H100/H200 (`video/pitch/RUNBOOK.md`). Cada regeneración (nueva semilla o prompt) se anota aquí con su motivo.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

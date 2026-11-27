@@ -48,6 +48,7 @@ def mic_page(browser: Browser, base_url: str, tmp_path: Path) -> Iterator[Page]:
         ],
     )
     context = instance.new_context(viewport={"width": 1440, "height": 900})
+    context.route("**/media/pitch-valeria.mp4", lambda route: route.fulfill(status=404, body=""))
     context.grant_permissions(["microphone"], origin=base_url)
     page = context.new_page()
     try:

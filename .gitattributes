@@ -11,3 +11,10 @@ docs/diagramas/** -text
 docs/capturas/diagramas/** -text
 docs/calificacion_m1/*.csv -text
 docs/calificacion_m2/*.csv -text
+
+# Spec 028: video pitch (MAGI-2). Medios pesados por Git LFS; guion, manifiesto y subtítulos como texto.
+video/pitch/escenas/*.mp4 filter=lfs diff=lfs merge=lfs -text
+video/pitch/narracion/*.wav filter=lfs diff=lfs merge=lfs -text
+web/public/media/*.mp4 filter=lfs diff=lfs merge=lfs -text
+web/public/media/*.webp filter=lfs diff=lfs merge=lfs -text
+docs/referencias/*.png filter=lfs diff=lfs merge=lfs -text

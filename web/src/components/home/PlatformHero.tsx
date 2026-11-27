@@ -59,7 +59,7 @@ export function PlatformHero() {
   return (
     <section aria-labelledby="hero-title" className="platform-hero">
       <div className="platform-hero__copy">
-        <h1 className="type-display platform-hero__title" id="hero-title">
+        <h1 className="type-display platform-hero__title" id="hero-title" tabIndex={-1}>
           Un agente para cada persona que trabaja con Manuelita.
         </h1>
         <p className="platform-hero__lead">

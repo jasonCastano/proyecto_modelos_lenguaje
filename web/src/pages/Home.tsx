@@ -1,8 +1,9 @@
 /**
- * Entrada pública de la plataforma (spec 026, historia 2): qué es Valer-IA, para quién es y cómo
- * responde. Consulta, Resumen y FAQ de los Módulos 1 y 2 siguen disponibles más abajo.
+ * Entrada pública de la plataforma (spec 026, historia 2): abre con el video pitch (spec 028) y
+ * sigue con qué es Valer-IA, para quién es y cómo responde. Consulta, Resumen y FAQ de los Módulos 1 y 2 siguen disponibles más abajo.
  */
 import { Guarantees } from "../components/home/Guarantees";
+import { PitchVideo } from "../components/home/PitchVideo";
 import { PlatformHero } from "../components/home/PlatformHero";
 import { ProfileLedger } from "../components/home/ProfileLedger";
 import { LimitsNote } from "../components/LimitsNote";
@@ -16,6 +17,7 @@ interface HomeProps {
 export function Home({ health }: HomeProps) {
   return (
     <div className="home">
+      <PitchVideo />
       <PlatformHero />
       <ProfileLedger />
       <Guarantees />

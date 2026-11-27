@@ -1,0 +1,94 @@
+/*
+ * Tarjetas del bot de WhatsApp (spec 030): mismo sistema que las portadas. Fondo claro, nombre y
+ * títulos en el verde corporativo, filete rojo anaranjado, abanico de hojas (hojas.svg) y Archivo.
+ * Las cifras nunca se dibujan: la plantilla de planificación deja el espacio vacío.
+ * El texto vive en [data-safe] y cada texto declara su fondo en data-bg (contraste medido).
+ */
+
+.piece {
+  background: var(--field);
+  color: var(--ink);
+}
+
+.leaves {
+  position: absolute;
+  z-index: 0;
+  display: block;
+}
+
+.content {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  margin: 0;
+  color: var(--leaf-green);
+  font-weight: 820;
+  font-stretch: 118%;
+  letter-spacing: -0.015em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.rule {
+  display: block;
+  width: 96px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--leaf-red);
+}
+
+.lead {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 430;
+  line-height: 1.3;
+  text-wrap: pretty;
+}
+
+.note {
+  margin: 0;
+  color: #3f4a3c;
+  font-weight: 480;
+  font-stretch: 92%;
+  line-height: 1.35;
+}
+
+.photo-circle {
+  position: absolute;
+  z-index: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 8px var(--paper),
+    0 0 0 14px var(--leaf-green);
+}
+
+.photo-circle img[data-ref] {
+  position: absolute;
+}
+
+.badge {
+  position: absolute;
+  z-index: 1;
+}
+
+.panel {
+  background: var(--paper);
+  border-radius: 28px;
+  box-shadow: 0 2px 0 rgb(20 36 15 / 0.06);
+}
+
+.chip {
+  display: inline-block;
+  padding: 8px 18px 10px;
+  border-radius: 999px;
+  background: var(--cane-soft);
+  color: var(--cane-deep);
+  font-weight: 650;
+  font-stretch: 92%;
+  white-space: nowrap;
+}

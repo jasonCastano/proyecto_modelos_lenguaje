@@ -21,3 +21,7 @@ docs/referencias/*.png filter=lfs diff=lfs merge=lfs -text
 # Spec 029: pitch v2 por planos y gráficos del montaje.
 video/pitch/planos/*.mp4 filter=lfs diff=lfs merge=lfs -text
 video/pitch/graficos/png/*.png filter=lfs diff=lfs merge=lfs -text
+
+# Spec 030: imágenes de perfil de Valer-IA (aprobadas, por Git LFS).
+docs/whatsapp/**/*.png filter=lfs diff=lfs merge=lfs -text
+docs/whatsapp/**/*.webp filter=lfs diff=lfs merge=lfs -text

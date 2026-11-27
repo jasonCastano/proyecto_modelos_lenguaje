@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · fuera de servicio</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="tarjeta.css" />
+    <style>
+      /* Fuera de servicio 1080×1080: mantenimiento o fallo del modelo, sin tono de error técnico. */
+      .piece {
+        width: 1080px;
+        height: 1080px;
+      }
+      .badge {
+        left: 290px;
+        top: 70px;
+      }
+      .content {
+        left: 110px;
+        top: 560px;
+        width: 860px;
+        align-items: center;
+        text-align: center;
+      }
+      .title {
+        font-size: 84px;
+      }
+      .rule {
+        margin: 28px 0 26px;
+      }
+      .lead {
+        font-size: 38px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Valer-IA vuelve en un momento">
+      <img class="leaves" src="hojas.svg" alt="" style="left: -40px; bottom: -40px; width: 190px; height: 190px; transform: scaleX(-1)" />
+      <div class="badge" id="badge"></div>
+      <section class="content" data-safe="texto">
+        <h1 class="title" data-text="titulo" data-bg="#f5f7f3">Vuelvo en un momento</h1>
+        <span class="rule" aria-hidden="true"></span>
+        <p class="lead" data-text="texto" data-bg="#f5f7f3">
+          Estoy en mantenimiento. Escríbeme de nuevo en unos minutos.
+        </p>
+      </section>
+    </main>
+    <script src="personaje.js"></script>
+    <script>
+      document.getElementById("badge").innerHTML = ValerIA.badge({ pose: "neutral", eyes: "happy", size: 500 });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" aria-hidden="true">
+  <!--
+    Abanico de hojas de caña (spec 030): motivo propio de Valer-IA. Toma los colores corporativos
+    (rojo anaranjado, naranja, amarillo y verde) y el solapamiento de formas orgánicas, pero las hojas
+    brotan de un mismo punto como un tallo de caña y NO forman el círculo del logotipo de Manuelita.
+  -->
+  <defs>
+    <path id="hoja" d="M0 0 C -62 -88 -52 -236 0 -318 C 52 -236 62 -88 0 0 Z" />
+  </defs>
+  <g transform="translate(200 396)" style="isolation: isolate">
+    <use href="#hoja" fill="#d64729" transform="rotate(-50)" style="mix-blend-mode: multiply" />
+    <use href="#hoja" fill="#f39200" transform="rotate(-20) scale(1.06)" style="mix-blend-mode: multiply" />
+    <use href="#hoja" fill="#ffd100" transform="rotate(12) scale(0.96)" style="mix-blend-mode: multiply" />
+    <use href="#hoja" fill="#497536" transform="rotate(44) scale(0.88)" style="mix-blend-mode: multiply" />
+  </g>
+</svg>

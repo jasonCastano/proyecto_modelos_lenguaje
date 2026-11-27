@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · foto de perfil</title>
+    <link rel="stylesheet" href="base.css" />
+    <style>
+      /*
+       * Foto de perfil 640×640 (spec 030, research R3 y R4).
+       * La presentadora tal cual está en la referencia: un solo factor de escala (0,8), sin
+       * deformar ni retocar. El fondo es el de la referencia (campo de caña), armonizado con la
+       * paleta: viñeta de caña profunda fuera del círculo y un anillo fino con los cuatro colores
+       * corporativos (verde, amarillo, naranja y rojo anaranjado), inspirados en el logotipo de Manuelita.
+       */
+      .piece {
+        width: 640px;
+        height: 640px;
+      }
+
+      img[data-ref] {
+        /* 941×1672 × 0,8 = 752,8×1337,6; rostro (490, 620) de la referencia en (320, 300). */
+        width: 752.8px;
+        height: 1337.6px;
+        left: -72px;
+        top: -196px;
+      }
+
+      /* Las esquinas solo se ven donde la plataforma muestra el cuadrado completo. */
+      .vignette {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 50% 50%,
+          rgb(23 53 18 / 0) 0 58%,
+          rgb(23 53 18 / 0.35) 66%,
+          rgb(23 53 18 / 0.9) 78%
+        );
+      }
+
+      /* Anillo dentro del círculo inscrito: ritmo de producto (caña y azúcar), sin texto. */
+      .ring {
+        position: absolute;
+        inset: 14px;
+        border-radius: 50%;
+        padding: 7px;
+        background: conic-gradient(
+          from 200deg,
+          var(--leaf-green) 0deg 150deg,
+          var(--leaf-yellow) 150deg 215deg,
+          var(--leaf-orange) 215deg 270deg,
+          var(--leaf-red) 270deg 330deg,
+          var(--leaf-green) 330deg 360deg
+        );
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0.95;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Foto de perfil de Valer-IA">
+      <img
+        data-ref
+        src="../../referencias/avatar_ingenio_manuelita.png"
+        alt="Presentadora sintética de Valer-IA"
+      />
+      <div class="vignette"></div>
+      <div class="ring"></div>
+    </main>
+  </body>
+</html>

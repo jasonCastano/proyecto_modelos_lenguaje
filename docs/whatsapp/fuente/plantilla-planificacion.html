@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · plantilla de planificación</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="tarjeta.css" />
+    <style>
+      /*
+       * Plantilla de planificación 1080×1350: fondo para el resultado del planificador industrial.
+       * Las cifras NO se dibujan aquí: los recuadros quedan vacíos para superponer las del optimizador.
+       */
+      .piece {
+        width: 1080px;
+        height: 1350px;
+      }
+      .content {
+        left: 80px;
+        top: 86px;
+        width: 920px;
+      }
+      .title {
+        font-size: 80px;
+      }
+      .rule {
+        margin: 26px 0 22px;
+      }
+      .lead {
+        font-size: 31px;
+      }
+      .slots {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 22px;
+        margin-top: 44px;
+      }
+      .slot {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding: 28px 26px 30px;
+      }
+      .slot h2 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0;
+        font-size: 33px;
+        font-weight: 760;
+      }
+      .slot svg {
+        width: 40px;
+        height: 40px;
+      }
+      .blank {
+        height: 150px;
+        border: 3px dashed #b9c4b3;
+        border-radius: 18px;
+      }
+      .limit {
+        margin-top: 26px;
+        padding: 28px 30px 30px;
+      }
+      .limit h2 {
+        margin: 0 0 18px;
+        font-size: 31px;
+        font-weight: 760;
+      }
+      .limit .blank {
+        height: 120px;
+      }
+      .note {
+        margin-top: 26px;
+        font-size: 26px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Plantilla de planificación de Valer-IA">
+      <img class="leaves" src="hojas.svg" alt="" style="right: -46px; bottom: -14px; width: 210px; height: 210px" />
+      <section class="content" data-safe="texto">
+        <h1 class="title" data-text="titulo" data-bg="#f5f7f3">Plan de la semana</h1>
+        <span class="rule" aria-hidden="true"></span>
+        <p class="lead" data-text="texto" data-bg="#f5f7f3">Reparto de la caña entre productos.</p>
+        <div class="slots">
+          <article class="slot panel">
+            <h2 data-text="azucar" data-bg="#ffffff"><svg viewBox="0 0 24 24" fill="none" stroke="#d64729" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 8v8l-8 5-8-5V8z" /><path d="M12 3v18M4 8l8 5 8-5" /></svg>Azúcar</h2>
+            <div class="blank" aria-hidden="true"></div>
+          </article>
+          <article class="slot panel">
+            <h2 data-text="etanol" data-bg="#ffffff"><svg viewBox="0 0 24 24" fill="none" stroke="#c46a00" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3.5 4.6 6 8 6 11a6 6 0 0 1-12 0c0-3 2.5-6.4 6-11z" /><path d="M8.2 14.5c2.4 1 5.2 1 7.6 0" /></svg>Etanol</h2>
+            <div class="blank" aria-hidden="true"></div>
+          </article>
+          <article class="slot panel">
+            <h2 data-text="energia" data-bg="#ffffff"><svg viewBox="0 0 24 24" fill="none" stroke="#497536" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 7 12h5l-1.5 6L17 8h-5z" /><path d="M4 21h16M6 18.5l-2 2.5M18 18.5l2 2.5" /></svg>Energía</h2>
+            <div class="blank" aria-hidden="true"></div>
+          </article>
+        </div>
+        <article class="limit panel">
+          <h2 data-text="limita" data-bg="#ffffff">Qué limita el plan</h2>
+          <div class="blank" aria-hidden="true"></div>
+        </article>
+        <article class="limit panel">
+          <h2 data-text="alternativa" data-bg="#ffffff">Alternativa</h2>
+          <div class="blank" aria-hidden="true"></div>
+        </article>
+        <p class="note" data-text="nota" data-bg="#f5f7f3">
+          Cifras calculadas por el optimizador con datos sintéticos.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

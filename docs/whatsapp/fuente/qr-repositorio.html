@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · código QR del proyecto</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="tarjeta.css" />
+    <style>
+      /*
+       * Código QR 1080×1080 al repositorio público del proyecto (decisión del integrante). El QR
+       * se genera en local, no con IA: qr-repositorio.svg.
+       */
+      .piece {
+        width: 1080px;
+        height: 1080px;
+      }
+      .content {
+        left: 110px;
+        top: 80px;
+        width: 860px;
+        align-items: center;
+        text-align: center;
+      }
+      .title {
+        font-size: 82px;
+      }
+      .rule {
+        margin: 26px 0 36px;
+      }
+      .qr {
+        /* Margen silencioso de 4 módulos (33 módulos en 396 px = 12 px por módulo). */
+        padding: 48px;
+      }
+      .qr img {
+        display: block;
+        width: 396px;
+        height: 396px;
+        image-rendering: pixelated;
+      }
+      .url {
+        margin-top: 34px;
+        font-size: 31px;
+        font-weight: 650;
+        font-stretch: 92%;
+        color: var(--cane-deep);
+      }
+      .lead {
+        margin-top: 14px;
+        font-size: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Código QR del proyecto Valer-IA">
+      <img class="leaves" src="hojas.svg" alt="" style="left: -50px; bottom: -14px; width: 230px; height: 230px" />
+      <img class="leaves" src="hojas.svg" alt="" style="right: -50px; bottom: -14px; width: 230px; height: 230px; transform: scaleX(-1)" />
+      <section class="content" data-safe="texto">
+        <h1 class="title" data-text="titulo" data-bg="#f5f7f3">Conoce el proyecto</h1>
+        <span class="rule" aria-hidden="true"></span>
+        <div class="qr panel"><img src="qr-repositorio.svg" alt="Código QR al repositorio del proyecto" /></div>
+        <p class="url" data-text="url" data-bg="#f5f7f3">github.com/jasonCastano/proyecto_modelos_lenguaje</p>
+        <p class="lead" data-text="texto" data-bg="#f5f7f3">Código, datos y documentación de Valer-IA.</p>
+      </section>
+    </main>
+  </body>
+</html>

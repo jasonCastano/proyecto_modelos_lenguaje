@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · Estado: novedad</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="tarjeta.css" />
+    <style>
+      /* Estado de WhatsApp 1080×1920: una novedad. Arriba y abajo los tapa la interfaz. */
+      .piece {
+        width: 1080px;
+        height: 1920px;
+      }
+      .photo-circle {
+        left: 240px;
+        top: 300px;
+        width: 600px;
+        height: 600px;
+      }
+      .photo-circle img[data-ref] {
+        /* 941×1672 × 0,88 = 828,08×1471,36; rostro de la referencia (490, 620) en (300, 300). */
+        width: 828.08px;
+        height: 1471.36px;
+        left: -131.2px;
+        top: -245.6px;
+      }
+      .content {
+        left: 100px;
+        top: 1010px;
+        width: 880px;
+      }
+      .title {
+        font-size: 100px;
+      }
+      .rule {
+        margin: 34px 0 32px;
+      }
+      .lead {
+        font-size: 44px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Novedad de Valer-IA: planificación industrial">
+      <img class="leaves" src="hojas.svg" alt="" style="right: -60px; bottom: -16px; width: 380px; height: 380px" />
+      <div class="photo-circle">
+        <img data-ref src="../../referencias/avatar_ingenio_manuelita.png" alt="" />
+      </div>
+      <section class="content" data-safe="texto">
+        <h1 class="title" data-text="titulo" data-bg="#f5f7f3">Planificación industrial</h1>
+        <span class="rule" aria-hidden="true"></span>
+        <p class="lead" data-text="texto" data-bg="#f5f7f3">
+          Pregúntale a Valer-IA cómo repartir la caña entre azúcar, etanol y energía. Es una
+          demostración con datos sintéticos en la plataforma web.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

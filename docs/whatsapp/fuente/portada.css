@@ -1,0 +1,66 @@
+/*
+ * Portadas de Valer-IA (spec 030): LinkedIn, Facebook y WhatsApp Business.
+ * Inspiración: los colores corporativos y las formas orgánicas solapadas del logotipo de Manuelita, sin su
+ * figura ni su tipografía (constitución §3.7 y §10). Fondo claro; el nombre en verde corporativo y ancho; un
+ * filete rojo anaranjado; un abanico de hojas de caña (hojas.svg) como único gesto gráfico; la presentadora a
+ * la derecha fundida en el fondo. La declaración de IA va en el texto del perfil, no en la imagen.
+ * El texto vive en [data-safe] y su fondo va en data-bg (contraste medido).
+ */
+
+.piece {
+  background: var(--field);
+}
+
+.leaves {
+  position: absolute;
+  z-index: 1;
+  display: block;
+}
+
+.photo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+/* Funde el borde izquierdo de la foto con el fondo claro. */
+.photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--field) 0%, rgb(245 247 243 / 0.6) 16%, transparent 38%);
+}
+
+.copy {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.name {
+  margin: 0;
+  color: var(--leaf-green);
+  font-weight: 820;
+  font-stretch: 125%;
+  letter-spacing: -0.02em;
+  line-height: 0.92;
+}
+
+.rule {
+  display: block;
+  height: 4px;
+  background: var(--leaf-red);
+  border-radius: 2px;
+}
+
+.tagline {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 420;
+  font-stretch: 100%;
+  line-height: 1.25;
+  text-wrap: balance;
+}

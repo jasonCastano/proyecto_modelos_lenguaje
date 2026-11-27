@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · Estado: consejo</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="tarjeta.css" />
+    <style>
+      /* Estado de WhatsApp 1080×1920: un consejo de uso. Arriba y abajo los tapa la interfaz. */
+      .piece {
+        width: 1080px;
+        height: 1920px;
+      }
+      .badge {
+        left: 200px;
+        top: 300px;
+      }
+      .content {
+        left: 100px;
+        top: 1040px;
+        width: 880px;
+      }
+      .title {
+        font-size: 108px;
+      }
+      .rule {
+        margin: 34px 0 32px;
+      }
+      .lead {
+        font-size: 44px;
+      }
+      .example {
+        margin-top: 40px;
+        padding: 26px 34px 28px;
+        border-radius: 30px 30px 8px 30px;
+        background: #d9fdd3;
+        font-size: 36px;
+        line-height: 1.3;
+        align-self: flex-end;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Consejo de Valer-IA: pide la fuente">
+      <img class="leaves" src="hojas.svg" alt="" style="left: -60px; bottom: -16px; width: 360px; height: 360px" />
+      <div class="badge" id="badge"></div>
+      <section class="content" data-safe="texto">
+        <h1 class="title" data-text="titulo" data-bg="#f5f7f3">Pide la fuente</h1>
+        <span class="rule" aria-hidden="true"></span>
+        <p class="lead" data-text="texto" data-bg="#f5f7f3">
+          Cada respuesta de Valer-IA dice de qué documento sale el dato. Si no hay evidencia, te lo dice.
+        </p>
+        <p class="example" data-text="ejemplo" data-bg="#d9fdd3">¿De dónde sale ese dato?</p>
+      </section>
+    </main>
+    <script src="personaje.js"></script>
+    <script>
+      document.getElementById("badge").innerHTML = ValerIA.badge({ pose: "pulgar", eyes: "wink", size: 700 });
+    </script>
+  </body>
+</html>

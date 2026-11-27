@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 2.5.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
+**Versión**: 2.6.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -305,6 +305,15 @@ uv.lock
     variable, el ancho marca el rol), un color fijo de la paleta de Manuelita por producto (caña, azúcar, etanol,
     energía), pictogramas propios sin piezas de la marca, contraste AA y sin desplazamiento horizontal de 360 a
     1920 px.
+  - Sitio de producto (spec 031, ADR 0035): la entrada es una página de una sección por pantalla con el video
+    pitch como visual del hero, hecha con la skill `design-taste-frontend` sin copiar su kit (no tiene licencia):
+    sus reglas se reimplementan en `web/src/styles/` y sus scripts (gate, copy-lint, fotos) se usan como
+    herramientas externas. Paleta de marca con los colores del logotipo de Manuelita (verde `#497536` para las
+    acciones; rojo anaranjado, naranja y amarillo en filetes y hojas), nunca su logotipo, figura ni tipografía.
+    Las fotos son sustitutas de Wikimedia Commons con licencia libre (CC0, dominio público, CC BY o CC BY-SA),
+    sin marca ni personas reconocibles, nunca presentadas como de Manuelita, con autor y licencia en
+    `web/public/media/fotos/CREDITOS.md` y una línea de créditos en el pie. Un solo momento animado, dentro de
+    su sección y quieto con «reducir movimiento».
 - La app DEBE ejecutarse con `make app` o `uv run python -m proyecto_modelos_lenguaje.webbuild --serve` desde un
   clon limpio. `web/dist` no se versiona: ambos compilan la web si falta o si sus fuentes cambiaron (huella en
   `web/dist/.build-stamp`) y repiten `npm ci` si cambió `package-lock.json`. Arrancar `uvicorn` a mano con una
@@ -992,6 +1001,7 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 | 2.3.0 | 2026-11-26 | **MINOR**: video pitch de la entrada generado con MAGI-2 (spec 028, ADR 0032): primer elemento, saltable y sin repetirse en la sesión; producción única con MAGI-2 por la API de Higgsfield (clave solo en `.env`, tope de gasto), guion con fuentes, ficha de la imagen, revisión humana y declaración de IA junto al video (§3.7 y §10). Requiere la aprobación de ambos integrantes. |
 | 2.4.0 | 2026-11-26 | **MINOR**: pitch v2 sincronizado (spec 029, ADR 0033): escenas por planos con momentos ligados a palabras (faster-whisper local), gráficos propios del montaje y reajuste acotado de planos; modelo por preferencia (MAGI-2 si responde, si no Kling 4.0, decisión del integrante tras el `403 model_unavailable` de MAGI-2 en Higgsfield); borrador y publicación que conservan la v1 hasta el chequeo (§3.7 y §10). Requiere la aprobación de ambos integrantes. |
 | 2.5.0 | 2026-11-27 | **MINOR**: imágenes de perfil de Valer-IA (spec 030, ADR 0034): foto de perfil y portadas de WhatsApp, LinkedIn y Facebook compuestas a partir de la imagen de referencia sintética, sin modelos generativos y sin costo, con la declaración de IA en el texto del perfil de cada red, ficha y aprobación humana por pieza (§10). Requiere la aprobación de ambos integrantes. |
+| 2.6.0 | 2026-11-27 | **MINOR**: frontend profesional de Valer-IA (spec 031, ADR 0035): entrada como sitio de producto de una sección por pantalla con el video pitch en el hero; cuatro áreas con un mismo sistema (paleta de marca con los colores del logotipo, Archivo, un botón primario verde); fotos sustitutas de Wikimedia Commons con licencia libre citadas; skill `design-taste-frontend` sin copiar su kit; la consulta de los Módulos 1 y 2 pasa a la evidencia (§3.7). Requiere la aprobación de ambos integrantes. |
 | 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
@@ -1191,4 +1201,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 2.5.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
+**Versión**: 2.6.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27

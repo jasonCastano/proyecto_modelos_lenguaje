@@ -1003,15 +1003,19 @@ uv run uvicorn proyecto_modelos_lenguaje.api:app --reload --port 8000
 cd web && npm run dev
 ```
 
-La plataforma (spec 026, [ADR 0030](docs/decisions/0030-plataforma-web-v1.md)) tiene cuatro áreas, cada una con
-su propia dirección:
+La plataforma (spec 026, [ADR 0030](docs/decisions/0030-plataforma-web-v1.md); rediseño como sitio de producto en
+la spec 031, [ADR 0035](docs/decisions/0035-frontend-profesional.md)) tiene cuatro áreas con un mismo sistema:
+paleta de marca con los colores del logotipo de Manuelita, tipografía Archivo y fotos sustitutas de licencia libre
+([créditos](web/public/media/fotos/CREDITOS.md)).
+
+![Entrada de la plataforma Valer-IA (spec 031)](docs/capturas/plataforma-entrada.png)
 
 | Ruta | Área | Qué muestra |
 |---|---|---|
-| `/` | Entrada | Qué es Valer-IA, los cinco perfiles como filas de un libro de registro, las garantías y la consola de Consulta, Resumen y FAQ |
+| `/` | Entrada | Una sección por pantalla: el video pitch en el hero, la app en grande con una respuesta citada, los cinco perfiles, los negocios de Manuelita, la planificación con su diagrama, las garantías, las herramientas y las preguntas frecuentes |
 | `/agente` | Agente | Selector de los cinco perfiles con «para quién es» y el perfil activo a la vista, la conversación (citas, voz, dictado, aprobación con «Sí»), fuentes del turno, memoria borrable y sugerencias del perfil |
 | `/planificacion` | Planificación | Abierta a cualquier visitante (spec 027); abrirla activa el perfil planificador: escenario, flujo de caña, libro de compromisos, lo que limita el plan, comparación con el plan base, «Explicar con el agente» y «Guardar propuesta» en dos pasos |
-| `/evidencia` | Evidencia técnica | Estado de servicios, catálogo de 26 herramientas con sus perfiles, traza del turno y evaluaciones publicadas con su cifra honesta |
+| `/evidencia` | Evidencia técnica | Estado de servicios, catálogo de 26 herramientas con sus perfiles, traza del turno, evaluaciones publicadas con su cifra honesta y la consola de Consulta, Resumen y FAQ de los Módulos 1 y 2 |
 
 Los servicios nuevos viven bajo `/api/v1/` y las rutas sin versión no cambian (contratos en
 [`specs/026-plataforma-web-manuelita/contracts/`](specs/026-plataforma-web-manuelita/contracts/)):

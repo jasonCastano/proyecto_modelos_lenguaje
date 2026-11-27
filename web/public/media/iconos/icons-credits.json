@@ -1,0 +1,86 @@
+[
+  {
+    "file": "deepseek.svg",
+    "icon": "logos:deepseek-icon",
+    "name": "DeepSeek",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://www.deepseek.com/en/"
+  },
+  {
+    "file": "fastapi.svg",
+    "icon": "logos:fastapi-icon",
+    "name": "FastAPI",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://fastapi.tiangolo.com/"
+  },
+  {
+    "file": "langchain.svg",
+    "icon": "logos:langchain-icon",
+    "name": "LangChain",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://www.langchain.com"
+  },
+  {
+    "file": "python.svg",
+    "icon": "logos:python",
+    "name": "Python",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://www.python.org/"
+  },
+  {
+    "file": "qdrant.svg",
+    "icon": "logos:qdrant-icon",
+    "name": "Qdrant",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://qdrant.tech/"
+  },
+  {
+    "file": "react.svg",
+    "icon": "logos:react",
+    "name": "React",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://facebook.github.io/react/"
+  },
+  {
+    "file": "whatsapp.svg",
+    "icon": "logos:whatsapp-icon",
+    "name": "WhatsApp",
+    "kind": "colour",
+    "source": "gilbarbara/logos@d6960edc1b7309d392c76e40d3a320df7f9ff85c",
+    "author": "Gil Barbara",
+    "licence": "CC0-1.0",
+    "url": "https://github.com/gilbarbara/logos",
+    "trademark": true,
+    "markUrl": "https://www.whatsapp.com/"
+  }
+]

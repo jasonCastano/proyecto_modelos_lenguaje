@@ -6,7 +6,7 @@ import os
 import re
 
 import pytest
-from playwright.sync_api import Browser, expect
+from playwright.sync_api import Browser, Page, expect
 
 pytestmark = pytest.mark.skipif(
     os.getenv("PML_E2E") != "1",
@@ -93,3 +93,17 @@ def test_planning_console_is_keyboard_operable(browser: Browser, base_url: str) 
         assert width >= 2, tag
         page.keyboard.press("Tab")
     context.close()
+
+
+@pytest.mark.parametrize("route", ["/", "/agente", "/planificacion", "/evidencia"])
+def test_no_manuelita_logo_and_disclosure_visible(page: Page, base_url: str, route: str) -> None:
+    """Spec 031 (US4, SC-006): sin el logotipo de Manuelita; la declaración académica visible."""
+    page.goto(f"{base_url}{route}", wait_until="networkidle")
+    sources = page.eval_on_selector_all(
+        "img", "els => els.map(e => (e.currentSrc || e.src).toLowerCase())"
+    )
+    assert not any("logo" in src and "manuelita" in src for src in sources)
+    expect(page.locator("footer.closing")).to_contain_text("No es un canal oficial de Manuelita")
+    if route == "/":
+        notice = "Proyecto académico con IA. No es un canal oficial de Manuelita."
+        expect(page.get_by_text(notice)).to_be_visible()

@@ -41,9 +41,11 @@ function videoOf(container: HTMLElement): HTMLVideoElement {
 
 describe("PitchVideo (spec 028, US1)", () => {
   it("es el primer elemento de la entrada", () => {
-    const { container } = render(<Home health={null} />);
-    const home = container.querySelector(".home")!;
-    expect(home.firstElementChild).toHaveAttribute("data-testid", "pitch");
+    const { container } = render(<Home />);
+    const first = container.querySelector("section")!;
+    expect(first).toHaveAttribute("id", "inicio");
+    expect(within(first).getByTestId("pitch")).toBeInTheDocument();
+    expect(container.querySelectorAll("video")).toHaveLength(1);
   });
 
   it("arranca sin sonido, en línea, con portada y subtítulos en español", () => {
@@ -85,7 +87,7 @@ describe("PitchVideo (spec 028, US1)", () => {
 
 describe("PitchVideo (spec 028, US2)", () => {
   it("saltar pausa, recuerda la sesión, compacta y lleva el foco al héroe", async () => {
-    const { container } = render(<Home health={null} />);
+    const { container } = render(<Home />);
     await userEvent.click(screen.getByTestId("pitch-skip"));
     expect(pause).toHaveBeenCalled();
     expect(window.sessionStorage.getItem(PITCH_SESSION_KEY)).toBe("saltado");

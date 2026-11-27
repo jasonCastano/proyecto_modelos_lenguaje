@@ -66,10 +66,10 @@ export default function App() {
       route={route}
       version={version}
     >
-      {route === "/" ? <Home health={health} /> : null}
+      {route === "/" ? <Home /> : null}
       {route === "/agente" ? <Agent mode={mode} /> : null}
       {route === "/planificacion" ? <Planning /> : null}
-      {route === "/evidencia" ? <Evidence /> : null}
+      {route === "/evidencia" ? <Evidence health={health} /> : null}
     </AppShell>
   );
 }

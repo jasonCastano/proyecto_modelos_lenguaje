@@ -25,3 +25,5 @@ video/pitch/graficos/png/*.png filter=lfs diff=lfs merge=lfs -text
 # Spec 030: imágenes de perfil de Valer-IA (aprobadas, por Git LFS).
 docs/whatsapp/**/*.png filter=lfs diff=lfs merge=lfs -text
 docs/whatsapp/**/*.webp filter=lfs diff=lfs merge=lfs -text
+# Spec 031: fotos sustitutas de Wikimedia Commons para la web (con CREDITOS.md como texto).
+web/public/media/fotos/*.webp filter=lfs diff=lfs merge=lfs -text

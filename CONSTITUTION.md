@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 2.4.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-26
+**Versión**: 2.5.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -950,6 +950,19 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
   la presentadora como su vocera. La imagen de referencia tiene ficha de origen y NO DEBE representar a una
   persona real. Solo se montan planos revisados por una persona, y la versión publicada se reemplaza solo con
   `pml pitch publish`, tras el chequeo.
+- **Imágenes de perfil de Valer-IA** (spec 030, ADR 0034): la foto de perfil y las portadas para WhatsApp,
+  LinkedIn y Facebook (`docs/whatsapp/`) son **composiciones** de la imagen de referencia sintética con ficha,
+  hechas en HTML/CSS y exportadas en local (`scripts/whatsapp_images.py`). NO DEBEN usar modelos ni servicios
+  de generación de imágenes ni tener costo; la presentadora se usa sin alterar sus rasgos (escala ≤ 1,15×,
+  igual en ambos ejes). NO DEBEN mostrar la marca de Manuelita. La declaración de IA (asistente con IA de un
+  proyecto académico, no canal oficial de Manuelita) DEBE ir en el texto del perfil de cada red donde se
+  publiquen («Info» de WhatsApp, descripción de LinkedIn y Facebook; textos en `docs/whatsapp/README.md`), no
+  en la imagen. Las tarjetas del bot (`docs/whatsapp/tarjetas/`) siguen el mismo sistema y la plantilla de
+  planificación NO DEBE llevar cifras. Los stickers (`docs/whatsapp/stickers/`) son una ilustración
+  vectorial propia de Valer-IA dibujada en código (`fuente/personaje.js`), sin modelos generativos; pueden
+  tomar el estilo de otra obra, pero NO DEBEN reproducir sus personajes. Cada pieza
+  DEBE tener ficha (referencia, tipografías y licencias, costo 0) y la aprobación de un integrante
+  (`approve --by`); `check` lo verifica.
 - El uso de asistentes de IA se declara y se verifica; el equipo asume la responsabilidad del código y de las
   afirmaciones. Los asistentes no figuran como autores ni coautores en Git ni en GitHub (§4.3).
 - Los prompts y resultados no se inventan ni se editan para simular éxito.
@@ -978,6 +991,7 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 | 2.2.1 | 2026-11-25 | **PATCH**: `make app` detecta un servidor de otra versión en el puerto y no arranca encima; `GET /api/version`, la versión en el pie de la web y las páginas sin caché (§3.7). |
 | 2.3.0 | 2026-11-26 | **MINOR**: video pitch de la entrada generado con MAGI-2 (spec 028, ADR 0032): primer elemento, saltable y sin repetirse en la sesión; producción única con MAGI-2 por la API de Higgsfield (clave solo en `.env`, tope de gasto), guion con fuentes, ficha de la imagen, revisión humana y declaración de IA junto al video (§3.7 y §10). Requiere la aprobación de ambos integrantes. |
 | 2.4.0 | 2026-11-26 | **MINOR**: pitch v2 sincronizado (spec 029, ADR 0033): escenas por planos con momentos ligados a palabras (faster-whisper local), gráficos propios del montaje y reajuste acotado de planos; modelo por preferencia (MAGI-2 si responde, si no Kling 4.0, decisión del integrante tras el `403 model_unavailable` de MAGI-2 en Higgsfield); borrador y publicación que conservan la v1 hasta el chequeo (§3.7 y §10). Requiere la aprobación de ambos integrantes. |
+| 2.5.0 | 2026-11-27 | **MINOR**: imágenes de perfil de Valer-IA (spec 030, ADR 0034): foto de perfil y portadas de WhatsApp, LinkedIn y Facebook compuestas a partir de la imagen de referencia sintética, sin modelos generativos y sin costo, con la declaración de IA en el texto del perfil de cada red, ficha y aprobación humana por pieza (§10). Requiere la aprobación de ambos integrantes. |
 | 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
@@ -1177,4 +1191,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 2.4.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-26
+**Versión**: 2.5.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27

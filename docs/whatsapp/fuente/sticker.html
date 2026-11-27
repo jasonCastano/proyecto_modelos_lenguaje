@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · sticker</title>
+    <link rel="stylesheet" href="base.css" />
+    <style>
+      /*
+       * Sticker animado de Valer-IA (spec 030): 512×512, fondo transparente, ciclo de 2 s.
+       * La página se abre con ?id=<sticker>; scripts/whatsapp_images.py fija el tiempo de cada
+       * animación (Web Animations API) y captura los cuadros para el WebP animado.
+       */
+      html,
+      body {
+        background: transparent;
+      }
+      .piece {
+        width: 512px;
+        height: 512px;
+      }
+      svg * {
+        transform-box: fill-box;
+      }
+      .bob {
+        animation: bob 2s ease-in-out infinite;
+      }
+      .eye {
+        transform-origin: center;
+        animation: blink 2s linear infinite;
+      }
+      .thumb {
+        transform-origin: 50% 100%;
+        animation: thumb 1s ease-in-out infinite;
+      }
+      .hand {
+        transform-origin: 30% 100%;
+        animation: wave 1s ease-in-out infinite;
+      }
+      .head {
+        transform-origin: 50% 90%;
+      }
+      body[data-id="consulta"] .head {
+        animation: tilt 2s ease-in-out infinite;
+      }
+      body[data-id="gracias"] .head,
+      body[data-id="gracias-confianza"] .head {
+        animation: nod 1s ease-in-out infinite;
+      }
+      .sparkle {
+        transform-origin: center;
+        animation: twinkle 1s ease-in-out infinite;
+      }
+      .s1 {
+        transform: translate(0, 0);
+      }
+      .s2 {
+        translate: -70px 40px;
+        animation-delay: -0.33s;
+      }
+      .s3 {
+        translate: 74px 30px;
+        animation-delay: -0.66s;
+      }
+      .heart {
+        transform-origin: center;
+        animation: float 2s ease-in infinite;
+      }
+      .h2 {
+        translate: -36px 26px;
+        animation-delay: -1s;
+      }
+      .question {
+        transform-origin: 50% 100%;
+        animation: hop 1s ease-in-out infinite;
+      }
+      .rays {
+        transform-origin: center;
+        animation: spin 2s linear infinite;
+      }
+      .t1,
+      .t2,
+      .t3 {
+        animation: appear 2s steps(1, end) infinite;
+      }
+      .t2 {
+        animation-name: appear2;
+      }
+      .t3 {
+        animation-name: appear3;
+      }
+      .d1,
+      .d2,
+      .d3 {
+        transform-origin: center;
+        animation: dot 1s ease-in-out infinite;
+      }
+      .d2 {
+        animation-delay: -0.66s;
+      }
+      .d3 {
+        animation-delay: -0.33s;
+      }
+      .tick {
+        stroke-dasharray: 100;
+        animation: draw 2s ease-out infinite;
+      }
+      .check {
+        transform-origin: center;
+        animation: pop 2s ease-out infinite;
+      }
+      .caption {
+        transform-origin: 50% 50%;
+        animation: caption 2s ease-out infinite;
+      }
+
+      @keyframes bob {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-5px);
+        }
+      }
+      @keyframes blink {
+        0%,
+        44%,
+        52%,
+        100% {
+          transform: scaleY(1);
+        }
+        48% {
+          transform: scaleY(0.1);
+        }
+      }
+      @keyframes thumb {
+        0%,
+        100% {
+          transform: translateY(0) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-10px) rotate(-8deg);
+        }
+      }
+      @keyframes wave {
+        0%,
+        100% {
+          transform: rotate(-14deg);
+        }
+        50% {
+          transform: rotate(16deg);
+        }
+      }
+      @keyframes tilt {
+        0%,
+        100% {
+          transform: rotate(0deg);
+        }
+        30%,
+        70% {
+          transform: rotate(-6deg);
+        }
+      }
+      @keyframes nod {
+        0%,
+        100% {
+          transform: translateY(0) rotate(0deg);
+        }
+        50% {
+          transform: translateY(4px) rotate(3deg);
+        }
+      }
+      @keyframes twinkle {
+        0%,
+        100% {
+          transform: scale(0.4) rotate(0deg);
+          opacity: 0.2;
+        }
+        50% {
+          transform: scale(1.1) rotate(45deg);
+          opacity: 1;
+        }
+      }
+      @keyframes float {
+        0% {
+          transform: translateY(30px) scale(0.6);
+          opacity: 0;
+        }
+        25% {
+          opacity: 1;
+        }
+        80% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-40px) scale(1.1);
+          opacity: 0;
+        }
+      }
+      @keyframes hop {
+        0%,
+        100% {
+          transform: translateY(0) rotate(-6deg);
+        }
+        50% {
+          transform: translateY(-14px) rotate(6deg);
+        }
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(30deg);
+        }
+      }
+      @keyframes appear {
+        0% {
+          opacity: 1;
+        }
+      }
+      @keyframes appear2 {
+        0%,
+        19% {
+          opacity: 0;
+        }
+        20%,
+        100% {
+          opacity: 1;
+        }
+      }
+      @keyframes appear3 {
+        0%,
+        39% {
+          opacity: 0;
+        }
+        40%,
+        100% {
+          opacity: 1;
+        }
+      }
+      @keyframes dot {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+      @keyframes draw {
+        0%,
+        10% {
+          stroke-dashoffset: 100;
+        }
+        45%,
+        100% {
+          stroke-dashoffset: 0;
+        }
+      }
+      @keyframes pop {
+        0% {
+          transform: scale(0.6);
+        }
+        20% {
+          transform: scale(1.12);
+        }
+        30%,
+        100% {
+          transform: scale(1);
+        }
+      }
+      @keyframes caption {
+        0% {
+          transform: scale(0.92);
+        }
+        15% {
+          transform: scale(1.04);
+        }
+        25%,
+        100% {
+          transform: scale(1);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Sticker de Valer-IA"></main>
+    <script src="personaje.js"></script>
+    <script>
+      const id = new URLSearchParams(location.search).get("id") || "pulgar";
+      document.body.dataset.id = id;
+      document.querySelector(".piece").innerHTML = window.ValerIA.sticker(id);
+    </script>
+  </body>
+</html>

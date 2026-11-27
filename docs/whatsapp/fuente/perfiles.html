@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · perfiles</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="tarjeta.css" />
+    <style>
+      /* Tarjeta de perfiles 1080×1350: cuando la persona elige con quién hablar (config/profiles.toml). */
+      .piece {
+        width: 1080px;
+        height: 1350px;
+      }
+      .content {
+        left: 80px;
+        top: 70px;
+        width: 920px;
+      }
+      .title {
+        font-size: 64px;
+      }
+      .rule {
+        margin: 22px 0 18px;
+      }
+      .lead {
+        font-size: 29px;
+      }
+      .rows {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 28px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 84px 1fr;
+        column-gap: 26px;
+        align-items: center;
+        padding: 18px 26px;
+      }
+      .glyph {
+        display: grid;
+        place-items: center;
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        background: var(--cane-soft);
+      }
+      .glyph svg {
+        width: 46px;
+        height: 46px;
+      }
+      .who {
+        margin: 0 0 4px;
+        color: var(--ink);
+        font-size: 31px;
+        font-weight: 760;
+        font-stretch: 104%;
+      }
+      .what {
+        margin: 0 0 10px;
+        color: #3f4a3c;
+        font-size: 24px;
+        line-height: 1.3;
+      }
+      .chip {
+        font-size: 23px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Perfiles de Valer-IA">
+      <img class="leaves" src="hojas.svg" alt="" style="right: -40px; top: -40px; width: 230px; height: 230px; transform: rotate(180deg)" />
+      <section class="content" data-safe="texto">
+        <h1 class="title" data-text="titulo" data-bg="#f5f7f3">¿Con quién quieres hablar?</h1>
+        <span class="rule" aria-hidden="true"></span>
+        <p class="lead" data-text="texto" data-bg="#f5f7f3">
+          Escribe el comando del perfil, o preséntate: «soy proveedor de caña».
+        </p>
+        <div class="rows">
+          <article class="row panel">
+            <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#497536" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 22V2" /><path d="M9.5 17h3M9.5 11.5h3M9.5 6h3" /><path d="M11 11.5c2.5-1 5.5-1.2 8-4.5" /></svg></span>
+            <div>
+              <h2 class="who" data-text="visitante" data-bg="#ffffff">Visitante</h2>
+              <p class="what" data-text="visitante-q" data-bg="#ffffff">Qué hace Manuelita, sus negocios y su historia, con fuentes.</p>
+              <span class="chip" data-text="visitante-c" data-bg="#e3ecdf">/perfil visitante</span>
+            </div>
+          </article>
+          <article class="row panel">
+            <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#d64729" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 8v8l-8 5-8-5V8z" /><path d="M12 3v18M4 8l8 5 8-5" /></svg></span>
+            <div>
+              <h2 class="who" data-text="cliente" data-bg="#ffffff">Cliente B2B</h2>
+              <p class="what" data-text="cliente-q" data-bg="#ffffff">Productos, certificaciones y fichas técnicas.</p>
+              <span class="chip" data-text="cliente-c" data-bg="#e3ecdf">/perfil cliente</span>
+            </div>
+          </article>
+          <article class="row panel">
+            <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#387c2b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 22V2" /><path d="M9.5 17h3M9.5 11.5h3M9.5 6h3" /><path d="M11 11.5c2.5-1 5.5-1.2 8-4.5" /></svg></span>
+            <div>
+              <h2 class="who" data-text="proveedor" data-bg="#ffffff">Proveedor cañero</h2>
+              <p class="what" data-text="proveedor-q" data-bg="#ffffff">Programas para proveedores y buenas prácticas publicadas.</p>
+              <span class="chip" data-text="proveedor-c" data-bg="#e3ecdf">/perfil proveedor</span>
+            </div>
+          </article>
+          <article class="row panel">
+            <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#c46a00" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4c2.6 3.6 4.5 6.2 4.5 8.5a4.5 4.5 0 0 1-9 0C7.5 10.2 9.4 7.6 12 4z" /><path d="M5 21h14" /></svg></span>
+            <div>
+              <h2 class="who" data-text="colaborador" data-bg="#ffffff">Colaborador</h2>
+              <p class="what" data-text="colaborador-q" data-bg="#ffffff">Ética, línea de transparencia, seguridad y salud en el trabajo.</p>
+              <span class="chip" data-text="colaborador-c" data-bg="#e3ecdf">/perfil colaborador</span>
+            </div>
+          </article>
+          <article class="row panel">
+            <span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="#7a6a00" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 7 12h5l-1.5 6L17 8h-5z" /><path d="M4 21h16M6 18.5l-2 2.5M18 18.5l2 2.5" /></svg></span>
+            <div>
+              <h2 class="who" data-text="planificador" data-bg="#ffffff">Planificador industrial</h2>
+              <p class="what" data-text="planificador-q" data-bg="#ffffff">Reparto de la caña entre azúcar, etanol y energía (datos sintéticos). En WhatsApp, solo autorizados.</p>
+              <span class="chip" data-text="planificador-c" data-bg="#e3ecdf">/perfil planificador</span>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

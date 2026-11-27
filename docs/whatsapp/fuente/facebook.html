@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · portada de Facebook</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="portada.css" />
+    <style>
+      /*
+       * Facebook, portada de página 1640×624 (se ve a 820×312). En teléfono se recorta a lo
+       * ancho (265–1375), así que el texto vive en 460–1050 y el rostro cae dentro del recorte.
+       */
+      .piece {
+        width: 1640px;
+        height: 624px;
+      }
+      .photo {
+        width: 580px;
+      }
+      img[data-ref] {
+        /* 941×1672 × 0,82 = 771,62×1371,04; rostro (490, 620) en (210, 290): entra entero en el recorte de teléfono. */
+        width: 771.62px;
+        height: 1371.04px;
+        left: -191.8px;
+        top: -218.4px;
+      }
+      .photo::after {
+        background: linear-gradient(90deg, var(--field) 0%, rgb(245 247 243 / 0.55) 8%, transparent 20%);
+      }
+      .copy {
+        left: 470px;
+        top: 150px;
+        width: 570px;
+      }
+      .name {
+        font-size: 112px;
+      }
+      .rule {
+        width: 96px;
+        margin: 26px 0 20px;
+      }
+      .tagline {
+        font-size: 29px;
+        max-width: 560px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Portada de Valer-IA para Facebook">
+      <img class="leaves" src="hojas.svg" alt="" style="left: 880px; bottom: -8px; width: 300px; height: 300px;" />
+      <div class="photo">
+        <img data-ref src="../../referencias/avatar_ingenio_manuelita.png" alt="" />
+      </div>
+      <section class="copy" data-safe="texto" data-bg="#f5f7f3">
+        <h1 class="name" data-text="nombre">Valer-IA</h1>
+        <span class="rule" aria-hidden="true"></span>
+        <p class="tagline" data-text="lema">
+          Agentes de IA para la agroindustria de la caña: respuestas con fuente y planificación
+          industrial
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

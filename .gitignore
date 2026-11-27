@@ -78,3 +78,6 @@ video/pitch/calibracion/
 
 # Video pitch v2 (spec 029): borrador del montaje antes de `pml pitch publish`.
 video/pitch/borrador/
+
+# Imágenes de perfil de Valer-IA (spec 030): borradores y vistas previas antes de `approve`.
+docs/whatsapp/borrador/

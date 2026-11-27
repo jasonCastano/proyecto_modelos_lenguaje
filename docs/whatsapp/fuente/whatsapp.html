@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · portada de WhatsApp Business</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="portada.css" />
+    <style>
+      /*
+       * WhatsApp Business, portada 1920×1080 (16:9). La foto de perfil queda centrada abajo
+       * (≈ 730–1190 × 850–1080), así que el texto vive arriba a la izquierda (160–1280 × 100–800).
+       */
+      .piece {
+        width: 1920px;
+        height: 1080px;
+      }
+      .photo {
+        width: 620px;
+      }
+      img[data-ref] {
+        /* Referencia a escala 1,0 (sin ampliar); rostro (490, 620) en (330, 370). */
+        width: 941px;
+        height: 1672px;
+        left: -160px;
+        top: -250px;
+      }
+      .copy {
+        left: 180px;
+        top: 230px;
+        width: 1090px;
+      }
+      .name {
+        font-size: 176px;
+      }
+      .rule {
+        width: 150px;
+        height: 6px;
+        border-radius: 3px;
+        margin: 34px 0 28px;
+      }
+      .tagline {
+        font-size: 48px;
+        max-width: 1000px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Portada de Valer-IA para WhatsApp Business">
+      <img class="leaves" src="hojas.svg" alt="" style="left: -30px; bottom: -10px; width: 520px; height: 520px;" />
+      <div class="photo">
+        <img data-ref src="../../referencias/avatar_ingenio_manuelita.png" alt="" />
+      </div>
+      <section class="copy" data-safe="texto" data-bg="#f5f7f3">
+        <h1 class="name" data-text="nombre">Valer-IA</h1>
+        <span class="rule" aria-hidden="true"></span>
+        <p class="tagline" data-text="lema">
+          Agentes de IA para la agroindustria de la caña: respuestas con fuente y planificación
+          industrial
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

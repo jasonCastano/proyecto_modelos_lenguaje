@@ -274,6 +274,11 @@ Decisión: [ADR 0028](docs/decisions/0028-openclaw-whatsapp-puente.md).
 
 *Diagrama interactivo (Archify): [`docs/diagramas/whatsapp-openclaw.html`](docs/diagramas/whatsapp-openclaw.html).*
 
+La foto de perfil y las portadas de Valer-IA para WhatsApp, LinkedIn y Facebook están en
+[`docs/whatsapp/`](docs/whatsapp/README.md), con dónde subir cada una y los textos que las acompañan. Son
+composiciones de la imagen de referencia sintética, sin modelos generativos ni costo (spec 030,
+[ADR 0034](docs/decisions/0034-imagenes-perfil-valeria.md)).
+
 | Pieza | Dónde |
 |---|---|
 | Configuración del gateway (sin secretos) | [`openclaw/openclaw.json5`](openclaw/openclaw.json5), [`openclaw/.env.example`](openclaw/.env.example) |

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · bienvenida</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="tarjeta.css" />
+    <style>
+      /* Tarjeta de bienvenida 1080×1080: primer mensaje a un número nuevo. */
+      .piece {
+        width: 1080px;
+        height: 1080px;
+      }
+      .photo-circle {
+        left: 330px;
+        top: 96px;
+        width: 420px;
+        height: 420px;
+      }
+      .photo-circle img[data-ref] {
+        /* 941×1672 × 0,62 = 583,42×1036,64; rostro de la referencia (490, 620) en (210, 210). */
+        width: 583.42px;
+        height: 1036.64px;
+        left: -93.8px;
+        top: -174.4px;
+      }
+      .content {
+        left: 120px;
+        top: 570px;
+        width: 840px;
+        align-items: center;
+        text-align: center;
+      }
+      .title {
+        font-size: 92px;
+      }
+      .rule {
+        margin: 30px 0 28px;
+      }
+      .lead {
+        font-size: 40px;
+        max-width: 800px;
+      }
+      .note {
+        margin-top: 26px;
+        font-size: 29px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Bienvenida de Valer-IA">
+      <img class="leaves" src="hojas.svg" alt="" style="right: -40px; bottom: -40px; width: 220px; height: 220px" />
+      <img class="leaves" src="hojas.svg" alt="" style="left: -40px; bottom: -40px; width: 170px; height: 170px; transform: scaleX(-1)" />
+      <div class="photo-circle">
+        <img data-ref src="../../referencias/avatar_ingenio_manuelita.png" alt="" />
+      </div>
+      <section class="content" data-safe="texto">
+        <h1 class="title" data-text="titulo" data-bg="#f5f7f3">¡Hola! Soy Valer-IA</h1>
+        <span class="rule" aria-hidden="true"></span>
+        <p class="lead" data-text="texto" data-bg="#f5f7f3">
+          Te ayudo a conocer la agroindustria de la caña, con la fuente de cada respuesta.
+        </p>
+        <p class="note" data-text="nota" data-bg="#f5f7f3">
+          Soy una asistente con IA de un proyecto académico.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

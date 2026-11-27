@@ -8,10 +8,13 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 from PIL import Image
 
 from proyecto_modelos_lenguaje.config import PROJECT_ROOT
+from proyecto_modelos_lenguaje.voice.config import VoiceConfig
+from proyecto_modelos_lenguaje.voice.engine import FakeSynthesizer, VoiceService
 
 SCRIPT = PROJECT_ROOT / "scripts" / "whatsapp_images.py"
 _spec = importlib.util.spec_from_file_location("whatsapp_images", SCRIPT)
@@ -289,3 +292,190 @@ def test_cards_need_contrast_but_not_reference_scale(root: Path) -> None:
     assert wi.approve(root, "sin-evidencia", BY, today=TODAY)["ok"]
     _write_draft(root, "guia", min_contrast=3.1)
     assert not wi.approve(root, "guia", BY, today=TODAY)["ok"]
+
+
+# --------------------------------------------------------------------------- audios (US6)
+
+RATE = 24_000
+PHRASES = {
+    "audio-bienvenido": "¡Bienvenido!",
+    "audio-gracias-confianza": "¡Gracias por confiar en nosotros!",
+    "audio-consulta": "¿Cuál es tu consulta?",
+    "audio-hola": "Hola",
+    "audio-lindo-dia": "Lindo día",
+    "audio-gracias": "¡Gracias!",
+    "audio-pensando": "Estoy pensando",
+    "audio-listo": "¡Listo!",
+}
+
+
+def _tone(seconds: float, amp: float = 0.3, rate: int = RATE) -> np.ndarray:
+    t = np.arange(int(seconds * rate), dtype=np.float32) / rate
+    return (amp * np.sin(2 * np.pi * 220.0 * t)).astype(np.float32)
+
+
+def _signal(lead: float = 0.4, voiced: float = 1.0, tail: float = 0.6) -> np.ndarray:
+    quiet = np.zeros(int(lead * RATE), dtype=np.float32)
+    return np.concatenate([quiet, _tone(voiced), np.zeros(int(tail * RATE), dtype=np.float32)])
+
+
+def _fake_service(ms_per_char: float = 60.0) -> VoiceService:
+    return VoiceService(VoiceConfig(), synthesizer=FakeSynthesizer(ms_per_char=ms_per_char))
+
+
+def _write_audio_draft(root: Path, audio_id: str, seconds: float = 1.2, **report) -> Path:
+    audio = wi.AUDIOS[audio_id]
+    draft = root / audio.draft
+    draft.parent.mkdir(parents=True, exist_ok=True)
+    wi.encode_ogg(wi.finish_audio(_tone(seconds), RATE), RATE, draft)
+    data = {
+        "id": audio_id,
+        "text": audio.text,
+        "speech_text": audio.speech,
+        "voice": "Rebeca",
+        "voice_id": "Sx8m6WdXBG06zwZT",
+        "tts_model": "gradium/phonon-40m-es",
+        "tts_quant": "q8_0",
+        "engine": "ptts 0.7.1",
+    }
+    data.update(report)
+    (root / audio.report).write_text(json.dumps(data), encoding="utf-8")
+    return draft
+
+
+def _write_sticker(root: Path, audio_id: str) -> None:
+    """El sticker asociado, aprobado con su ficha como en producción."""
+    _approved(root, f"sticker-{wi.AUDIOS[audio_id].name}")
+
+
+def _approved_audio(root: Path, audio_id: str = "audio-hola") -> tuple[Path, Path]:
+    _write_sticker(root, audio_id)
+    _write_audio_draft(root, audio_id)
+    result = wi.approve(root, audio_id, BY, today=TODAY)
+    assert result["ok"], result
+    audio = wi.AUDIOS[audio_id]
+    return root / audio.out, root / audio.ficha
+
+
+def test_audio_catalog_has_one_exact_phrase_per_sticker_with_text() -> None:
+    assert {aid: a.text for aid, a in wi.AUDIOS.items()} == PHRASES
+    assert not any("pulgar" in aid for aid in wi.AUDIOS)
+    for audio in wi.AUDIOS.values():
+        sticker_id = f"sticker-{audio.name}"
+        assert sticker_id in wi.PIECES and wi.PIECES[sticker_id].text
+        assert audio.out.as_posix() == f"docs/whatsapp/stickers/audios/valeria-{audio.name}.ogg"
+        assert audio.speech  # lo que se sintetiza; por omisión, el texto exacto
+
+
+def test_finish_trims_pads_and_levels_the_voice() -> None:
+    finished = wi.finish_audio(_signal(lead=0.4, voiced=1.0, tail=0.6), RATE)
+    # 150 ms de silencio a cada lado y el margen de 30 ms del recorte: ~1,0 + 2×0,18 s.
+    assert len(finished) / RATE == pytest.approx(1.0 + 2 * (0.15 + 0.03), abs=0.025)
+    pad = int(0.15 * RATE)
+    assert not finished[:pad].any() and not finished[-pad:].any()
+    rms, peak = wi.audio_levels(finished)
+    assert rms == pytest.approx(-20.0, abs=1.0)
+    assert peak <= -1.0 + 1e-6
+
+
+def test_finish_limits_the_peak_of_a_spiky_voice() -> None:
+    spiky = _tone(1.0, amp=0.01)
+    spiky[RATE // 2] = 0.9
+    _, peak = wi.audio_levels(wi.finish_audio(spiky, RATE))
+    assert peak <= -1.0 + 1e-6
+
+
+def test_encode_writes_mono_opus_at_48k(tmp_path: Path) -> None:
+    target = tmp_path / "a.ogg"
+    finished = wi.finish_audio(_signal(voiced=1.5), RATE)
+    wi.encode_ogg(finished, RATE, target)
+    info = wi.probe_audio(target)
+    assert (info["codec"], info["sample_rate"], info["channels"]) == ("opus", 48_000, 1)
+    assert info["duration_s"] == pytest.approx(len(finished) / RATE, abs=0.05)
+    assert info["rms_dbfs"] == pytest.approx(-20.0, abs=1.5)
+
+
+def test_render_audio_writes_the_draft_and_report(tmp_path: Path) -> None:
+    service = _fake_service()
+    result = wi.render_audios(tmp_path, ["audio-hola"], service=service)
+    assert result["ok"], result
+    audio = wi.AUDIOS["audio-hola"]
+    assert (tmp_path / audio.draft).is_file()
+    report = json.loads((tmp_path / audio.report).read_text(encoding="utf-8"))
+    assert report["text"] == "Hola" and report["voice"] == "Rebeca"
+    assert report["duration_s"] <= wi.AUDIO_MAX_SECONDS
+    assert service._synth.calls == [("Hola", "Rebeca")]
+
+
+def test_render_audio_rejects_a_phrase_longer_than_five_seconds(tmp_path: Path) -> None:
+    result = wi.render_audios(
+        tmp_path, ["audio-gracias-confianza"], service=_fake_service(ms_per_char=400)
+    )
+    assert not result["ok"]
+    assert any("5" in e for e in result["pieces"][0]["errors"])
+    assert not (tmp_path / wi.AUDIOS["audio-gracias-confianza"].draft).exists()
+
+
+def test_render_audio_stops_when_the_voice_is_unavailable(tmp_path: Path) -> None:
+    with pytest.raises(wi.AudioError):
+        wi.render_audios(tmp_path, ["audio-hola"], service=VoiceService(VoiceConfig(enabled=False)))
+    assert not (tmp_path / wi.AUDIO_DRAFT_DIR).exists()
+
+
+def test_approve_audio_writes_ogg_and_ficha_and_check_passes(root: Path) -> None:
+    ogg, ficha = _approved_audio(root)
+    assert ogg.parent.as_posix().endswith("docs/whatsapp/stickers/audios")
+    meta, _ = wi.read_front_matter(ficha)
+    assert meta["sha256"] == _sha(ogg)
+    assert meta["text"] == "Hola" and meta["sticker"] == "valeria-hola.webp"
+    assert (meta["codec"], meta["sample_rate"], meta["channels"]) == ("opus", 48_000, 1)
+    assert meta["duration_s"] <= 5.0
+    assert meta["license"] == wi.VOICE_LICENSE and "Phonon" in meta["attribution"]
+    assert meta["cost_usd"] == 0 and meta["approved_by"] == BY
+    report = wi.check(root)
+    assert report["ok"], report
+    statuses = {p["id"]: p["status"] for p in report["pieces"]}
+    assert statuses["audio-hola"] == "aprobado" and statuses["audio-listo"] == "pendiente"
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "fragment"),
+    [
+        ("sha256", "0" * 64, "sha256"),
+        ("duration_s", 5.4, "5"),
+        ("codec", "mp3", "codec"),
+        ("approved_by", None, "approved_by"),
+        ("attribution", None, "attribution"),
+        ("text", "Hola!", "texto"),
+        ("cost_usd", 1, "cost_usd"),
+    ],
+)
+def test_check_rejects_incoherent_audio_ficha(root: Path, field: str, value, fragment: str) -> None:
+    _, ficha = _approved_audio(root)
+    _edit_ficha(ficha, **{field: value})
+    assert any(fragment in e for e in _errors(root, "audio-hola")), _errors(root, "audio-hola")
+
+
+def test_check_rejects_an_audio_longer_than_five_seconds(root: Path) -> None:
+    ogg, ficha = _approved_audio(root)
+    wi.encode_ogg(wi.finish_audio(_tone(5.5), RATE), RATE, ogg)
+    _edit_ficha(ficha, sha256=_sha(ogg))
+    assert any("5" in e for e in _errors(root, "audio-hola"))
+
+
+def test_approve_audio_requires_draft_sticker_and_real_voice(root: Path) -> None:
+    assert not wi.approve(root, "audio-listo", BY, today=TODAY)["ok"]
+    _write_audio_draft(root, "audio-listo")
+    assert not wi.approve(root, "audio-listo", BY, today=TODAY)["ok"]  # falta el sticker
+    _write_sticker(root, "audio-listo")
+    _write_audio_draft(root, "audio-listo", engine="fake")
+    result = wi.approve(root, "audio-listo", BY, today=TODAY)
+    assert not result["ok"] and any("voz" in e for e in result["errors"])
+    assert not (root / wi.AUDIOS["audio-listo"].out).exists()
+
+
+def test_main_accepts_the_audios_alias(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    seen: list[list[str]] = []
+    monkeypatch.setattr(wi, "render_audios", lambda root, ids: seen.append(ids) or {"ok": True})
+    assert wi.main(["render", "--piece", "audios", "--json", "--root", str(tmp_path)]) == 0
+    assert seen == [list(wi.AUDIOS)]

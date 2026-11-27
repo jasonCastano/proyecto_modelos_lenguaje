@@ -146,3 +146,53 @@ la skill `design` (LinkedIn y Facebook); WABetaInfo e iMore (portada de WhatsApp
 - Enmienda **MINOR 2.5.0** con ADR 0034; requiere la aprobación de ambos integrantes.
 - La rama parte de `029-pitch-escenas-sincronizadas` (constitución 2.4.0) para no chocar con la numeración; depende
   de los PR #84 y #85.
+
+## R12. Audios de los stickers (US6)
+
+- **Voz**: `VoiceService` de la spec 016 con la configuración del agente (`config/voice.toml`): Phonon
+  `gradium/phonon-40m-es` `q8_0`, voz «Rebeca» (femenina, español de México, id `Sx8m6WdXBG06zwZT`), salida a
+  24 kHz. Se usa la voz oficial del agente para que el sticker suene igual que el chat de la web (SC-008).
+- **Prueba (2026-11-27, en el equipo del integrante, sin red)**:
+  - «¡Gracias por confiar en nosotros!»: 2,32 s, pico 0,58, 8,5 KB en Opus.
+  - «¿Cuál es tu consulta?»: 1,92 s, pico 0,64, 6,3 KB.
+  - «Hola»: 1,20 s, pico 0,45, 3,6 KB.
+
+  La frase más larga queda muy por debajo de 5 s. Los picos desiguales confirman que hace falta igualar el
+  volumen (FR-019).
+- **Red**: el modelo ya está en la caché de Hugging Face, pero el cargador intenta consultar el Hub y falla sin red.
+  Con `HF_HUB_OFFLINE=1` carga desde la caché. Esto cumple FR-012 (nada sale del equipo).
+- **Acabado**:
+  1. Se recorta el silencio de los extremos: umbral de −45 dBFS en ventanas de 10 ms, con 30 ms de margen para no
+     comerse consonantes finales.
+  2. Se añaden 150 ms de silencio al inicio y al final.
+  3. Se normaliza a un RMS objetivo de −20 dBFS, con el pico limitado a −1 dBFS.
+  4. Si la duración final pasa de 5 s, se vuelve a sintetizar con la frase tal cual. Si persiste, el audio no se
+     aprueba: nunca se recorta la voz.
+- **Formato**: OGG/Opus mono, 48 kHz, 32 kbit/s. Es el formato de las notas de voz de WhatsApp: se reproduce
+  sin convertirlo y sirve igual para unirlo después al sticker en un video. Se codifica con PyAV (`av` 19 con
+  `libopus`), que ya es dependencia de runtime (spec 023), en vez de llamar a `ffmpeg`, que solo está en el equipo
+  del integrante y no en el CI.
+- **Texto**: el texto exacto de la spec. Si la entonación o la pronunciación fallan, el catálogo admite un
+  `speech_text` distinto (otra puntuación o una grafía fonética); la ficha registra los dos.
+- **Alternativas descartadas**:
+  - MP3 o M4A: WhatsApp los muestra como archivo de audio, no como nota de voz.
+  - WAV: pesa unas 20 veces más.
+  - Llamar a `ffmpeg` por `subprocess`: no está en el CI.
+  - Otra voz del catálogo: rompería la identidad con el chat web.
+
+## R13. Constitución (US6)
+
+- La regla de §10 sobre imágenes de perfil prohíbe los modelos generativos **para imágenes**. Los audios usan un
+  modelo de síntesis de voz, que ya está aprobado en §2 (spec 016, ADR 0020), pero hasta ahora solo para leer las
+  respuestas del chat. Sacar esa voz a material de difusión es un uso nuevo.
+- Se amplía la regla de §10 con los audios de los stickers:
+  - solo la voz oficial del agente, sintetizada en local y sin costo;
+  - sin clonar ni imitar voces reales;
+  - con la licencia CC BY-NC 4.0 y la atribución en la ficha y en el README;
+  - uso solo académico y no comercial;
+  - con la aprobación de un integrante por cada audio.
+- Enmienda **MINOR 2.7.0** (la 2.6.0 es de la spec 031) con **ADR 0036**; requiere la aprobación de ambos
+  integrantes.
+- **Rama**: la 030 ya se fusionó (PR #86). US6 va en la rama nueva `030-audios-stickers`, que parte de
+  `031-frontend-profesional-valeria` (PR #87 abierto, constitución 2.6.0) para que la enmienda 2.7.0 no choque;
+  su PR depende del #87, como la 030 dependió de la 029.

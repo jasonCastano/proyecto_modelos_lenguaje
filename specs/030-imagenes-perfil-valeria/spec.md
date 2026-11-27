@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-27
 
-**Status**: Draft
+**Status**: Draft (ampliada el 2026-11-27 con US6, audios de los stickers)
 
 **Input**: User description: "necesito que usando la skill /ai-image-generation generes lo siguiente: Imagen para foto de perfil de Vale-IA; Baner para perfil en páginas web como linkin, facebook, whatsapp. Autorizo el uso de la imagen `docs/referencias/avatar_ingenio_manuelita.png` para que generes lo solicitado. Esa imagen es generada, no es una persona real, se puede usar. Las imágenes generadas resultantes guardalas en la carpeta `whatsapp` dentro de la carpeta `docs`, no existe la carpeta `whatsapp` creala. También recomiéndame qué otras imágenes se podrían generar para ser usadas en el chat bot de WhatsApp."
 
@@ -125,6 +125,41 @@ mide 512×512, pesa ≤ 500 KB y el texto se lee bajo la ilustración.
 
 ---
 
+### User Story 6 - Audios de los stickers con la voz de Valer-IA (Priority: P3)
+
+*Ampliación pedida por el integrante el 2026-11-27.*
+
+Cada sticker con frase tiene un audio corto en el que Valer-IA dice esa frase con su voz, la misma voz
+femenina en español que ya usa el agente en la web (spec 016). Los audios permiten mandar el sticker
+acompañado de la frase hablada, o convertirlo después en un sticker con sonido.
+
+Las frases, una por audio y con el texto exacto pedido, son: «¡Bienvenido!», «¡Gracias por confiar en
+nosotros!», «¿Cuál es tu consulta?», «Hola», «Lindo día», «¡Gracias!», «Estoy pensando» y «¡Listo!».
+El sticker del pulgar arriba no tiene frase, así que no lleva audio.
+
+**Why this priority**: Suma personalidad a los stickers, pero los stickers y el bot funcionan sin sonido.
+
+**Independent Test**: reproducir cada archivo de `docs/whatsapp/stickers/audios/` en un teléfono: dura
+5 s o menos, se oye la frase completa y clara con la voz de Valer-IA, sin cortes ni ruido, y los ocho
+suenan con un volumen parecido.
+
+**Acceptance Scenarios**:
+
+1. **Given** la lista de ocho frases, **When** se generan los audios, **Then** hay exactamente un audio por
+   frase en `docs/whatsapp/stickers/audios/` (la carpeta se crea si no existe), cada uno nombrado como su
+   sticker (por ejemplo, el de «Hola» se asocia a `valeria-hola.webp`).
+2. **Given** un audio, **When** se mide, **Then** dura como máximo 5 segundos, empieza y termina con un
+   silencio breve y no corta ninguna palabra.
+3. **Given** un audio, **When** una persona del equipo lo escucha, **Then** la frase se entiende completa, la
+   pronunciación y la entonación son correctas (pregunta en «¿Cuál es tu consulta?», exclamación en las
+   frases con «¡!»), y solo un audio aprobado se versiona.
+4. **Given** un audio, **When** se envía por WhatsApp desde un teléfono, **Then** se reproduce sin convertirlo
+   antes.
+5. **Given** un audio entregado, **When** se abre su ficha de origen, **Then** registra la frase, la voz y el
+   modelo usados con su licencia, la duración, la fecha y quién lo aprobó.
+
+---
+
 ### Edge Cases
 
 - Una pieza no convence en la revisión (encuadre, contraste, legibilidad): se ajusta el diseño y se vuelve a
@@ -138,6 +173,14 @@ mide 512×512, pesa ≤ 500 KB y el texto se lee bajo la ilustración.
 - Una plataforma cambia sus medidas recomendadas: se documenta la fuente y la fecha de las medidas usadas.
 - WhatsApp no ofrece portada en el tipo de cuenta usado por el bot: el banner de WhatsApp queda listo para WhatsApp
   Business y se anota que en la cuenta personal solo aplica la foto de perfil.
+- Un audio pasa de 5 segundos: se vuelve a generar con un ritmo un poco más rápido o recortando solo el
+  silencio inicial y final; nunca se corta la frase.
+- La voz pronuncia mal una palabra o la entonación no corresponde (una pregunta que suena a afirmación): se
+  vuelve a generar ajustando solo la puntuación o la escritura fonética de la entrada, y el texto de la ficha
+  sigue siendo la frase exacta pedida.
+- El modelo de voz no está disponible en el equipo (no se descargó o falta el permiso de acceso): no se
+  entregan audios con otra voz; la generación se detiene y se indica cómo habilitar la voz de la spec 016.
+- Un audio queda con volumen muy distinto al resto: se iguala el volumen de los ocho antes de aprobarlos.
 
 ## Requirements *(mandatory)*
 
@@ -183,6 +226,18 @@ mide 512×512, pesa ≤ 500 KB y el texto se lee bajo la ilustración.
   aportada (caricatura de los años 50), no su personaje, y no usa modelos generativos (FR-010).
 - **FR-017**: El código QR MUST apuntar al repositorio público del proyecto (decisión del integrante) y
   generarse en local.
+- **FR-018**: Los audios de los stickers (US6) MUST quedar en `docs/whatsapp/stickers/audios/` (la carpeta se
+  crea si no existe): uno por cada una de las ocho frases, con el texto exacto pedido, y ninguno para el
+  sticker del pulgar.
+- **FR-019**: Cada audio MUST durar como máximo 5 segundos, sin cortar palabras, con un silencio breve al inicio
+  y al final y un volumen parejo entre los ocho.
+- **FR-020**: Los audios MUST usar la voz de Valer-IA de la spec 016 (la voz femenina en español configurada para
+  el agente), generada en el equipo del integrante, sin costo y sin servicios externos de voz; no se clona ni
+  imita la voz de ninguna persona real.
+- **FR-021**: Cada audio MUST estar en un formato que WhatsApp reproduzca en el teléfono sin convertirlo.
+- **FR-022**: Cada audio MUST tener una ficha de origen junto a él con la frase, el sticker asociado, la voz y el
+  modelo con su licencia (CC BY-NC 4.0, uso académico no comercial, con atribución), la duración, la huella del
+  archivo, la fecha, el costo (0) y quién lo aprobó; solo se versionan los audios aprobados (FR-009).
 - **FR-013**: La spec MUST incluir una lista priorizada de otras imágenes recomendadas para el bot de WhatsApp, con su
   uso y contenido, sin generarlas.
 
@@ -192,6 +247,8 @@ mide 512×512, pesa ≤ 500 KB y el texto se lee bajo la ilustración.
   ficha de origen; es la entrada de todas las piezas.
 - **Pieza de perfil**: una imagen entregada (foto de perfil o banner de una plataforma), con su destino, sus medidas,
   su zona segura y su estado (en diseño, aprobada, rechazada).
+- **Audio de sticker**: la frase hablada por Valer-IA para un sticker, con su texto exacto, el sticker al que
+  acompaña, su duración y su estado (generado, aprobado, rechazado).
 - **Ficha de la pieza**: el registro de origen de cada pieza: cómo se produjo, fecha, referencia, tipografías y
   recursos con su licencia, costo y aprobación.
 
@@ -208,6 +265,11 @@ mide 512×512, pesa ≤ 500 KB y el texto se lee bajo la ilustración.
 - **SC-004**: El rostro de la foto de perfil se distingue a 48 px.
 - **SC-005**: El costo es 0 USD: ninguna pieza requiere pago, créditos, claves ni cuentas de terceros.
 - **SC-006**: Ninguna pieza muestra el logotipo ni la marca de Manuelita, ni representa a una persona real.
+- **SC-007**: Los 8 audios quedan en `docs/whatsapp/stickers/audios/`, aprobados y con ficha; el 100 % dura 5 s o
+  menos.
+- **SC-008**: Una persona que escucha cada audio sin ver el texto escribe la frase correcta en al menos 8 de 8
+  casos, y reconoce la voz como la misma del agente en la web.
+- **SC-009**: Los 8 audios se reproducen en WhatsApp desde un teléfono sin conversión previa.
 
 ## Recomendaciones: otras imágenes para el bot de WhatsApp
 
@@ -245,5 +307,14 @@ ser exacto, declaración de IA cuando la imagen se muestre fuera del chat, ficha
 - Las imágenes son material de difusión del proyecto: no cambian la app, el bot ni sus pruebas, y no se publican en
   ninguna red social dentro de esta feature; subirlas a cada perfil lo hace el integrante.
 - Las imágenes entregadas se versionan por Git LFS, como las demás imágenes de `docs/referencias/`.
+- **Audios (US6)**: la voz es la oficial del agente en la spec 016 (Phonon, voz «Rebeca», femenina, español de
+  México), con licencia CC BY-NC 4.0: sirve para este uso académico y no comercial, y la ficha y el README de
+  `docs/whatsapp/` dan la atribución. Las frases se sintetizan en el equipo; solo el modelo de voz se descarga
+  una vez (con el permiso de acceso de la spec 016), y ningún texto ni audio se envía a servicios externos.
+- El formato de los audios es el de nota de voz de WhatsApp, que además sirve para unirlos después al sticker en
+  un video; el formato exacto se fija en el plan.
+- Fuera del alcance de US6: unir audio y animación en un video, crear el sticker con sonido dentro de WhatsApp y
+  publicar los audios. Los audios se versionan por Git LFS como las demás piezas de `docs/whatsapp/`.
+- La spec 030 ya se fusionó (PR #86); esta ampliación se entrega en un PR propio.
 - La rama parte de `029-pitch-escenas-sincronizadas` porque la imagen de referencia aún no está en `main` y la
   constitución ya va en 2.4.0; depende de los PR #84 y #85.

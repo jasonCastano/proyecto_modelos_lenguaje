@@ -13,9 +13,15 @@ Este script las exporta con Chromium local, mide escala, zona segura, contraste 
 vistas previas para la revisión humana. Nada sale del equipo: sin red, sin claves y sin modelos de
 generación de imágenes.
 
+Además produce los **audios de los stickers** (US6, ``docs/whatsapp/stickers/audios/``): la frase
+de cada sticker con la voz oficial del agente (Phonon, spec 016), sintetizada en local, recortada,
+igualada y exportada a OGG/Opus mono de 48 kHz (nota de voz de WhatsApp), de 5 s como máximo. El
+modelo de voz es CC BY-NC 4.0: la ficha de cada audio lleva la licencia y la atribución.
+
 Uso::
 
     uv run python scripts/whatsapp_images.py render [--piece ID ...] [--json]
+    uv run python scripts/whatsapp_images.py render --piece audios [--json]
     uv run python scripts/whatsapp_images.py approve ID [ID ...] --by "NOMBRE" [--json]
     uv run python scripts/whatsapp_images.py check [--json]
 """
@@ -25,8 +31,11 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import hashlib
+import importlib.metadata
 import io
 import json
+import math
+import os
 import re
 import shutil
 import sys
@@ -36,6 +45,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -67,12 +77,37 @@ STICKER_SECONDS = 2
 STICKER_MAX_BYTES = 500 * 1024
 ICON_MAX_BYTES = 50 * 1024
 
+# Audios de los stickers (US6, research R12): voz oficial del agente, OGG/Opus mono de 48 kHz
+# (nota de voz de WhatsApp), ≤ 5 s, con silencio recortado, 150 ms de relleno y volumen igualado.
+AUDIO_DIR = OUT_DIR / "stickers" / "audios"
+AUDIO_DRAFT_DIR = DRAFT_DIR / "audios"
+AUDIO_MAX_SECONDS = 5.0
+AUDIO_RATE = 48_000
+AUDIO_BITRATE = 32_000
+AUDIO_CODEC = "opus"
+PAD_MS = 150
+TRIM_MARGIN_MS = 30
+WINDOW_MS = 10
+SILENCE_DBFS = -45.0
+TARGET_RMS_DBFS = -20.0
+PEAK_LIMIT_DBFS = -1.0
+TTS_MODEL = "gradium/phonon-40m-es"
+VOICE_LICENSE = "CC BY-NC 4.0 (modelo y voces); MIT/Apache-2.0 (motor)"
+VOICE_ATTRIBUTION = (
+    "Voz sintetizada con Phonon (Gradium, gradium/phonon-40m-es), modelo y voces CC BY-NC 4.0, "
+    "uso académico no comercial."
+)
+
 Box = tuple[int, int, int, int]
 Circle = tuple[int, int, int]
 
 
 class ImageError(RuntimeError):
     """La producción no puede seguir (referencia inválida, falta Chromium o las fuentes)."""
+
+
+class AudioError(ImageError):
+    """La voz del agente no está disponible para sintetizar los audios."""
 
 
 @dataclass(frozen=True)
@@ -223,6 +258,68 @@ PIECES: dict[str, Piece] = {
 }
 
 
+@dataclass(frozen=True)
+class AudioPiece:
+    """El audio de un sticker con frase (data-model.md, US6)."""
+
+    name: str
+    text: str
+    speech_text: str | None = None  # lo que se sintetiza cuando difiere del texto (R12)
+
+    @property
+    def id(self) -> str:
+        return f"audio-{self.name}"
+
+    @property
+    def speech(self) -> str:
+        return self.speech_text or self.text
+
+    @property
+    def file(self) -> str:
+        return f"valeria-{self.name}.ogg"
+
+    @property
+    def sticker(self) -> str:
+        return PIECES[f"sticker-{self.name}"].file
+
+    @property
+    def sticker_path(self) -> Path:
+        return PIECES[f"sticker-{self.name}"].out
+
+    @property
+    def out(self) -> Path:
+        return AUDIO_DIR / self.file
+
+    @property
+    def ficha(self) -> Path:
+        return AUDIO_DIR / f"{Path(self.file).stem}.md"
+
+    @property
+    def draft(self) -> Path:
+        return AUDIO_DRAFT_DIR / self.file
+
+    @property
+    def report(self) -> Path:
+        return DRAFT_DIR / f"{self.id}.json"
+
+
+# Una frase por sticker, con el texto exacto pedido; el pulgar no tiene frase ni audio.
+AUDIOS: dict[str, AudioPiece] = {
+    a.id: a
+    for a in (
+        AudioPiece("bienvenido", "¡Bienvenido!"),
+        AudioPiece("gracias-confianza", "¡Gracias por confiar en nosotros!"),
+        AudioPiece("consulta", "¿Cuál es tu consulta?"),
+        AudioPiece("hola", "Hola"),
+        AudioPiece("lindo-dia", "Lindo día"),
+        AudioPiece("gracias", "¡Gracias!"),
+        AudioPiece("pensando", "Estoy pensando"),
+        AudioPiece("listo", "¡Listo!"),
+    )
+}
+AUDIO_ALIAS = "audios"
+
+
 # --------------------------------------------------------------------------- utilidades
 
 
@@ -358,6 +455,13 @@ def check(root: Path = ROOT) -> dict[str, Any]:
             pieces.append({"id": piece.id, "status": "pendiente", "errors": []})
             continue
         pieces.append({"id": piece.id, "status": "aprobada", "errors": ficha_errors(root, piece)})
+    for audio in AUDIOS.values():
+        if not (root / audio.out).exists() and not (root / audio.ficha).exists():
+            pieces.append({"id": audio.id, "status": "pendiente", "errors": []})
+            continue
+        pieces.append(
+            {"id": audio.id, "status": "aprobado", "errors": audio_ficha_errors(root, audio)}
+        )
     return {"ok": all(not p["errors"] for p in pieces), "pieces": pieces}
 
 
@@ -387,6 +491,8 @@ def draft_errors(piece: Piece, draft: Path, report: dict[str, Any]) -> list[str]
 
 
 def approve(root: Path, piece_id: str, by: str, *, today: str | None = None) -> dict[str, Any]:
+    if piece_id in AUDIOS:
+        return approve_audio(root, piece_id, by, today=today)
     piece = PIECES[piece_id]
     result: dict[str, Any] = {"id": piece_id, "ok": False, "errors": []}
     if not by.strip():
@@ -700,6 +806,298 @@ def render(root: Path, ids: Sequence[str] | None = None) -> dict[str, Any]:
     return {"ok": all(not r["errors"] for r in reports), "pieces": reports}
 
 
+# --------------------------------------------------------------------------- audios (US6)
+
+
+def _dbfs(value: float) -> float:
+    return 20.0 * math.log10(value) if value > 0 else -math.inf
+
+
+def _windows(samples: np.ndarray, rate: int) -> np.ndarray:
+    """RMS por ventana de ``WINDOW_MS``."""
+    size = max(1, int(rate * WINDOW_MS / 1000))
+    count = len(samples) // size
+    if count == 0:
+        return np.array([float(np.sqrt(np.mean(samples**2)))]) if len(samples) else np.zeros(0)
+    frames = samples[: count * size].reshape(count, size)
+    return np.sqrt(np.mean(frames.astype(np.float64) ** 2, axis=1))
+
+
+def _active(samples: np.ndarray, rate: int = AUDIO_RATE) -> np.ndarray:
+    """Solo las ventanas con voz (sobre ``SILENCE_DBFS``)."""
+    size = max(1, int(rate * WINDOW_MS / 1000))
+    levels = _windows(samples, rate)
+    keep = levels > 10 ** (SILENCE_DBFS / 20)
+    if not keep.any():
+        return samples
+    count = len(levels)
+    frames = samples[: count * size].reshape(count, size)
+    return frames[keep].reshape(-1)
+
+
+def audio_levels(samples: np.ndarray, rate: int = AUDIO_RATE) -> tuple[float, float]:
+    """RMS de la voz (sin los silencios) y pico, en dBFS."""
+    data = np.asarray(samples, dtype=np.float64).reshape(-1)
+    if not len(data):
+        return -math.inf, -math.inf
+    voiced = _active(data, rate)
+    rms = float(np.sqrt(np.mean(voiced**2)))
+    return round(_dbfs(rms), 2), round(_dbfs(float(np.abs(data).max())), 2)
+
+
+def finish_audio(samples: np.ndarray, rate: int) -> np.ndarray:
+    """Recorta el silencio de los extremos, iguala el volumen y deja 150 ms a cada lado (R12)."""
+    data = np.asarray(samples, dtype=np.float32).reshape(-1)
+    size = max(1, int(rate * WINDOW_MS / 1000))
+    loud = np.flatnonzero(_windows(data, rate) > 10 ** (SILENCE_DBFS / 20))
+    if len(loud):
+        margin = int(rate * TRIM_MARGIN_MS / 1000)
+        start = max(0, loud[0] * size - margin)
+        end = min(len(data), (loud[-1] + 1) * size + margin)
+        data = data[start:end]
+    voiced = _active(data, rate)
+    rms = float(np.sqrt(np.mean(voiced.astype(np.float64) ** 2))) if len(voiced) else 0.0
+    peak = float(np.abs(data).max()) if len(data) else 0.0
+    if rms > 0 and peak > 0:
+        gain = min(10 ** (TARGET_RMS_DBFS / 20) / rms, 10 ** (PEAK_LIMIT_DBFS / 20) / peak)
+        data = data * gain
+    pad = np.zeros(int(rate * PAD_MS / 1000), dtype=np.float32)
+    return np.concatenate([pad, data.astype(np.float32), pad])
+
+
+def encode_ogg(samples: np.ndarray, rate: int, target: Path) -> None:
+    """OGG/Opus mono de 48 kHz con PyAV (sin ffmpeg externo)."""
+    import av
+
+    data = np.asarray(samples, dtype=np.float32).reshape(1, -1)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with av.open(str(target), "w", format="ogg") as container:
+        stream = container.add_stream("libopus", rate=AUDIO_RATE, layout="mono")
+        stream.bit_rate = AUDIO_BITRATE
+        frame = av.AudioFrame.from_ndarray(np.ascontiguousarray(data), format="flt", layout="mono")
+        frame.sample_rate = rate
+        resampler = av.AudioResampler(format="s16", layout="mono", rate=AUDIO_RATE)
+        for chunk in [*resampler.resample(frame), *resampler.resample(None)]:
+            for packet in stream.encode(chunk):
+                container.mux(packet)
+        for packet in stream.encode(None):
+            container.mux(packet)
+
+
+def probe_audio(path: Path) -> dict[str, Any]:
+    """Códec, tasa, canales, duración y niveles leídos del archivo."""
+    import av
+
+    with av.open(str(path)) as container:
+        stream = container.streams.audio[0]
+        info: dict[str, Any] = {
+            "codec": stream.codec_context.name,
+            "sample_rate": int(stream.codec_context.sample_rate or stream.rate or 0),
+            "channels": int(stream.codec_context.channels),
+        }
+        chunks = [
+            frame.to_ndarray().astype(np.float32).reshape(-1) for frame in container.decode(stream)
+        ]
+    samples = np.concatenate(chunks) if chunks else np.zeros(0, dtype=np.float32)
+    if samples.size and np.abs(samples).max() > 1.5:  # formatos enteros
+        samples = samples / 32768.0
+    rate = info["sample_rate"] or AUDIO_RATE
+    info["duration_s"] = round(len(samples) / info["channels"] / rate, 3)
+    info["rms_dbfs"], info["peak_dbfs"] = audio_levels(samples, rate)
+    return info
+
+
+def audio_file_errors(info: dict[str, Any], label: str) -> list[str]:
+    errors = []
+    if info.get("codec") != AUDIO_CODEC:
+        errors.append(f"{label}: el codec es {info.get('codec')}; debe ser {AUDIO_CODEC}.")
+    if info.get("sample_rate") != AUDIO_RATE or info.get("channels") != 1:
+        errors.append(f"{label}: debe ser mono de {AUDIO_RATE} Hz.")
+    duration = info.get("duration_s")
+    if duration is None or duration > AUDIO_MAX_SECONDS:
+        errors.append(f"{label}: dura {duration} s; el máximo es {AUDIO_MAX_SECONDS:g} s (FR-019).")
+    return errors
+
+
+def _hf_cache() -> Path:
+    if os.environ.get("HF_HUB_CACHE"):
+        return Path(os.environ["HF_HUB_CACHE"])
+    home = os.environ.get("HF_HOME") or str(Path.home() / ".cache" / "huggingface")
+    return Path(home) / "hub"
+
+
+def _voice_service() -> Any:
+    """La voz del agente (spec 016); sin red si el modelo ya está en la caché (R12)."""
+    from dotenv import load_dotenv
+
+    load_dotenv(ROOT / ".env")
+    cached = _hf_cache() / f"models--{TTS_MODEL.replace('/', '--')}"
+    if cached.is_dir():
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
+    from proyecto_modelos_lenguaje.voice.engine import VoiceService
+
+    return VoiceService()
+
+
+def _engine_version(engine: str) -> str:
+    if engine != "phonon":
+        return engine
+    try:
+        return f"ptts {importlib.metadata.version('ptts')}"
+    except importlib.metadata.PackageNotFoundError:  # pragma: no cover - depende del entorno
+        return "ptts"
+
+
+def render_audios(root: Path, ids: Sequence[str], service: Any = None) -> dict[str, Any]:
+    """Sintetiza los audios pedidos a ``borrador/audios/`` y deja su reporte."""
+    from proyecto_modelos_lenguaje.voice.engine import SPANISH_VOICES, VoiceUnavailableError
+
+    service = service or _voice_service()
+    reports = []
+    for audio_id in ids:
+        audio = AUDIOS[audio_id]
+        report: dict[str, Any] = {"id": audio_id, "text": audio.text, "speech_text": audio.speech}
+        try:
+            finished = None
+            for _ in range(2):  # una segunda síntesis si la primera pasa de 5 s (R12)
+                result = service.synthesize(audio.speech)
+                finished = finish_audio(result.samples, result.sample_rate)
+                if len(finished) / result.sample_rate <= AUDIO_MAX_SECONDS:
+                    break
+        except VoiceUnavailableError as exc:
+            raise AudioError(
+                f"{exc} Revisa `uv run python -m proyecto_modelos_lenguaje.voice --check` "
+                "(spec 016)."
+            ) from exc
+        duration = round(len(finished) / result.sample_rate, 3)
+        info = next((v for v in SPANISH_VOICES if v.name == result.voice), None)
+        engine = service.config.engine
+        report.update(
+            voice=result.voice,
+            voice_id=info.voice_id if info else None,
+            tts_model=service.config.model.removeprefix("hf://") if engine == "phonon" else engine,
+            tts_quant=service.config.quant if engine == "phonon" else None,
+            engine=_engine_version(engine),
+            duration_s=duration,
+        )
+        draft = root / audio.draft
+        if duration > AUDIO_MAX_SECONDS:
+            report["errors"] = [
+                f"Dura {duration} s; el máximo es {AUDIO_MAX_SECONDS:g} s (FR-019). "
+                "Ajusta su speech_text."
+            ]
+            draft.unlink(missing_ok=True)
+            reports.append(report)
+            continue
+        encode_ogg(finished, result.sample_rate, draft)
+        probe = probe_audio(draft)
+        report.update(rms_dbfs=probe["rms_dbfs"], peak_dbfs=probe["peak_dbfs"])
+        report["errors"] = audio_file_errors(probe, "El borrador")
+        (root / audio.report).write_text(
+            json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        report["draft"] = audio.draft.as_posix()
+        reports.append(report)
+    return {"ok": all(not r["errors"] for r in reports), "pieces": reports}
+
+
+def audio_ficha_errors(root: Path, audio: AudioPiece) -> list[str]:
+    ogg, ficha = root / audio.out, root / audio.ficha
+    if not ogg.is_file():
+        return [f"Falta {audio.out.as_posix()}."]
+    if is_lfs_pointer(ogg):
+        return [f"{audio.file} es un puntero LFS sin descargar."]
+    if not ficha.is_file():
+        return [f"Falta la ficha {audio.ficha.as_posix()}."]
+    meta, _ = read_front_matter(ficha)
+    errors = audio_file_errors(probe_audio(ogg), audio.file)
+    errors += audio_file_errors(
+        {k: meta.get(k) for k in ("codec", "sample_rate", "channels", "duration_s")}, "La ficha"
+    )
+    if meta.get("sha256") != sha256(ogg):
+        errors.append("El sha256 de la ficha no coincide con el archivo.")
+    if meta.get("text") != audio.text:
+        errors.append(f"El texto de la ficha debe ser exactamente «{audio.text}».")
+    if meta.get("sticker") != audio.sticker or not (root / audio.sticker_path).is_file():
+        errors.append(f"Falta el sticker asociado {audio.sticker_path.as_posix()}.")
+    if meta.get("tts_model") != TTS_MODEL or not str(meta.get("voice") or "").strip():
+        errors.append(f"La ficha debe registrar la voz y tts_model {TTS_MODEL} (FR-020).")
+    if meta.get("license") != VOICE_LICENSE:
+        errors.append(f"license debe ser «{VOICE_LICENSE}» (FR-022).")
+    if not str(meta.get("attribution") or "").strip():
+        errors.append("Falta attribution a Phonon (FR-022).")
+    if meta.get("cost_usd") != 0:
+        errors.append("cost_usd debe ser 0 (FR-020).")
+    for field in ("approved_by", "approved_at"):
+        if not str(meta.get(field) or "").strip():
+            errors.append(f"Falta {field} (FR-009).")
+    return errors
+
+
+def approve_audio(root: Path, audio_id: str, by: str, *, today: str | None = None) -> dict:
+    audio = AUDIOS[audio_id]
+    result: dict[str, Any] = {"id": audio_id, "ok": False, "errors": []}
+    if not by.strip():
+        result["errors"].append("--by es obligatorio: quién aprueba el audio (FR-009).")
+        return result
+    draft, report_path = root / audio.draft, root / audio.report
+    if not draft.is_file() or not report_path.is_file():
+        result["errors"].append(
+            f"No hay borrador de {audio_id}: ejecuta `render --piece {audio_id}`."
+        )
+        return result
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    probe = probe_audio(draft)
+    errors = audio_file_errors(probe, "El borrador")
+    if not (root / audio.sticker_path).is_file():
+        errors.append(f"Falta el sticker asociado {audio.sticker_path.as_posix()}.")
+    if report.get("tts_model") != TTS_MODEL or not str(report.get("engine", "")).startswith("ptts"):
+        errors.append("El borrador no se hizo con la voz del agente (Phonon); vuelve a `render`.")
+    if report.get("text") != audio.text:
+        errors.append("El borrador no corresponde al texto del catálogo; vuelve a `render`.")
+    if errors:
+        result["errors"] = errors
+        return result
+
+    out = root / audio.out
+    out.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(draft, out)
+    meta: dict[str, Any] = {
+        "file": audio.file,
+        "sha256": sha256(out),
+        "bytes": out.stat().st_size,
+        "text": audio.text,
+        "speech_text": audio.speech,
+        "sticker": audio.sticker,
+        "voice": report.get("voice"),
+        "voice_id": report.get("voice_id"),
+        "tts_model": report.get("tts_model"),
+        "tts_quant": report.get("tts_quant"),
+        "engine": report.get("engine"),
+        "license": VOICE_LICENSE,
+        "attribution": VOICE_ATTRIBUTION,
+        "codec": probe["codec"],
+        "sample_rate": probe["sample_rate"],
+        "channels": probe["channels"],
+        "duration_s": probe["duration_s"],
+        "loudness_rms_dbfs": probe["rms_dbfs"],
+        "peak_dbfs": probe["peak_dbfs"],
+        "cost_usd": 0,
+        "approved_by": by.strip(),
+        "approved_at": today or dt.date.today().isoformat(),
+    }
+    body = (
+        f"\n# Ficha de origen: {audio.file} (spec 030, US6)\n\n"
+        f"«{audio.text}» con la voz del agente, para el sticker `{audio.sticker}`.\n"
+        "Sintetizado en el equipo con Phonon (spec 016), sin red y sin costo; OGG/Opus mono\n"
+        "de 48 kHz, la nota de voz de WhatsApp. Dónde se usa: `docs/whatsapp/README.md`.\n"
+    )
+    write_front_matter(root / audio.ficha, meta, body)
+    result["errors"] = audio_ficha_errors(root, audio)
+    result["ok"] = not result["errors"]
+    return result
+
+
 # --------------------------------------------------------------------------- CLI
 
 
@@ -714,15 +1112,26 @@ def _print(result: dict[str, Any], as_json: bool) -> None:
             print(f"  - {error}")
 
 
+def _expand(ids: Sequence[str]) -> list[str]:
+    """``audios`` equivale a los ocho audios de los stickers."""
+    out: list[str] = []
+    for pid in ids:
+        for item in list(AUDIOS) if pid == AUDIO_ALIAS else [pid]:
+            if item not in out:
+                out.append(item)
+    return out
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--root", type=Path, default=ROOT, help=argparse.SUPPRESS)
     sub = parser.add_subparsers(dest="command", required=True)
+    choices = [*PIECES, *AUDIOS, AUDIO_ALIAS]
     p_render = sub.add_parser("render", help="exporta borradores y vistas previas")
-    p_render.add_argument("--piece", nargs="+", choices=list(PIECES))
+    p_render.add_argument("--piece", nargs="+", choices=choices)
     p_render.add_argument("--json", action="store_true")
     p_approve = sub.add_parser("approve", help="publica piezas aprobadas con su ficha")
-    p_approve.add_argument("piece", nargs="+", choices=list(PIECES))
+    p_approve.add_argument("piece", nargs="+", choices=choices)
     p_approve.add_argument("--by", required=True)
     p_approve.add_argument("--json", action="store_true")
     p_check = sub.add_parser("check", help="verifica las piezas aprobadas")
@@ -733,9 +1142,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     root = Path(args.root)
     try:
         if args.command == "render":
-            result = render(root, args.piece)
+            # Sin --piece se exportan las imágenes; los audios se piden con `--piece audios`.
+            ids = _expand(args.piece) if args.piece else list(PIECES)
+            images = [pid for pid in ids if pid in PIECES]
+            audios = [pid for pid in ids if pid in AUDIOS]
+            parts = []
+            if images:
+                parts.append(render(root, images))
+            if audios:
+                parts.append(render_audios(root, audios))
+            result = {
+                "ok": all(p["ok"] for p in parts),
+                "pieces": [x for p in parts for x in p.get("pieces", [])],
+            }
         elif args.command == "approve":
-            results = [approve(root, pid, args.by) for pid in args.piece]
+            results = [approve(root, pid, args.by) for pid in _expand(args.piece)]
             result = {"ok": all(r["ok"] for r in results), "pieces": results}
         else:
             result = check(root)

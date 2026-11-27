@@ -199,6 +199,120 @@ uso, contenido y prioridad.
 - [X] T030 Actualizar `docs/whatsapp/README.md` (tarjetas, stickers, cómo cargarlos), ADR 0034 y la regla de §10
   (ilustración propia en código para los stickers); `check` y `make check` en verde.
 
+## Phase 8: Ampliación US6 — audios de los stickers con la voz de Valer-IA (Priority: P3)
+
+**Goal**: ocho audios aprobados, uno por sticker con frase, con la voz oficial del agente (Phonon, «Rebeca»), en
+`docs/whatsapp/stickers/audios/`.
+
+**Independent Test**: `check --json` lista los 8 audios aprobados, cada uno en OGG/Opus mono de 48 kHz, de 5 s o
+menos y con su ficha. Al escucharlos en un teléfono se oye la frase completa, con la voz del chat de la web y un
+volumen parejo.
+
+### Preparación
+
+- [X] T031 Crear la rama `030-audios-stickers` con `git switch -c`, llevando los cambios de spec y plan sin
+  commitear. La rama parte de `031-frontend-profesional-valeria` (PR #87 abierto), no de `main`: la 031 sube la
+  constitución a 2.6.0 y esta ampliación la lleva a 2.7.0. Es el mismo criterio con el que la 030 partió de la
+  029. El PR de esta rama depende del #87.
+- [X] T032 [P] Añadir `docs/whatsapp/**/*.ogg filter=lfs diff=lfs merge=lfs -text` a `.gitattributes`, junto a
+  las reglas de `docs/whatsapp/**/*.png` y `*.webp`. `docs/whatsapp/borrador/` ya está en `.gitignore`.
+
+### Pruebas primero (sin modelo ni red: `FakeSynthesizer` + PyAV)
+
+- [X] T033 [P] [US6] En `tests/unit/test_whatsapp_images.py`, probar el catálogo de audios:
+  - exactamente 8 piezas `audio-<nombre>`;
+  - ninguna para `pulgar`;
+  - el `text` de cada una es la frase exacta de la tabla de `data-model.md`;
+  - cada `sticker` asociado existe en el catálogo de stickers.
+- [X] T034 [P] [US6] En `tests/unit/test_whatsapp_images.py`, probar el acabado con una señal sintética de numpy
+  (silencio + tono + silencio):
+  - el silencio de los extremos se recorta, con un umbral de −45 dBFS en ventanas de 10 ms y 30 ms de margen;
+  - quedan 150 ms de silencio a cada lado;
+  - el RMS queda en −20 dBFS ± 1 y el pico ≤ −1 dBFS.
+- [X] T035 [P] [US6] En `tests/unit/test_whatsapp_images.py`, probar la codificación: el archivo resultante es
+  OGG/Opus, «1 canal, 48 kHz», con la duración esperada (±50 ms), leído de vuelta con PyAV.
+- [X] T036 [P] [US6] En `tests/unit/test_whatsapp_images.py`, probar que `render` rechaza un audio de más de
+  5,0 s (salida 1, sin escribir el borrador) y que, si la voz no está disponible (`VoiceUnavailableError`), sale
+  con 1 sin escribir nada.
+- [X] T037 [P] [US6] En `tests/unit/test_whatsapp_images.py`, probar `approve` y `check` de un audio en un
+  `tmp_path`:
+  - `approve` copia el `.ogg` a `docs/whatsapp/stickers/audios/` (crea la carpeta) y escribe la ficha con todos
+    los campos de `data-model.md`;
+  - `check` falla si cambia el `sha256`, si `duration_s > 5.0`, si `codec ≠ opus`, si falta `approved_by` o si
+    falta `attribution`;
+  - un audio sin aprobar aparece como pendiente sin que `check` falle.
+
+### Implementación
+
+- [X] T038 [US6] En `scripts/whatsapp_images.py`:
+  - añadir el tipo de pieza `audio` y las ocho entradas `audio-<nombre>` con `text`, `speech_text` opcional,
+    archivo `valeria-<nombre>.ogg` y sticker asociado (`data-model.md`);
+  - añadir el alias `audios` para `--piece`;
+  - definir las constantes `AUDIO_DIR = OUT_DIR / "stickers" / "audios"`, `AUDIO_DRAFT_DIR = DRAFT_DIR / "audios"`
+    y `AUDIO_MAX_SECONDS = 5.0`.
+- [X] T039 [US6] En `scripts/whatsapp_images.py`, implementar el acabado (R12): recorte de silencio, relleno de
+  150 ms, normalización a −20 dBFS RMS con el pico limitado a −1 dBFS, y la medición de duración, RMS y pico. Solo
+  numpy.
+- [X] T040 [US6] En `scripts/whatsapp_images.py`, implementar la codificación a OGG/Opus con PyAV: remuestreo de
+  la tasa de la voz (24 kHz) a 48 kHz, mono, `libopus` a 32 kbit/s. No llamar a `ffmpeg` por `subprocess`.
+- [X] T041 [US6] En `scripts/whatsapp_images.py`, conectar `render` para las piezas de audio:
+  - no abrir Chromium;
+  - usar `VoiceService` (`proyecto_modelos_lenguaje.voice.engine`) con `config/voice.toml` y `load_dotenv()`;
+  - poner `HF_HUB_OFFLINE=1` si el modelo ya está en la caché;
+  - sintetizar `speech_text`, aplicar el acabado y escribir `docs/whatsapp/borrador/audios/<archivo>.ogg`;
+  - reportar `duration_s`, `rms_dbfs` y `peak_dbfs`;
+  - salir con 1 si la voz no está (con el detalle de `--check`) o si un audio pasa de 5 s.
+
+  Permitir inyectar el sintetizador para las pruebas.
+- [X] T042 [US6] En `scripts/whatsapp_images.py`, conectar `approve` y `check` para los audios: la ficha y sus
+  reglas de `data-model.md`, con estos valores:
+  - `voice: Rebeca`, `voice_id: Sx8m6WdXBG06zwZT`;
+  - `tts_model: gradium/phonon-40m-es`, `tts_quant: q8_0`, `engine: ptts <versión instalada>`;
+  - `license: CC BY-NC 4.0 (modelo y voces); MIT/Apache-2.0 (motor)` y la `attribution` a Phonon (Gradium);
+  - `cost_usd: 0`.
+
+  La regla `generative_model: none` sigue solo para las imágenes. Actualizar el docstring del módulo.
+- [X] T043 [US6] Correr `LANGSMITH_TRACING=false uv run pytest tests/unit/test_whatsapp_images.py` y
+  `uv run ruff check` / `ruff format --check`, todo en verde.
+
+### Producción y aprobación (requiere el modelo de voz en el equipo del integrante)
+
+- [X] T044 [US6] Con `HF_HUB_OFFLINE=1 uv run python scripts/whatsapp_images.py render --piece audios --json`,
+  generar los 8 borradores y confirmar que todos duran ≤ 5 s. Si alguno pronuncia o entona mal, ajustar solo su
+  `speech_text` en el catálogo y volver a generarlo.
+- [X] T045 [US6] Pedir al integrante que escuche los 8 borradores (quickstart E: frase reconocible sin ver el texto,
+  voz del chat web, sin cortes, volumen parejo) y que envíe uno a un chat de prueba de WhatsApp (SC-008,
+  SC-009). No aprobar nada sin su respuesta.
+- [X] T046 [US6] Publicar cada audio aprobado con `approve audio-<nombre> --by "<integrante>"` y comprobar con
+  `check --json` que los 8 aparecen aprobados (SC-007).
+
+### Documentación y gobierno
+
+- [X] T047 [P] [US6] Actualizar `docs/whatsapp/README.md`:
+  - tabla de audios (archivo, frase, sticker, duración);
+  - cómo enviarlos como nota de voz o unirlos al sticker en un video (fuera del alcance);
+  - la atribución: «Voz sintetizada con Phonon (Gradium), modelo y voces CC BY-NC 4.0, uso académico no
+    comercial».
+- [X] T048 [P] Enmendar `CONSTITUTION.md` a 2.7.0. En la regla de §10 «Imágenes de perfil de Valer-IA», añadir los
+  audios de los stickers (`docs/whatsapp/stickers/audios/`):
+  - solo la voz oficial del agente (spec 016), sintetizada en local y sin costo;
+  - sin clonar ni imitar voces reales;
+  - licencia CC BY-NC 4.0 con atribución en la ficha y el README, y uso académico no comercial;
+  - ficha y aprobación de un integrante por audio, verificadas por `check`.
+
+  Agregar la fila 2.7.0 en el historial («Requiere la aprobación de ambos integrantes») y actualizar la versión y
+  la fecha en el encabezado y al pie.
+- [X] T049 [P] Escribir `docs/decisions/0036-audios-stickers-valeria.md` (contexto, decisión de R12/R13,
+  alternativas descartadas: MP3/M4A, WAV, `ffmpeg` por `subprocess`, otra voz; consecuencias), en el formato de
+  `docs/decisions/0034-imagenes-perfil-valeria.md`.
+- [X] T050 `uv run python scripts/whatsapp_images.py check --json` con `ok: true` y `LANGSMITH_TRACING=false make
+  check` en verde. Revisar `quickstart.md` (sección E) contra lo implementado y marcar T031–T050 en este archivo.
+- [X] T051 Commit solo con autorización explícita del integrante, como Robertto48, sin `Co-authored-by` ni
+  «Generated with»: `feat(docs): audios de los stickers con la voz de Valer-IA (spec 030)`. El PR también solo
+  con su autorización.
+
+---
+
 ## Dependencies & Execution Order
 
 - **Setup (T001–T003)** → **Foundational (T004–T008)** → **US1 (T009–T011)** → **US2 (T012–T016)**.
@@ -207,6 +321,11 @@ uso, contenido y prioridad.
 - **US3 (T017)** no depende del script; puede escribirse en cualquier momento después de T001.
 - **Polish**: T018–T020 en paralelo cuando haya piezas aprobadas; T021 → T022 → T023 al final.
 - Dentro de Phase 2: T004 antes de T006; T005 antes de T006 y T007.
+- **US6 (Phase 8)**:
+  - no depende de US1–US5, salvo que los stickers asociados ya existen;
+  - orden: T031 → T032 → pruebas T033–T037 (en paralelo, deben fallar antes de implementar) →
+    T038 → T039 ‖ T040 → T041 → T042 → T043 → T044 → T045 (integrante) → T046 → T047 ‖ T048 ‖ T049 → T050 → T051;
+  - T044–T046 necesitan el modelo de voz en la caché del integrante. El resto corre sin modelo ni red.
 
 ## Parallel Example
 
@@ -214,6 +333,8 @@ uso, contenido y prioridad.
 Setup:   T002 (glifos) ‖ T003 (base.css)
 US2:     T012 (LinkedIn) ‖ T013 (Facebook) ‖ T014 (WhatsApp) → T015 → T016
 Polish:  T017 ‖ T018 ‖ T019 ‖ T020
+US6:     T033 ‖ T034 ‖ T035 ‖ T036 ‖ T037 → T038 → T039 ‖ T040 → T041 → T042
+         T047 ‖ T048 ‖ T049 (después de la aprobación T046)
 ```
 
 ## Implementation Strategy
@@ -222,4 +343,7 @@ Polish:  T017 ‖ T018 ‖ T019 ‖ T020
 2. **Incremento 2**: US2, las tres portadas.
 3. **Incremento 3**: US3 y Polish (constitución 2.5.0, ADR, README, verificación y commit autorizado).
 
-Las aprobaciones (T011, T015, T016) son del integrante: no se marca una pieza como aprobada sin su respuesta.
+4. **Incremento US6**: primero un solo audio (`audio-hola`, T044 con `--piece audio-hola`) para validar la voz y
+   WhatsApp; luego los ocho, la documentación y la constitución 2.7.0.
+
+Las aprobaciones (T011, T015, T016, T045) son del integrante: no se marca una pieza como aprobada sin su respuesta.

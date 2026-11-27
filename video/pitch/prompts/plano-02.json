@@ -1,0 +1,17 @@
+{
+  "shot": "plano-02",
+  "subject": "A Latin American woman in her thirties with long wavy dark hair, a green blazer over a white shirt and beige trousers, holding a silver tablet; the same person as the reference image.",
+  "setting": "Sugarcane field in the Cauca river valley in the morning, green mountains behind, an industrial sugar mill with a tall chimney far in the background.",
+  "action": "She looks down at the tablet with a thoughtful expression and slowly scrolls; the tablet stays clearly visible at chest height, slightly to the right of center.",
+  "camera": "Static medium shot with a gentle handheld sway.",
+  "style": "Photorealistic, natural warm sunlight, shallow depth of field, calm documentary tone, vertical 9:16 framing.",
+  "audio": "Soft field ambience: light wind through the cane leaves and distant birds. No music. No speech.",
+  "constraints": [
+    "No text, letters, numbers or logos anywhere in the frame.",
+    "No brand names, no company signage, no uniforms or ID badges of any company.",
+    "Nobody speaks; lips stay closed or smiling.",
+    "Keep her face, hair and clothing consistent with the reference image.",
+    "No floating panels, holograms or graphics around her."
+  ],
+  "duration_s": 9
+}

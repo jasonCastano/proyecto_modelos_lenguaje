@@ -6,6 +6,26 @@ se sigue **una vez**, o cuando cambia una escena. La web y las pruebas no depend
 **Vía principal (revisión 2026-11-26)**: la API de Higgsfield, desde el equipo del integrante, con
 `pml pitch generate` (sección A). La vía con los pesos abiertos en 8× H100 queda como alternativa (secciones 1 a 4).
 
+## v2 sincronizada (spec 029): flujo actual
+
+Desde la v2, cada escena se compone de planos y lo que se ve sigue a la narración (ADR 0033). El orden es:
+
+1. `uv run pml pitch probe --json`: comprueba sin costo qué modelo de `[pitch].models` responde (MAGI-2 y, si
+   no, Kling 4.0). El primero que genere queda fijado en `escenas.json`.
+2. `uv run pml pitch narrate`, luego `uv run pml pitch align --json`: narración con Phonon y tiempos de cada
+   palabra y momento con faster-whisper local (`sincronia.json`). Si una palabra no se reconoce, el momento usa
+   otra palabra con `offset_s` o un `at_s` manual en `guion.toml`.
+3. `uv run pml pitch graphics`: rasteriza `graficos/*.svg` a PNG transparentes (solo si cambian).
+4. `uv run pml pitch generate --dry-run --json`, luego `--shot plano-0Nx --yes`. Los planos `frame:<plano>`
+   (03b y 06) esperan a que su plano fuente esté `aprobada`.
+5. Revisar cada plano: los chequeos de siempre, más `cue_shown`, y anotar en `review.anchors` el segundo del clip
+   en que ocurre cada momento de tipo `plano`.
+6. `uv run pml pitch assemble --json` (borrador en `video/pitch/borrador/`), luego
+   `uv run pml pitch check video/pitch/borrador/pitch-valeria.mp4 --json`.
+7. `uv run pml pitch publish`: copia el borrador a la web y regenera `pitch.ts` y la transcripción.
+
+Las secciones siguientes describen la v1 (spec 028) y siguen valiendo para la clave, el saldo y lo que se sube.
+
 ## A. Generar con la API de Higgsfield (vía principal)
 
 1. **Clave**: en `.env`, `HIGGSFIELD_API_KEY=<id>:<secreto>` (consola de Higgsfield). Nunca en otro archivo.

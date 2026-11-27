@@ -1,230 +1,365 @@
-[
-  {
-    "id": "escena-01",
-    "block": "gancho",
-    "prompt_file": "video/pitch/prompts/escena-01.json",
-    "image": "docs/referencias/avatar_ingenio_manuelita.png",
-    "seed": 2026,
-    "provider": "higgsfield",
-    "model": "sand/magi-2/image-to-video",
-    "model_revision": null,
-    "request_seconds": 10,
-    "resolution": "1080x1920",
-    "job": {
-      "request_id": "01a218a9-dd29-7b6f-8906-fd9354517ea8",
-      "status": "completed",
-      "submitted_at": "2026-11-26T16:21:54Z",
-      "finished_at": "2026-11-26T16:30:09Z",
-      "seconds": 10,
-      "cost_usd": 0.8,
-      "idempotency_key": "escena-01:5017c0404d30c674:2026",
-      "error": null
+{
+  "schema": 2,
+  "model": "kling4",
+  "image": "docs/referencias/avatar_ingenio_manuelita.png",
+  "prior_spent_usd": 4.8,
+  "prior_note": "v1 (spec 028): 6 escenas de MAGI-2 a 0,80 USD; las calibraciones (0,64 USD) están en calibracion/gasto.json.",
+  "scenes": [
+    {
+      "id": "escena-01",
+      "block": "gancho",
+      "shots": [
+        {
+          "id": "plano-01a",
+          "mode": "text",
+          "source": null,
+          "prompt_file": "video/pitch/prompts/plano-01a.json",
+          "seed": 3001,
+          "request_seconds": 5,
+          "model": "kling4",
+          "job": {
+            "request_id": "01a21a1f-d2bf-74c2-807f-b95ee1112a47",
+            "status": "completed",
+            "submitted_at": "2026-11-26T23:10:22Z",
+            "finished_at": "2026-11-26T23:14:00Z",
+            "seconds": 5,
+            "cost_usd": 0.95,
+            "idempotency_key": "plano-01a:5017c0404d30c674:3001:kling4",
+            "slug": "kling-video/v4.0/text-to-video",
+            "error": null
+          },
+          "history": [],
+          "generated_at": "2026-11-26T23:14:00Z",
+          "clip": "video/pitch/planos/plano-01a.mp4",
+          "duration_s": 5.04,
+          "status": "aprobada",
+          "review": {
+            "by": "Roberto José Guerrero",
+            "at": "2026-11-26",
+            "likeness": true,
+            "no_text": true,
+            "no_brand": true,
+            "matches_script": true,
+            "cue_shown": true,
+            "anchors": {
+              "gancho.trapiche": 2.7
+            },
+            "block_hash": "5017c0404d30c674",
+            "notes": "Trapiche tradicional funcionando en el cañaduzal, sin personas ni texto. El trapiche se ve desde el primer cuadro."
+          }
+        },
+        {
+          "id": "plano-01b",
+          "mode": "reference",
+          "source": "reference",
+          "starts_at": "gancho.valeria",
+          "prompt_file": "video/pitch/prompts/plano-01b.json",
+          "seed": 3002,
+          "request_seconds": 6,
+          "model": "kling4",
+          "job": {
+            "request_id": "01a21a23-3065-74d0-9954-17df94a7f5aa",
+            "status": "completed",
+            "submitted_at": "2026-11-26T23:14:00Z",
+            "finished_at": "2026-11-26T23:16:49Z",
+            "seconds": 6,
+            "cost_usd": 1.14,
+            "idempotency_key": "plano-01b:5017c0404d30c674:3002:kling4",
+            "slug": "kling-video/v4.0/reference-to-video",
+            "error": null
+          },
+          "history": [],
+          "generated_at": "2026-11-26T23:16:49Z",
+          "clip": "video/pitch/planos/plano-01b.mp4",
+          "duration_s": 6.04,
+          "status": "aprobada",
+          "review": {
+            "by": "Roberto José Guerrero",
+            "at": "2026-11-26",
+            "likeness": true,
+            "no_text": true,
+            "no_brand": true,
+            "matches_script": true,
+            "cue_shown": true,
+            "anchors": {
+              "gancho.valeria": 0.2
+            },
+            "block_hash": "5017c0404d30c674",
+            "notes": "Se parece a la referencia. Sale de la caña caminando con la tablet y sonríe en primer plano; entra por la izquierda entre la caña, no por la derecha (aceptado por el integrante, 2026-11-26)."
+          }
+        }
+      ]
     },
-    "history": [],
-    "generated_at": "2026-11-26T16:30:09Z",
-    "clip": "video/pitch/escenas/escena-01.mp4",
-    "duration_s": 10.0,
-    "trim_s": 9.5,
-    "status": "aprobada",
-    "review": {
-      "by": "Roberto José Guerrero",
-      "at": "2026-11-26",
-      "likeness": true,
-      "no_text": true,
-      "no_brand": true,
-      "matches_script": true,
-      "block_hash": "5017c0404d30c674",
-      "notes": "Se parece a la referencia; sin texto ni marcas."
-    }
-  },
-  {
-    "id": "escena-02",
-    "block": "problema",
-    "prompt_file": "video/pitch/prompts/escena-02.json",
-    "image": "docs/referencias/avatar_ingenio_manuelita.png",
-    "seed": 2027,
-    "provider": "higgsfield",
-    "model": "sand/magi-2/image-to-video",
-    "model_revision": null,
-    "request_seconds": 10,
-    "resolution": "1080x1920",
-    "job": {
-      "request_id": "01a218b1-69bb-7a6a-a282-633b673b40f7",
-      "status": "completed",
-      "submitted_at": "2026-11-26T16:30:09Z",
-      "finished_at": "2026-11-26T16:35:30Z",
-      "seconds": 10,
-      "cost_usd": 0.8,
-      "idempotency_key": "escena-02:b32e983aa429a59e:2027",
-      "error": null
+    {
+      "id": "escena-02",
+      "block": "problema",
+      "shots": [
+        {
+          "id": "plano-02",
+          "mode": "image",
+          "source": "reference",
+          "prompt_file": "video/pitch/prompts/plano-02.json",
+          "seed": 3003,
+          "request_seconds": 9,
+          "model": "kling4",
+          "job": {
+            "request_id": "01a21a28-1815-715e-87a1-99750d86a320",
+            "status": "completed",
+            "submitted_at": "2026-11-26T23:19:22Z",
+            "finished_at": "2026-11-26T23:25:45Z",
+            "seconds": 9,
+            "cost_usd": 1.71,
+            "idempotency_key": "plano-02:b32e983aa429a59e:3003:kling4",
+            "slug": "kling-video/v4.0/image-to-video",
+            "error": null
+          },
+          "history": [],
+          "generated_at": "2026-11-26T23:25:45Z",
+          "clip": "video/pitch/planos/plano-02.mp4",
+          "duration_s": 9.04,
+          "status": "aprobada",
+          "review": {
+            "by": "Roberto José Guerrero",
+            "at": "2026-11-26",
+            "likeness": true,
+            "no_text": true,
+            "no_brand": true,
+            "matches_script": true,
+            "cue_shown": true,
+            "anchors": {},
+            "start_s": 1.75,
+            "block_hash": "b32e983aa429a59e",
+            "notes": "Se parece a la referencia; mira la tablet pensativa. Los primeros 1,75 s muestran los paneles tenues de la imagen de origen y se saltan (start_s)."
+          }
+        }
+      ]
     },
-    "history": [],
-    "generated_at": "2026-11-26T16:35:30Z",
-    "clip": "video/pitch/escenas/escena-02.mp4",
-    "duration_s": 10.0,
-    "trim_s": 9.5,
-    "status": "aprobada",
-    "review": {
-      "by": "Roberto José Guerrero",
-      "at": "2026-11-26",
-      "likeness": true,
-      "no_text": true,
-      "no_brand": true,
-      "matches_script": true,
-      "block_hash": "b32e983aa429a59e",
-      "notes": "Paneles holográficos con iconos, sin texto legible."
-    }
-  },
-  {
-    "id": "escena-03",
-    "block": "solucion",
-    "prompt_file": "video/pitch/prompts/escena-03.json",
-    "image": "docs/referencias/avatar_ingenio_manuelita.png",
-    "seed": 2028,
-    "provider": "higgsfield",
-    "model": "sand/magi-2/image-to-video",
-    "model_revision": null,
-    "request_seconds": 10,
-    "resolution": "1080x1920",
-    "job": {
-      "request_id": "01a218b6-4d7b-7f55-8c04-61da09ad93a8",
-      "status": "completed",
-      "submitted_at": "2026-11-26T16:35:30Z",
-      "finished_at": "2026-11-26T16:42:54Z",
-      "seconds": 10,
-      "cost_usd": 0.8,
-      "idempotency_key": "escena-03:bf9560331a4755f3:2028",
-      "error": null
+    {
+      "id": "escena-03",
+      "block": "solucion",
+      "shots": [
+        {
+          "id": "plano-03a",
+          "mode": "reference",
+          "source": "reference",
+          "prompt_file": "video/pitch/prompts/plano-03a.json",
+          "seed": 3004,
+          "request_seconds": 8,
+          "model": "kling4",
+          "job": {
+            "request_id": "01a21a2d-e6c6-7e4a-82f4-8e8bd52bae46",
+            "status": "completed",
+            "submitted_at": "2026-11-26T23:25:45Z",
+            "finished_at": "2026-11-26T23:29:34Z",
+            "seconds": 8,
+            "cost_usd": 1.52,
+            "idempotency_key": "plano-03a:43329894dff94d66:3004:kling4",
+            "slug": "kling-video/v4.0/reference-to-video",
+            "error": null
+          },
+          "history": [],
+          "generated_at": "2026-11-26T23:29:34Z",
+          "clip": "video/pitch/planos/plano-03a.mp4",
+          "duration_s": 8.04,
+          "status": "aprobada",
+          "review": {
+            "by": "Roberto José Guerrero",
+            "at": "2026-11-26",
+            "likeness": true,
+            "no_text": true,
+            "no_brand": true,
+            "matches_script": true,
+            "cue_shown": true,
+            "anchors": {
+              "solucion.visitantes": 2.0,
+              "solucion.planta": 4.75
+            },
+            "events": {
+              "solucion.clientes": 3.0,
+              "solucion.colaboradores": 3.25,
+              "solucion.proveedores": 4.25
+            },
+            "accepted": [
+              "solucion.colaboradores",
+              "solucion.proveedores"
+            ],
+            "block_hash": "43329894dff94d66",
+            "notes": "Llegan las cinco personas: visitante con cámara y mochila (izq.), cliente de traje (izq.), colaboradora de camisa azul (der.), proveedor con caja (izq.) y operario con casco y chaleco (der.). Kling adelantó a la colaboradora y concentró las llegadas en 1,75–4,75 s; se sincronizan la primera y la última, y el integrante aceptó el desfase de colaboradora (≈ -0,9 s) y proveedor (≈ +1,1 s) el 2026-11-26."
+          }
+        },
+        {
+          "id": "plano-03b",
+          "mode": "image",
+          "source": "frame:plano-03a",
+          "starts_at": "solucion.aliados",
+          "prompt_file": "video/pitch/prompts/plano-03b.json",
+          "seed": 3005,
+          "request_seconds": 8,
+          "model": "kling4",
+          "job": {
+            "request_id": "01a21a3f-b18e-7cc3-b5d4-35e984c75890",
+            "status": "completed",
+            "submitted_at": "2026-11-26T23:45:07Z",
+            "finished_at": "2026-11-26T23:50:53Z",
+            "seconds": 8,
+            "cost_usd": 1.52,
+            "idempotency_key": "plano-03b:43329894dff94d66:3005:kling4",
+            "slug": "kling-video/v4.0/image-to-video",
+            "error": null
+          },
+          "history": [],
+          "generated_at": "2026-11-26T23:50:53Z",
+          "clip": "video/pitch/planos/plano-03b.mp4",
+          "duration_s": 8.04,
+          "status": "aprobada",
+          "review": {
+            "by": "Roberto José Guerrero",
+            "at": "2026-11-26",
+            "likeness": true,
+            "no_text": true,
+            "no_brand": true,
+            "matches_script": true,
+            "cue_shown": true,
+            "anchors": {
+              "solucion.aliados": 0.5
+            },
+            "block_hash": "43329894dff94d66",
+            "notes": "Parte del último cuadro de 03a: las mismas cinco personas. La presentadora gira la tablet hacia la cámara (pantalla verde abstracta, sin texto) y termina en primer plano sonriendo."
+          }
+        }
+      ]
     },
-    "history": [],
-    "generated_at": "2026-11-26T16:42:54Z",
-    "clip": "video/pitch/escenas/escena-03.mp4",
-    "duration_s": 10.0,
-    "trim_s": 9.5,
-    "status": "aprobada",
-    "review": {
-      "by": "Roberto José Guerrero",
-      "at": "2026-11-26",
-      "likeness": true,
-      "no_text": true,
-      "no_brand": true,
-      "matches_script": true,
-      "block_hash": "bf9560331a4755f3",
-      "notes": "La tablet muestra seudotexto ilegible de interfaz, sin palabras legibles ni logotipos."
-    }
-  },
-  {
-    "id": "escena-04",
-    "block": "diferencia",
-    "prompt_file": "video/pitch/prompts/escena-04.json",
-    "image": "docs/referencias/avatar_ingenio_manuelita.png",
-    "seed": 2029,
-    "provider": "higgsfield",
-    "model": "sand/magi-2/image-to-video",
-    "model_revision": null,
-    "request_seconds": 10,
-    "resolution": "1080x1920",
-    "job": {
-      "request_id": "01a218bd-135d-77ee-88a9-d1d24db10ae2",
-      "status": "completed",
-      "submitted_at": "2026-11-26T16:42:54Z",
-      "finished_at": "2026-11-26T16:56:37Z",
-      "seconds": 10,
-      "cost_usd": 0.8,
-      "idempotency_key": "escena-04:7376399811513509:2029",
-      "error": null
+    {
+      "id": "escena-04",
+      "block": "diferencia",
+      "shots": [
+        {
+          "id": "plano-04",
+          "mode": "reference",
+          "source": "reference",
+          "prompt_file": "video/pitch/prompts/plano-04.json",
+          "seed": 3006,
+          "request_seconds": 6,
+          "model": "kling4",
+          "job": {
+            "request_id": "01a21a31-662e-7651-ac3d-27618dc77928",
+            "status": "completed",
+            "submitted_at": "2026-11-26T23:29:34Z",
+            "finished_at": "2026-11-26T23:31:40Z",
+            "seconds": 6,
+            "cost_usd": 1.14,
+            "idempotency_key": "plano-04:7376399811513509:3006:kling4",
+            "slug": "kling-video/v4.0/reference-to-video",
+            "error": null
+          },
+          "history": [],
+          "generated_at": "2026-11-26T23:31:40Z",
+          "clip": "video/pitch/planos/plano-04.mp4",
+          "duration_s": 6.04,
+          "status": "aprobada",
+          "review": {
+            "by": "Roberto José Guerrero",
+            "at": "2026-11-26",
+            "likeness": true,
+            "no_text": true,
+            "no_brand": true,
+            "matches_script": true,
+            "cue_shown": true,
+            "anchors": {},
+            "block_hash": "7376399811513509",
+            "notes": "Oficina ejecutiva genérica: redacta en el portátil, revisa un documento y mira a cámara sonriendo. Sin letreros; la tapa del portátil solo tiene un círculo liso, sin logotipo."
+          }
+        }
+      ]
     },
-    "history": [],
-    "generated_at": "2026-11-26T16:56:37Z",
-    "clip": "video/pitch/escenas/escena-04.mp4",
-    "duration_s": 10.0,
-    "trim_s": 9.5,
-    "status": "aprobada",
-    "review": {
-      "by": "Roberto José Guerrero",
-      "at": "2026-11-26",
-      "likeness": true,
-      "no_text": true,
-      "no_brand": true,
-      "matches_script": true,
-      "block_hash": "7376399811513509",
-      "notes": "Se parece a la referencia; sin texto ni marcas."
-    }
-  },
-  {
-    "id": "escena-05",
-    "block": "uso",
-    "prompt_file": "video/pitch/prompts/escena-05.json",
-    "image": "docs/referencias/avatar_ingenio_manuelita.png",
-    "seed": 2030,
-    "provider": "higgsfield",
-    "model": "sand/magi-2/image-to-video",
-    "model_revision": null,
-    "request_seconds": 10,
-    "resolution": "1080x1920",
-    "job": {
-      "request_id": "01a218c9-a37b-72d9-902c-7036c83fe54d",
-      "status": "completed",
-      "submitted_at": "2026-11-26T16:56:37Z",
-      "finished_at": "2026-11-26T17:11:01Z",
-      "seconds": 10,
-      "cost_usd": 0.8,
-      "idempotency_key": "escena-05:094ca1d44ebc5216:2030",
-      "error": null
+    {
+      "id": "escena-05",
+      "block": "uso",
+      "shots": [
+        {
+          "id": "plano-05",
+          "mode": "image",
+          "source": "reference",
+          "prompt_file": "video/pitch/prompts/plano-05.json",
+          "seed": 3007,
+          "request_seconds": 8,
+          "model": "kling4",
+          "job": {
+            "request_id": "01a21a33-50df-797c-90dd-c01064cfca2c",
+            "status": "completed",
+            "submitted_at": "2026-11-26T23:31:40Z",
+            "finished_at": "2026-11-26T23:39:56Z",
+            "seconds": 8,
+            "cost_usd": 1.52,
+            "idempotency_key": "plano-05:1fc7be0554a41e50:3007:kling4",
+            "slug": "kling-video/v4.0/image-to-video",
+            "error": null
+          },
+          "history": [],
+          "generated_at": "2026-11-26T23:39:56Z",
+          "clip": "video/pitch/planos/plano-05.mp4",
+          "duration_s": 8.04,
+          "status": "aprobada",
+          "review": {
+            "by": "Roberto José Guerrero",
+            "at": "2026-11-26",
+            "likeness": true,
+            "no_text": true,
+            "no_brand": true,
+            "matches_script": true,
+            "cue_shown": true,
+            "anchors": {},
+            "start_s": 0.6,
+            "block_hash": "1fc7be0554a41e50",
+            "notes": "Camina entre la caña y presenta con la mano abierta hacia la derecha, donde van las tarjetas de perfil. Se salta el primer 0,6 s con los paneles de la imagen de origen."
+          }
+        }
+      ]
     },
-    "history": [],
-    "generated_at": "2026-11-26T17:11:01Z",
-    "clip": "video/pitch/escenas/escena-05.mp4",
-    "duration_s": 10.0,
-    "trim_s": 9.5,
-    "status": "aprobada",
-    "review": {
-      "by": "Roberto José Guerrero",
-      "at": "2026-11-26",
-      "likeness": true,
-      "no_text": true,
-      "no_brand": true,
-      "matches_script": true,
-      "block_hash": "094ca1d44ebc5216",
-      "notes": "Paneles holográficos con iconos, sin texto legible."
+    {
+      "id": "escena-06",
+      "block": "accion",
+      "shots": [
+        {
+          "id": "plano-06",
+          "mode": "image",
+          "source": "frame:plano-03a",
+          "prompt_file": "video/pitch/prompts/plano-06.json",
+          "seed": 3008,
+          "request_seconds": 8,
+          "model": "kling4",
+          "job": {
+            "request_id": "01a21a44-e975-7ee5-bcb2-1ddbfc348bf5",
+            "status": "completed",
+            "submitted_at": "2026-11-26T23:50:53Z",
+            "finished_at": "2026-11-27T01:59:42Z",
+            "seconds": 8,
+            "cost_usd": 1.52,
+            "idempotency_key": "plano-06:d3687d3ec74f8c0a:3008:kling4",
+            "slug": "kling-video/v4.0/image-to-video",
+            "error": null
+          },
+          "history": [],
+          "generated_at": "2026-11-27T01:59:42Z",
+          "clip": "video/pitch/planos/plano-06.mp4",
+          "duration_s": 8.04,
+          "status": "aprobada",
+          "review": {
+            "by": "Roberto José Guerrero",
+            "at": "2026-11-26",
+            "likeness": true,
+            "no_text": true,
+            "no_brand": true,
+            "matches_script": true,
+            "cue_shown": true,
+            "anchors": {
+              "accion.despedida": 2.1
+            },
+            "block_hash": "d3687d3ec74f8c0a",
+            "notes": "Las cinco personas y la presentadora se despiden con la mano mientras la cámara se aleja a un plano general del cañaduzal. Empiezan a saludar hacia 1,5 s del clip; el ancla va en 2,1 s, con el saludo en curso, para no ralentizar por debajo de 0,7×."
+          }
+        }
+      ]
     }
-  },
-  {
-    "id": "escena-06",
-    "block": "accion",
-    "prompt_file": "video/pitch/prompts/escena-06.json",
-    "image": "docs/referencias/avatar_ingenio_manuelita.png",
-    "seed": 2031,
-    "provider": "higgsfield",
-    "model": "sand/magi-2/image-to-video",
-    "model_revision": null,
-    "request_seconds": 10,
-    "resolution": "1080x1920",
-    "job": {
-      "request_id": "01a218d6-d3c8-7f10-ba90-c5870777a503",
-      "status": "completed",
-      "submitted_at": "2026-11-26T17:11:01Z",
-      "finished_at": "2026-11-26T17:26:27Z",
-      "seconds": 10,
-      "cost_usd": 0.8,
-      "idempotency_key": "escena-06:d3687d3ec74f8c0a:2031",
-      "error": null
-    },
-    "history": [],
-    "generated_at": "2026-11-26T17:26:27Z",
-    "clip": "video/pitch/escenas/escena-06.mp4",
-    "duration_s": 10.0,
-    "trim_s": 9.5,
-    "status": "aprobada",
-    "review": {
-      "by": "Roberto José Guerrero",
-      "at": "2026-11-26",
-      "likeness": true,
-      "no_text": true,
-      "no_brand": true,
-      "matches_script": true,
-      "block_hash": "d3687d3ec74f8c0a",
-      "notes": "Se parece a la referencia; sin texto ni marcas."
-    }
-  }
-]
+  ]
+}

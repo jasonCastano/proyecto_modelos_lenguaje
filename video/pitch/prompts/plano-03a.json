@@ -1,0 +1,18 @@
+{
+  "shot": "plano-03a",
+  "subject": "A Latin American woman in her thirties with long wavy dark hair, a green blazer over a white shirt and beige trousers, holding a silver tablet; the same person as the reference image. She stands in the center of the frame.",
+  "setting": "Sugarcane field in the Cauca river valley in the morning, green mountains behind, an industrial sugar mill with a tall chimney far in the background.",
+  "action": "She stands alone for the first two seconds. Then, in quick succession, about one person every second, five people walk briskly into the frame and stop next to her: first three enter from the left side, then two enter from the right side. By the sixth second all five stand beside her, forming a friendly group with her in the middle; they stay still and smile for the rest of the shot.",
+  "people": "Five allies, all clearly different and none resembling a real person: (1) visitor: young woman with a small backpack and a camera on a strap; (2) client: middle-aged man in a dark business suit; (3) supplier: man in a denim shirt carrying a cardboard box; (4) employee: woman in a light-blue work shirt with a notebook; (5) plant team member: man with a white hard hat and a high-visibility vest.",
+  "camera": "Static wide shot, eye level.",
+  "style": "Photorealistic, natural warm sunlight, shallow depth of field, calm documentary tone, vertical 9:16 framing.",
+  "audio": "Soft field ambience: light wind through the cane leaves and distant birds. No music. No speech.",
+  "constraints": [
+    "No text, letters, numbers or logos anywhere in the frame.",
+    "No brand names, no company signage, no uniforms or ID badges of any company.",
+    "Nobody speaks; lips stay closed or smiling.",
+    "Keep her face, hair and clothing consistent with the reference image.",
+    "People 1 to 3 enter from the left, people 4 and 5 from the right, in that order."
+  ],
+  "duration_s": 8
+}

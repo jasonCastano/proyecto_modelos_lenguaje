@@ -569,6 +569,47 @@ Prompts **de generación de video**, no del agente. `agent.md` y `profiles.md` n
   `aprobada`; no hubo regeneraciones. Detalle en `video/pitch/escenas.json` (`job` y `review` por escena). La alternativa con los pesos abiertos
   requiere 8× H100/H200 (`video/pitch/RUNBOOK.md`). Cada regeneración (nueva semilla o prompt) se anota aquí con su motivo.
 
+### 3.25 Video pitch v2: guion 1.2.0, momentos sincronizados y prompts por plano (2026-11-26, spec 029)
+
+Prompts **de generación de video**, no del agente. Pedido del integrante en `video/pitch/cambios.md`.
+
+- **Guion 1.2.0**:
+  - la escena 03 suma «así, los aliados ahorran tiempo, toman decisiones con mayor confianza y evitan depender de
+    información desactualizada o sin respaldo»;
+  - sin pasos numerados en pantalla;
+  - `pause_s = 0.5`;
+  - 23 momentos `[[block.cue]]`: 9 de plano y 14 gráficos.
+- **Modelo**: MAGI-2 respondió `403 model_unavailable` en Higgsfield desde la tarde del 2026-11-26. Por decisión
+  del integrante, los planos se generan con **Kling 4.0**:
+  - `image-to-video` desde la referencia en 1080×1920, `reference-to-video` con `@image_1` y `text-to-video`;
+  - Kling no admite semilla: se registra, pero no se envía.
+- **Prompts por plano** (`video/pitch/prompts/plano-*.json`):
+  - mismos campos que la 028, más `people` en los planos con las cinco personas (visitante con mochila y cámara,
+    cliente de traje, proveedor con caja, colaboradora con camisa de trabajo, operario con casco y chaleco);
+  - restricciones comunes: sin texto, logotipos, uniformes ni carnés, y nadie habla;
+  - la oficina de la escena 04 es genérica, sin letreros (FR-014);
+  - 02 y 05 piden «sin paneles flotantes», porque los iconos y los perfiles van en el montaje.
+
+| Plano | Modo | Origen | Segundos | Semilla |
+|---|---|---|---|---|
+| `plano-01a` (trapiche) | text | — | 5 | 3001 |
+| `plano-01b` (entra la presentadora) | reference | referencia | 6 | 3002 |
+| `plano-02` | image | referencia | 9 | 3003 |
+| `plano-03a` (llegan las cinco personas) | reference | referencia | 8 | 3004 |
+| `plano-03b` (gira la tablet) | image | último cuadro de 03a | 8 | 3005 |
+| `plano-04` (oficina) | reference | referencia | 6 | 3006 |
+| `plano-05` | image | referencia | 8 | 3007 |
+| `plano-06` (despedida) | image | último cuadro de 03a | 8 | 3008 |
+
+- **Ajustes antes de generar**:
+  - el reconocedor oyó «un siente» por «un sí antes», así que `diferencia.confirmar` se ancla en «pide» con
+    `offset_s = 0.36`;
+  - `plano-03a` pide que las cinco personas lleguen en unos 4 s, una por segundo, porque sus palabras caen entre
+    2,7 y 6,1 s;
+  - `plano-03b` sube a 8 s.
+- **Revisión**: `plano-01b` entra por la izquierda entre la caña, no por la derecha; el integrante lo aceptó.
+- **Estado**: ver `video/pitch/escenas.json` (`job`, `review` y `anchors` por plano).
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

@@ -1,0 +1,755 @@
+{
+  "script_version": "1.2.0",
+  "pause_s": 0.5,
+  "seconds": 52.12,
+  "blocks": {
+    "gancho": {
+      "narration_s": 7.84,
+      "scene_s": 8.34,
+      "start_s": 0.0,
+      "narration_hash": "30ea3ec65037e5ee",
+      "words": [
+        {
+          "w": "Manuelita",
+          "start": 0.0,
+          "end": 0.58
+        },
+        {
+          "w": "nació",
+          "start": 0.58,
+          "end": 0.88
+        },
+        {
+          "w": "en",
+          "start": 0.88,
+          "end": 1.04
+        },
+        {
+          "w": "1864",
+          "start": 1.04,
+          "end": 2.18
+        },
+        {
+          "w": "como",
+          "start": 2.18,
+          "end": 2.58
+        },
+        {
+          "w": "un",
+          "start": 2.58,
+          "end": 2.7
+        },
+        {
+          "w": "trapiche",
+          "start": 2.7,
+          "end": 3.04
+        },
+        {
+          "w": "para",
+          "start": 3.04,
+          "end": 3.32
+        },
+        {
+          "w": "producir",
+          "start": 3.32,
+          "end": 3.74
+        },
+        {
+          "w": "azúcar.",
+          "start": 3.74,
+          "end": 4.1
+        },
+        {
+          "w": "Valeria",
+          "start": 4.4,
+          "end": 4.76
+        },
+        {
+          "w": "te",
+          "start": 4.76,
+          "end": 5.02
+        },
+        {
+          "w": "ayuda",
+          "start": 5.02,
+          "end": 5.2
+        },
+        {
+          "w": "a",
+          "start": 5.2,
+          "end": 5.38
+        },
+        {
+          "w": "conocerla",
+          "start": 5.38,
+          "end": 5.82
+        },
+        {
+          "w": "como",
+          "start": 5.82,
+          "end": 5.98
+        },
+        {
+          "w": "una",
+          "start": 5.98,
+          "end": 6.14
+        },
+        {
+          "w": "gente",
+          "start": 6.14,
+          "end": 6.36
+        },
+        {
+          "w": "que",
+          "start": 6.36,
+          "end": 6.56
+        },
+        {
+          "w": "cita",
+          "start": 6.56,
+          "end": 6.82
+        },
+        {
+          "w": "fuentes.",
+          "start": 6.82,
+          "end": 7.16
+        }
+      ],
+      "cues": {
+        "gancho.trapiche": 2.7,
+        "gancho.valeria": 4.4
+      }
+    },
+    "problema": {
+      "narration_s": 7.92,
+      "scene_s": 8.42,
+      "start_s": 8.34,
+      "narration_hash": "c85c2b1724a64879",
+      "words": [
+        {
+          "w": "Su",
+          "start": 0.0,
+          "end": 0.26
+        },
+        {
+          "w": "información",
+          "start": 0.26,
+          "end": 0.6
+        },
+        {
+          "w": "pública",
+          "start": 0.6,
+          "end": 1.18
+        },
+        {
+          "w": "está",
+          "start": 1.18,
+          "end": 1.42
+        },
+        {
+          "w": "repartida",
+          "start": 1.42,
+          "end": 1.94
+        },
+        {
+          "w": "en",
+          "start": 1.94,
+          "end": 2.08
+        },
+        {
+          "w": "informes,",
+          "start": 2.08,
+          "end": 2.62
+        },
+        {
+          "w": "noticias",
+          "start": 2.9,
+          "end": 3.24
+        },
+        {
+          "w": "y",
+          "start": 3.24,
+          "end": 3.46
+        },
+        {
+          "w": "páginas",
+          "start": 3.46,
+          "end": 3.88
+        },
+        {
+          "w": "de",
+          "start": 3.88,
+          "end": 3.98
+        },
+        {
+          "w": "cuatro",
+          "start": 3.98,
+          "end": 4.24
+        },
+        {
+          "w": "plataformas,",
+          "start": 4.24,
+          "end": 4.98
+        },
+        {
+          "w": "caña,",
+          "start": 5.24,
+          "end": 5.42
+        },
+        {
+          "w": "palma,",
+          "start": 5.64,
+          "end": 5.94
+        },
+        {
+          "w": "acuicultura",
+          "start": 6.18,
+          "end": 6.64
+        },
+        {
+          "w": "y",
+          "start": 6.64,
+          "end": 6.82
+        },
+        {
+          "w": "frutas.",
+          "start": 6.82,
+          "end": 7.3
+        }
+      ],
+      "cues": {
+        "problema.informes": 2.08,
+        "problema.noticias": 2.9,
+        "problema.cana": 5.24,
+        "problema.palma": 5.64,
+        "problema.acuicultura": 6.18,
+        "problema.frutas": 6.82
+      }
+    },
+    "solucion": {
+      "narration_s": 14.32,
+      "scene_s": 14.82,
+      "start_s": 16.76,
+      "narration_hash": "97950477e9162c0e",
+      "words": [
+        {
+          "w": "Valeria",
+          "start": 0.0,
+          "end": 0.52
+        },
+        {
+          "w": "reúne",
+          "start": 0.52,
+          "end": 0.92
+        },
+        {
+          "w": "esa",
+          "start": 0.92,
+          "end": 1.1
+        },
+        {
+          "w": "información",
+          "start": 1.1,
+          "end": 1.52
+        },
+        {
+          "w": "en",
+          "start": 1.52,
+          "end": 1.82
+        },
+        {
+          "w": "un",
+          "start": 1.82,
+          "end": 1.92
+        },
+        {
+          "w": "solo",
+          "start": 1.92,
+          "end": 2.08
+        },
+        {
+          "w": "agente",
+          "start": 2.08,
+          "end": 2.48
+        },
+        {
+          "w": "para",
+          "start": 2.48,
+          "end": 2.72
+        },
+        {
+          "w": "visitantes,",
+          "start": 2.72,
+          "end": 3.38
+        },
+        {
+          "w": "clientes,",
+          "start": 3.68,
+          "end": 4.12
+        },
+        {
+          "w": "proveedores,",
+          "start": 4.34,
+          "end": 4.84
+        },
+        {
+          "w": "colaboradores",
+          "start": 5.16,
+          "end": 5.74
+        },
+        {
+          "w": "y",
+          "start": 5.74,
+          "end": 5.98
+        },
+        {
+          "w": "el",
+          "start": 5.98,
+          "end": 6.06
+        },
+        {
+          "w": "equipo",
+          "start": 6.06,
+          "end": 6.28
+        },
+        {
+          "w": "de",
+          "start": 6.28,
+          "end": 6.46
+        },
+        {
+          "w": "planta.",
+          "start": 6.46,
+          "end": 6.88
+        },
+        {
+          "w": "Así,",
+          "start": 7.04,
+          "end": 7.3
+        },
+        {
+          "w": "los",
+          "start": 7.5,
+          "end": 7.62
+        },
+        {
+          "w": "aliados",
+          "start": 7.62,
+          "end": 7.98
+        },
+        {
+          "w": "ahorran",
+          "start": 7.98,
+          "end": 8.32
+        },
+        {
+          "w": "tiempo.",
+          "start": 8.32,
+          "end": 8.74
+        },
+        {
+          "w": "Toman",
+          "start": 8.98,
+          "end": 9.2
+        },
+        {
+          "w": "decisiones",
+          "start": 9.2,
+          "end": 9.72
+        },
+        {
+          "w": "con",
+          "start": 9.72,
+          "end": 9.82
+        },
+        {
+          "w": "mayor",
+          "start": 9.82,
+          "end": 10.08
+        },
+        {
+          "w": "confianza",
+          "start": 10.08,
+          "end": 10.66
+        },
+        {
+          "w": "y",
+          "start": 10.66,
+          "end": 10.8
+        },
+        {
+          "w": "evitan",
+          "start": 10.8,
+          "end": 11.04
+        },
+        {
+          "w": "depender",
+          "start": 11.04,
+          "end": 11.44
+        },
+        {
+          "w": "de",
+          "start": 11.44,
+          "end": 11.54
+        },
+        {
+          "w": "información",
+          "start": 11.54,
+          "end": 12.02
+        },
+        {
+          "w": "desactualizada",
+          "start": 12.02,
+          "end": 12.88
+        },
+        {
+          "w": "o",
+          "start": 12.88,
+          "end": 13.08
+        },
+        {
+          "w": "sin",
+          "start": 13.08,
+          "end": 13.24
+        },
+        {
+          "w": "respaldo.",
+          "start": 13.24,
+          "end": 13.64
+        }
+      ],
+      "cues": {
+        "solucion.visitantes": 2.72,
+        "solucion.clientes": 3.68,
+        "solucion.proveedores": 4.34,
+        "solucion.colaboradores": 5.16,
+        "solucion.planta": 6.06,
+        "solucion.aliados": 7.62
+      }
+    },
+    "diferencia": {
+      "narration_s": 5.12,
+      "scene_s": 5.62,
+      "start_s": 31.58,
+      "narration_hash": "7800d4b4111b5dd6",
+      "words": [
+        {
+          "w": "Sita",
+          "start": 0.0,
+          "end": 0.4
+        },
+        {
+          "w": "cada",
+          "start": 0.4,
+          "end": 0.64
+        },
+        {
+          "w": "fuente,",
+          "start": 0.64,
+          "end": 1.08
+        },
+        {
+          "w": "calcula",
+          "start": 1.32,
+          "end": 1.68
+        },
+        {
+          "w": "las",
+          "start": 1.68,
+          "end": 1.86
+        },
+        {
+          "w": "cifras",
+          "start": 1.86,
+          "end": 2.14
+        },
+        {
+          "w": "en",
+          "start": 2.14,
+          "end": 2.34
+        },
+        {
+          "w": "código",
+          "start": 2.34,
+          "end": 2.6
+        },
+        {
+          "w": "y",
+          "start": 2.6,
+          "end": 2.88
+        },
+        {
+          "w": "te",
+          "start": 2.88,
+          "end": 2.96
+        },
+        {
+          "w": "pide",
+          "start": 2.96,
+          "end": 3.18
+        },
+        {
+          "w": "un",
+          "start": 3.18,
+          "end": 3.32
+        },
+        {
+          "w": "siente",
+          "start": 3.32,
+          "end": 3.58
+        },
+        {
+          "w": "de",
+          "start": 3.58,
+          "end": 3.88
+        },
+        {
+          "w": "guardar",
+          "start": 3.88,
+          "end": 4.2
+        },
+        {
+          "w": "algo.",
+          "start": 4.2,
+          "end": 4.46
+        }
+      ],
+      "cues": {
+        "diferencia.cita": 0.64,
+        "diferencia.calculo": 1.86,
+        "diferencia.confirmar": 3.32
+      }
+    },
+    "uso": {
+      "narration_s": 7.12,
+      "scene_s": 7.62,
+      "start_s": 37.2,
+      "narration_hash": "b608906a20225fd1",
+      "words": [
+        {
+          "w": "Elige",
+          "start": 0.0,
+          "end": 0.38
+        },
+        {
+          "w": "tu",
+          "start": 0.38,
+          "end": 0.56
+        },
+        {
+          "w": "perfil,",
+          "start": 0.56,
+          "end": 0.94
+        },
+        {
+          "w": "haz",
+          "start": 1.3,
+          "end": 1.38
+        },
+        {
+          "w": "tu",
+          "start": 1.38,
+          "end": 1.5
+        },
+        {
+          "w": "pregunta",
+          "start": 1.5,
+          "end": 1.86
+        },
+        {
+          "w": "y",
+          "start": 1.86,
+          "end": 2.04
+        },
+        {
+          "w": "revisa",
+          "start": 2.04,
+          "end": 2.34
+        },
+        {
+          "w": "las",
+          "start": 2.34,
+          "end": 2.54
+        },
+        {
+          "w": "fuentes.",
+          "start": 2.54,
+          "end": 2.9
+        },
+        {
+          "w": "Si",
+          "start": 3.24,
+          "end": 3.3
+        },
+        {
+          "w": "planificas",
+          "start": 3.3,
+          "end": 3.86
+        },
+        {
+          "w": "producción,",
+          "start": 3.86,
+          "end": 4.34
+        },
+        {
+          "w": "abre",
+          "start": 4.7,
+          "end": 4.84
+        },
+        {
+          "w": "la",
+          "start": 4.84,
+          "end": 4.98
+        },
+        {
+          "w": "consola",
+          "start": 4.98,
+          "end": 5.3
+        },
+        {
+          "w": "con",
+          "start": 5.3,
+          "end": 5.54
+        },
+        {
+          "w": "datos",
+          "start": 5.54,
+          "end": 5.82
+        },
+        {
+          "w": "sintéticos.",
+          "start": 5.82,
+          "end": 6.4
+        }
+      ],
+      "cues": {
+        "uso.visitante": 0.56,
+        "uso.cliente": 0.91,
+        "uso.proveedor": 1.26,
+        "uso.colaborador": 1.61,
+        "uso.planificador": 1.96
+      }
+    },
+    "accion": {
+      "narration_s": 6.8,
+      "scene_s": 7.3,
+      "start_s": 44.82,
+      "narration_hash": "dd2f4717316e1bd1",
+      "words": [
+        {
+          "w": "Con",
+          "start": 0.0,
+          "end": 0.28
+        },
+        {
+          "w": "o",
+          "start": 0.28,
+          "end": 0.36
+        },
+        {
+          "w": "ser",
+          "start": 0.36,
+          "end": 0.5
+        },
+        {
+          "w": "manualita",
+          "start": 0.5,
+          "end": 1.04
+        },
+        {
+          "w": "ya",
+          "start": 1.04,
+          "end": 1.24
+        },
+        {
+          "w": "no",
+          "start": 1.24,
+          "end": 1.38
+        },
+        {
+          "w": "es",
+          "start": 1.38,
+          "end": 1.48
+        },
+        {
+          "w": "buscar,",
+          "start": 1.48,
+          "end": 1.8
+        },
+        {
+          "w": "es",
+          "start": 2.08,
+          "end": 2.18
+        },
+        {
+          "w": "pregunta.",
+          "start": 2.18,
+          "end": 2.6
+        },
+        {
+          "w": "Entra",
+          "start": 2.96,
+          "end": 3.24
+        },
+        {
+          "w": "a",
+          "start": 3.24,
+          "end": 3.32
+        },
+        {
+          "w": "Valeria,",
+          "start": 3.32,
+          "end": 3.7
+        },
+        {
+          "w": "elige",
+          "start": 4.04,
+          "end": 4.22
+        },
+        {
+          "w": "tu",
+          "start": 4.22,
+          "end": 4.38
+        },
+        {
+          "w": "perfil",
+          "start": 4.38,
+          "end": 4.76
+        },
+        {
+          "w": "y",
+          "start": 4.76,
+          "end": 4.98
+        },
+        {
+          "w": "haz",
+          "start": 4.98,
+          "end": 5.08
+        },
+        {
+          "w": "tu",
+          "start": 5.08,
+          "end": 5.18
+        },
+        {
+          "w": "primera",
+          "start": 5.18,
+          "end": 5.44
+        },
+        {
+          "w": "pregunta",
+          "start": 5.44,
+          "end": 5.92
+        },
+        {
+          "w": "hoy.",
+          "start": 5.92,
+          "end": 6.16
+        }
+      ],
+      "cues": {
+        "accion.despedida": 2.96
+      }
+    }
+  }
+}

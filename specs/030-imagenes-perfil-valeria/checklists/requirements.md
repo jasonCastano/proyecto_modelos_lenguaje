@@ -36,3 +36,7 @@
 - FR-003 resuelto en consecuencia: foto fotorrealista con la presentadora tal como está en la referencia, porque
   un estilo ilustrado requeriría un modelo generativo.
 - La spec nombra skills y Git LFS porque el integrante los pidió o son reglas de la constitución.
+- Ampliación US6 (audios de los stickers, 2026-11-27) revisada contra todos los ítems: pasa. Nombra la voz de la
+  spec 016 y su licencia porque el integrante la pidió y la constitución exige procedencia; el formato exacto
+  del audio queda para el plan (FR-021 se expresa como resultado: «WhatsApp lo reproduce sin convertirlo»).
+  Sin marcadores [NEEDS CLARIFICATION]: el sticker del pulgar no lleva audio porque no tiene frase.

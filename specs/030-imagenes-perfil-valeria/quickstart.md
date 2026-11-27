@@ -46,3 +46,38 @@ Resultado esperado: `ok: true` con las cuatro piezas aprobadas (SC-001), costo 0
 
 Subir cada pieza a su plataforma según `docs/whatsapp/README.md` y pegar el texto de «Info» o descripción con la
 declaración de IA (obligatoria en el texto del perfil). Validar SC-002 con 5 personas.
+
+## E. Audios de los stickers (US6)
+
+Requisitos:
+- Voz de la spec 016 lista: `uv run python -m proyecto_modelos_lenguaje.voice --check` responde «disponible». La
+  primera vez necesita `HF_TOKEN` y las condiciones del modelo aceptadas en Hugging Face.
+- Con el modelo ya en la caché, todo corre sin red.
+
+```bash
+HF_HUB_OFFLINE=1 uv run python scripts/whatsapp_images.py render --piece audios --json
+```
+
+Resultado esperado:
+- ocho `.ogg` en `docs/whatsapp/borrador/audios/`;
+- cada uno ≤ 5 s, con un RMS cerca de −20 dBFS y un pico ≤ −1 dBFS.
+
+Revisión humana:
+1. Escuchar cada borrador sin mirar el texto y anotar la frase que se oye: debe coincidir en los 8 casos (SC-008).
+2. Comprobar que la voz es la del chat de la web, que se entiende la entonación de pregunta y de exclamación, y
+   que no hay cortes ni ruido.
+3. Enviar uno a un chat de prueba de WhatsApp: debe reproducirse como nota de voz sin convertirlo (SC-009).
+
+Aprobar y verificar:
+
+```bash
+uv run python scripts/whatsapp_images.py approve audio-hola --by "Roberto José Guerrero"   # uno por audio
+uv run python scripts/whatsapp_images.py check --json
+LANGSMITH_TRACING=false uv run pytest tests/unit/test_whatsapp_images.py
+make check
+```
+
+Resultado esperado:
+- 8 audios con ficha en `docs/whatsapp/stickers/audios/` (SC-007);
+- `check` con `ok: true`;
+- la suite en verde sin modelo ni red.

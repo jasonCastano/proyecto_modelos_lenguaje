@@ -106,10 +106,39 @@ insignia redonda y borde blanco); no reproduce el personaje de la imagen de esti
   - En WhatsApp Web, como sticker personalizado: se sube cada `.webp`.
   - El bot puede enviarlos como mensaje de tipo sticker si el canal lo admite.
 
+## Audios de los stickers (`stickers/audios/`)
+
+La frase de cada sticker dicha por Valer-IA, con la misma voz del chat de la web (spec 016, voz «Rebeca»). El
+pulgar no tiene frase, así que no tiene audio.
+
+| Archivo | Frase | Sticker | Duración |
+|---|---|---|---|
+| `valeria-bienvenido.ogg` | ¡Bienvenido! | `valeria-bienvenido.webp` | 0,97 s |
+| `valeria-gracias-confianza.ogg` | ¡Gracias por confiar en nosotros! | `valeria-gracias-confianza.webp` | 1,63 s |
+| `valeria-consulta.ogg` | ¿Cuál es tu consulta? | `valeria-consulta.webp` | 1,22 s |
+| `valeria-hola.ogg` | Hola | `valeria-hola.webp` | 0,62 s |
+| `valeria-lindo-dia.ogg` | Lindo día | `valeria-lindo-dia.webp` | 0,88 s |
+| `valeria-gracias.ogg` | ¡Gracias! | `valeria-gracias.webp` | 0,91 s |
+| `valeria-pensando.ogg` | Estoy pensando | `valeria-pensando.webp` | 1,04 s |
+| `valeria-listo.ogg` | ¡Listo! | `valeria-listo.webp` | 0,75 s |
+
+- **Formato**: OGG/Opus, mono, 48 kHz, ≤ 5 s, con el volumen igualado entre los ocho. Es el formato de las notas de
+  voz de WhatsApp.
+- **Cómo usarlos**:
+  - Como nota de voz: se envía el sticker y después su audio.
+  - Como sticker con sonido: se une el audio a la animación en un video corto y se convierte con «Crear» en
+    WhatsApp, donde la función esté disponible. Eso queda fuera de esta feature.
+- **Producirlos de nuevo**: `HF_HUB_OFFLINE=1 uv run python scripts/whatsapp_images.py render --piece audios`, luego
+  escucharlos en `borrador/audios/` y publicar con `approve audio-<nombre> --by "…"`. Necesita el modelo de voz de
+  la spec 016 en la caché.
+- **Atribución y licencia**: voz sintetizada con Phonon (Gradium, `gradium/phonon-40m-es`). El modelo y las voces
+  son **CC BY-NC 4.0**: solo uso académico, no comercial. Cada audio lleva su ficha con la licencia y la
+  atribución.
+
 ## Reglas comunes
 
 - La misma presentadora y la misma paleta.
 - Sin la marca de Manuelita.
 - Texto exacto compuesto en el diseño.
 - Sin cifras dibujadas: las pone el optimizador.
-- Ficha de origen y aprobación humana para cada pieza.
+- Ficha de origen y aprobación humana para cada pieza y cada audio.

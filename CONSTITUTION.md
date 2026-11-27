@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 2.6.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
+**Versión**: 2.7.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -969,7 +969,11 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
   en la imagen. Las tarjetas del bot (`docs/whatsapp/tarjetas/`) siguen el mismo sistema y la plantilla de
   planificación NO DEBE llevar cifras. Los stickers (`docs/whatsapp/stickers/`) son una ilustración
   vectorial propia de Valer-IA dibujada en código (`fuente/personaje.js`), sin modelos generativos; pueden
-  tomar el estilo de otra obra, pero NO DEBEN reproducir sus personajes. Cada pieza
+  tomar el estilo de otra obra, pero NO DEBEN reproducir sus personajes. Los audios de los stickers
+  (`docs/whatsapp/stickers/audios/`, spec 030 US6, ADR 0036) DEBEN usar solo la voz oficial del agente (Phonon,
+  spec 016), sintetizada en local y sin costo, sin clonar ni imitar voces reales; son OGG/Opus de 5 s como
+  máximo, con el texto exacto de su sticker, y su ficha DEBE llevar la licencia CC BY-NC 4.0 y la atribución
+  a Phonon (uso académico, no comercial). Cada pieza
   DEBE tener ficha (referencia, tipografías y licencias, costo 0) y la aprobación de un integrante
   (`approve --by`); `check` lo verifica.
 - El uso de asistentes de IA se declara y se verifica; el equipo asume la responsabilidad del código y de las
@@ -1002,6 +1006,7 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 | 2.4.0 | 2026-11-26 | **MINOR**: pitch v2 sincronizado (spec 029, ADR 0033): escenas por planos con momentos ligados a palabras (faster-whisper local), gráficos propios del montaje y reajuste acotado de planos; modelo por preferencia (MAGI-2 si responde, si no Kling 4.0, decisión del integrante tras el `403 model_unavailable` de MAGI-2 en Higgsfield); borrador y publicación que conservan la v1 hasta el chequeo (§3.7 y §10). Requiere la aprobación de ambos integrantes. |
 | 2.5.0 | 2026-11-27 | **MINOR**: imágenes de perfil de Valer-IA (spec 030, ADR 0034): foto de perfil y portadas de WhatsApp, LinkedIn y Facebook compuestas a partir de la imagen de referencia sintética, sin modelos generativos y sin costo, con la declaración de IA en el texto del perfil de cada red, ficha y aprobación humana por pieza (§10). Requiere la aprobación de ambos integrantes. |
 | 2.6.0 | 2026-11-27 | **MINOR**: frontend profesional de Valer-IA (spec 031, ADR 0035): entrada como sitio de producto de una sección por pantalla con el video pitch en el hero; cuatro áreas con un mismo sistema (paleta de marca con los colores del logotipo, Archivo, un botón primario verde); fotos sustitutas de Wikimedia Commons con licencia libre citadas; skill `design-taste-frontend` sin copiar su kit; la consulta de los Módulos 1 y 2 pasa a la evidencia (§3.7). Requiere la aprobación de ambos integrantes. |
+| 2.7.0 | 2026-11-27 | **MINOR**: audios de los stickers de Valer-IA (spec 030 US6, ADR 0036): la frase de cada sticker con la voz oficial del agente (Phonon, spec 016), sintetizada en local y sin costo, en OGG/Opus de ≤ 5 s, con licencia CC BY-NC 4.0 y atribución en la ficha, y aprobación de un integrante por audio (§10). Requiere la aprobación de ambos integrantes. |
 | 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
@@ -1201,4 +1206,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 2.6.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
+**Versión**: 2.7.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27

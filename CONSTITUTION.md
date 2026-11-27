@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 2.3.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-26
+**Versión**: 2.4.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-26
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -286,8 +286,9 @@ uv.lock
 
 - La entrada del producto es una página React/Vite servida por FastAPI; Streamlit, Gradio y los notebooks NO DEBEN
   ser la interfaz de ninguna pantalla.
-- **Video pitch** (spec 028, ADR 0032): la entrada abre con un video de 60 s o menos que explica Valer-IA y cómo
-  usarla. Es el primer elemento; arranca sin sonido y con subtítulos en español; se salta en un paso; no se impone
+- **Video pitch** (specs 028 y 029, ADR 0032 y 0033): la entrada abre con un video de 60 s o menos que explica
+  Valer-IA y cómo usarla. Desde la v2, lo que se ve sigue a la narración: cada escena dura su narración más una
+  pausa, y los iconos y perfiles son gráficos del montaje que entran con su palabra. Es el primer elemento; arranca sin sonido y con subtítulos en español; se salta en un paso; no se impone
   dos veces en la misma sesión; con movimiento reducido no arranca solo. La web DEBE funcionar sin el video
   (portada y transcripción).
 - **Plataforma en cuatro áreas** (spec 026, ADR 0030): `/` entrada pública, `/agente` espacio de trabajo por perfil,
@@ -938,13 +939,17 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 - **Audio del visitante** (spec 023): el dictado procesa el audio en memoria y lo descarta al terminar; NO DEBE
   guardarse en disco, en `data/`, en registros ni en trazas, ni enviarse a terceros. Solo se conserva el texto
   que el visitante decide enviar. Las grabaciones de evaluación de personas son locales y no se versionan.
-- **Video generado con IA** (spec 028): el pitch se genera **una vez, fuera de la app**, con MAGI-2 por la API de
-  Higgsfield (`pml pitch generate`, con tope de gasto); la clave vive solo en `.env` y a Higgsfield solo se suben
-  la imagen sintética y los prompts de escena. Parte de un guion cuyas afirmaciones de Manuelita citan el oro. La
+- **Video generado con IA** (specs 028 y 029): el pitch se genera **una vez, fuera de la app**, por la API de
+  Higgsfield (`pml pitch generate`, con tope de gasto), con el modelo de `config/pitch.toml`: MAGI-2 si responde y,
+  si no, Kling 4.0 (`pml pitch probe` lo comprueba sin costo). Todos los planos de una versión usan el mismo
+  modelo. La clave vive solo en `.env`, y a Higgsfield solo se suben la imagen sintética, cuadros de planos ya
+  aprobados y los prompts de plano. El único texto legible del video son los subtítulos y los gráficos propios
+  del montaje, que no llevan la marca de Manuelita. Parte de un guion cuyas afirmaciones de Manuelita citan el oro. La
   entrada DEBE declarar junto al video, como texto visible, que es IA y proyecto académico, no canal oficial; el
   video no lleva rótulo grabado y solo se publica en la web. NO DEBE mostrar la marca de Manuelita ni presentar a
   la presentadora como su vocera. La imagen de referencia tiene ficha de origen y NO DEBE representar a una
-  persona real. Solo se montan escenas revisadas por una persona.
+  persona real. Solo se montan planos revisados por una persona, y la versión publicada se reemplaza solo con
+  `pml pitch publish`, tras el chequeo.
 - El uso de asistentes de IA se declara y se verifica; el equipo asume la responsabilidad del código y de las
   afirmaciones. Los asistentes no figuran como autores ni coautores en Git ni en GitHub (§4.3).
 - Los prompts y resultados no se inventan ni se editan para simular éxito.
@@ -972,6 +977,7 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 | 2.2.0 | 2026-11-25 | **MINOR**: perfiles abiertos en la web (spec 027, ADR 0031): la autorización del planificador depende del canal; en la web los cinco perfiles y la consola `/api/v1/planning` son de libre elección, en WhatsApp sigue la lista de autorizados. Se enmiendan §3.7 y la regla 20; se conservan los dos pasos, el registro por seudónimo, las cifras solo del optimizador y el modo degradado sin planificación. Requiere la aprobación de ambos integrantes. |
 | 2.2.1 | 2026-11-25 | **PATCH**: `make app` detecta un servidor de otra versión en el puerto y no arranca encima; `GET /api/version`, la versión en el pie de la web y las páginas sin caché (§3.7). |
 | 2.3.0 | 2026-11-26 | **MINOR**: video pitch de la entrada generado con MAGI-2 (spec 028, ADR 0032): primer elemento, saltable y sin repetirse en la sesión; producción única con MAGI-2 por la API de Higgsfield (clave solo en `.env`, tope de gasto), guion con fuentes, ficha de la imagen, revisión humana y declaración de IA junto al video (§3.7 y §10). Requiere la aprobación de ambos integrantes. |
+| 2.4.0 | 2026-11-26 | **MINOR**: pitch v2 sincronizado (spec 029, ADR 0033): escenas por planos con momentos ligados a palabras (faster-whisper local), gráficos propios del montaje y reajuste acotado de planos; modelo por preferencia (MAGI-2 si responde, si no Kling 4.0, decisión del integrante tras el `403 model_unavailable` de MAGI-2 en Higgsfield); borrador y publicación que conservan la v1 hasta el chequeo (§3.7 y §10). Requiere la aprobación de ambos integrantes. |
 | 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
@@ -1171,4 +1177,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 2.3.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-26
+**Versión**: 2.4.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-26

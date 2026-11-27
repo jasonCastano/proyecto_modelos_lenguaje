@@ -5,16 +5,16 @@
   "status": "pass",
   "type": "dataflow",
   "quality": "showcase",
-  "startedAt": "2026-11-25T05:17:56.053Z",
+  "startedAt": "2026-11-27T03:32:45.086Z",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "554099963e34a7bc74afc61e5921b5d3d3e0d320f3728b6e63215b035aa15ffe",
-    "bytes": 13380
+    "sha256": "ba080166ddf7347d82dc404e5b34dc019a19b57914db8fde5b6f18609be82873",
+    "bytes": 14264
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "e0f97afb6cb1f74805edfe4e914a75264c2a355fe61bcd4fac654e1fa448db50",
-    "bytes": 868200
+    "sha256": "c38255393ecccbaa49c6069a7cf39eda9230d199c1e35c8b7468b6db4a1b0d69",
+    "bytes": 871973
   },
   "stages": {
     "validate": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "554099963e34a7bc74afc61e5921b5d3d3e0d320f3728b6e63215b035aa15ffe",
-          "bytes": 13380
+          "sha256": "ba080166ddf7347d82dc404e5b34dc019a19b57914db8fde5b6f18609be82873",
+          "bytes": 14264
         },
         "validation": {
           "checksPassed": 9,
@@ -56,7 +56,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 1526,
+      "durationMs": 932,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -72,19 +72,19 @@
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "5a14e9f8-c7b5-4f32-b641-d6bbc252d7fb",
+        "receiptId": "eacff838-dad0-4a28-baa3-b1ed3e7c71bd",
         "ok": true,
         "command": "deliver",
         "type": "dataflow",
         "input": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
         "output": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "specification": {
-          "sha256": "554099963e34a7bc74afc61e5921b5d3d3e0d320f3728b6e63215b035aa15ffe",
-          "bytes": 13380
+          "sha256": "ba080166ddf7347d82dc404e5b34dc019a19b57914db8fde5b6f18609be82873",
+          "bytes": 14264
         },
         "artifact": {
-          "sha256": "e0f97afb6cb1f74805edfe4e914a75264c2a355fe61bcd4fac654e1fa448db50",
-          "bytes": 868200
+          "sha256": "c38255393ecccbaa49c6069a7cf39eda9230d199c1e35c8b7468b6db4a1b0d69",
+          "bytes": 871973
         },
         "validation": {
           "checksPassed": 9,
@@ -97,8 +97,8 @@
         "evidence": {
           "verified": true,
           "repository": "https://github.com/jasonCastano/proyecto_modelos_lenguaje",
-          "revision": "96d0888c35c01b53f4a56ba889b78b9bbd7d998b",
-          "references": 30
+          "revision": "bf9e01bfa9e87a40434b57ee4842ffe43ae8f6bb",
+          "references": 33
         },
         "update": {
           "status": "unavailable",
@@ -116,7 +116,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 386,
+      "durationMs": 260,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
@@ -128,8 +128,8 @@
         "ok": true,
         "file": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "artifact": {
-          "sha256": "e0f97afb6cb1f74805edfe4e914a75264c2a355fe61bcd4fac654e1fa448db50",
-          "bytes": 868200
+          "sha256": "c38255393ecccbaa49c6069a7cf39eda9230d199c1e35c8b7468b6db4a1b0d69",
+          "bytes": 871973
         },
         "checks": [
           {
@@ -190,24 +190,24 @@
           },
           "metrics": {
             "properCrossings": 0,
-            "resolvedCrossovers": 2,
+            "resolvedCrossovers": 3,
             "ambiguousCorridors": 0,
             "arrowheadCollisions": 0,
             "containerBorderRuns": 0,
             "labelRouteClearanceIssues": 0,
             "labelCanvasOverflowIssues": 0,
-            "minLabelRouteClearance": 6.2,
+            "minLabelRouteClearance": 4,
             "desktopReadabilityIssues": 0,
             "viewportHeightIssues": 0,
             "minProjectedNodeTextPx": 6.095505617977528,
             "maxBends": 4,
-            "routesOverSuggestedBends": 3,
-            "maxStretch": 1.35,
-            "routesOverSuggestedStretch": 0,
-            "minSegmentPx": 16,
+            "routesOverSuggestedBends": 4,
+            "maxStretch": 2.014,
+            "routesOverSuggestedStretch": 2,
+            "minSegmentPx": 9.5,
             "minInteriorSegmentPx": 16,
-            "shortSegmentCount": 0,
-            "shortEndpointSegmentCount": 0,
+            "shortSegmentCount": 1,
+            "shortEndpointSegmentCount": 1,
             "shortInteriorSegmentCount": 0,
             "microSegmentCount": 0
           },
@@ -260,7 +260,29 @@
                 },
                 "point": [
                   856.75,
-                  286
+                  284
+                ]
+              },
+              {
+                "left": {
+                  "id": "thread-state",
+                  "from": "agent",
+                  "to": "memory",
+                  "label": "estado",
+                  "collectionIndex": 13,
+                  "artifactIndex": 14
+                },
+                "right": {
+                  "id": "pitch-video",
+                  "from": "pitch",
+                  "to": "app",
+                  "label": "video de la entrada",
+                  "collectionIndex": 17,
+                  "artifactIndex": 18
+                },
+                "point": [
+                  856.75,
+                  309.5
                 ]
               }
             ],
@@ -287,7 +309,7 @@
                   "artifactIndex": 15
                 },
                 "bends": 4,
-                "stretch": 1.34
+                "stretch": 1.427
               },
               {
                 "relationship": {
@@ -299,7 +321,31 @@
                   "artifactIndex": 17
                 },
                 "bends": 4,
-                "stretch": 1.165
+                "stretch": 1.171
+              },
+              {
+                "relationship": {
+                  "id": "pitch-video",
+                  "from": "pitch",
+                  "to": "app",
+                  "label": "video de la entrada",
+                  "collectionIndex": 17,
+                  "artifactIndex": 18
+                },
+                "bends": 4,
+                "stretch": 2.014,
+                "directCorridorBlockers": [
+                  {
+                    "id": "memory",
+                    "label": "Memoria",
+                    "box": [
+                      895,
+                      470,
+                      130,
+                      58
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -323,27 +369,25 @@
             },
             "minimumSourceTextPx": 7,
             "minimumProjectedTextPx": 6.095505617977528,
-            "semanticTextCount": 45
+            "semanticTextCount": 48
           },
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "5a14e9f8-c7b5-4f32-b641-d6bbc252d7fb"
+        "deliveryReceiptId": "eacff838-dad0-4a28-baa3-b1ed3e7c71bd"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 3897,
+      "durationMs": 2290,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\rguerrero\\.agents\\skills\\archify\\bin\\archify.mjs",
         "browser-check",
         "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
         "--json",
-        "--require-provenance",
-        "--out-dir",
-        "D:\\proyecto_modelos_lenguaje\\docs"
+        "--require-provenance"
       ],
       "execution": "in-process",
       "receipt": {
@@ -354,11 +398,11 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "5a14e9f8-c7b5-4f32-b641-d6bbc252d7fb",
+        "deliveryReceiptId": "eacff838-dad0-4a28-baa3-b1ed3e7c71bd",
         "artifact": {
           "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-          "sha256": "e0f97afb6cb1f74805edfe4e914a75264c2a355fe61bcd4fac654e1fa448db50",
-          "bytes": 868200
+          "sha256": "c38255393ecccbaa49c6069a7cf39eda9230d199c1e35c8b7468b6db4a1b0d69",
+          "bytes": 871973
         },
         "state": {
           "detail": "read",
@@ -389,20 +433,20 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1303,
-              "diagramWidth": 1273,
+              "readerWidth": 1084,
+              "diagramWidth": 1054,
               "pageComposition": {
                 "bodyPaddingPx": 12,
-                "headerPx": 52,
+                "headerPx": 68,
                 "diagramChromePx": 78,
-                "svgPx": 746,
+                "svgPx": 730,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeTextPx": 6.908239700374532,
+              "minimumProjectedNonEdgeTextPx": 6.908239700374532,
+              "minimumProjectedEdgeTextPx": 7.895131086142322,
               "minimumProjectedNodeText": "sitio · YouTube",
               "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
@@ -439,15 +483,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1361,
-              "diagramWidth": 1331,
+              "readerWidth": 1133,
+              "diagramWidth": 1103,
               "pageComposition": {
                 "bodyPaddingPx": 64,
-                "headerPx": 60,
+                "headerPx": 76,
                 "diagramChromePx": 84,
-                "svgPx": 780,
+                "svgPx": 764,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
@@ -489,15 +533,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1497,
-              "diagramWidth": 1467,
+              "readerWidth": 1271,
+              "diagramWidth": 1241,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
                 "diagramChromePx": 84,
                 "svgPx": 860,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
@@ -539,15 +583,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1920,
-              "diagramWidth": 1602,
+              "readerWidth": 1612,
+              "diagramWidth": 1562,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
-                "diagramChromePx": 237,
-                "svgPx": 939,
+                "diagramChromePx": 94,
+                "svgPx": 1082,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
@@ -565,11 +609,11 @@
               "hasNavigationDock": true,
               "legendDockIntersectionArea": 0,
               "dockStageIntersectionArea": 0,
-              "dockStageGap": 59.5,
+              "dockStageGap": 10,
               "requiredDockStageGap": 10,
               "viewerChromeStageOk": true,
-              "viewerChromeReserve": 0,
-              "viewerChromeActive": false,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
               "viewerChromeOk": true,
               "resolvedTheme": "light"
             }
@@ -642,20 +686,20 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1303,
-              "diagramWidth": 1273,
+              "readerWidth": 1084,
+              "diagramWidth": 1054,
               "pageComposition": {
                 "bodyPaddingPx": 12,
-                "headerPx": 52,
+                "headerPx": 68,
                 "diagramChromePx": 78,
-                "svgPx": 746,
+                "svgPx": 730,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeTextPx": 6.908239700374532,
+              "minimumProjectedNonEdgeTextPx": 6.908239700374532,
+              "minimumProjectedEdgeTextPx": 7.895131086142322,
               "minimumProjectedNodeText": "sitio · YouTube",
               "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
@@ -692,15 +736,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1361,
-              "diagramWidth": 1331,
+              "readerWidth": 1133,
+              "diagramWidth": 1103,
               "pageComposition": {
                 "bodyPaddingPx": 64,
-                "headerPx": 60,
+                "headerPx": 76,
                 "diagramChromePx": 84,
-                "svgPx": 780,
+                "svgPx": 764,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
@@ -742,15 +786,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1497,
-              "diagramWidth": 1467,
+              "readerWidth": 1271,
+              "diagramWidth": 1241,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
                 "diagramChromePx": 84,
                 "svgPx": 860,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
@@ -792,15 +836,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1920,
-              "diagramWidth": 1602,
+              "readerWidth": 1612,
+              "diagramWidth": 1562,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
-                "diagramChromePx": 237,
-                "svgPx": 939,
+                "diagramChromePx": 94,
+                "svgPx": 1082,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
@@ -818,11 +862,11 @@
               "hasNavigationDock": true,
               "legendDockIntersectionArea": 0,
               "dockStageIntersectionArea": 0,
-              "dockStageGap": 59.5,
+              "dockStageGap": 10,
               "requiredDockStageGap": 10,
               "viewerChromeStageOk": true,
-              "viewerChromeReserve": 0,
-              "viewerChromeActive": false,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
               "viewerChromeOk": true,
               "resolvedTheme": "light"
             }
@@ -847,20 +891,20 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1303,
-              "diagramWidth": 1273,
+              "readerWidth": 1084,
+              "diagramWidth": 1054,
               "pageComposition": {
                 "bodyPaddingPx": 12,
-                "headerPx": 52,
+                "headerPx": 68,
                 "diagramChromePx": 78,
-                "svgPx": 746,
+                "svgPx": 730,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
-              "minimumProjectedNodeTextPx": 7,
-              "minimumProjectedNonEdgeTextPx": 7,
-              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeTextPx": 6.908239700374532,
+              "minimumProjectedNonEdgeTextPx": 6.908239700374532,
+              "minimumProjectedEdgeTextPx": 7.895131086142322,
               "minimumProjectedNodeText": "sitio · YouTube",
               "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
@@ -897,15 +941,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1361,
-              "diagramWidth": 1331,
+              "readerWidth": 1133,
+              "diagramWidth": 1103,
               "pageComposition": {
                 "bodyPaddingPx": 64,
-                "headerPx": 60,
+                "headerPx": 76,
                 "diagramChromePx": 84,
-                "svgPx": 780,
+                "svgPx": 764,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
@@ -947,15 +991,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1497,
-              "diagramWidth": 1467,
+              "readerWidth": 1271,
+              "diagramWidth": 1241,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 60,
                 "diagramChromePx": 84,
                 "svgPx": 860,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
@@ -997,15 +1041,15 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1920,
-              "diagramWidth": 1602,
+              "readerWidth": 1612,
+              "diagramWidth": 1562,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 68,
-                "diagramChromePx": 237,
-                "svgPx": 939,
+                "diagramChromePx": 94,
+                "svgPx": 1082,
                 "cardsPx": 0,
-                "viewBoxHeight": 626
+                "viewBoxHeight": 740
               },
               "viewBoxWidth": 1068,
               "minimumProjectedNodeTextPx": 7,
@@ -1023,11 +1067,11 @@
               "hasNavigationDock": true,
               "legendDockIntersectionArea": 0,
               "dockStageIntersectionArea": 0,
-              "dockStageGap": 59.5,
+              "dockStageGap": 10,
               "requiredDockStageGap": 10,
               "viewerChromeStageOk": true,
-              "viewerChromeReserve": 0,
-              "viewerChromeActive": false,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
               "viewerChromeOk": true,
               "resolvedTheme": "light"
             }
@@ -1056,19 +1100,19 @@
     "browserCheckReceipt": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-11-25T05:18:02.549Z",
-  "durationMs": 6495,
+  "finishedAt": "2026-11-27T03:32:49.190Z",
+  "durationMs": 4104,
   "update": {
     "status": "update_available",
     "installedVersion": "3.2.0",
-    "availableVersion": "3.3.1",
-    "releaseNotes": "https://github.com/tt-a1i/archify/releases/tag/v3.3.1",
+    "availableVersion": "3.3.2",
+    "releaseNotes": "https://github.com/tt-a1i/archify/releases/tag/v3.3.2",
     "severity": "normal",
-    "summary": "Polishes automatic Architecture layout, spine labels, crossing reduction, and Classic styling, and deduplicates cited Explainer files.",
-    "checkedAt": "2026-11-24T19:44:14.431Z",
+    "summary": "Includes archify-pr in default installs, adds offline in-page update notices with Agent prompts, speeds slow update checks, and polishes PR diagrams.",
+    "checkedAt": "2026-11-27T03:30:22.586Z",
     "source": "cache",
     "noticeRequired": true,
-    "noticeText": "Archify update: 3.2.0 → 3.3.1. A previous check at 2026-11-24T19:44:14.431Z found a newer release. Release notes: https://github.com/tt-a1i/archify/releases/tag/v3.3.1. Would you like me to update Archify?",
-    "eventKey": "archify@sha256:b92b4d55446966fd74e5338a45d6de9a7a1b194420cd5eb14d2cdc39f1053b80"
+    "noticeText": "Archify update: 3.2.0 → 3.3.2. A previous check at 2026-11-27T03:30:22.586Z found a newer release. Release notes: https://github.com/tt-a1i/archify/releases/tag/v3.3.2. Would you like me to update Archify?",
+    "eventKey": "archify@sha256:932d915f83fdbf44796cc6b20b085455a763491306e1b8dee92047e11dddc0ea"
   }
 }

@@ -412,7 +412,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Plataforma de agentes y planificación (spec 025) | 🟡 | Cinco perfiles y planificador industrial sobre datos sintéticos: optimizador ≥ 99 % del óptimo de referencia en 10/10, 0 violaciones, 2/2 sin solución detectados; con DeepSeek 12/12 con secuencia completa y etiqueta, p95 10,8 s; perfiles 19/20 con DeepSeek; herramientas 90,7 % y 86,0 % en dos corridas (sin regresión clara frente a 88,4 %); `docs/evaluacion_planificacion.md`, `docs/evaluacion_perfiles.md`, ADR 0029. Falta la verificación por WhatsApp y aprobar la enmienda 2.0.0 |
 | Plataforma web en cuatro áreas (spec 026) | 🟡 | Entrada, agente por perfil, consola de planificación y evidencia; API `/api/v1` (desde la spec 027, de libre elección en la web); paridad de cifras consola = herramienta = CLI en 12/12 escenarios; `axe-core` sin violaciones graves y sin desplazamiento horizontal de 360 a 1920 px; ADR 0030. Diagramas Archify de arquitectura y planificación con la consola web. Falta aprobar la constitución 2.1.0 |
 | Perfiles abiertos en la web (spec 027) | 🟡 | Los cinco perfiles, incluido el planificador, se eligen libremente en la web sin configuración; selector con «para quién es» y perfil activo a la vista; WhatsApp conserva la lista de autorizados; ADR 0031. Falta aprobar la constitución 2.2.0 |
-| Video pitch con MAGI-2 (spec 028) | 🟡 | La entrada abre con el pitch (sin sonido, con subtítulos, saltable, sin repetirse en la sesión; portada y transcripción si falta el video). Guion de 6 bloques con fuentes del oro, prompts de escena y CLI `pml pitch` probados con clips sintéticos; ADR 0032. Falta generar las escenas con MAGI-2 (8× H100), confirmar la ficha de la imagen y aprobar la constitución 2.3.0 |
+| Video pitch sincronizado (specs 028 y 029) | ✅ | La entrada abre con el pitch de 52 s (sin sonido, con subtítulos, saltable, sin repetirse en la sesión; portada y transcripción si falta el video). Lo que se ve sigue a la narración: 8 planos de Kling 4.0 (MAGI-2 dejó de responder en Higgsfield), iconos y tarjetas de perfil del montaje en el instante de su palabra, guion 1.2.0 con fuentes del oro; ADR 0032 y 0033. Falta aprobar la constitución 2.4.0 y validar con 5 personas |
 | Dictado por voz (spec 023) | ✅ | faster-whisper `base` local: WER 0,048, nombres propios 97 %, p90 1,1 s (clips de hasta 10 s), 0 textos en silencio o ruido; `docs/evaluacion_stt.md`, ADR 0027 |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
 | CI y Pull Requests | 🟡 | 72 PRs fusionados al 2026-11-21 (63 del equipo y 9 de Dependabot, anteriores a la v1.6.0); 13 PRs del equipo tienen aprobación formal y 17 alguna revisión. CI con `test`, `web` y `autoria` |
@@ -930,32 +930,56 @@ uv run pml channels simulate --sender +570000000001 --profile planificador --tex
 
 Requerimientos: [`specs/025-agentes-manuelita-idea7/`](specs/025-agentes-manuelita-idea7/spec.md) · Decisión: [ADR 0029](docs/decisions/0029-plataforma-agentes-idea7.md) · Resultados: [`docs/evaluacion_planificacion.md`](docs/evaluacion_planificacion.md), [`docs/evaluacion_planificacion_directa.md`](docs/evaluacion_planificacion_directa.md) y [`docs/evaluacion_perfiles.md`](docs/evaluacion_perfiles.md).
 
-### Video pitch (spec 028)
+### Video pitch (specs 028 y 029)
 
-La entrada abre con un video de 57 s, formato elevator pitch, que explica qué es Valer-IA y cómo usarla. Sale de
-**MAGI-2** de Sand.ai, un modelo de imagen y texto a video, que se usa por la **API de Higgsfield**. El video se
-genera **una vez**, fuera de la app, y la web solo lo sirve: arranca sin sonido y con subtítulos, se salta en un
-paso y, sin el archivo, muestra la portada y la transcripción. Llega con `git lfs pull`.
+La entrada abre con un video de 52 s, formato elevator pitch, que explica qué es Valer-IA y cómo usarla. Los
+planos salen de un modelo de video por la **API de Higgsfield**:
+
+- **MAGI-2** de Sand.ai, si responde;
+- si no, **Kling 4.0**, con el que se hizo la v2 porque MAGI-2 devuelve `403 model_unavailable` desde el
+  2026-11-26.
+
+**Lo que se ve sigue a la narración** (v2, spec 029):
+
+- el trapiche cuando se nombra;
+- los iconos de informes, noticias y plataformas, que entran a la tablet;
+- las cinco personas de los perfiles, que llegan al nombrarse;
+- las tarjetas de perfil al decir «perfil».
+
+Cada escena dura su narración más 0,5 s. El video se genera **una vez**, fuera de la app, y la web solo lo sirve:
+arranca sin sonido y con subtítulos, se salta en un paso y, sin el archivo, muestra la portada y la transcripción.
+Llega con `git lfs pull`.
 
 ```bash
-uv run pml pitch validate --json   # guion con fuentes del oro, escenas y ficha de la imagen
-uv run pml pitch generate --dry-run --json   # plan y costo, sin llamar a la API
-uv run pml pitch generate --calibrate --yes # clip de 4 s para confirmar campos y formato vertical
-uv run pml pitch generate --yes             # 6 escenas con MAGI-2 en Higgsfield (HIGGSFIELD_API_KEY en .env)
-uv run pml pitch narrate           # voz Phonon en español por bloque (≤ 9,5 s)
-uv run pml pitch assemble          # montaje con ffmpeg: narración, subtítulos, portada
-uv run pml pitch check web/public/media/pitch-valeria.mp4 --json
+uv run pml pitch validate --json   # guion con fuentes del oro, momentos, planos y ficha de la imagen
+uv run pml pitch probe --json      # qué modelo responde (MAGI-2 o Kling 4.0), sin costo
+uv run pml pitch narrate           # voz Phonon en español por bloque
+uv run pml pitch align --json      # tiempos de cada palabra y momento (faster-whisper local)
+uv run pml pitch graphics          # iconos y tarjetas de perfil SVG → PNG
+uv run pml pitch generate --dry-run --json   # planos y costo, sin llamar a la API
+uv run pml pitch generate --shot plano-02 --yes   # un plano en Higgsfield (HIGGSFIELD_API_KEY en .env)
+uv run pml pitch assemble --json   # borrador sincronizado en video/pitch/borrador/
+uv run pml pitch check video/pitch/borrador/pitch-valeria.mp4 --json
+uv run pml pitch publish           # reemplaza el video de la web solo si el chequeo pasa
 ```
+
+El flujo de producción, de guion a entrada web, con la revisión humana de cada plano:
+
+[![Video pitch sincronizado: producción fuera de línea](docs/capturas/diagramas/video-pitch.png)](docs/diagramas/video-pitch.html)
+
+*Diagrama interactivo (Archify): [`docs/diagramas/video-pitch.html`](docs/diagramas/video-pitch.html).*
 
 La producción completa está en [`video/pitch/RUNBOOK.md`](video/pitch/RUNBOOK.md):
 
 1. Confirmar la ficha de la imagen de referencia.
-2. Generar las 6 escenas con `pml pitch generate` (tope de 20 USD; alternativa: pesos abiertos en 8× H100).
-3. Revisar cada escena.
-4. Montar el video.
+2. Narrar, alinear las palabras y rasterizar los gráficos.
+3. Generar los planos con `pml pitch generate` (tope de 20 USD; la v2 costó 11,02 USD).
+4. Revisar cada plano y anotar en qué segundo ocurre cada evento.
+5. Montar el borrador, comprobarlo y publicarlo.
 
 Junto al video, la entrada declara que es generado con IA y que el proyecto es académico, no un canal oficial de
-Manuelita. El video no lleva rótulo grabado ([ADR 0032](docs/decisions/0032-video-pitch-magi2.md)).
+Manuelita. El video no lleva rótulo grabado ([ADR 0032](docs/decisions/0032-video-pitch-magi2.md),
+[ADR 0033](docs/decisions/0033-pitch-v2-sincronia.md)).
 
 ### Experiencia web y API
 
@@ -1225,6 +1249,9 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   [plan](specs/028-video-pitch-magi2/plan.md),
   [runbook de producción](video/pitch/RUNBOOK.md) y
   [ADR 0032](docs/decisions/0032-video-pitch-magi2.md)
+- [Pitch v2 sincronizado (spec 029)](specs/029-pitch-escenas-sincronizadas/spec.md),
+  [plan](specs/029-pitch-escenas-sincronizadas/plan.md) y
+  [ADR 0033](docs/decisions/0033-pitch-v2-sincronia.md)
 - [Ficha de datos del corpus](docs/data_card.md)
 - [Alcance del Q&A y banco de 40 preguntas](docs/alcance.md)
 - [Especificación del bronce](specs/001-bronze-web-scraping/spec.md)

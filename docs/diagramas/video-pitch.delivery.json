@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "a44b89a0-d8a2-40d6-b23d-1c165c25daac",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\video-pitch.json",
+  "output": "D:\\proyecto_modelos_lenguaje\\docs\\diagramas\\video-pitch.html",
+  "specification": {
+    "sha256": "4cdf627c8a0ed1c63557c528d53c926c68ef051ca7add496b7a9013b248e4c59",
+    "bytes": 7673
+  },
+  "artifact": {
+    "sha256": "c5bf00512bf33aa72e207ec6d33f54bdeec48544e91a2e40a5a69d727993f0fb",
+    "bytes": 854499
+  }
+}

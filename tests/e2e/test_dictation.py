@@ -60,7 +60,12 @@ def mic_page(browser: Browser, base_url: str, tmp_path: Path) -> Iterator[Page]:
 
 
 def _open_chat(page: Page, url: str) -> None:
-    page.goto(url, wait_until="networkidle")
+    # Desde la spec 031 la consola con la conversación vive en la evidencia.
+    base, _, query = url.partition("?")
+    base = base.rstrip("/")
+    if not base.endswith("/evidencia"):
+        base = f"{base}/evidencia"
+    page.goto(f"{base}?{query}" if query else base, wait_until="networkidle")
     demo = page.get_by_role("button", name="Usar modo demostración")
     if demo.count():
         demo.click()

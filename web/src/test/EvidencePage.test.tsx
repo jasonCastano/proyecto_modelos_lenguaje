@@ -77,6 +77,12 @@ function mockApis() {
 }
 
 describe("Evidence (spec 026, T056)", () => {
+  it("aloja la consola de Consulta, Resumen y FAQ de los Módulos 1 y 2 (spec 031)", () => {
+    render(<Evidence />);
+    expect(screen.getByRole("heading", { name: "Consulta, resumen y preguntas frecuentes" })).toBeInTheDocument();
+    expect(screen.getByTestId("rag-console")).toBeInTheDocument();
+  });
+
   it("filtra el catálogo por tipo y por perfil", async () => {
     mockApis();
     render(<Evidence />);

@@ -13,7 +13,13 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def _to_console(page: Page) -> None:
+    """Desde la spec 031 la consola de los Módulos 1 y 2 vive en la evidencia."""
+    page.goto(page.url.rstrip("/") + "/evidencia", wait_until="networkidle")
+
+
 def test_missing_key_offers_demo_and_demo_is_labeled(page: Page) -> None:
+    _to_console(page)
     banner = page.get_by_test_id("demo-banner")
     banner.wait_for()
     assert "Falta la clave" in banner.inner_text()

@@ -1,39 +1,31 @@
 /**
- * Entrada pública de la plataforma (spec 026, historia 2): abre con el video pitch (spec 028) y
- * sigue con qué es Valer-IA, para quién es y cómo responde. Consulta, Resumen y FAQ de los Módulos 1 y 2 siguen disponibles más abajo.
+ * Entrada pública de la plataforma (spec 031, research R6): una sección por pantalla. El hero lleva el
+ * video pitch (spec 028) como visual; siguen la app en grande, los perfiles, los negocios, la frase, la
+ * planificación, las garantías, la evidencia y las preguntas. El cierre vive en el pie (AppShell).
+ * La consulta, el resumen y la FAQ de los Módulos 1 y 2 pasaron a la vista de evidencia.
  */
+import { AppFrame } from "../components/home/AppFrame";
+import { Businesses } from "../components/home/Businesses";
+import { EvidenceTools } from "../components/home/EvidenceTools";
+import { Faq } from "../components/home/Faq";
 import { Guarantees } from "../components/home/Guarantees";
-import { PitchVideo } from "../components/home/PitchVideo";
-import { PlatformHero } from "../components/home/PlatformHero";
-import { ProfileLedger } from "../components/home/ProfileLedger";
-import { LimitsNote } from "../components/LimitsNote";
-import { RagConsole } from "../components/RagConsole";
-import type { HealthStatus } from "../lib/types";
+import { Hero } from "../components/home/Hero";
+import { PlanningBand } from "../components/home/PlanningBand";
+import { ProfilesBento } from "../components/home/ProfilesBento";
+import { Statement } from "../components/home/Statement";
 
-interface HomeProps {
-  health: HealthStatus | null;
-}
-
-export function Home({ health }: HomeProps) {
+export function Home() {
   return (
-    <div className="home">
-      <PitchVideo />
-      <PlatformHero />
-      <ProfileLedger />
+    <>
+      <Hero />
+      <AppFrame />
+      <ProfilesBento />
+      <Businesses />
+      <Statement />
+      <PlanningBand />
       <Guarantees />
-      <section aria-labelledby="modules-heading" className="modules">
-        <h2 className="section-title" id="modules-heading">
-          Consulta, resumen y preguntas frecuentes
-        </h2>
-        <p className="modules__lead">
-          Las funciones de los Módulos 1 y 2 responden solo con el corpus público y citan cada
-          fragmento.
-        </p>
-        <RagConsole health={health} />
-      </section>
-      <div id="limites">
-        <LimitsNote />
-      </div>
-    </div>
+      <EvidenceTools />
+      <Faq />
+    </>
   );
 }

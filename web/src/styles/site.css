@@ -1,0 +1,512 @@
+/*
+ * Sistema del sitio de Valer-IA (spec 031). Reimplementa, sin copiar su kit, las reglas de la skill
+ * design-taste-frontend: una sección por pantalla en la entrada, bordes iguales (.wrap), un estilo de
+ * botón y de tarjeta, capa de hover y de foco, entrada del hero una sola vez y reposo total con
+ * «reducir movimiento». Tipo software; paleta de marca (tokens.css).
+ */
+
+html {
+  scroll-padding-top: var(--nav-h);
+  background: var(--p-bg);
+}
+
+body {
+  background: var(--p-bg);
+  color: var(--p-ink);
+}
+
+.wrap {
+  width: min(var(--wrap), calc(100% - 2 * var(--gutter)));
+  margin-inline: auto;
+}
+
+/* ------------------------------------------------------------------ secciones de la entrada */
+
+.site-section {
+  position: relative;
+  box-sizing: border-box;
+  height: calc(var(--h, 1) * 100svh);
+  min-height: 640px;
+  padding: var(--padt) 0 var(--padb);
+  overflow: hidden;
+}
+
+.site-section > .wrap {
+  position: relative;
+  z-index: 1;
+}
+
+.site-section--inv {
+  background: var(--p-inv-bg);
+  color: var(--p-inv-ink);
+}
+
+.site-section--surface {
+  background: var(--p-surface);
+}
+
+.site-h2 {
+  margin: 0;
+  max-width: 22ch;
+  color: inherit;
+  font-size: clamp(2.125rem, 3.6vw, 3.5rem);
+  font-weight: 560;
+  font-variation-settings: "wdth" 112;
+  letter-spacing: var(--display-tracking);
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+.site-lead {
+  margin: 20px 0 0;
+  max-width: 56ch;
+  color: var(--p-muted);
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+.site-section--inv .site-lead {
+  color: var(--p-inv-muted);
+}
+
+@media (max-width: 1023px) {
+  .site-section {
+    height: auto;
+    min-height: calc(var(--h, 1) * 100lvh);
+  }
+}
+
+/* ------------------------------------------------------------------ botones (uno, «solid») */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 1.5px solid var(--p-action);
+  border-radius: var(--r-sm);
+  background: var(--p-action);
+  color: var(--p-action-ink);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.18s var(--ease),
+    transform 0.18s var(--ease),
+    border-color 0.18s var(--ease);
+}
+
+.btn:hover {
+  background: var(--p-action-hover);
+  border-color: var(--p-action-hover);
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.btn--line {
+  background: var(--p-bg);
+  color: var(--p-ink);
+  border-color: color-mix(in srgb, var(--p-ink) 45%, transparent);
+}
+
+.btn--line:hover {
+  background: color-mix(in srgb, var(--p-ink) 6%, transparent);
+  border-color: var(--p-ink);
+}
+
+.site-section--inv .btn.btn--line,
+.closing .btn.btn--line {
+  color: var(--p-inv-ink);
+  border-color: color-mix(in srgb, var(--p-inv-ink) 55%, transparent);
+}
+
+
+.site-section--inv .btn.btn--line,
+.closing .btn.btn--line {
+  background: transparent;
+  color: var(--p-inv-ink);
+}
+
+.site-section--inv .btn.btn--line:hover,
+.closing .btn.btn--line:hover {
+  background: color-mix(in srgb, var(--p-inv-ink) 10%, transparent);
+}
+
+:where(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--p-action);
+  outline-offset: 3px;
+}
+
+.site-section--inv :where(a, button):focus-visible,
+.closing :where(a, button):focus-visible {
+  outline-color: var(--leaf-yellow);
+}
+
+/* Subrayado que se dibuja al pasar el puntero. */
+.text-link {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1.5px no-repeat;
+  transition: background-size 0.25s var(--ease);
+}
+
+.text-link:hover {
+  background-size: 100% 1.5px;
+}
+
+/* ------------------------------------------------------------------ tarjeta (una) */
+
+.site-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 28px;
+  border: 1px solid color-mix(in srgb, var(--p-ink) 12%, transparent);
+  border-radius: var(--r-md);
+  background: var(--p-surface);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 0.2s var(--ease),
+    border-color 0.2s var(--ease);
+}
+
+a.site-card:hover,
+button.site-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--p-ink) 30%, transparent);
+}
+
+.site-card h3 {
+  margin: 0;
+  font-size: 1.3125rem;
+  font-weight: 620;
+  font-variation-settings: "wdth" 106;
+  line-height: 1.2;
+}
+
+.site-card p {
+  margin: 0;
+  color: var(--p-muted);
+  line-height: 1.5;
+}
+
+/* Foto dentro de su marco: zoom 1,025 al pasar el puntero. */
+.photo {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--cane-soft);
+}
+
+.photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--ease);
+}
+
+a:hover .photo img,
+.site-card:hover .photo img {
+  transform: scale(1.025);
+}
+
+/* ------------------------------------------------------------------ navegación (nav-centre) */
+
+.site-nav {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 40;
+  height: var(--nav-h);
+  border-bottom: 1px solid color-mix(in srgb, var(--p-ink) 10%, transparent);
+  background: color-mix(in srgb, var(--p-bg) 94%, transparent);
+  backdrop-filter: saturate(1.2) blur(10px);
+}
+
+.site-nav__bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 100%;
+}
+
+.site-nav__brand {
+  justify-self: start;
+  color: var(--p-ink);
+  font-size: 1.375rem;
+  font-weight: 800;
+  font-variation-settings: "wdth" 125;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.site-nav__links {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-nav__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--r-sm);
+  color: var(--p-muted);
+  font-weight: 560;
+  text-decoration: none;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.site-nav__links a:hover {
+  color: var(--p-ink);
+  background: color-mix(in srgb, var(--p-ink) 5%, transparent);
+}
+
+.site-nav__links a[aria-current="page"] {
+  color: var(--p-ink);
+  box-shadow: inset 0 -2px 0 var(--leaf-red);
+}
+
+.site-nav__end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.site-nav__demo {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--leaf-yellow) 40%, var(--p-bg));
+  color: var(--p-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.site-nav__menu {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .site-nav__bar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .site-nav__links,
+  .site-nav__end .btn {
+    display: none;
+  }
+
+  .site-nav__menu {
+    display: inline-flex;
+  }
+
+  .site-nav[data-open] .site-nav__links {
+    position: fixed;
+    inset: var(--nav-h) 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 24px var(--gutter);
+    background: var(--p-bg);
+  }
+
+  .site-nav[data-open] .site-nav__links a {
+    min-height: 56px;
+    font-size: 1.375rem;
+  }
+}
+
+@media (max-width: 639px) {
+  .site-nav__demo {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------ marco de las áreas */
+
+.site-shell {
+  min-height: 100vh;
+  padding-top: var(--nav-h);
+  background: var(--p-bg);
+}
+
+.site-shell .app-main {
+  margin-inline: auto;
+  max-width: calc(var(--wrap) + 2 * var(--gutter));
+  padding: 32px var(--gutter) 96px;
+}
+
+.site-shell[data-route="/"] {
+  padding-top: 0;
+}
+
+.site-shell[data-route="/"] .app-main {
+  max-width: none;
+  padding: 0;
+}
+
+.site-shell .top-bar {
+  margin-inline: auto;
+  max-width: calc(var(--wrap) + 2 * var(--gutter));
+  padding: 20px var(--gutter) 0;
+  border: 0;
+  background: transparent;
+}
+
+/* ------------------------------------------------------------------ cierre y pie (footer-statement) */
+
+.closing {
+  background: var(--p-inv-bg);
+  color: var(--p-inv-ink);
+}
+
+.site-shell[data-route="/"] .closing {
+  min-height: 100svh;
+  display: flex;
+}
+
+.site-shell[data-route="/"] .closing > .wrap {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.closing__close {
+  display: grid;
+  gap: 28px;
+  padding: 104px 0 48px;
+}
+
+.closing__statement {
+  margin: 0;
+  max-width: 18ch;
+  font-size: clamp(2.5rem, 5.4vw, 5rem);
+  font-weight: 600;
+  font-variation-settings: "wdth" 118;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-wrap: balance;
+}
+
+.closing__links {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 32px;
+  padding: 56px 0 40px;
+}
+
+.closing__heading {
+  margin: 0 0 12px;
+  color: var(--p-inv-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.closing__links ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.closing__links a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--p-inv-ink);
+}
+
+.closing__brand {
+  margin: 0 0 12px;
+  font-size: 1.75rem;
+  font-weight: 800;
+  font-variation-settings: "wdth" 125;
+}
+
+.closing__note,
+.closing__legal p {
+  margin: 0;
+  color: var(--p-inv-muted);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.closing__legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  padding: 24px 0 32px;
+}
+
+.closing__legal a {
+  color: var(--p-inv-ink);
+}
+
+.closing__synthetic {
+  color: var(--leaf-yellow) !important;
+}
+
+@media (max-width: 767px) {
+  .closing__links {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------------ entrada del hero (una vez) */
+
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+[data-enter] [data-enter-step] {
+  animation: enter-up 0.7s var(--ease) both;
+  animation-delay: calc(var(--step, 0) * 90ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Tarjeta de aprobación (spec 031, US2): se distingue de la conversación con el rojo anaranjado de la marca. */
+.approval-card {
+  border: 1.5px solid var(--leaf-red) !important;
+  border-left-width: 6px !important;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--leaf-red) 5%, var(--p-surface)) !important;
+}
+
+.approval-card .console-kicker {
+  color: #9c2f18;
+  font-weight: 700;
+}

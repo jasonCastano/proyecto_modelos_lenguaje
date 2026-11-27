@@ -36,8 +36,9 @@ def _open(browser: Browser, base_url: str, *, width: int = 1440, height: int = 9
 
 def test_pitch_is_the_first_thing_on_the_entrance(browser: Browser, base_url: str) -> None:
     page = _open(browser, base_url)
-    first = page.evaluate("() => document.querySelector('.home').firstElementChild.dataset.testid")
-    assert first == "pitch"
+    first = page.evaluate("() => document.querySelector('main > section').id")
+    assert first == "inicio"
+    expect(page.locator("#inicio [data-testid=pitch]")).to_be_visible()
     box = page.get_by_test_id("pitch").bounding_box()
     assert box is not None and box["y"] < 300
     expect(page.locator(".pitch__disclaimer")).to_contain_text("Video generado con IA")
@@ -69,7 +70,7 @@ def test_missing_video_keeps_the_entrance_working(browser: Browser, base_url: st
     ).to_be_visible()
     expect(page.locator(".pitch__transcript li")).to_have_count(6)
     expect(page.locator("#hero-title")).to_be_visible()
-    expect(page.locator(".profile-ledger__row")).to_have_count(5)
+    expect(page.locator(".bento__cell")).to_have_count(5)
     page.context.close()
 
 

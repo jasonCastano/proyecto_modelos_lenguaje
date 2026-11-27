@@ -81,3 +81,5 @@ video/pitch/borrador/
 
 # Imágenes de perfil de Valer-IA (spec 030): borradores y vistas previas antes de `approve`.
 docs/whatsapp/borrador/
+# Estado de la skill design-taste-frontend (spec 031): historial de repartos y perfiles de Chrome.
+.taste-skill/

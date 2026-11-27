@@ -6,6 +6,8 @@ import App from "./App";
 import "./styles/tokens.css";
 import "./styles/global.css";
 import "./styles/platform.css";
+import "./styles/site.css";
+import "./styles/home.css";
 
 const container = document.getElementById("root");
 

@@ -1,11 +1,12 @@
 /**
- * Video pitch de Valer-IA (spec 028, contracts/web-ui.md): lo primero de la entrada. Arranca sin sonido
+ * Video pitch de Valer-IA (spec 028; visual del hero desde la spec 031): lo primero de la entrada. Arranca sin sonido
  * y con subtítulos, se salta en un paso, no se impone dos veces en la misma sesión, respeta el
  * movimiento reducido y, si el video falta, deja la portada y la transcripción. El video se genera
  * fuera de línea con MAGI-2 (`video/pitch/`); la web solo lo sirve.
  */
 import { useEffect, useRef, useState } from "react";
 
+import { photoSrc, photoSrcSet } from "../../data/photos";
 import { PITCH_DISCLAIMER, PITCH_TRANSCRIPT, PITCH_VIDEO } from "../../data/pitch";
 import { Link } from "../../lib/router";
 
@@ -92,13 +93,25 @@ export function PitchVideo() {
   const openTranscript = reduced || failed;
 
   return (
-    <section
-      aria-labelledby="pitch-title"
-      className="pitch"
+    <div
+      aria-label="Video pitch: conoce Valer-IA en un minuto"
+      className="pitch pitch--hero"
       data-state={compact ? "compact" : "open"}
       data-testid="pitch"
+      role="group"
     >
-      <div className="pitch__frame">
+      <div className="pitch__frame photo">
+        <img
+          alt=""
+          aria-hidden="true"
+          className="pitch__backdrop"
+          data-source="stand-in"
+          height={525}
+          width={700}
+          sizes="(min-width: 1024px) 960px, 800px"
+          src={photoSrc("cana")}
+          srcSet={photoSrcSet("cana")}
+        />
         <video
           className="pitch__video"
           controls
@@ -113,29 +126,18 @@ export function PitchVideo() {
         >
           <track default kind="captions" label="Español" src={PITCH_VIDEO.captions} srcLang="es" />
         </video>
-      </div>
-      <div className="pitch__copy">
-        <h2 className="pitch__title" id="pitch-title">
-          Conoce Valer-IA en un minuto
-        </h2>
-        <p className="pitch__disclaimer">{PITCH_DISCLAIMER}.</p>
-        {failed ? (
-          <p className="pitch__error" role="status">
-            {PITCH_ERROR}
-          </p>
-        ) : null}
         <div className="pitch__actions">
           {compact ? (
-            <button className="action action--quiet" onClick={replay} type="button">
+            <button className="btn" onClick={replay} type="button">
               Ver el video
             </button>
           ) : (
             <>
-              <button className="action action--quiet" onClick={toggleSound} type="button">
+              <button className="btn" onClick={toggleSound} type="button">
                 {muted ? "Activar sonido" : "Silenciar"}
               </button>
               <button
-                className="action action--quiet"
+                className="btn"
                 data-testid="pitch-skip"
                 onClick={skip}
                 type="button"
@@ -144,12 +146,20 @@ export function PitchVideo() {
               </button>
             </>
           )}
-          {ended ? (
-            <Link className="action action--primary" to="/agente">
-              Empezar con Valer-IA
-            </Link>
-          ) : null}
         </div>
+      </div>
+      <div className="pitch__card">
+        <p className="pitch__disclaimer">{PITCH_DISCLAIMER}.</p>
+        {failed ? (
+          <p className="pitch__error" role="status">
+            {PITCH_ERROR}
+          </p>
+        ) : null}
+        {ended ? (
+          <Link className="btn" to="/agente">
+            Empezar con Valer-IA
+          </Link>
+        ) : null}
         <details className="pitch__transcript" open={openTranscript}>
           <summary>Ver la transcripción</summary>
           <ol>
@@ -159,6 +169,6 @@ export function PitchVideo() {
           </ol>
         </details>
       </div>
-    </section>
+    </div>
   );
 }

@@ -8,6 +8,7 @@ import {
   detectVoice,
   hasAudio,
   dispatch,
+  maskDigits,
   messageKind,
   resolveConfig,
   shapeOf,
@@ -156,11 +157,16 @@ test("si la nota de voz falla, igual entrega el texto", async () => {
     fakeFetch(200, payload),
     (m) => logs.push(m),
     async () => {
-      throw new Error("sin conexión");
+      throw new Error("sin conexión con +573001234567");
     },
   );
   assert.deepEqual(result, { handled: true, text: "texto" });
   assert.ok(logs.some((m) => m.includes("nota de voz")));
+  assert.ok(logs.every((m) => !m.includes("3001234567"))); // el número nunca llega al log
+});
+
+test("maskDigits oculta números de teléfono y deja el resto", () => {
+  assert.equal(maskDigits("fallo para +573001234567 en 30 s"), "fallo para +# en 30 s");
 });
 
 test("sin voz en la respuesta no se envía audio", async () => {

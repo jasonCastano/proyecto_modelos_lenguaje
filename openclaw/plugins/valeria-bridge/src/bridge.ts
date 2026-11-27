@@ -123,9 +123,15 @@ interface BackendReply {
 }
 
 type Fetch = (url: string, init: RequestInit) => Promise<Response>;
-// Envía una nota de voz al remitente (spec 028); la implementa index.ts con el CLI de OpenClaw.
+// Envía una nota de voz al remitente (spec 028); la implementa index.ts con el adaptador saliente
+// del canal y, como respaldo, el CLI de OpenClaw.
 // Spec 030: devuelve `true` si la nota de voz quedó entregada (decide qué texto la acompaña).
 export type VoiceSender = (channel: string, target: string, audioPath: string) => Promise<boolean>;
+
+/** Oculta secuencias largas de dígitos (números de teléfono) antes de escribirlas en el log. */
+export function maskDigits(text: string): string {
+  return text.replace(/\d{5,}/g, "#");
+}
 
 const MEDIA = /^\s*<media:(image|video|audio|document|sticker|location)[^>]*>\s*$/i;
 // Spec 029 (R1): OpenClaw arma «[Audio]\nUser text:\n…\nTranscript:\n<texto>» (formatMediaUnderstandingBody)
@@ -312,7 +318,7 @@ export async function dispatch(
     delivered = await sendVoice(channel, event.senderId, audio);
   } catch (error) {
     // El texto se entrega igual: la voz nunca impide responder.
-    log(`valeria-bridge: no se pudo enviar la nota de voz (${String(error).slice(0, 160)})`);
+    log(`valeria-bridge: no se pudo enviar la nota de voz (${maskDigits(String(error)).slice(0, 160)})`);
   }
   return withVoiceText(payload, result, delivered, log);
 }

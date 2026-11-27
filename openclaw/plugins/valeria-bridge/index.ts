@@ -1,7 +1,7 @@
 // Plugin puente de Valer-IA Caña para OpenClaw (spec 024, ADR 0028; voz: spec 028, ADR 0032).
 // Cada mensaje entrante ya autenticado se envía al backend FastAPI por loopback; si el backend falla,
 // OpenClaw sigue con su agente nativo (modo degradado). Las notas de voz de respuesta se envían con
-// el CLI documentado de OpenClaw (`openclaw message send --media`), sin shell.
+// el adaptador saliente del canal; si falla, con el CLI de OpenClaw (`message send --media`), sin shell.
 import { execFile } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -14,6 +14,7 @@ import {
   VoiceMemory,
   dispatch,
   hasAudio,
+  maskDigits,
   resolveConfig,
   voiceCommandArgs,
   voiceKeys,
@@ -68,10 +69,6 @@ function sendVoiceNoteViaCli(
   );
 }
 
-function maskDigits(text: string): string {
-  return text.replace(/\d{5,}/g, "#");
-}
-
 interface OutboundAdapter {
   sendMedia?: (ctx: Record<string, unknown>) => Promise<unknown>;
 }
@@ -100,10 +97,17 @@ function voiceSender(runtime: PluginRuntimeLike | undefined, cfg: unknown, log: 
         mediaReadFile: (path: string) => readFile(path),
         audioAsVoice: true,
       });
-      await Promise.race([
-        sending,
-        new Promise((_, reject) => setTimeout(() => reject(new Error("tiempo agotado")), VOICE_SEND_TIMEOUT_MS)),
-      ]);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          sending,
+          new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error("tiempo agotado")), VOICE_SEND_TIMEOUT_MS);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timer);
+      }
       log("valeria-bridge: nota de voz enviada por el adaptador del canal");
       return true;
     } catch (error) {

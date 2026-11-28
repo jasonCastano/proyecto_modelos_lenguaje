@@ -54,9 +54,13 @@ MINIMAL_WORDS = frozenset(
     }
 )
 LAUGH = re.compile(r"^(j[aeiou])+j?$|^(h[ae])+h?$|^m+$|^x+d+$")
+# Marcas de registro informal del visitante (incluye modismos de otras regiones: aquí solo detectan
+# el tono; Valer-IA nunca los usa). Spec 036: marcas caleñas («oís», «ve pues», «listo pues»,
+# «qué nota»); «ve» suelto no cuenta porque también es verbo («ve a la página»).
 INFORMAL = re.compile(
     r"\b(parce|parcero|parcera|jaj[a-z]*|jej[a-z]*|uy|que mas|bacano|chevere|mano|hermano|"
-    r"pana|wey|xd|lol|ome|nojoda|q hubo|quiubo|vea pues|pues si|bro)\b"
+    r"pana|wey|xd|lol|ome|nojoda|q hubo|quiubo|vea pues|pues si|bro|ois|ve pues|que mas pues|"
+    r"listo pues|que nota|de una)\b"
 )
 SPANISH_FUNCTION = re.compile(
     r"\b(que|el|la|de|es|y|en|los|las|un|una|por|con|para|me|mi|tu|no|se|lo|como|del|eso|esa|"
@@ -184,6 +188,13 @@ class TurnPlan:
     turn: int = 1
     summary_topics: tuple[str, ...] = field(default_factory=tuple)
     introduced: bool = False  # ya se presentó como Valer-IA Caña en este hilo
+    # Spec 035: regreso obligatorio a Manuelita en turnos ajenos, racha y temas sugeridos.
+    redirect: bool = False
+    streak: int = 0
+    topics: tuple[str, ...] = field(default_factory=tuple)
+    # Spec 036: nivel del estilo caleño (off, formal, neutral, informal) y expresiones sugeridas.
+    style: str = "off"
+    style_hints: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         if self.act not in DIALOGUE_ACTS:
@@ -211,6 +222,11 @@ class TurnPlan:
             "turn": self.turn,
             "summary_topics": list(self.summary_topics),
             "introduced": self.introduced,
+            "redirect": self.redirect,
+            "streak": self.streak,
+            "topics": list(self.topics),
+            "style": self.style,
+            "style_hints": list(self.style_hints),
             "bridge": self.bridge.to_dict() if self.bridge else None,
         }
         return data
@@ -236,10 +252,18 @@ class TurnPlan:
             turn=int(data.get("turn") or 1),
             summary_topics=tuple(data.get("summary_topics") or ()),
             introduced=bool(data.get("introduced")),
+            redirect=bool(data.get("redirect")),
+            streak=int(data.get("streak") or 0),
+            topics=tuple(data.get("topics") or ()),
+            style=str(data.get("style") or "off"),
+            style_hints=tuple(data.get("style_hints") or ()),
         )
 
-    def render(self) -> str:
-        """Bloque ``<plan>`` para el prompt de ``converse``."""
+    def render(self, topic_texts: Mapping[str, str] | None = None) -> str:
+        """Bloque ``<plan>`` para el prompt de ``converse``.
+
+        ``topic_texts`` traduce las claves de los temas sugeridos (``offer.topics``) a su texto.
+        """
         lengths = {
             "short": "breve: una o dos frases",
             "medium": "media: dos a cuatro frases",
@@ -265,7 +289,39 @@ class TurnPlan:
             lines.append("ya te presentaste: no repitas la presentación completa, varía la forma")
         if self.best_guess:
             lines.append("aclaración repetida: responde con la interpretación más probable")
+        if self.redirect:
+            # Spec 035: empatía breve y siempre de vuelta a Manuelita (sin abrir charla ajena).
+            lines.append(
+                "regreso a Manuelita: obligatorio (termina con el puente, un tema concreto o las "
+                "opciones)"
+            )
+            lines.append(
+                "preguntas: solo sobre Manuelita; nada sobre el tema ajeno ni la vida personal"
+            )
+            lines.append(f"turnos ajenos seguidos: {self.streak}")
+            if self.streak >= FOCUS_SHORT_STREAK:
+                lines.append("máximo dos frases: cortesía breve y opciones de Manuelita")
+            if self.topics and self.bridge is None:
+                texts = [(topic_texts or {}).get(key, key) for key in self.topics]
+                lines.append(f"temas sugeridos: {'; '.join(texts)}")
         return "<plan>\n" + "\n".join(lines) + "\n</plan>"
+
+
+# Spec 035: actos en los que la respuesta debe volver a Manuelita y no abrir charla ajena.
+FOCUS_ACTS = frozenset({"smalltalk", "off_topic", "minimal", "greeting"})
+FOCUS_SHORT_STREAK = 3  # desde este turno ajeno seguido, máximo dos frases
+FOCUS_EXEMPT_SENTIMENTS = frozenset({"distressed"})  # la angustia sigue el cuidado de la spec 019
+
+
+def needs_redirect(act: str, turn: int, assent_to_offer: bool = False) -> bool:
+    """¿Este turno debe terminar llevando la conversación a Manuelita? (spec 035, R3)."""
+    if act not in FOCUS_ACTS:
+        return False
+    if act == "greeting":
+        return turn > 1  # el primer saludo lo resuelve la presentación (spec 032)
+    if act == "minimal":
+        return not assent_to_offer
+    return True
 
 
 STRATEGIES: dict[str, tuple[str, ...]] = {
@@ -311,6 +367,9 @@ def build_plan(
     turn: int = 1,
     has_evidence: bool = False,
     topic: str | None = None,
+    focus_topics: tuple[str, ...] = (),
+    style: str = "off",
+    style_hints: tuple[str, ...] = (),
 ) -> TurnPlan:
     """Plan determinista: mismas señales, decisión y memoria ⇒ mismo plan (C §2)."""
     del config  # los parámetros de generación no cambian el plan; se reserva para extensiones
@@ -342,6 +401,13 @@ def build_plan(
         else memory.get("register") or signals.get("register") or "formal"
     )
     tiers = tuple(str(part.get("tier") or "social") for part in signals.get("requests") or [])
+    # Spec 035: regreso a Manuelita, racha de turnos ajenos y temas sugeridos. Un «ok» o un
+    # «jaja» después de un puente también vuelve a Manuelita (el plan no ve el texto, así que no
+    # distingue el asentimiento de la risa; aceptar el puente con contenido lo resuelve el router).
+    redirect = needs_redirect(act, turn) and sentiment not in FOCUS_EXEMPT_SENTIMENTS
+    streak = int(memory.get("offtopic_streak") or 0) + 1 if redirect else 0
+    if redirect and streak >= FOCUS_SHORT_STREAK:
+        length = "short"
     return TurnPlan(
         act=act,
         tiers=tiers or ("social",),
@@ -356,4 +422,9 @@ def build_plan(
         turn=turn,
         summary_topics=topics[-4:] if act == "closing" else (),
         introduced=bool(memory.get("introduced")),
+        redirect=redirect,
+        streak=streak,
+        topics=tuple(focus_topics) if redirect else (),
+        style=style,
+        style_hints=tuple(style_hints) if style != "off" else (),
     )

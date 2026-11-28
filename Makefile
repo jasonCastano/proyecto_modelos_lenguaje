@@ -6,7 +6,7 @@ PORT ?= 8000
 APP_URL ?= http://127.0.0.1:$(PORT)
 
 .DEFAULT_GOAL := help
-.PHONY: help install dev pre-commit-install pre-commit lint format format-check test python-check web-install web-dev web-test web-build web-status check-web check app structured demo-prep corpus openclaw-workspace ops-check mcp qdrant-up qdrant-native audit e2e build clean
+.PHONY: help install dev pre-commit-install pre-commit lint format format-check test python-check web-install web-dev web-test web-build web-status check-web check app structured demo-prep corpus openclaw-workspace ops-check openclaw-test mcp qdrant-up qdrant-native audit e2e build clean
 
 help: ## Muestra esta ayuda
 	@echo RAG Ingenio Manuelita — comandos disponibles
@@ -101,6 +101,11 @@ openclaw-workspace: ## Sincroniza el workspace versionado de OpenClaw (spec 024)
 
 ops-check: ## Prueba de 3 minutos del Anuncio 007 (spec 024)
 	uv run pml ops check
+
+openclaw-test: ## Pruebas del parche de cuentas por ID (spec 033) y del plugin valeria-bridge
+	node --test openclaw/patches/test/whatsapp-lid.test.mjs
+	node --test openclaw/patches/test/whatsapp-sticker.test.mjs
+	cd openclaw/plugins/valeria-bridge && npm test
 
 mcp: ## Herramientas del servidor MCP propio valeria-tools (spec 024)
 	uv run python -m proyecto_modelos_lenguaje.mcp_server --list

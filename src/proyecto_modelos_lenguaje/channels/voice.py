@@ -16,9 +16,11 @@ import io
 import re
 import time
 import uuid
+import zlib
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -95,18 +97,65 @@ def valid_script(script: str, answer: str) -> bool:
     return _numbers(script) <= _numbers(answer)
 
 
-def build_script(question: str, answer: str, language: str, model: Any | None) -> tuple[str, str]:
-    """Guion hablado y su origen (``model`` o ``fallback``)."""
+def spoken_style_block(question: str, language: str, style: str | None) -> str:
+    """Spec 036: bloque ``<estilo>`` hablado (hasta dos expresiones); vacío sin estilo."""
+    from ..agent import style as caleno
+
+    if language != "es" or not style or style == "off" or caleno.wants_plain(question):
+        return ""
+    seed = zlib.crc32(f"voz:{question}".encode())
+    hints = caleno.suggest(style, (), seed, spoken=True)
+    return caleno.render_block(style, hints, spoken=True)
+
+
+def script_style_issues(script: str, style: str | None) -> list[str]:
+    """Fragmentos del guion con expresiones vetadas, de más o fuera del nivel (spec 036)."""
+    from ..agent.review import style_issues
+
+    level = SimpleNamespace(style=style or "off")
+    checks = ("style_banned", "style_excess", "style_off")
+    return [span for _check, span in style_issues(script, level, spoken=True, checks=checks)]  # type: ignore[arg-type]
+
+
+def _drop_fragments(script: str, fragments: list[str]) -> str:
+    from ..agent.review import drop_flagged_sentences
+
+    return drop_flagged_sentences(script, fragments)
+
+
+def build_script(
+    question: str,
+    answer: str,
+    language: str,
+    model: Any | None,
+    *,
+    style: str | None = None,
+) -> tuple[str, str]:
+    """Guion hablado y su origen (``model`` o ``fallback``).
+
+    Spec 036: con ``style`` (nivel del turno) el guion puede llevar hasta dos expresiones caleñas
+    habladas. Si trae vetadas o de más, se regenera una vez y luego se quitan esas frases.
+    """
     if model is not None and answer.strip():
         from ..agent.prompts import load_agent_prompt
 
         prompt = load_agent_prompt("voice_script").render(
-            language=language, question=question.strip(), answer=answer.strip()
+            language=language,
+            question=question.strip(),
+            answer=answer.strip(),
+            style=spoken_style_block(question, language, style),
         )
         try:
-            raw = model.invoke(prompt)
-            content = getattr(raw, "content", raw)
-            script = _unspoken(str(content), language)
+            script = ""
+            for _attempt in range(2):
+                raw = model.invoke(prompt)
+                content = getattr(raw, "content", raw)
+                script = _unspoken(str(content), language)
+                if not script_style_issues(script, style):
+                    break
+            problems = script_style_issues(script, style)
+            if problems:
+                script = _drop_fragments(script, problems)
             if valid_script(script, answer):
                 return script, "model"
         except Exception:  # el guion nunca tumba la respuesta: se usa el respaldo
@@ -198,11 +247,21 @@ class ChannelVoice:
         purge_old(self.voice_dir, 0)  # al arrancar no quedan audios de una sesión anterior
 
     def for_answer(
-        self, question: str, answer: str, language: str, *, with_sources: bool = False
+        self,
+        question: str,
+        answer: str,
+        language: str,
+        *,
+        with_sources: bool = False,
+        opening: str | None = None,
+        style: str | None = None,
     ) -> VoiceReply:
+        """Guion hablado de la respuesta; ``opening`` (spec 032) lo abre sin pasar por el modelo."""
         started = time.perf_counter()
         model = self.model_factory() if self.model_factory is not None else None
-        script, source = build_script(question, answer, language, model)
+        script, source = build_script(question, answer, language, model, style=style)
+        if opening:
+            script = f"{_unspoken(opening, language)} {script}".strip()
         if with_sources:
             script = with_sources_closing(script, language)
         script_ms = round((time.perf_counter() - started) * 1000)

@@ -194,3 +194,111 @@ def test_the_closing_phrase_is_not_duplicated() -> None:
     assert with_sources_closing("Manuelita produce azúcar", "es") == (
         "Manuelita produce azúcar. Te dejo las fuentes por escrito."
     )
+
+
+# --- spec 032: la presentación abre la nota de voz (T014) --------------------------------------
+
+OPENING = "¡Hola! Soy Valer-IA, la asistente virtual de Manuelita."
+
+
+def test_the_opening_goes_first_with_the_fallback_script(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    voice = ChannelVoice(tmp_path / "voice", model_factory=None)
+    script = _script_of(
+        voice,
+        monkeypatch,
+        question="¿Qué produce Manuelita?",
+        answer=ANSWER,
+        language="es",
+        with_sources=True,
+        opening=OPENING,
+    )
+    assert script.startswith(OPENING) and script.count("Valer-IA") == 1
+    assert script.endswith("Te dejo las fuentes por escrito.")  # cierre de la spec 030
+    _assert_speakable(script)
+
+
+def test_the_opening_goes_first_with_the_model_script(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    model = ScriptModel("Manuelita produce azúcar, bioetanol y energía en el Valle del Cauca.")
+    voice = ChannelVoice(tmp_path / "voice", model_factory=lambda: model)
+    script = _script_of(
+        voice,
+        monkeypatch,
+        question="¿Qué produce Manuelita?",
+        answer=ANSWER,
+        language="es",
+        opening=OPENING,
+    )
+    assert script == f"{OPENING} {model.content}"  # el modelo nunca ve ni reescribe la apertura
+
+
+def test_without_opening_the_script_is_unchanged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    voice = ChannelVoice(tmp_path / "voice", model_factory=None)
+    kwargs = {"question": "¿Qué produce Manuelita?", "answer": ANSWER, "language": "es"}
+    assert _script_of(voice, monkeypatch, **kwargs) == fallback_script(ANSWER, "es")
+
+
+# ---------------------------------------------------------------- spec 036: estilo caleño hablado
+
+BODY = (
+    "Manuelita produce azúcar, bioetanol y energía en el Valle del Cauca, y en 2022 sus ventas "
+    "crecieron un 41,0 por ciento frente a 2021."
+)
+
+
+@dataclass
+class RecordingModel:
+    """Modelo que devuelve guiones en orden y guarda los prompts recibidos."""
+
+    replies: list[str]
+    prompts: list[str]
+
+    def invoke(self, prompt: str) -> object:
+        self.prompts.append(prompt)
+        content = self.replies[min(len(self.prompts) - 1, len(self.replies) - 1)]
+        return type("Message", (), {"content": content})()
+
+
+def test_spec036_the_prompt_gets_the_spoken_style_block() -> None:
+    from proyecto_modelos_lenguaje.channels.voice import spoken_style_block
+
+    model = RecordingModel([f"¡Ve, qué bueno! {BODY} Listo pues, te cuento más."], [])
+    script, source = build_script("¿Qué produce Manuelita?", ANSWER, "es", model, style="neutral")
+    assert source == "model" and "Listo pues" in script
+    assert "<estilo>\nnivel: neutral" in model.prompts[0]
+    assert "expresiones sugeridas (como máximo dos" in model.prompts[0]
+    assert spoken_style_block("hi", "en", "neutral") == ""
+    assert spoken_style_block("¿Qué produce?", "es", "off") == ""
+    assert spoken_style_block("habla normal", "es", "neutral") == ""
+
+
+def test_spec036_too_many_expressions_retry_then_drop_sentences() -> None:
+    from proyecto_modelos_lenguaje.agent.style import find_expressions
+
+    crowded = f"¡Ve, qué nota! {BODY} Listo pues, de una. A la orden, te cuento más de Manuelita."
+    model = RecordingModel([crowded, crowded], [])
+    script, source = build_script("¿Qué produce Manuelita?", ANSWER, "es", model, style="neutral")
+    assert len(model.prompts) == 2  # una regeneración
+    assert source == "model" and len(find_expressions(script)) <= 2
+
+
+def test_spec036_banned_words_are_never_spoken() -> None:
+    from proyecto_modelos_lenguaje.agent.style import find_banned
+
+    model = RecordingModel([f"Mirá, parce: {BODY} Si quieres, te cuento más de Manuelita."], [])
+    script, _source = build_script("¿Qué produce Manuelita?", ANSWER, "es", model, style="neutral")
+    assert not find_banned(script)
+
+
+def test_spec036_without_style_no_caleno_expressions_are_spoken() -> None:
+    from proyecto_modelos_lenguaje.agent.style import find_expressions
+
+    model = RecordingModel([f"¡Uy, qué nota! {BODY} Si quieres, te cuento más de Manuelita."], [])
+    script, _source = build_script("¿Qué produce Manuelita?", ANSWER, "es", model, style="off")
+    assert "<estilo>\nnivel" not in model.prompts[0]
+    assert not find_expressions(script)

@@ -1,0 +1,78 @@
+# Stickers de Valer-IA en WhatsApp (spec 034, research R3).
+#
+# Los archivos son los aprobados en la spec 030 (docs/whatsapp/stickers/) y no se modifican aquí.
+# Cada sticker declara su texto visible (exacto del diseño), el idioma de ese texto ("none" si no tiene),
+# las situaciones de la conversación en que se usa y si va antes o después del texto de la respuesta.
+#
+# Situaciones (vocabulario cerrado) y prioridad cuando concurren varias en un mismo turno:
+#   profile_saved > action_done > closing > thanks > greeting_first_contact > greeting_new_conversation
+#   > greeting_mid > assent > useful_answer (spec 037: respuesta útil con fuentes; «¡Listo!» y el pulgar
+#   se alternan, en una de cada dos respuestas informativas)
+# «thinking» lo envía el plugin cuando la respuesta tarda (no lo decide el backend).
+#
+# Moderación (spec 037; config/agent.toml, [channels]): un sticker por respuesta, máximo
+# `stickers_per_conversation` por conversación y el mismo sticker nunca en dos respuestas seguidas (salvo
+# el pulgar y la despedida). La persona puede pedir «sin stickers».
+
+[stickers.valeria-bienvenido]
+file = "docs/whatsapp/stickers/valeria-bienvenido.webp"
+text = "¡Bienvenido!"
+language = "es"
+situations = ["greeting_first_contact"]
+position = "before"
+
+[stickers.valeria-hola]
+file = "docs/whatsapp/stickers/valeria-hola.webp"
+text = "Hola"
+language = "es"
+situations = ["greeting_new_conversation"]
+position = "before"
+
+[stickers.valeria-consulta]
+file = "docs/whatsapp/stickers/valeria-consulta.webp"
+text = "¿Cuál es tu consulta?"
+language = "es"
+situations = ["greeting_mid"]
+position = "after"
+
+[stickers.valeria-gracias]
+file = "docs/whatsapp/stickers/valeria-gracias.webp"
+text = "¡Gracias!"
+language = "es"
+situations = ["thanks"]
+position = "after"
+
+[stickers.valeria-lindo-dia]
+file = "docs/whatsapp/stickers/valeria-lindo-dia.webp"
+text = "Lindo día"
+language = "es"
+situations = ["closing"]
+position = "after"
+
+[stickers.valeria-pulgar]
+file = "docs/whatsapp/stickers/valeria-pulgar.webp"
+text = ""
+language = "none"
+situations = ["assent", "useful_answer"]
+position = "after"
+
+[stickers.valeria-gracias-confianza]
+file = "docs/whatsapp/stickers/valeria-gracias-confianza.webp"
+text = "¡Gracias por confiar en nosotros!"
+language = "es"
+situations = ["profile_saved"]
+position = "after"
+
+[stickers.valeria-listo]
+file = "docs/whatsapp/stickers/valeria-listo.webp"
+text = "¡Listo!"
+language = "es"
+situations = ["action_done", "useful_answer"]
+position = "after"
+
+[stickers.valeria-pensando]
+file = "docs/whatsapp/stickers/valeria-pensando.webp"
+text = "Pensando"
+language = "es"
+situations = ["thinking"]
+position = "before"

@@ -187,6 +187,7 @@ class CarePlaybook:
     variants: dict[str, tuple[str, ...]]
     citations: dict[str, CareCitation]
     angles: dict[str, Angle] = field(default_factory=dict)  # spec 020: angles.<tema>
+    topics: dict[str, str] = field(default_factory=dict)  # spec 035: offer.topics (clave → texto)
 
 
 def _parse_angle(key: str, body: str) -> Angle:
@@ -203,6 +204,22 @@ def _parse_angle(key: str, body: str) -> Angle:
     if not keywords:
         raise ValueError(f"care.md [{key}]: faltan las palabras clave.")
     return Angle(keywords, angle)
+
+
+def _parse_topics(key: str, body: str) -> dict[str, str]:
+    """Spec 035: sección ``offer.topics``, líneas ``- clave | texto`` (entre 4 y 10 temas)."""
+    topics: dict[str, str] = {}
+    for raw in body.splitlines():
+        line = raw.strip()
+        if not line.startswith("- "):
+            continue
+        name, _, text = line[2:].partition("|")
+        if not name.strip() or not text.strip():
+            raise ValueError(f"care.md [{key}]: cada tema debe ser «- clave | texto».")
+        topics[name.strip()] = text.strip()
+    if not 4 <= len(topics) <= 10:
+        raise ValueError(f"care.md [{key}]: debe tener entre 4 y 10 temas.")
+    return topics
 
 
 def _parse_care_section(key: str, body: str) -> tuple[tuple[str, ...], CareCitation | None]:
@@ -239,9 +256,13 @@ def load_care(project_root: Path | None = None) -> CarePlaybook:
     variants: dict[str, tuple[str, ...]] = {}
     citations: dict[str, CareCitation] = {}
     angles: dict[str, Angle] = {}
+    topics: dict[str, str] = {}
     for key, body in sections.items():
         if key.startswith("angles."):
             angles[key.removeprefix("angles.")] = _parse_angle(key, body)
+            continue
+        if key == "offer.topics":
+            topics = _parse_topics(key, body)
             continue
         parsed, citation = _parse_care_section(key, body)
         variants[key] = parsed
@@ -255,6 +276,7 @@ def load_care(project_root: Path | None = None) -> CarePlaybook:
         variants=variants,
         citations=citations,
         angles=angles,
+        topics=topics,
     )
 
 
@@ -306,7 +328,7 @@ def load_plain_prompt(name: str, project_root: Path | None = None) -> tuple[str,
 
     Devuelve (versión, sha256, texto sin el comentario de versión).
     """
-    if name not in {"converse_judge", "visitor_sim"}:
+    if name not in {"converse_judge", "visitor_sim", "style_judge"}:  # spec 036: style_judge
         raise TaskError("invalid_config", f"Prompt desconocido: {name}.", task=name)
     version, _sections = load_sections(name, project_root=project_root)
     root = Path(project_root) if project_root is not None else PROJECT_ROOT

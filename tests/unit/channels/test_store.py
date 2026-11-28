@@ -175,3 +175,131 @@ def test_an_older_database_gains_the_new_tables(tmp_path: Path) -> None:
     store = ChannelStore(path)
     assert store.ensure_user("wa-0123456789abcdef", "whatsapp", "x") == "h1"  # el hilo se conserva
     assert store.block("wa-0123456789abcdef") is True
+
+
+# --- spec 032: inicio de conversación y presentación (T005) ---
+
+USER = "wa-0123456789abcdef"
+
+
+def test_existing_threads_count_as_introduced_after_migration(tmp_path: Path) -> None:
+    path = tmp_path / "old.sqlite3"
+    db = sqlite3.connect(path)
+    db.executescript(
+        "CREATE TABLE channel_threads (thread_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, "
+        "created_at TEXT NOT NULL, closed_at TEXT, started INTEGER NOT NULL DEFAULT 0);"
+        "INSERT INTO channel_threads VALUES ('t1', 'wa-1', '2026-11-24', NULL, 1);"
+    )
+    db.commit()
+    db.close()
+
+    store = ChannelStore(path)
+
+    assert store.is_introduced("t1")  # nadie recibe la presentación a mitad de conversación
+
+
+def test_new_threads_start_without_introduction(tmp_path: Path) -> None:
+    store = ChannelStore(tmp_path / "c.sqlite3")
+    first = store.ensure_user(USER, "whatsapp", "x")
+    assert not store.is_introduced(first)
+    store.mark_introduced(first)
+    assert store.is_introduced(first)
+    second = store.new_thread(USER)
+    assert not store.is_introduced(second)
+
+
+def test_adopt_thread_keeps_the_introduction_flag(tmp_path: Path) -> None:
+    store = ChannelStore(tmp_path / "c.sqlite3")
+    placeholder = store.ensure_user(USER, "whatsapp", "x")
+    store.adopt_thread(USER, placeholder, "servicio-1")
+    assert not store.is_introduced("servicio-1")
+    store.mark_introduced("servicio-1")
+    assert store.is_introduced("servicio-1")
+
+
+def test_open_conversation_reports_first_contact_and_inactivity(tmp_path: Path) -> None:
+    clock = Clock()
+    path = tmp_path / "c.sqlite3"
+    store = ChannelStore(path, clock=clock)
+
+    first, reason = store.open_conversation(USER, "whatsapp", "x", idle_hours=12)
+    assert reason == "first_contact"
+
+    clock.now += timedelta(hours=11)
+    same, reason = store.open_conversation(USER, "whatsapp", "x", idle_hours=12)
+    assert (same, reason) == (first, None)
+
+    clock.now += timedelta(hours=12, minutes=1)  # 12 h después del último mensaje
+    fresh, reason = store.open_conversation(USER, "whatsapp", "x", idle_hours=12)
+    assert reason == "inactivity" and fresh != first
+    assert not store.is_introduced(fresh)
+    closed = (
+        sqlite3.connect(path)
+        .execute("SELECT closed_at FROM channel_threads WHERE thread_id = ?", (first,))
+        .fetchone()
+    )
+    assert closed[0] is not None
+    assert store.ensure_user(USER, "whatsapp", "x") == fresh  # el hilo nuevo queda activo
+
+
+# --- spec 034: uso de stickers por hilo (T006) --------------------------------------------------
+
+
+def test_sticker_usage_survives_adoption(tmp_path: Path) -> None:
+    store = ChannelStore(tmp_path / "c.sqlite3")
+    placeholder = store.ensure_user(USER, "whatsapp", "x")
+    assert store.count_answered(placeholder) == 1
+    store.record_sticker(placeholder, "valeria-hola", 1)
+    store.adopt_thread(USER, placeholder, "servicio-1")
+    assert store.count_answered("servicio-1") == 2
+    usage = store.sticker_usage("servicio-1", 2)
+    assert usage.sent == ("valeria-hola",) and usage.last_sticker_turn == 1 and usage.turn_no == 2
+
+
+def test_an_older_database_gains_the_sticker_table(tmp_path: Path) -> None:
+    path = tmp_path / "old.sqlite3"
+    db = sqlite3.connect(path)
+    db.executescript(
+        "CREATE TABLE channel_threads (thread_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, "
+        "created_at TEXT NOT NULL, closed_at TEXT, started INTEGER NOT NULL DEFAULT 0);"
+        "INSERT INTO channel_threads VALUES ('t1', 'wa-1', '2026-11-24', NULL, 1);"
+    )
+    db.commit()
+    db.close()
+    store = ChannelStore(path)
+    assert store.sticker_usage("t1", 1).sent == () and store.count_answered("t1") == 1
+
+
+# --- spec 037: último sticker, situación y «sin stickers» (T003) ------------------------------
+
+
+def test_spec037_usage_reports_last_sticker_situation_and_off(tmp_path: Path) -> None:
+    store = ChannelStore(tmp_path / "c.sqlite3")
+    thread = store.ensure_user(USER, "whatsapp", "x")
+    store.record_sticker(thread, "valeria-bienvenido", 1, "greeting_first_contact")
+    store.record_sticker(thread, "valeria-listo", 2, "useful_answer")
+    usage = store.sticker_usage(thread, 3)
+    assert usage.last_sticker == "valeria-listo" and usage.last_situation == "useful_answer"
+    assert usage.sent == ("valeria-bienvenido", "valeria-listo") and usage.off is False
+    store.set_stickers_off(thread)
+    store.adopt_thread(USER, thread, "servicio-1")
+    again = store.sticker_usage("servicio-1", 4)
+    assert again.off is True and again.last_sticker == "valeria-listo"
+
+
+def test_spec037_an_older_sticker_table_gains_the_situation(tmp_path: Path) -> None:
+    path = tmp_path / "old.sqlite3"
+    db = sqlite3.connect(path)
+    db.executescript(
+        "CREATE TABLE channel_threads (thread_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, "
+        "created_at TEXT NOT NULL, closed_at TEXT, started INTEGER NOT NULL DEFAULT 0);"
+        "INSERT INTO channel_threads VALUES ('t1', 'wa-1', '2026-11-24', NULL, 1);"
+        "CREATE TABLE channel_stickers (thread_id TEXT NOT NULL, sticker TEXT NOT NULL, "
+        "turn_no INTEGER NOT NULL, sent_at TEXT NOT NULL);"
+        "INSERT INTO channel_stickers VALUES ('t1', 'valeria-hola', 1, '2026-11-24');"
+    )
+    db.commit()
+    db.close()
+    store = ChannelStore(path)
+    usage = store.sticker_usage("t1", 2)
+    assert usage.sent == ("valeria-hola",) and usage.last_situation is None and usage.off is False

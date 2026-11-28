@@ -1008,6 +1008,7 @@ async def channel_message(request: Request) -> dict[str, Any] | JSONResponse:
         payload.text,
         input_mode=payload.input_mode or "text",
         language_hint=payload.language_hint,
+        received_at=payload.received_at,  # spec 033: descarta entregas tardías
     )
     try:
         reply = await run_in_threadpool(_channel_bridge().handle, message)

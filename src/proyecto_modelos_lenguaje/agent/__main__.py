@@ -191,6 +191,16 @@ def build_parser() -> argparse.ArgumentParser:
     converse_cmd.add_argument(
         "--json-out", default=None, help="Informe JSON (por defecto en real)."
     )
+    converse_cmd.add_argument(
+        "--focus",
+        action="store_true",
+        help="Spec 035: corre focus.jsonl y escribe docs/evaluacion_enfoque.{md,json}.",
+    )
+    converse_cmd.add_argument(
+        "--style",
+        action="store_true",
+        help="Spec 036: corre caleno.jsonl y escribe docs/evaluacion_caleno.{md,json}.",
+    )
     jev_cmd = sub.add_parser(
         "jev", help="Gatekeeper System One Jev (spec 022): chequeo, validación y comparación."
     )
@@ -289,6 +299,10 @@ def _converse(args: argparse.Namespace) -> int:
     if args.repeats < 1:
         print("error de configuración: --repeats debe ser >= 1", file=sys.stderr)
         return 2
+    if getattr(args, "focus", False):
+        return _converse_focus(args)
+    if getattr(args, "style", False):
+        return _converse_style(args)
     try:
         report = run_converse(
             mode=args.mode,
@@ -316,6 +330,67 @@ def _converse(args: argparse.Namespace) -> int:
     else:
         print(render_markdown(report))
     return 0 if report["meets_hard"] else 1
+
+
+def _converse_style(args: argparse.Namespace) -> int:
+    """``agent converse --style`` (spec 036): 0 si cumple, 1 si no, 2 por error."""
+    from .converse_eval import (
+        STYLE_JSON,
+        render_style_markdown,
+        run_style,
+        write_style_reports,
+    )
+
+    try:
+        report = run_style(mode=args.mode, variants=tuple(args.variants))
+    except Exception as exc:
+        print(f"error de configuración: {exc}", file=sys.stderr)
+        return 2
+    for variant, row in report["summary"].items():
+        flags = {k: v for k, v in row["flags"].items() if v}
+        status = "0 turnos marcados" if not flags else f"marcados {flags}"
+        print(
+            f"{variant}: uso {row['usage_rate']:.0%}; {status}; juez {row['judge']} "
+            f"({row['judged_by']})"
+        )
+    if args.json_out:
+        write_style_reports(report, Path(args.json_out))
+        print(f"informe: {args.json_out}")
+    elif args.mode == "real":
+        write_style_reports(report)
+        print(f"informe: {STYLE_JSON} y su Markdown")
+    else:
+        print(render_style_markdown(report))
+    return 0 if report["meets"] else 1
+
+
+def _converse_focus(args: argparse.Namespace) -> int:
+    """``agent converse --focus`` (spec 035): 0 sin turnos marcados, 1 si hay, 2 por error."""
+    from .converse_eval import (
+        FOCUS_JSON,
+        render_focus_markdown,
+        run_focus,
+        write_focus_reports,
+    )
+
+    try:
+        report = run_focus(mode=args.mode, variants=tuple(args.variants))
+    except Exception as exc:
+        print(f"error de configuración: {exc}", file=sys.stderr)
+        return 2
+    for variant, row in report["summary"].items():
+        flags = {k: v for k, v in row["flags"].items() if v}
+        status = "0 turnos marcados" if not flags else f"marcados {flags}"
+        print(f"{variant}: {status}; empatía {row['empathy']} ({row['judged_by']})")
+    if args.json_out:
+        write_focus_reports(report, Path(args.json_out))
+        print(f"informe: {args.json_out}")
+    elif args.mode == "real":
+        write_focus_reports(report)
+        print(f"informe: {FOCUS_JSON} y su Markdown")
+    else:
+        print(render_focus_markdown(report))
+    return 0 if report["meets"] else 1
 
 
 def _conduct(args: argparse.Namespace) -> int:

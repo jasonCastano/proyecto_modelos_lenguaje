@@ -77,3 +77,10 @@ voice_dir = "channels/voice"  # relativo a MANUELITA_STATE_DIR (fuera del reposi
 rate_window_minutes = 10  # ventana corta
 rate_max_messages = 20    # mensajes por número en la ventana; luego un aviso amable y silencio
 daily_max_messages = 100  # tope diario por número (día local)
+# Spec 032: horas sin mensajes tras las que el siguiente abre una conversación nueva (con saludo)
+conversation_idle_hours = 12
+# Spec 033: minutos tras los que un mensaje recibido tarde se descarta sin responder
+stale_minutes = 15
+# Spec 034: stickers de Valer-IA en WhatsApp (config/stickers.toml dice cuándo se usa cada uno)
+stickers = true
+stickers_per_conversation = 8  # máximo por conversación (0 = sin stickers); spec 037: uso activo

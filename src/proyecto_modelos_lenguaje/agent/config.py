@@ -137,6 +137,13 @@ class ChannelsConfig:
     rate_window_minutes: int = 10
     rate_max_messages: int = 20
     daily_max_messages: int = 100
+    # Spec 032: horas sin mensajes tras las que el siguiente abre una conversación nueva.
+    conversation_idle_hours: int = 12
+    # Spec 033: minutos tras los que un mensaje recibido tarde se descarta sin responder.
+    stale_minutes: int = 15
+    # Spec 034: stickers de Valer-IA en WhatsApp (interruptor y máximo por conversación).
+    stickers: bool = True
+    stickers_per_conversation: int = 4
 
 
 @dataclass(frozen=True, slots=True)
@@ -272,7 +279,7 @@ def channels_config(section: Any) -> ChannelsConfig:
         raise AgentConfigError("[channels] debe ser una tabla.")
     defaults = ChannelsConfig()
     flags: dict[str, bool] = {}
-    for key in ("enabled", "voice_notes"):
+    for key in ("enabled", "voice_notes", "stickers"):
         value = section.get(key, getattr(defaults, key))
         if not isinstance(value, bool):
             raise AgentConfigError(f"channels.{key} debe ser true o false.")
@@ -289,6 +296,9 @@ def channels_config(section: Any) -> ChannelsConfig:
         "rate_window_minutes": (1, 1440),
         "rate_max_messages": (1, 1000),
         "daily_max_messages": (1, 10000),
+        "conversation_idle_hours": (1, 720),
+        "stale_minutes": (1, 1440),
+        "stickers_per_conversation": (0, 20),
     }
     numbers: dict[str, int] = {}
     for key, (low, high) in limits.items():

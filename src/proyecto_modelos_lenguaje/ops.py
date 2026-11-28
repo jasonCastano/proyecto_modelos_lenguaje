@@ -201,9 +201,7 @@ def _openclaw_env_values(path: Path, keys: Sequence[str]) -> dict[str, str]:
 
 def channel_mode(state_dir: Path | None = None) -> CheckResult:
     """Spec 031: modo del canal de WhatsApp (abierto o cerrado), sin mostrar números."""
-    configured = os.environ.get("OPENCLAW_STATE_DIR", "").strip()
-    base = state_dir or (Path(configured) if configured else Path.home() / OPENCLAW_DIR)
-    env_file = base / ".env"
+    env_file = _openclaw_state(state_dir) / ".env"
     if not env_file.is_file():
         return CheckResult("modo-canal", False, "sin .env de OpenClaw")
     keys = ("WA_DM_POLICY", "WA_ALLOW_1", "WA_ALLOW_2", "WA_ALLOW_3")
@@ -215,6 +213,178 @@ def channel_mode(state_dir: Path | None = None) -> CheckResult:
         )
     allowed = sum(1 for key in keys[1:] if values.get(key) and values[key] != "*")
     return CheckResult("modo-canal", True, f"cerrado ({allowed} números de prueba)")
+
+
+LID_MARK = "valeria-lid v1"
+LID_THROW = 'throw new Error("WhatsApp inbound LID identity unavailable")'
+STICKER_MARK = "valeria-sticker v2"  # spec 037 (ADR 0039)
+
+
+def _openclaw_state(state_dir: Path | None) -> Path:
+    configured = os.environ.get("OPENCLAW_STATE_DIR", "").strip()
+    return state_dir or (Path(configured) if configured else Path.home() / OPENCLAW_DIR)
+
+
+def lid_support(state_dir: Path | None = None) -> CheckResult:
+    """Spec 033: estado del soporte para cuentas de WhatsApp identificadas solo por ID (LID).
+
+    Mismo diagnóstico que ``openclaw/patches/whatsapp-lid.mjs --check``, en Python y sin ``node``:
+    parche aplicado, soporte nativo del componente, o ausente (con la instrucción para aplicarlo).
+    """
+    projects = _openclaw_state(state_dir) / "npm" / "projects"
+    pattern = "openclaw-whatsapp*/node_modules/@openclaw/whatsapp/dist/.setup"
+    plugins = sorted(projects.glob(pattern))
+    if not plugins:
+        return CheckResult("soporte-lid", False, "componente de WhatsApp no instalado")
+    states = []
+    for setup in plugins:
+        monitors = [p.read_text(encoding="utf-8") for p in setup.glob("monitor-*.mjs")]
+        targets = [p.read_text(encoding="utf-8") for p in setup.glob("normalize-target-*.mjs")]
+        if any(LID_MARK in text for text in monitors) and any(LID_MARK in t for t in targets):
+            states.append("parcheado")
+        elif not any(LID_THROW in text for text in monitors):
+            states.append("nativo")
+        else:
+            states.append("ausente")
+    if "ausente" in states:
+        return CheckResult(
+            "soporte-lid", False, "falta: ejecuta .\\scripts\\openclaw_env.ps1 -Install"
+        )
+    if all(state == "nativo" for state in states):
+        return CheckResult("soporte-lid", True, "nativo del componente")
+    return CheckResult("soporte-lid", True, "parche valeria-lid v1")
+
+
+def sticker_support(state_dir: Path | None = None) -> CheckResult:
+    """Spec 037: parche que deja al plugin alcanzar la conexión activa de WhatsApp (stickers).
+
+    Mismo diagnóstico que ``openclaw/patches/whatsapp-sticker.mjs --check``, sin ``node``.
+    """
+    projects = _openclaw_state(state_dir) / "npm" / "projects"
+    pattern = "openclaw-whatsapp*/node_modules/@openclaw/whatsapp/dist/.setup"
+    plugins = sorted(projects.glob(pattern))
+    if not plugins:
+        return CheckResult("soporte-sticker", False, "componente de WhatsApp no instalado")
+    patched = [
+        any(STICKER_MARK in p.read_text(encoding="utf-8") for p in setup.glob("monitor-*.mjs"))
+        and any(
+            STICKER_MARK in p.read_text(encoding="utf-8")
+            for p in setup.glob("send-*.mjs")
+            if not p.name.startswith("send-api-")
+        )
+        for setup in plugins
+    ]
+    if all(patched):
+        return CheckResult("soporte-sticker", True, "parche valeria-sticker v2")
+    return CheckResult(
+        "soporte-sticker", False, "falta: ejecuta .\\scripts\\openclaw_env.ps1 -Install"
+    )
+
+
+def stickers_check(enabled: bool | None = None, catalog: Any = None) -> CheckResult:
+    """Spec 034: stickers disponibles para el canal (los faltantes se nombran, sin fallar)."""
+    from .channels.stickers import load_catalog
+
+    if enabled is None:
+        from .agent.config import load_agent_config
+
+        enabled = load_agent_config().channels.stickers
+    if not enabled:
+        return CheckResult("stickers", True, "apagados")
+    catalog = catalog if catalog is not None else load_catalog()
+    total = len(catalog.stickers) + len(catalog.unavailable)
+    detail = f"{len(catalog.stickers)}/{total} disponibles"
+    if catalog.unavailable:
+        detail += " (faltan: " + ", ".join(sorted(catalog.unavailable)) + ")"
+    return CheckResult("stickers", bool(catalog.stickers), detail)
+
+
+STICKER_SENT = re.compile(r"valeria-bridge: sticker enviado \(([^)]*)\)")
+STICKER_FAILED = re.compile(
+    r"valeria-bridge: (?:sticker no enviado|no se pudo enviar el sticker)(.*)"
+)
+STICKER_ROUTE = re.compile(r"valeria-bridge: (stickers listos vía \w+|sin vía de stickers)")
+THINKING_FILE = "valeria-pensando"
+
+
+def _gateway_lines(gateway_dir: Path, day: str) -> list[tuple[str, str]]:
+    """``(fecha UTC, mensaje)`` del log del gateway del día y sus vecinos (hora local)."""
+    from datetime import date, timedelta
+
+    base = date.fromisoformat(day)
+    lines: list[tuple[str, str]] = []
+    for offset in (-1, 0, 1):
+        path = gateway_dir / f"openclaw-{(base + timedelta(days=offset)).isoformat()}.log"
+        if not path.is_file():
+            continue
+        for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            if "valeria-bridge" not in raw:
+                continue
+            try:
+                row = json.loads(raw)
+            except ValueError:
+                continue
+            when = str((row.get("_meta") or {}).get("date") or "")[:10]
+            message = " ".join(str(v) for k, v in row.items() if k != "_meta")
+            lines.append((when, message))
+    return lines
+
+
+def stickers_today(
+    journal: Path | None = None, gateway_dir: Path | None = None, day: str | None = None
+) -> CheckResult:
+    """Spec 037 (FR-004): stickers elegidos por el backend frente a entregados por el gateway hoy.
+
+    Elegidos: registro del canal (campo ``sticker``). Entregados y fallidos: líneas del plugin en el
+    log del gateway («Pensando» no cuenta: lo decide el plugin). Falla si se eligen y no llega
+    ninguno.
+    """
+    from datetime import UTC, datetime
+
+    day = day or datetime.now(UTC).date().isoformat()
+    if journal is None:
+        from .agent.config import resolve_state_dir
+
+        journal = resolve_state_dir() / "logs" / "channels.jsonl"
+    gateway_dir = gateway_dir or (_openclaw_state(None) / "tmp" / "openclaw")
+    chosen = 0
+    if journal.is_file():
+        for raw in journal.read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                row = json.loads(raw)
+            except ValueError:
+                continue
+            if str(row.get("ts") or "")[:10] == day and row.get("sticker"):
+                chosen += 1
+    sent = failed = 0
+    reasons: dict[str, int] = {}
+    route = ""
+    for when, message in _gateway_lines(gateway_dir, day):
+        if when != day:
+            continue
+        found = STICKER_ROUTE.search(message)
+        if found:
+            route = found.group(1)
+        if THINKING_FILE in message:
+            continue
+        if STICKER_SENT.search(message):
+            sent += 1
+        elif STICKER_FAILED.search(message):
+            failed += 1
+            tail = STICKER_FAILED.search(message).group(1)  # type: ignore[union-attr]
+            words = tail.split(":")[-1].split()
+            reason = "sin-listener" if "listener" in tail else (words[0] if words else "error")
+            reasons[reason] = reasons.get(reason, 0) + 1
+    detail = f"elegidos {chosen} · entregados {sent} · fallidos {failed}"
+    if reasons:
+        detail += f" ({max(reasons, key=reasons.get)})"
+    if route:
+        detail += f"; {route}"
+    if chosen and not sent:
+        return CheckResult("stickers-hoy", False, detail + " — no llega ninguno")
+    if sent < chosen:
+        detail = "⚠ " + detail
+    return CheckResult("stickers-hoy", True, detail)
 
 
 def ops_check(
@@ -247,6 +417,11 @@ def ops_check(
     ):
         code, output = run(command)
         results.append(judge_openclaw(name, code, output))
+        if name == "whatsapp":
+            results.append(lid_support())  # spec 033
+            results.append(sticker_support())  # spec 037
+            results.append(stickers_check())  # spec 034
+            results.append(stickers_today())  # spec 037
     code, output = run(["git", "status", "--short"])
     dirty = [line for line in output.splitlines() if line.strip()]
     results.append(

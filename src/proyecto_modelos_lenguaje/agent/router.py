@@ -275,6 +275,33 @@ def tool_cue_decision(message: str, text: str) -> RouteDecision | None:
     return None
 
 
+STYLE_MEANING = re.compile(r"\b(que significa|que quiere decir|significado de|que es eso de)\b")
+
+
+def _style_turn(message: str, text: str) -> RouteDecision | None:
+    """Spec 036: «¿qué significa "ve"?» y «habla normal» se conversan; no se buscan en el corpus."""
+    from . import style as caleno
+
+    if caleno.wants_plain(message):
+        return RouteDecision(
+            route="direct",
+            confidence=0.95,
+            reason="pide hablar sin modismos (spec 036)",
+            decided_by="rules",
+            act="smalltalk",
+        )
+    asks = len(text.split()) <= 8 and STYLE_MEANING.search(text) and "manuelita" not in text
+    if asks and caleno.named_expressions(message):
+        return RouteDecision(
+            route="direct",
+            confidence=0.9,
+            reason="pregunta por una expresión caleña (spec 036)",
+            decided_by="rules",
+            act="smalltalk",
+        )
+    return None
+
+
 def rule_decision(message: str, signals: Mapping[str, Any] | None = None) -> RouteDecision | None:
     """Etapa 1: decide sin modelo cuando el caso es inequívoco; si no, ``None``.
 
@@ -320,6 +347,9 @@ def rule_decision(message: str, signals: Mapping[str, Any] | None = None) -> Rou
             reason="pregunta por la naturaleza de la asistente",
             decided_by="rules",
         )
+    style_turn = _style_turn(message, text)
+    if style_turn is not None:
+        return style_turn
     if len(words) <= 8 and all(word in SMALLTALK for word in words):
         return RouteDecision(
             route="direct",

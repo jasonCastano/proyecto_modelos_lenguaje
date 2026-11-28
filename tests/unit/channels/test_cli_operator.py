@@ -56,3 +56,33 @@ def test_invalid_numbers_fail_without_echoing_them(
     assert cli.main(["pseudonym", "--sender", "no-es-un-numero"]) == cli.EXIT_ERROR
     captured = capsys.readouterr()
     assert "no-es-un-numero" not in captured.out
+
+
+# --- spec 033: bloqueo por seudónimo (T019) ----------------------------------------------------
+
+USER = "wa-0123456789abcdef"
+
+
+def test_block_and_unblock_by_pseudonym(state: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["block", "--pseudonym", USER]) == cli.EXIT_OK
+    store = ChannelStore(state / "channels.sqlite3")
+    assert store.is_blocked(USER)
+    store.close()
+    assert cli.main(["unblock", "--pseudonym", USER]) == cli.EXIT_OK
+    out = capsys.readouterr().out
+    assert f"bloqueado {USER}" in out and f"desbloqueado {USER}" in out
+
+
+def test_invalid_pseudonym_fails_without_echo(
+    state: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert cli.main(["block", "--pseudonym", "wa-573001234567"]) == cli.EXIT_ERROR
+    captured = capsys.readouterr()
+    assert "573001234567" not in captured.out + captured.err
+
+
+def test_sender_and_pseudonym_are_mutually_exclusive(state: Path) -> None:
+    with pytest.raises(SystemExit):
+        cli.main(["block", "--sender", NUMBER, "--pseudonym", USER])
+    with pytest.raises(SystemExit):
+        cli.main(["block"])

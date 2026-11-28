@@ -104,7 +104,14 @@
       "valeria-bridge": {
         enabled: true,
         hooks: { allowConversationAccess: true },
-        config: { backendUrl: "http://127.0.0.1:8000", timeoutMs: 90000, channels: ["whatsapp", "telegram"] },
+        // Spec 034: stickers aprobados (spec 030) y espera antes de «Pensando» (0 lo apaga).
+        config: {
+          backendUrl: "http://127.0.0.1:8000",
+          timeoutMs: 90000,
+          channels: ["whatsapp", "telegram"],
+          stickersDir: "${VALERIA_REPO}/docs/whatsapp/stickers",
+          stickerThinkingMs: 8000,
+        },
       },
     },
   },

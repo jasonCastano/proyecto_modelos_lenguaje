@@ -10,9 +10,14 @@
         --script tests/fixtures/channels/natural_conversation.jsonl          # spec 028
     uv run python -m proyecto_modelos_lenguaje.channels simulate --sender +570000000001 \\
         --script tests/fixtures/channels/language_format.jsonl --check       # spec 029
+    uv run python -m proyecto_modelos_lenguaje.channels simulate \
+        --script tests/fixtures/channels/conversation_start.jsonl --check    # spec 032
+    uv run python -m proyecto_modelos_lenguaje.channels simulate \
+        --script tests/fixtures/channels/stickers.jsonl --check              # spec 034
     uv run python -m proyecto_modelos_lenguaje.channels pseudonym --sender <número>   # spec 031
     uv run python -m proyecto_modelos_lenguaje.channels block --sender <número>
     uv run python -m proyecto_modelos_lenguaje.channels unblock --sender <número>
+    uv run python -m proyecto_modelos_lenguaje.channels block --pseudonym wa-<16 hex>   # spec 033
     uv run python -m proyecto_modelos_lenguaje.channels blocked
 
 Usa ``VALERIA_CHANNEL_TOKEN`` del ``.env`` y llama ``POST /api/channels/messages`` como lo haría el
@@ -26,6 +31,7 @@ import argparse
 import json
 import os
 import re
+import secrets
 import sys
 import time
 import uuid
@@ -39,6 +45,7 @@ from dotenv import load_dotenv
 from ..config import PROJECT_ROOT
 
 EXIT_OK, EXIT_ERROR, EXIT_UNAVAILABLE = 0, 1, 2
+PSEUDONYM = re.compile(r"(?:wa|tg)-[0-9a-f]{16}")  # spec 033: bloqueo por seudónimo
 COMMAND_MENTION = re.compile(r"(?<![\w/])/[a-záéíóúñ]+", re.IGNORECASE)
 
 
@@ -49,15 +56,27 @@ def build_parser() -> argparse.ArgumentParser:
     # imprimen el número.
     for name, text in (
         ("pseudonym", "imprime el seudónimo wa-… de un número (para VALERIA_OPERATORS)"),
-        ("block", "bloquea un número (no recibe respuesta)"),
-        ("unblock", "desbloquea un número"),
+        ("block", "bloquea un número o un seudónimo (no recibe respuesta)"),
+        ("unblock", "desbloquea un número o un seudónimo"),
     ):
         operator = commands.add_parser(name, help=text)
-        operator.add_argument("--sender", required=True, help="número E.164")
+        if name == "pseudonym":
+            operator.add_argument("--sender", required=True, help="número E.164")
+        else:
+            # Spec 033: las cuentas que WhatsApp entrega solo con su ID no tienen número conocido;
+            # se bloquean con el seudónimo que muestran los registros.
+            who = operator.add_mutually_exclusive_group(required=True)
+            who.add_argument("--sender", help="número E.164")
+            who.add_argument("--pseudonym", help="seudónimo wa-<16 hex> de los registros")
         operator.add_argument("--channel", default="whatsapp", choices=("whatsapp", "telegram"))
     commands.add_parser("blocked", help="lista los seudónimos bloqueados")
     simulate = commands.add_parser("simulate", help="envía un mensaje como el puente de OpenClaw")
-    simulate.add_argument("--sender", required=True, help="número E.164 (de prueba)")
+    simulate.add_argument(
+        "--sender",
+        default="+570000000001",
+        help="número E.164 de prueba (ficticio por defecto; los guiones con «conversation» "
+        "usan uno nuevo por conversación)",
+    )
     simulate.add_argument("--text", default=None)
     simulate.add_argument("--kind", default="text")
     simulate.add_argument("--channel", default="whatsapp", choices=("whatsapp", "telegram"))
@@ -154,12 +173,17 @@ def run_script(args: argparse.Namespace, url: str, token: str) -> int:
     mentions = 0
     findings = 0
     check = bool(getattr(args, "check", False))
+    senders: dict[str, str] = {}  # spec 032: cada «conversation» es un número ficticio nuevo
+    stickers: dict[str, list[str]] = {}  # spec 034: stickers por conversación
     for raw in lines:
         if not raw.strip():
             continue
         item = json.loads(raw)
         kind = item.get("kind", "text")
-        body = _message(args, args.sender, item.get("text"), kind, item.get("lang"))
+        sender = args.sender
+        if item.get("conversation"):
+            sender = senders.setdefault(str(item["conversation"]), fresh_sender())
+        body = _message(args, sender, item.get("text"), kind, item.get("lang"))
         response = httpx.post(
             url, json=body, headers={"X-Channel-Token": token}, timeout=args.timeout
         )
@@ -180,9 +204,14 @@ def run_script(args: argparse.Namespace, url: str, token: str) -> int:
             print(f"  ⚠ menciona comandos: {', '.join(found)}")
         if check:
             findings += _check_reply(item, payload)
+            if "new_conversation" in item:
+                findings += check_introduction(item, payload)
+            if "expected_sticker" in item:
+                sent = stickers.setdefault(str(item.get("conversation") or ""), [])
+                findings += check_sticker(item, payload, sent)
     print(f"Mensajes con comandos mencionados: {mentions}")
     if check:
-        print(f"Hallazgos de formato (spec 029): {findings}")
+        print(f"Hallazgos de formato y presentación (specs 029 a 032): {findings}")
     return EXIT_OK if mentions == 0 and findings == 0 else EXIT_ERROR
 
 
@@ -191,6 +220,46 @@ def delivered_text(payload: dict) -> list[str]:
     if payload.get("voice") and isinstance(payload.get("sources_messages"), list):
         return [m for m in payload["sources_messages"] if m.strip()]
     return list(payload.get("messages") or [])
+
+
+def fresh_sender() -> str:
+    """Número ficticio nuevo por corrida (+57 00000 …): la conversación siempre empieza de cero."""
+    return f"+5700000{secrets.randbelow(100_000):05d}"
+
+
+def check_introduction(item: dict, payload: dict) -> int:
+    """Spec 032 (contrato §6): presentación en la primera respuesta y nunca repetida.
+
+    El guion marca cada mensaje con ``new_conversation`` (``true`` si abre la conversación). La
+    longitud de la presentación (≤ 2 frases) la garantizan las variantes de ``channels.greeting``.
+    """
+    if payload.get("status") in {"ignored", "busy"}:
+        return 0
+    text = "\n".join(payload.get("messages") or [])
+    introduced = "valer-ia" in text.lower()
+    if item.get("new_conversation") and not introduced:
+        print("  ✗ intro_missing: la primera respuesta de la conversación no se presenta")
+        return 1
+    if not item.get("new_conversation") and introduced:
+        print("  ✗ intro_repeated: la presentación se repite dentro de la conversación")
+        return 1
+    return 0
+
+
+def check_sticker(item: dict, payload: dict, sent: list[str], limit: int = 8) -> int:
+    """Spec 034: el sticker esperado (o ninguno) y sin exceso (spec 037: máximo 8)."""
+    sticker = payload.get("sticker") or {}
+    name = sticker.get("name") if isinstance(sticker, dict) else None
+    if name:
+        sent.append(str(name))
+    findings = 0
+    if name != item.get("expected_sticker"):
+        print(f"  ✗ sticker_mismatch: esperado {item.get('expected_sticker')}, llegó {name}")
+        findings += 1
+    if len(sent) > limit:
+        print(f"  ✗ sticker_overuse: {len(sent)} stickers en la conversación (máximo {limit})")
+        findings += 1
+    return findings
 
 
 def _check_reply(item: dict, payload: dict) -> int:
@@ -232,11 +301,17 @@ def run_operator(args: argparse.Namespace) -> int:
             print(f"{user_id}  {blocked_at}")
         print(f"Bloqueados: {len(rows)}")
         return EXIT_OK
-    try:
-        user_id = pseudonym(args.sender, channel_salt(), args.channel)
-    except SenderError as exc:
-        print(str(exc), file=sys.stderr)
-        return EXIT_ERROR
+    if getattr(args, "pseudonym", None):
+        if not PSEUDONYM.fullmatch(args.pseudonym):
+            print("El seudónimo debe tener la forma wa-<16 hex>.", file=sys.stderr)
+            return EXIT_ERROR
+        user_id = args.pseudonym
+    else:
+        try:
+            user_id = pseudonym(args.sender, channel_salt(), args.channel)
+        except SenderError as exc:
+            print(str(exc), file=sys.stderr)
+            return EXIT_ERROR
     if args.command == "pseudonym":
         print(user_id)
         return EXIT_OK

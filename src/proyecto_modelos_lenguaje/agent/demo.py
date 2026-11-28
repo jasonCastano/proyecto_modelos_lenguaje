@@ -5,7 +5,8 @@ from __future__ import annotations
 import html
 import json
 import re
-from collections.abc import Iterator, Sequence
+import zlib
+from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
 
 from langchain_core.language_models import BaseChatModel
@@ -204,7 +205,10 @@ class DemoChatModel(BaseChatModel):
                     requests=attention_requests(guide),
                     rephrase=REPHRASE_HINT in guide,
                 )
-                message = AIMessage(content=guided_answer(answer, guide))
+                answer = guided_answer(answer, guide)
+                if answer != FALLBACK_ANSWER:
+                    answer = styled_answer(answer, system)  # spec 036
+                message = AIMessage(content=answer)
         return ChatResult(generations=[ChatGeneration(message=message)])
 
     def _part_calls(self, requests: Sequence[str]) -> list[dict[str, Any]]:
@@ -293,7 +297,7 @@ DEMO_POOLS: dict[str, dict[str, tuple[str, ...]]] = {
             "Te entiendo perfectamente.",
             "¡Uy, sí, a veces pasa!",
             "Gracias por compartirlo conmigo.",
-            "Me alegra que conversemos un rato.",
+            "Gracias por contarme.",
         ),
         "smalltalk_follow": (
             "Si en algún momento quieres saber algo de Manuelita, aquí estoy.",
@@ -305,7 +309,7 @@ DEMO_POOLS: dict[str, dict[str, tuple[str, ...]]] = {
             "¡Listo!",
             "¡Jaja, qué bien!",
             "Perfecto.",
-            "¡Dale! Aquí sigo.",
+            "¡Dale!",
             "Entendido.",
         ),
         "minimal_follow": ("Aquí estoy si necesitas algo.", "Cuando quieras seguimos.", "", ""),
@@ -341,6 +345,13 @@ DEMO_POOLS: dict[str, dict[str, tuple[str, ...]]] = {
             "Mi especialidad es Manuelita y su información pública.",
         ),
         "bridge_lead": ("Por cierto,", "Si te sirve,", "Y ya que estamos,"),
+        # Spec 035: cortesía sin preguntas y regreso a Manuelita con el puente.
+        "greeting_redirect": ("¡Hola de nuevo!", "¡Qué bueno leerte otra vez!", "¡Hola otra vez!"),
+        "redirect_lead": (
+            "Lo mío es Manuelita y, por cierto,",
+            "Te cuento algo de Manuelita:",
+            "De Manuelita,",
+        ),
         "complaint": (
             "Qué pena que te haya pasado eso.",
             "Lamento la molestia, de verdad.",
@@ -365,6 +376,8 @@ DEMO_POOLS: dict[str, dict[str, tuple[str, ...]]] = {
         "decline_open": ("I do not have that information.", "That is outside what I know."),
         "decline_scope": ("I can help you with public information about Manuelita.",),
         "bridge_lead": ("By the way,",),
+        "greeting_redirect": ("Hi again!", "Nice to hear from you again!"),
+        "redirect_lead": ("About Manuelita,", "Here is something about Manuelita:"),
         "complaint": ("I am sorry about that.",),
     },
 }
@@ -381,7 +394,111 @@ def _choose(rng: Any, options: Sequence[str]) -> str:
     return options[rng.randrange(len(options))] if options else ""
 
 
-def demo_converse(plan: Any, *, playbook: Any, seed: int, name: str | None = None) -> str:
+def _demo_redirect(
+    plan: Any, *, playbook: Any, rng: Any, pool: Mapping[str, Sequence[str]], lang: str, seed: int
+) -> str:
+    """Spec 035: cortesía en una frase y regreso a Manuelita (puente o temas sugeridos)."""
+    from .care import topics_offer
+
+    act = plan.act
+    if act == "greeting":
+        courtesy = _choose(rng, pool["greeting_redirect"])
+    elif act == "minimal":
+        courtesy = _choose(rng, pool["minimal"])
+    elif act == "off_topic":
+        courtesy = _choose(rng, pool["decline_open"])
+        if plan.topic and lang == "es" and getattr(plan, "streak", 0) <= 1:
+            # Solo en el primer turno ajeno: repetir «Sobre …» en la racha suena a guion.
+            courtesy = f"Sobre {plan.topic}, {courtesy[:1].lower()}{courtesy[1:]}"
+    else:
+        courtesy = _choose(rng, pool["smalltalk"])
+    if plan.bridge is not None:
+        bridge = plan.bridge
+        lead = _choose(rng, pool["redirect_lead"])
+        if bridge.source == "curated":
+            text = bridge.text.rstrip(".")
+            redirect = f"{lead} {text[:1].lower()}{text[1:]} [U1]."
+        else:
+            redirect = f"{lead} puedo contarte sobre «{bridge.title}» [U1]."
+    else:
+        redirect = topics_offer(playbook, plan.topics, seed=rng.randrange(1000), language=lang)
+    return f"{courtesy} {redirect}".strip()
+
+
+# ---------------------------------------------------------------- spec 036: estilo caleño
+
+# El bloque real abre con «<estilo>» y un salto de línea (el prompt solo lo nombra entre comillas).
+STYLE_BLOCK = re.compile(r"<estilo>\n(.*?)</estilo>", re.DOTALL)
+STYLE_HINTS = re.compile(r"expresiones sugeridas[^:]*:\s*(.+)")
+QUOTED = re.compile(r"«([^»]+)»")
+MEANING = re.compile(r"\b(significa|significado|que quiere decir|que es eso de)\b")
+
+
+def with_expression(text: str, expression: str) -> str:
+    """Integra la expresión al inicio de la primera frase: «Listo pues, gracias por contarme.»."""
+    text = text.strip()
+    if not text or not expression:
+        return text
+    head = expression[:1].upper() + expression[1:]
+    opener = text.startswith("¡")
+    body = text[1:] if opener else text
+    body = body[:1].lower() + body[1:]
+    return f"¡{head}, {body}" if opener else f"{head}, {body}"
+
+
+def _use_expression(key: str) -> bool:
+    """Unas tres de cada cuatro respuestas llevan expresión (no todas: no es muletilla)."""
+    return zlib.crc32(key.encode()) % 4 != 0
+
+
+def styled_answer(answer: str, system: str) -> str:
+    """Respuesta con búsqueda del modo demo con el bloque ``<estilo>`` (spec 036)."""
+    block = STYLE_BLOCK.search(system)
+    if block is None:
+        return answer
+    if "pidió hablar sin modismos" in block.group(1):
+        return f"Claro, te hablo sin modismos. {answer}"
+    hints = STYLE_HINTS.search(block.group(1))
+    names = QUOTED.findall(hints.group(1)) if hints else []
+    if not names or not _use_expression(answer):
+        return answer
+    return with_expression(answer, names[zlib.crc32(answer.encode()) % len(names)])
+
+
+def demo_converse(
+    plan: Any,
+    *,
+    playbook: Any,
+    seed: int,
+    name: str | None = None,
+    question: str = "",
+) -> str:
+    """Respuesta guiada del modo demo con el estilo caleño del plan (specs 020 y 036)."""
+    from . import style as caleno
+    from .structured import normalize
+
+    memory_plain = getattr(plan, "style", "off") == "off"
+    if question and caleno.wants_plain(question) and lang_es(plan):
+        return "Claro, te hablo sin modismos. Si quieres, te cuento algo de Manuelita."
+    named = caleno.named_expressions(question) if question else []
+    if named and MEANING.search(normalize(question)) and lang_es(plan):
+        meaning = caleno.glossary(named[:1])[0].split(" = ", 1)[1]
+        return (
+            f"Es una expresión caleña: {meaning}. Si quieres, te cuento de la historia de "
+            "Manuelita."
+        )
+    text = _demo_converse_text(plan, playbook=playbook, seed=seed, name=name)
+    hints = tuple(getattr(plan, "style_hints", ()) or ())
+    if memory_plain or not hints or not _use_expression(f"{seed}:{text}"):
+        return text
+    return with_expression(text, hints[seed % len(hints)])
+
+
+def lang_es(plan: Any) -> bool:
+    return getattr(plan, "language", "es") == "es"
+
+
+def _demo_converse_text(plan: Any, *, playbook: Any, seed: int, name: str | None = None) -> str:
     """Respuesta guiada determinista para el modo demo (spec 020, R14).
 
     Compone frases variadas según el plan con una semilla del hilo y del turno, sin afirmar hechos
@@ -393,6 +510,9 @@ def demo_converse(plan: Any, *, playbook: Any, seed: int, name: str | None = Non
     lang = "en" if plan.language == "en" else "es"
     pool = DEMO_POOLS[lang]
     act = plan.act
+    if getattr(plan, "redirect", False) and plan.reason not in {"unattainable", "advice"}:
+        # Spec 035 (los límites y consejos conservan su guion: canal oficial o profesional).
+        return _demo_redirect(plan, playbook=playbook, rng=rng, pool=pool, lang=lang, seed=seed)
     sentences: list[str] = []
     if plan.sentiment in {"frustrated", "angry", "distressed"} and act != "complaint":
         sentences.append(_choose(rng, pool["complaint"]))

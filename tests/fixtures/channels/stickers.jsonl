@@ -1,0 +1,28 @@
+{"id": "k01a", "conversation": "c01", "text": "Hola", "lang": "es", "kind": "text", "expected_sticker": "valeria-bienvenido"}
+{"id": "k01b", "conversation": "c01", "text": "¿Qué produce Manuelita?", "lang": "es", "kind": "text", "expected_sticker": "valeria-listo"}
+{"id": "k01c", "conversation": "c01", "text": "Muchas gracias", "lang": "es", "kind": "text", "expected_sticker": "valeria-gracias"}
+{"id": "k01d", "conversation": "c01", "text": "Chao", "lang": "es", "kind": "text", "expected_sticker": "valeria-lindo-dia"}
+{"id": "k02a", "conversation": "c02", "text": "¿Qué produce Manuelita?", "lang": "es", "kind": "text", "expected_sticker": "valeria-bienvenido"}
+{"id": "k02b", "conversation": "c02", "text": "gracias", "lang": "es", "kind": "text", "expected_sticker": "valeria-gracias"}
+{"id": "k03a", "conversation": "c03", "text": "Esto no me sirve, estoy muy molesto", "lang": "es", "kind": "text", "expected_sticker": null}
+{"id": "k04a", "conversation": "c04", "text": "Hi", "lang": "en", "kind": "text", "expected_sticker": null}
+{"id": "k04b", "conversation": "c04", "text": "What does Manuelita produce?", "lang": "en", "kind": "text", "expected_sticker": "valeria-pulgar"}
+{"id": "k04c", "conversation": "c04", "text": "thanks", "lang": "en", "kind": "text", "expected_sticker": null}
+{"id": "k04d", "conversation": "c04", "text": "ok", "lang": "en", "kind": "text", "expected_sticker": null}
+{"id": "k05a", "conversation": "c05", "text": "Hola", "lang": "es", "kind": "text", "expected_sticker": "valeria-bienvenido"}
+{"id": "k05b", "conversation": "c05", "text": "Hola", "lang": "es", "kind": "text", "expected_sticker": "valeria-consulta"}
+{"id": "k06a", "conversation": "c06", "text": "Buenas tardes", "lang": "es", "kind": "text", "expected_sticker": "valeria-bienvenido"}
+{"id": "k06b", "conversation": "c06", "text": "perfecto", "lang": "es", "kind": "text", "expected_sticker": "valeria-listo"}
+{"id": "k06c", "conversation": "c06", "text": "dale", "lang": "es", "kind": "text", "expected_sticker": null}
+{"id": "k07a", "conversation": "c07", "text": "Mi tarjeta es 4111 1111 1111 1111, gracias", "lang": "es", "kind": "text", "sensitive": true, "expected_sticker": null}
+{"id": "k07b", "conversation": "c07", "text": "Hasta luego", "lang": "es", "kind": "text", "expected_sticker": "valeria-lindo-dia"}
+{"id": "k08a", "conversation": "c08", "text": "Hola", "lang": "es", "kind": "text", "expected_sticker": "valeria-bienvenido"}
+{"id": "k08b", "conversation": "c08", "text": "¿Cuándo inició Ingenio Manuelita?", "lang": "es", "kind": "text", "expected_sticker": "valeria-listo"}
+{"id": "k08c", "conversation": "c08", "text": "ok", "lang": "es", "kind": "text", "expected_sticker": null}
+{"id": "k08d", "conversation": "c08", "text": "gracias", "lang": "es", "kind": "text", "expected_sticker": "valeria-gracias"}
+{"id": "k08e", "conversation": "c08", "text": "adiós", "lang": "es", "kind": "text", "expected_sticker": "valeria-lindo-dia"}
+{"id": "k09a", "conversation": "c09", "text": "Buenos días", "lang": "es", "kind": "text", "expected_sticker": "valeria-bienvenido"}
+{"id": "k09b", "conversation": "c09", "text": "¿En qué países opera Manuelita?", "lang": "es", "kind": "text", "expected_sticker": "valeria-listo"}
+{"id": "k09c", "conversation": "c09", "text": "gracias", "lang": "es", "kind": "text", "expected_sticker": "valeria-gracias"}
+{"id": "k10a", "conversation": "c10", "text": "¿Qué certificaciones tiene Manuelita?", "lang": "es", "kind": "text", "expected_sticker": "valeria-bienvenido"}
+{"id": "k10b", "conversation": "c10", "text": "Chao", "lang": "es", "kind": "text", "expected_sticker": "valeria-lindo-dia"}

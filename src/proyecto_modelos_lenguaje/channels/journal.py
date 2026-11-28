@@ -45,6 +45,12 @@ class ChannelLogRecord:
     voice_sent: bool = False
     # Spec 030: qué va por escrito con la voz: «full», «sources» o «none» (solo la etiqueta).
     written: str | None = None
+    # Spec 032: sin texto ni números. Motivo de inicio («first_contact», «inactivity», «restart»)
+    # y origen de la presentación («bridge» o «agent») en el turno que abre la conversación.
+    conversation_start: str | None = None
+    introduced: str | None = None
+    sender_kind: str | None = None  # Spec 033: phone | lid | telegram, nunca el valor
+    sticker: str | None = None  # Spec 034: nombre del sticker, nunca contenido
     ts: str = field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds"))
 
     @classmethod

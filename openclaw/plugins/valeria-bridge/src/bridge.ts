@@ -100,6 +100,9 @@ export interface BridgeConfig {
   timeoutMs: number;
   channels: string[];
   debug?: boolean;
+  /** Spec 034: carpeta de los stickers aprobados y espera antes de «Pensando» (0 = apagado). */
+  stickersDir?: string;
+  stickerThinkingMs: number;
 }
 
 export interface DispatchResult {
@@ -120,6 +123,14 @@ interface BackendReply {
   /** Spec 030: solo el bloque de fuentes, para acompañar una nota de voz entregada. */
   sources_messages?: string[];
   voice?: VoiceNote | null;
+  /** Spec 034: sticker que acompaña la respuesta (lo decide el backend). */
+  sticker?: StickerReply | null;
+}
+
+export interface StickerReply {
+  name: string;
+  path: string;
+  position: "before" | "after";
 }
 
 type Fetch = (url: string, init: RequestInit) => Promise<Response>;
@@ -127,6 +138,50 @@ type Fetch = (url: string, init: RequestInit) => Promise<Response>;
 // del canal y, como respaldo, el CLI de OpenClaw.
 // Spec 030: devuelve `true` si la nota de voz quedó entregada (decide qué texto la acompaña).
 export type VoiceSender = (channel: string, target: string, audioPath: string) => Promise<boolean>;
+// Spec 034: envía un sticker nativo de WhatsApp; devuelve `false` si no se pudo (nunca lanza).
+// Spec 037: puede devolver además la vía usada o el motivo del fallo (para el log y `ops check`).
+export interface StickerOutcome {
+  ok: boolean;
+  route?: string | null;
+  reason?: string;
+}
+export type StickerSender = (
+  channel: string,
+  target: string,
+  stickerPath: string,
+) => Promise<boolean | StickerOutcome>;
+
+export const STICKER_AFTER_MS = 1500;
+export const THINKING_COOLDOWN_MS = 10 * 60 * 1000;
+const lastThinking = new Map<string, number>();
+
+/** Spec 034: olvida los envíos de «Pensando» (solo pruebas). */
+export function resetThinking(): void {
+  lastThinking.clear();
+}
+
+async function deliverSticker(
+  sendSticker: StickerSender,
+  channel: string,
+  target: string,
+  path: string,
+  log: (message: string) => void,
+): Promise<void> {
+  // Spec 037 (data-model §6): una línea por intento, con el nombre del archivo y sin la ruta ni números.
+  const file = maskDigits(path.split(/[\\/]/).pop() ?? "");
+  try {
+    const raw = await sendSticker(channel, target, path);
+    const outcome: StickerOutcome = typeof raw === "boolean" ? { ok: raw } : raw;
+    if (outcome.ok) {
+      log(`valeria-bridge: sticker enviado (${file})${outcome.route ? ` vía ${outcome.route}` : ""}`);
+    } else {
+      log(`valeria-bridge: sticker no enviado (${file}): ${outcome.reason ?? "sin-listener"}`);
+    }
+  } catch (error) {
+    // El sticker es un adorno: nunca impide la respuesta.
+    log(`valeria-bridge: sticker no enviado (${file}): error ${maskDigits(String(error)).slice(0, 160)}`);
+  }
+}
 
 /** Oculta secuencias largas de dígitos (números de teléfono) antes de escribirlas en el log. */
 export function maskDigits(text: string): string {
@@ -271,6 +326,7 @@ export async function dispatch(
   fetchImpl: Fetch = fetch,
   log: (message: string) => void = () => {},
   sendVoice?: VoiceSender,
+  sendSticker?: StickerSender,
 ): Promise<DispatchResult | undefined> {
   const channel = (event.channel ?? "").toLowerCase();
   if (!config.channels.includes(channel)) return undefined;
@@ -285,6 +341,7 @@ export async function dispatch(
   if (body === null) return undefined;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), config.timeoutMs);
+  const thinking = scheduleThinking(channel, event.senderId, config, sendSticker, log);
   let payload: BackendReply;
   try {
     const response = await fetchImpl(`${config.backendUrl.replace(/\/$/, "")}/api/channels/messages`, {
@@ -303,6 +360,7 @@ export async function dispatch(
     return undefined;
   } finally {
     clearTimeout(timer);
+    if (thinking) clearTimeout(thinking);
   }
   let result: DispatchResult;
   try {
@@ -310,6 +368,16 @@ export async function dispatch(
   } catch (error) {
     log(`valeria-bridge: ${String(error)}; modo degradado`);
     return undefined;
+  }
+  const sticker = payload.sticker;
+  const target = event.senderId;
+  if (sticker && sendSticker && target) {
+    if (sticker.position === "before") {
+      await deliverSticker(sendSticker, channel, target, sticker.path, log);
+    } else {
+      // «Después»: el texto lo entrega OpenClaw al retornar; el sticker llega detrás, sin esperar.
+      setTimeout(() => void deliverSticker(sendSticker, channel, target, sticker.path, log), STICKER_AFTER_MS);
+    }
   }
   const audio = payload.voice?.audio_path;
   if (!audio || !sendVoice || !event.senderId) return result;
@@ -321,6 +389,27 @@ export async function dispatch(
     log(`valeria-bridge: no se pudo enviar la nota de voz (${maskDigits(String(error)).slice(0, 160)})`);
   }
   return withVoiceText(payload, result, delivered, log);
+}
+
+/**
+ * Spec 034 (US4): si el backend tarda más de `stickerThinkingMs`, envía «Pensando» (uno cada 10 minutos
+ * por remitente). Devuelve el temporizador para cancelarlo al llegar la respuesta.
+ */
+function scheduleThinking(
+  channel: string,
+  target: string | undefined,
+  config: BridgeConfig,
+  sendSticker: StickerSender | undefined,
+  log: (message: string) => void,
+): ReturnType<typeof setTimeout> | undefined {
+  if (!sendSticker || !target || !config.stickersDir || config.stickerThinkingMs <= 0) return undefined;
+  const last = lastThinking.get(target);
+  if (last !== undefined && Date.now() - last < THINKING_COOLDOWN_MS) return undefined;
+  const path = `${config.stickersDir.replace(/[\\/]$/, "")}/valeria-pensando.webp`;
+  return setTimeout(() => {
+    lastThinking.set(target, Date.now());
+    void deliverSticker(sendSticker, channel, target, path, log);
+  }, config.stickerThinkingMs);
 }
 
 /**
@@ -355,11 +444,22 @@ export function resolveConfig(
     throw new Error("valeria-bridge: backendUrl debe ser loopback (127.0.0.1, localhost o ::1)");
   }
   const debug = ["1", "true", "yes"].includes((env.VALERIA_BRIDGE_DEBUG ?? "").toLowerCase());
-  return { backendUrl, token, timeoutMs, channels: channels.map((c) => c.toLowerCase()), debug };
+  // Spec 034: stickers (carpeta aprobada y espera de «Pensando»; 0 lo apaga).
+  const stickersDir = typeof raw?.stickersDir === "string" && raw.stickersDir ? raw.stickersDir : undefined;
+  const thinking = Number(raw?.stickerThinkingMs ?? 8000);
+  const stickerThinkingMs = Number.isFinite(thinking) && thinking >= 0 ? thinking : 8000;
+  return {
+    backendUrl, token, timeoutMs, channels: channels.map((c) => c.toLowerCase()), debug,
+    stickersDir, stickerThinkingMs,
+  };
 }
 
 /** Argumentos del CLI de OpenClaw para enviar una nota de voz (sin shell: sin inyección). */
+// Spec 033: en WhatsApp, el destino es un E.164, un JID de número o el ID de la cuenta («…@lid»).
+const WHATSAPP_TARGET = /^(?:\+[1-9]\d{6,14}|\d{5,20}(?::\d+)?@(?:lid|hosted\.lid|s\.whatsapp\.net))$/;
+
 export function voiceCommandArgs(channel: string, target: string, audioPath: string): string[] {
   if (!/^[+\w@.:-]{3,80}$/.test(target)) throw new Error("destinatario inválido");
+  if (channel === "whatsapp" && !WHATSAPP_TARGET.test(target)) throw new Error("destinatario inválido");
   return ["message", "send", "--channel", channel, "--target", target, "--media", audioPath];
 }

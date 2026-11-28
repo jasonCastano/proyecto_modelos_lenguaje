@@ -292,6 +292,7 @@ class RouteModel(BaseModel):
     sentiment: Sentiment | None = None
     kind: UnattainableKind | None = None
     act: DialogueAct | None = None  # spec 020
+    style: Literal["off", "formal", "neutral", "informal"] | None = None  # spec 036
 
 
 class TurnMetricsModel(BaseModel):
@@ -652,6 +653,17 @@ class ChannelReplyModel(BaseModel):
     tools: list[str] = Field(default_factory=list)
     latency_ms: int = 0
     voice: ChannelVoiceModel | None = None
+    sticker: ChannelStickerModel | None = None  # spec 034
+
+
+class ChannelStickerModel(BaseModel):
+    """Sticker que acompaña la respuesta (spec 034); lo entrega el plugin antes o después."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(pattern=r"^[a-z0-9-]{1,60}$")
+    path: str = Field(max_length=500)
+    position: Literal["before", "after"]
 
 
 class ChannelVoiceModel(BaseModel):

@@ -150,7 +150,9 @@ def run_evaluate_tools(args: argparse.Namespace, root: Path) -> int:
     if mode == "real" or args.json_out:
         default = root / "docs" / "evaluacion_herramientas.json"
         json_out = Path(args.json_out) if args.json_out else default
-        json_out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        json_out.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
         json_out.with_suffix(".md").write_text(render_tools_markdown(report), encoding="utf-8")
         print(f"Escribí {json_out} y {json_out.with_suffix('.md')}")
     return 0 if summary["meets_target"] else 1
@@ -299,7 +301,9 @@ def run_shield_channel(args: argparse.Namespace, root: Path) -> int:
     if args.mode == "real" or args.json_out:
         default = root / "docs" / "evaluacion_blindaje_canal.json"
         json_out = Path(args.json_out) if args.json_out else default
-        json_out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        json_out.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
         markdown = Path(args.report) if args.report else json_out.with_suffix(".md")
         markdown.write_text(render_shield_markdown(report), encoding="utf-8")
         print(f"Escribí {json_out} y {markdown}")

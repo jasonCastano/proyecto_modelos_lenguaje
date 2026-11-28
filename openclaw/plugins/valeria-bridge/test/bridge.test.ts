@@ -1,6 +1,6 @@
 // Pruebas del puente sin red ni gateway: `npm test` (Node ≥ 24, tipos eliminados).
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { mock, test } from "node:test";
 
 import {
   buildRequest,
@@ -9,6 +9,7 @@ import {
   hasAudio,
   dispatch,
   maskDigits,
+  resetThinking,
   messageKind,
   resolveConfig,
   shapeOf,
@@ -315,4 +316,233 @@ test("sin voz en la respuesta: la respuesta completa, aunque traiga sources_mess
   const payload = { ...VOICE_PAYLOAD, voice: null };
   const result = await dispatch(EVENT, CONFIG, fakeFetch(200, payload), () => {}, async () => true);
   assert.equal(result?.text, VOICE_PAYLOAD.messages[0]);
+});
+
+// --- spec 033: cuentas identificadas solo por ID (T013) ---------------------------------------
+const LID = "10000000000001@lid"; // ficticio
+
+test("la nota de voz acepta el ID de la cuenta como destino y rechaza lo demás", () => {
+  assert.deepEqual(voiceCommandArgs("whatsapp", LID, "a.ogg"), [
+    "message", "send", "--channel", "whatsapp", "--target", LID, "--media", "a.ogg",
+  ]);
+  assert.throws(() => voiceCommandArgs("whatsapp", "abc@lid", "a.ogg"));
+  assert.throws(() => voiceCommandArgs("whatsapp", "+57; rm -rf /", "a.ogg"));
+  assert.ok(voiceCommandArgs("whatsapp", "+573001234567", "a.ogg").includes("+573001234567"));
+});
+
+test("una cuenta solo con ID recibe la nota de voz en su chat y el log no lleva el ID", async () => {
+  const logs: string[] = [];
+  const targets: string[] = [];
+  const payload = {
+    status: "answered",
+    messages: ["Respuesta [1]\n\nFuentes:\n[1] Informe"],
+    sources_messages: ["Fuentes:\n[1] Informe"],
+    voice: { audio_path: "C:/estado/voice/a.ogg", language: "es" },
+  };
+  await dispatch({ ...EVENT, senderId: LID }, CONFIG, fakeFetch(200, payload), (m) => logs.push(m),
+    async (_channel, target) => {
+      targets.push(target);
+      throw new Error(`fallo al enviar a ${target}`);
+    });
+  assert.deepEqual(targets, [LID]);
+  assert.ok(logs.every((m) => !m.includes("10000000000001")));
+});
+
+// --- spec 034: stickers (T013 y T020) -----------------------------------------------------------
+const STICKER_CONFIG = {
+  ...CONFIG,
+  timeoutMs: 90000,
+  stickersDir: "C:/repo/docs/whatsapp/stickers",
+  stickerThinkingMs: 8000,
+};
+
+function slowFetch(ms: number, payload: unknown) {
+  return async () => {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+    return new Response(JSON.stringify(payload), { status: 200 });
+  };
+}
+
+const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+test("el sticker «antes» se envía antes de devolver el texto", async () => {
+  const order: string[] = [];
+  const payload = {
+    status: "answered",
+    messages: ["¡Hola! Soy Valer-IA."],
+    sticker: { name: "valeria-hola", path: "C:/s/valeria-hola.webp", position: "before" },
+  };
+  const result = await dispatch(EVENT, STICKER_CONFIG, fakeFetch(200, payload), () => {}, undefined,
+    async (_channel, _target, path) => {
+      order.push(path);
+      return true;
+    });
+  order.push("texto");
+  assert.deepEqual(order, ["C:/s/valeria-hola.webp", "texto"]);
+  assert.equal(result?.text, "¡Hola! Soy Valer-IA.");
+});
+
+test("el sticker «después» llega 1,5 s más tarde, sin retrasar el texto", async () => {
+  mock.timers.enable({ apis: ["setTimeout"] });
+  try {
+    const sent: string[] = [];
+    const payload = {
+      status: "answered",
+      messages: ["¡Con gusto!"],
+      sticker: { name: "valeria-gracias", path: "C:/s/valeria-gracias.webp", position: "after" },
+    };
+    const result = await dispatch(EVENT, { ...STICKER_CONFIG, stickerThinkingMs: 0 },
+      fakeFetch(200, payload), () => {}, undefined, async (_c, _t, path) => {
+        sent.push(path);
+        return true;
+      });
+    assert.equal(result?.text, "¡Con gusto!");
+    assert.deepEqual(sent, []);
+    mock.timers.tick(1500);
+    await flush();
+    assert.deepEqual(sent, ["C:/s/valeria-gracias.webp"]);
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test("si el sticker falla, la respuesta llega igual y el log no lleva el número", async () => {
+  const logs: string[] = [];
+  const payload = {
+    status: "answered",
+    messages: ["Respuesta"],
+    sticker: { name: "valeria-hola", path: "C:/s/valeria-hola.webp", position: "before" },
+  };
+  const result = await dispatch(EVENT, STICKER_CONFIG, fakeFetch(200, payload), (m) => logs.push(m),
+    undefined, async (_c, target) => {
+      throw new Error(`sin conexión con ${target}`);
+    });
+  assert.equal(result?.text, "Respuesta");
+  assert.ok(logs.some((m) => m.includes("sticker")));
+  assert.ok(logs.every((m) => !m.includes("3001234567")));
+});
+
+test("«Pensando» sale si el backend tarda y no se repite en 10 minutos (T020)", async () => {
+  resetThinking();
+  mock.timers.enable({ apis: ["setTimeout", "Date"], now: Date.UTC(2026, 10, 28, 13, 0, 0) });
+  try {
+    const sent: string[] = [];
+    const sender = async (_c: string, _t: string, path: string) => {
+      sent.push(path.split("/").pop() ?? "");
+      return true;
+    };
+    const payload = { status: "answered", messages: ["Plan listo"] };
+    const slow = dispatch(EVENT, STICKER_CONFIG, slowFetch(9000, payload), () => {}, undefined, sender);
+    mock.timers.tick(8000);
+    await flush();
+    assert.deepEqual(sent, ["valeria-pensando.webp"]);
+    mock.timers.tick(1000);
+    assert.equal((await slow)?.text, "Plan listo");
+
+    const fast = dispatch(EVENT, STICKER_CONFIG, slowFetch(2000, payload), () => {}, undefined, sender);
+    mock.timers.tick(2000);
+    await fast;
+    mock.timers.tick(10000);
+    await flush();
+    assert.deepEqual(sent, ["valeria-pensando.webp"]);  // la rápida no lo envía
+
+    const again = dispatch(EVENT, STICKER_CONFIG, slowFetch(9000, payload), () => {}, undefined, sender);
+    mock.timers.tick(9000);
+    await again;
+    assert.deepEqual(sent, ["valeria-pensando.webp"]);  // dentro de los 10 minutos: no se repite
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test("stickerThinkingMs en 0 apaga «Pensando» y la configuración se lee del plugin", async () => {
+  resetThinking();
+  mock.timers.enable({ apis: ["setTimeout"] });
+  try {
+    const sent: string[] = [];
+    const payload = { status: "answered", messages: ["ok"] };
+    const call = dispatch(EVENT, { ...STICKER_CONFIG, stickerThinkingMs: 0 }, slowFetch(9000, payload),
+      () => {}, undefined, async (_c, _t, path) => {
+        sent.push(path);
+        return true;
+      });
+    mock.timers.tick(9000);
+    await call;
+    assert.deepEqual(sent, []);
+  } finally {
+    mock.timers.reset();
+  }
+  const config = resolveConfig({ stickersDir: "C:/s", stickerThinkingMs: 0 }, { VALERIA_CHANNEL_TOKEN: "t" });
+  assert.equal(config.stickersDir, "C:/s");
+  assert.equal(config.stickerThinkingMs, 0);
+  assert.equal(resolveConfig({}, { VALERIA_CHANNEL_TOKEN: "t" }).stickerThinkingMs, 8000);
+});
+
+// --- spec 037: vías de entrega y registro (T005) -----------------------------------------------
+import { findWhatsAppListener, PATCH_SYMBOL } from "../src/listener.ts";
+
+function runtimeWith(listener: unknown, accountId?: string) {
+  return {
+    runtimeContexts: {
+      get: (query: { channelId: string; accountId?: string; capability: string }) =>
+        query.channelId === "whatsapp" &&
+        query.capability === "connection-controller" &&
+        (accountId === undefined || query.accountId === accountId)
+          ? { getActiveListener: () => listener }
+          : undefined,
+    },
+  };
+}
+const LISTENER = { sendSticker: async () => ({ messageId: "x" }) };
+
+test("spec 037: la vía compartida va primero", async () => {
+  const found = await findWhatsAppListener(runtimeWith(LISTENER, "default"), {
+    globals: {},
+    importListener: async () => LISTENER,
+  });
+  assert.equal(found.route, "compartido");
+  assert.equal(found.listener, LISTENER);
+});
+
+test("spec 037: sin vía compartida se usa el runtime del parche y luego el import", async () => {
+  const patched = await findWhatsAppListener({}, { globals: { [PATCH_SYMBOL]: runtimeWith(LISTENER) } });
+  assert.equal(patched.route, "parche");
+  const imported = await findWhatsAppListener(undefined, {
+    globals: {},
+    importListener: async () => LISTENER,
+  });
+  assert.equal(imported.route, "import");
+});
+
+test("spec 037: sin listener devuelve el motivo y el diagnóstico, sin lanzar", async () => {
+  const found = await findWhatsAppListener(runtimeWith(null), {
+    globals: {},
+    importListener: async () => {
+      throw new Error("no");
+    },
+  });
+  assert.equal(found.listener, null);
+  assert.equal(found.reason, "sin-listener");
+  assert.ok(found.detail.some((line) => line.startsWith("compartido: controlador sin listener")));
+  assert.ok(found.detail.includes("parche: no instalado"));
+  assert.ok(found.detail.includes("import: error"));
+});
+
+test("spec 037: el log dice «enviado vía» o «no enviado: motivo», sin números", async () => {
+  const payload = {
+    status: "answered",
+    messages: ["Hola"],
+    sticker: { name: "valeria-hola", path: "C:/s/3001234567/valeria-hola.webp", position: "before" },
+  };
+  const ok: string[] = [];
+  await dispatch(EVENT, { ...STICKER_CONFIG, stickerThinkingMs: 0 }, fakeFetch(200, payload),
+    (m) => ok.push(m), undefined, async () => ({ ok: true, route: "compartido" }));
+  assert.ok(ok.includes("valeria-bridge: sticker enviado (valeria-hola.webp) vía compartido"));
+  const failed: string[] = [];
+  const result = await dispatch(EVENT, { ...STICKER_CONFIG, stickerThinkingMs: 0 },
+    fakeFetch(200, payload), (m) => failed.push(m), undefined,
+    async () => ({ ok: false, reason: "sin-listener" }));
+  assert.equal(result?.text, "Hola");
+  assert.ok(failed.includes("valeria-bridge: sticker no enviado (valeria-hola.webp): sin-listener"));
+  assert.ok([...ok, ...failed].every((m) => !m.includes("3001234567")));
 });

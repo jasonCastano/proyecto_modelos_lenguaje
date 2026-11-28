@@ -9,7 +9,9 @@
     "properties": {
       "backendUrl": { "type": "string", "pattern": "^https?://(127\\.0\\.0\\.1|localhost|\\[::1\\])(:\\d+)?/?$" },
       "timeoutMs": { "type": "integer", "minimum": 5000, "maximum": 120000 },
-      "channels": { "type": "array", "items": { "type": "string", "enum": ["whatsapp", "telegram"] } }
+      "channels": { "type": "array", "items": { "type": "string", "enum": ["whatsapp", "telegram"] } },
+      "stickersDir": { "type": "string", "maxLength": 500 },
+      "stickerThinkingMs": { "type": "integer", "minimum": 0, "maximum": 60000 }
     }
   }
 }

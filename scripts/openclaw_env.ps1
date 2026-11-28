@@ -1,6 +1,8 @@
 # Entorno y servicio del gateway OpenClaw de Valer-IA (spec 024, T012; modos de acceso: spec 028, T036).
 # Uso (PowerShell, en el PC servidor):  .\scripts\openclaw_env.ps1 [-Install] [-Restart] [-Mode open|closed]
-#   -Install  registra la tarea programada "ValerIA-Gateway" (al iniciar sesion) y arranca el gateway
+#   -Install  registra la tarea programada "ValerIA-Gateway" (al iniciar sesion) y arranca el gateway;
+#             aplica ademas el parche de cuentas por ID (spec 033, openclaw\patches\whatsapp-lid.mjs)
+#             y el de stickers (spec 037, openclaw\patches\whatsapp-sticker.mjs)
 #   -Restart  reinicia el gateway y espera a que escuche en el puerto
 #   -Run      (lo usa la tarea) ejecuta el gateway en primer plano y lo reinicia si cae
 #   -Mode     closed: solo los numeros de prueba (WA_ALLOW_1..3) responden
@@ -141,6 +143,25 @@ function Sync-ValeriaConfig {
     # Plugin propio: se aceptan sus permisos (lee la conversacion para enviarla al backend por loopback).
     openclaw plugins install --link (Join-Path $Repo "openclaw\plugins\valeria-bridge") --force `
         --accept-capabilities
+    # Spec 033 (ADR 0039): parche versionado del componente de WhatsApp para cuentas identificadas solo
+    # por ID (LID). Es idempotente y no adivina: si no puede aplicarse, avisa y el canal sigue igual
+    # para las cuentas con numero.
+    $patch = Join-Path $Repo "openclaw\patches\whatsapp-lid.mjs"
+    $patchOutput = & node $patch --state-dir $State 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning ("Parche de cuentas por ID no aplicado: " + ($patchOutput -join " "))
+    } else {
+        Write-Host ($patchOutput -join " ")
+    }
+    # Spec 037 (ADR 0040): parche de stickers nativos (el listener expone sendSticker y los valeria-*.webp
+    # salen como sticker por el adaptador de salida). Sin el, no hay stickers; el texto llega igual.
+    $stickerPatch = Join-Path $Repo "openclaw\patches\whatsapp-sticker.mjs"
+    $stickerOutput = & node $stickerPatch --state-dir $State 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning ("Parche de stickers no aplicado: " + ($stickerOutput -join " "))
+    } else {
+        Write-Host ($stickerOutput -join " ")
+    }
     Write-Host "Configuracion de ejecucion: $env:OPENCLAW_CONFIG_PATH (plantilla: $Template)"
 }
 

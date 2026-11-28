@@ -16,12 +16,16 @@ import time
 import unicodedata
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal, Protocol
 
 from ..agent.config import ChannelsConfig
+from ..agent.structured import normalize
+from ..agent.style import LOW_MOOD
 from .format import sources_only, to_whatsapp
-from .identity import mask, pseudonym
+from .greeting import already_introduced, identity_line, introduction, merge
+from .identity import SenderError, mask, pseudonym, sender_kind
 from .intents import (
     Language,
     decision_of,
@@ -33,6 +37,15 @@ from .intents import (
 )
 from .journal import ChannelLogRecord, append_daily, log_channel
 from .limits import limit_decision, operators
+from .stickers import (
+    OPT_OUT,
+    StickerCatalog,
+    StickerChoice,
+    TurnSignals,
+    choose,
+    load_catalog,
+)
+from .stickers import _plain as plain_text
 from .store import ChannelStore
 
 Channel = Literal["whatsapp", "telegram"]
@@ -88,6 +101,7 @@ TEXTS: dict[str, dict[str, str]] = {
             "Esta vez no pude enviarte el audio, pero aquí tienes la respuesta por escrito."
         ),
         "trace_empty": "Todavía no he respondido ninguna pregunta en esta conversación.",
+        "stickers_off": "Listo, no te enviaré más stickers en esta conversación.",  # spec 037
     },
     "en": {
         "intro": (
@@ -119,6 +133,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "expired_notice": "The previous confirmation expired and I changed nothing.",
         "voice_failed": "I couldn't send the audio this time, but here is the written answer.",
         "trace_empty": "I haven't answered any question in this conversation yet.",
+        "stickers_off": "Got it, no more stickers in this conversation.",  # spec 037
         "rate_limited": (
             "I got several messages in a row; give me a few minutes and we'll keep talking."
         ),
@@ -191,6 +206,8 @@ class InboundMessage:
     # Spec 028: nota de voz transcrita por el gateway y pista de idioma del dictado.
     input_mode: InputMode = "text"
     language_hint: str | None = None
+    # Spec 033: marca del mensaje original (ISO 8601); con ella se descartan entregas tardías.
+    received_at: str | None = None
 
 
 def _norm(text: str) -> str:
@@ -264,6 +281,21 @@ class ChannelReply:
     # Spec 030: con nota de voz, el texto que la acompaña es solo el bloque de fuentes.
     sources_messages: list[str] = field(default_factory=list)
     citations: list[dict[str, Any]] = field(default_factory=list)  # citas del turno (no salen)
+    # Spec 038: inicio de conversación y presentación (no salen del backend, salvo en el texto).
+    conversation_start: str | None = None  # first_contact | inactivity | restart
+    introduced: str | None = None  # bridge | agent: quién puso la presentación
+    opening: str | None = None  # presentación hablada que abre la nota de voz
+    spoken_body: str | None = None  # respuesta hablada sin la presentación (guion de voz)
+    client_name: str | None = None  # nombre reconocido por el servicio, si lo hay
+    # Spec 034: señales del turno para el sticker y el sticker elegido (lo entrega el plugin).
+    act: str | None = None
+    sentiment: str | None = None
+    style: str | None = None  # spec 036: nivel del estilo caleño del turno (para la nota de voz)
+    scope_reason: str | None = None  # spec 037: motivo de fuera de alcance (crisis sin sticker)
+    fallback: bool = False  # spec 037: respuesta de evidencia insuficiente (sin sticker)
+    notices: list[str] = field(default_factory=list)
+    approved_action: str | None = None
+    sticker: StickerChoice | None = None
 
     @property
     def written(self) -> str:
@@ -282,7 +314,16 @@ class ChannelReply:
             "tools": self.tools,
             "latency_ms": self.latency_ms,
             "voice": self.voice,
+            "sticker": self.sticker.to_dict() if self.sticker else None,  # spec 034
         }
+
+
+def _kind_of(message: InboundMessage) -> str | None:
+    """Spec 033: ``phone``, ``lid`` o ``telegram`` para el registro (nunca el valor)."""
+    try:
+        return sender_kind(message.sender, message.channel)
+    except SenderError:
+        return None
 
 
 def action_phrase(tool: str, args: Mapping[str, Any], language: str) -> str:
@@ -356,6 +397,7 @@ class ChannelBridge:
         self.transcriptions = RecentTranscriptions()
         # Spec 029: idioma del último turno de cada persona (respaldo para mensajes muy cortos).
         self._languages: dict[str, Language] = {}
+        self._stickers: StickerCatalog | None = None  # spec 034: catálogo perezoso
 
     # -- utilidades -----------------------------------------------------------------------
     def _lock_for(self, user_id: str) -> threading.Lock:
@@ -416,6 +458,10 @@ class ChannelBridge:
             voice_ms=reply.voice_ms,
             voice_sent=reply.voice is not None,
             written=reply.written if reply.status != "ignored" else None,
+            conversation_start=reply.conversation_start,
+            introduced=reply.introduced,
+            sender_kind=_kind_of(message),
+            sticker=reply.sticker.name if reply.sticker else None,
             **extra,
         )
         log_channel(self.log_dir, record)
@@ -440,6 +486,12 @@ class ChannelBridge:
             reply = ChannelReply("ignored")
             self._record(message, user_id, reply)
             return reply
+        if self._is_stale(message):
+            # Spec 033 (FR-010): un mensaje retenido demasiado tiempo no recibe respuesta tardía.
+            reply = ChannelReply("ignored", event="stale")
+            reply.language = language
+            self._record(message, user_id, reply)
+            return reply
         gated = self._gate(user_id, language)
         if (
             gated is not None
@@ -457,14 +509,21 @@ class ChannelBridge:
             return reply
         error_code: str | None = None
         try:
-            thread_id = self.store.ensure_user(
-                user_id, message.channel, mask(message.sender, message.channel)
+            thread_id, start = self.store.open_conversation(
+                user_id,
+                message.channel,
+                mask(message.sender, message.channel),
+                idle_hours=self.config.conversation_idle_hours,
             )
             try:
                 reply = self._dispatch(message, user_id, thread_id, language)
             except Exception as exc:  # el canal nunca recibe trazas internas
                 error_code = getattr(exc, "code", None) or type(exc).__name__
                 reply = self._say("error", "error", language, thread_id)
+            reply.conversation_start = reply.conversation_start or start
+            self._choose_sticker(message, reply, language)  # spec 034
+            if reply.status == "error":
+                self._identify(reply, reply.thread_id or thread_id, language)
             reply.language = reply.language or language
             self._languages[user_id] = language
             if reply.status != "error":
@@ -474,6 +533,24 @@ class ChannelBridge:
         reply.latency_ms = int((self._clock() - started) * 1000)
         self._record(message, user_id, reply, error_code=error_code)
         return reply
+
+    def _is_stale(self, message: InboundMessage) -> bool:
+        """Spec 033: ``True`` si el mensaje original es más viejo que ``stale_minutes``."""
+        if not message.received_at:
+            return False
+        try:
+            sent = datetime.fromisoformat(message.received_at.replace("Z", "+00:00"))
+        except ValueError:
+            return False  # marca inválida: se atiende
+        if sent.tzinfo is None:
+            sent = sent.replace(tzinfo=UTC)
+        now = self.store.now()
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=UTC)
+        # Más de un día (o en el futuro) indica una marca inconsistente (p. ej. otra unidad):
+        # se atiende, para que un error de marca nunca deje el canal en silencio.
+        age = now - sent
+        return timedelta(minutes=self.config.stale_minutes) < age <= timedelta(days=1)
 
     def _gate(self, user_id: str, language: Language) -> ChannelReply | None:
         """Spec 031: bloqueo y límites por seudónimo antes de la cola (operadores sin límites)."""
@@ -502,9 +579,11 @@ class ChannelBridge:
         text = (message.text or "").strip()[:AGENT_MAX_CHARS]
         if message.kind == "audio" or message.input_mode == "voice":
             if not plain(text):
-                return self._say("answered", "unheard", language, thread_id)
+                reply = self._say("answered", "unheard", language, thread_id)
+                return self._introduce(reply, language)
         elif message.kind != "text" or not text:
-            return self._say("unsupported", "unsupported", language, thread_id)
+            reply = self._say("unsupported", "unsupported", language, thread_id)
+            return self._introduce(reply, language)
         command = plain(text).split()[0] if text.startswith("/") else ""
         command = f"/{command}" if command and not command.startswith("/") else command
         team = operators()
@@ -534,7 +613,9 @@ class ChannelBridge:
             else:
                 decision = "reject" if command == "/cancelar" else decision_of(text)
                 if decision in {"approve", "reject"}:
-                    return self._resolve(thread_id, pending.action_id, decision, language)
+                    return self._resolve(
+                        thread_id, pending.action_id, decision, language, tool=pending.tool
+                    )
                 new_topic = looks_like_new_question(text)
                 if intent == "none" and (decision == "ambiguous" or not new_topic):
                     return self._say(
@@ -545,11 +626,14 @@ class ChannelBridge:
                 self.store.resolve_pending(thread_id, "superseded")
                 notices.append(TEXTS[language]["superseded"])
 
+        start: str | None = None
         if intent == "restart":
             thread_id = self.store.new_thread(user_id)
+            start = "restart"  # spec 038: la presentación va con la siguiente solicitud
             rest = remainder(text, intent)
             if not rest:
                 reply = self._say("answered", "restart", language, thread_id)
+                reply.conversation_start = start
                 return self._with_notices(reply, notices, language)
             notices.append(TEXTS[language]["restart_notice"])
             text = rest
@@ -567,6 +651,10 @@ class ChannelBridge:
         thread_id = str(getattr(outcome, "thread_id", None) or thread_id)
         reply = self._from_outcome(outcome, user_id, thread_id, language)
         reply.question = text
+        reply.conversation_start = start
+        if reply.status == "answered":
+            # Spec 038: la presentación va antes de la respuesta y después de los avisos.
+            self._introduce(reply, language)
         return self._with_notices(reply, notices, language)
 
     def _with_notices(
@@ -576,7 +664,101 @@ class ChannelBridge:
             reply.messages = [*self._short(" ".join(notices), language), *reply.messages]
             if reply.spoken:
                 reply.spoken = " ".join([*notices, reply.spoken])
+            if reply.opening:
+                reply.opening = " ".join([*notices, reply.opening])
         return reply
+
+    # -- stickers (spec 034) -----------------------------------------------------------------
+    @property
+    def stickers(self) -> StickerCatalog:
+        """Catálogo de stickers, cargado una vez (un archivo faltante solo apaga ese sticker)."""
+        if self._stickers is None:
+            self._stickers = load_catalog()
+        return self._stickers
+
+    def _choose_sticker(
+        self, message: InboundMessage, reply: ChannelReply, language: Language
+    ) -> None:
+        """Decide el sticker de la respuesta; un fallo nunca afecta la respuesta (FR-009)."""
+        thread_id = reply.thread_id
+        if reply.status not in ("answered", "approval_resolved") or not thread_id:
+            return
+        if OPT_OUT.search(plain_text(message.text or "")):
+            # Spec 037 (FR-012): no más stickers en esta conversación, con una confirmación breve.
+            try:
+                self.store.set_stickers_off(thread_id)
+            except Exception:
+                return
+            confirm = TEXTS[reply.language or language].get("stickers_off")
+            if confirm and reply.messages:
+                reply.messages = [*reply.messages[:-1], f"{reply.messages[-1]}\n\n{confirm}"]
+            return
+        try:
+            turn_no = self.store.count_answered(thread_id)
+            signals = TurnSignals(
+                status=reply.status,
+                event=reply.event,
+                route=reply.route,
+                act=reply.act,
+                sentiment=reply.sentiment,
+                notices=tuple(reply.notices),
+                language=reply.language or language,
+                conversation_start=reply.conversation_start,
+                approved_action=reply.approved_action,
+                factual=bool(reply.citations or reply.tools),
+                text=message.text or "",
+                cited=bool(reply.citations),  # spec 037
+                fallback=reply.fallback,
+                crisis=reply.route == "out_of_scope" and reply.scope_reason == "crisis",
+                low_mood=bool(LOW_MOOD.search(normalize(message.text or ""))),
+                introduced=reply.introduced == "bridge",
+            )
+            usage = self.store.sticker_usage(thread_id, turn_no)
+            choice = choose(signals, usage, self.stickers, self.config)
+        except Exception:  # el sticker es un adorno: nunca tumba la respuesta
+            return
+        if choice is not None:
+            self.store.record_sticker(thread_id, choice.name, turn_no, choice.situation)
+            reply.sticker = choice
+
+    # -- presentación (spec 038) -----------------------------------------------------------
+    def _introduce(self, reply: ChannelReply, language: Language) -> ChannelReply:
+        """Antepone la presentación en la primera respuesta atendida del hilo (contrato §3)."""
+        thread_id = reply.thread_id
+        if not thread_id or self.store.is_introduced(thread_id):
+            return reply
+        text = reply.spoken or (reply.messages[0] if reply.messages else "")
+        if already_introduced(text):
+            reply.introduced = "agent"  # el modelo ya se presentó (p. ej. ante «Hola»)
+        else:
+            intro = introduction(language, thread_id, reply.client_name)
+            reply.messages = self._with_intro(intro, reply.messages, language)
+            if reply.spoken:
+                reply.spoken_body = merge("", reply.spoken)
+            reply.spoken = merge(intro, reply.spoken or "")
+            reply.opening = intro
+            reply.introduced = "bridge"
+        self.store.mark_introduced(thread_id)
+        return reply
+
+    def _with_intro(self, intro: str, messages: list[str], language: Language) -> list[str]:
+        """La presentación en el primer mensaje; si no cabe, como mensaje propio (T013)."""
+        if not messages:
+            return self._short(intro, language)
+        first = merge(intro, messages[0])
+        if len(first) <= self.config.reply_max_chars:
+            return [first, *messages[1:]]
+        body = merge("", messages[0])
+        return [intro, *([body] if body else []), *messages[1:]]
+
+    def _identify(self, reply: ChannelReply, thread_id: str | None, language: Language) -> None:
+        """Errores en un hilo sin presentar: una frase de identidad, sin marcar el hilo (R7)."""
+        if not thread_id or self.store.is_introduced(thread_id) or not reply.messages:
+            return
+        line = identity_line(language)
+        reply.messages = [f"{line} {reply.messages[0]}", *reply.messages[1:]]
+        if reply.spoken:
+            reply.spoken = f"{line} {reply.spoken}"
 
     def _shortcut(
         self,
@@ -707,6 +889,16 @@ class ChannelBridge:
             return self._say("error", "error", language, thread_id)
         reply = ChannelReply("answered", messages, thread_id, route, _tools_of(turn))
         reply.spoken = answer
+        route_info = turn.get("route") or {}
+        reply.act = route_info.get("act")  # spec 034: acto y sentimiento del enrutador
+        reply.sentiment = route_info.get("sentiment")
+        reply.style = route_info.get("style")
+        reply.scope_reason = route_info.get("scope_reason")  # spec 037
+        reply.fallback = bool(turn.get("fallback"))
+        reply.notices = [str(n) for n in (getattr(outcome, "notices", None) or [])]
+        client = getattr(outcome, "client", None)
+        if isinstance(client, Mapping) and client.get("name"):
+            reply.client_name = str(client["name"])  # spec 038: saludo con el nombre
         reply.citations = list(turn.get("citations") or [])
         return reply
 
@@ -714,7 +906,13 @@ class ChannelBridge:
         return self.service.resume(thread_id, action_id=action_id, decision=decision)
 
     def _resolve(
-        self, thread_id: str, action_id: str, decision: str, language: Language
+        self,
+        thread_id: str,
+        action_id: str,
+        decision: str,
+        language: Language,
+        *,
+        tool: str | None = None,
     ) -> ChannelReply:
         outcome = self._resume(thread_id, action_id, decision)
         self.store.resolve_pending(thread_id, "approved" if decision == "approve" else "rejected")
@@ -723,10 +921,13 @@ class ChannelBridge:
         if not answer:
             answer = TEXTS[language]["done" if decision == "approve" else "cancelled"]
         route = (turn.get("route") or {}).get("route")
-        return ChannelReply(
+        reply = ChannelReply(
             "approval_resolved", self._short(answer, language), thread_id, route, _tools_of(turn),
             spoken=answer,
         )  # fmt: skip
+        if decision == "approve":
+            reply.approved_action = tool or "action"  # spec 034: «¡Listo!» o «Gracias por confiar»
+        return reply
 
     # -- voz (spec 028) ----------------------------------------------------------------------
     def _wants_voice(self, message: InboundMessage, thread_id: str | None) -> tuple[bool, str]:
@@ -760,8 +961,15 @@ class ChannelBridge:
         )
         try:
             if reply.status == "answered" and reply.question and reply.route:
+                extra: dict[str, Any] = {}
+                body = reply.spoken
+                if reply.opening:  # spec 038: el guion se arma sin la presentación y luego la lleva
+                    extra["opening"] = reply.opening
+                    body = reply.spoken_body or ""
+                if reply.style:
+                    extra["style"] = reply.style  # spec 036: estilo caleño del guion
                 result = self.voice.for_answer(
-                    reply.question, reply.spoken, language, with_sources=bool(sources)
+                    reply.question, body, language, with_sources=bool(sources), **extra
                 )
             else:
                 result = self.voice.for_text(reply.spoken, language)

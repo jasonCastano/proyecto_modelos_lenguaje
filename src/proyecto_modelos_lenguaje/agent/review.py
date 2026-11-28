@@ -12,7 +12,15 @@ pasar un dato externo. Verificaciones:
 - ``opinion``: opiniones propias sobre política, religión o competidores;
 - ``required``: frases que el plan exige (presentarse como Valer-IA Caña en el primer saludo,
   «inteligencia artificial» al hablar de sí misma, «profesional» ante un consejo y «Manuelita» al
-  declinar un tema ajeno), para conservar la batería de conducta de la spec 018.
+  declinar un tema ajeno), para conservar la batería de conducta de la spec 018;
+- enfoque (spec 035, solo con ``plan.redirect``): ``offtopic_question`` (preguntas sobre el tema
+  ajeno), ``chat_invite`` (aceptar o invitar a charlar de cualquier cosa), ``no_redirect`` (la
+  respuesta no vuelve a Manuelita), ``rejection`` («mejor no me cuentes») y ``closing_repeat`` (la
+  misma frase de cierre que una respuesta reciente);
+- estilo caleño (spec 036): ``style_banned`` (grosería, modismo de otra región o voseo),
+  ``style_excess`` (más expresiones caleñas que el límite), ``style_repeat`` (la misma expresión
+  que una respuesta reciente) y ``style_off`` (una expresión donde el estilo está apagado o no
+  permitida en el nivel del turno).
 """
 
 from __future__ import annotations
@@ -23,18 +31,48 @@ from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from typing import Any, Literal
 
+from . import style as caleno
 from .plan import TurnPlan
 from .prompts import CarePlaybook
 from .structured import normalize
 
 ReviewIssue = Literal[
-    "external_fact", "contact", "promise", "citation", "repetition", "opinion", "required"
+    "external_fact",
+    "contact",
+    "promise",
+    "citation",
+    "repetition",
+    "opinion",
+    "required",
+    "offtopic_question",
+    "chat_invite",
+    "no_redirect",
+    "rejection",
+    "closing_repeat",
+    "style_banned",
+    "style_excess",
+    "style_repeat",
+    "style_off",
 ]
 ReviewAction = Literal["show", "retry", "fallback"]
+# Spec 035: verificaciones de enfoque; solo se aplican cuando el plan exige volver a Manuelita.
+FOCUS_CHECKS: tuple[str, ...] = (
+    "offtopic_question",
+    "chat_invite",
+    "no_redirect",
+    "rejection",
+    "closing_repeat",
+)
+# Spec 036: verificaciones del estilo caleño.
+STYLE_CHECKS: tuple[str, ...] = ("style_banned", "style_excess", "style_repeat", "style_off")
 ALL_CHECKS: frozenset[str] = frozenset(
     {"external_fact", "contact", "promise", "citation", "repetition", "opinion", "required"}
+    | set(FOCUS_CHECKS)
+    | set(STYLE_CHECKS)
 )
-RETRIEVAL_CHECKS: frozenset[str] = frozenset({"external_fact", "contact", "promise", "opinion"})
+RETRIEVAL_CHECKS: frozenset[str] = frozenset(
+    {"external_fact", "contact", "promise", "opinion", "style_banned", "style_off"}
+)
 
 LABEL = re.compile(r"\[([UF]\d+)\]")
 URL_OR_EMAIL = re.compile(r"(https?://\S+|www\.\S+|[\w.+-]+@[\w-]+(?:\.[\w-]+)+)")
@@ -99,6 +137,42 @@ OPINION = re.compile(
 HUMAN_CLAIMS = ("soy una persona", "soy humana", "soy humano")
 SENTENCE_SPLIT = re.compile(r"(?<=[.!?…])\s+")
 TOKENS = re.compile(r"[a-z0-9ñ]+")
+
+# ---------------------------------------------------------------- spec 035: enfoque en Manuelita
+# Términos que cuentan como regreso a Manuelita (normalizados, sin tildes).
+MANUELITA_TERMS = frozenset(
+    {
+        *("manuelita", "trapiche", "azucar", "cana", "bioetanol", "biocombustible", "ingenio"),
+        *("fundacion", "camarones", "camaron", "uvas", "palma", "sostenibilidad", "etanol"),
+        *("sugar", "sugarcane", "ethanol", "foundation"),
+    }
+)
+# Temas de ``offer.topics``: una pregunta que los ofrece sigue siendo sobre Manuelita.
+TOPIC_TERMS = frozenset(
+    {
+        *("historia", "productos", "energia", "paises", "diversificacion", "negocios"),
+        *("history", "products", "energy", "countries", "sustainability"),
+    }
+)
+CHAT_INVITE = re.compile(
+    r"\b(solo charlar|charlar (tambien|un rato) (se vale|esta bien)|charlemos|charlamos|"
+    r"prefieres (solo )?(charlar|conversar)|de lo que quieras|de cualquier cosa|"
+    r"de que (quieres|te gustaria) (hablar|conversar|charlar)|que tema te gustaria|"
+    r"que has hecho|que hiciste|como estuvo tu dia|como te fue|cuentame (de|sobre) (tu|tus)|"
+    r"cuentame (mas|que paso|como)|sigamos (charlando|conversando) de|"
+    r"let'?s (just )?chat|what would you like to talk about|tell me about your day|"
+    r"anything you (want|like))\b"
+)
+REJECTION = re.compile(
+    r"\b(mejor no me cuentes|no me cuentes|no quiero saber|prefiero no saber|no me interesa|"
+    r"me quedo al margen|no me lo digas|don'?t tell me|i don'?t want to know|not interested)\b"
+)
+OFFER = re.compile(
+    r"\b(te cuento|te comparto|quieres (saber|que te cuente)|te interesa|te gustaria (saber|que)|"
+    r"would you like|want to know)\b"
+)
+VALERIA_NAME = re.compile(r"valer-?ia cana")
+CLOSING_THRESHOLD = 0.8
 
 
 @dataclass(slots=True)
@@ -168,6 +242,137 @@ def _external_facts(text: str, allowed: str, names: Iterable[str]) -> list[str]:
     return spans
 
 
+def _focus_tokens(text: str) -> set[str]:
+    """Tokens normalizados sin el nombre «Valer-IA Caña» (su «caña» no es un regreso)."""
+    return set(TOKENS.findall(VALERIA_NAME.sub(" ", normalize(LABEL.sub(" ", text)))))
+
+
+def mentions_manuelita(text: str) -> bool:
+    """¿El texto vuelve a Manuelita? Un término del léxico o una cita ``[U#]`` del puente."""
+    return bool(LABEL.search(text)) or bool(_focus_tokens(text) & MANUELITA_TERMS)
+
+
+def _sentences(text: str) -> list[str]:
+    return [piece for piece in SENTENCE_SPLIT.split(text.strip()) if piece.strip()]
+
+
+def _is_question(sentence: str) -> bool:
+    stripped = sentence.strip()
+    return stripped.endswith("?") or stripped.startswith("¿")
+
+
+def _offtopic_questions(text: str) -> list[str]:
+    """Preguntas que no son sobre Manuelita (spec 035, R5).
+
+    Una pregunta pasa si nombra a Manuelita o uno de sus temas, o si es un ofrecimiento («¿te
+    cuento?») dentro de una respuesta que ya volvió a Manuelita.
+    """
+    redirected = mentions_manuelita(text)
+    flagged: list[str] = []
+    for sentence in _sentences(text):
+        if not _is_question(sentence):
+            continue
+        tokens = _focus_tokens(sentence)
+        if tokens & MANUELITA_TERMS or tokens & TOPIC_TERMS or LABEL.search(sentence):
+            continue
+        if redirected and OFFER.search(normalize(sentence)):
+            continue
+        flagged.append(sentence.strip())
+    return flagged
+
+
+def _closing_repeats(text: str, recent_answers: Sequence[str]) -> list[str]:
+    sentences = _sentences(text)
+    if not sentences:
+        return []
+    last = sentences[-1]
+    flagged: list[str] = []
+    for previous in recent_answers:
+        before = _sentences(previous or "")
+        if before and similarity(last, before[-1]) > CLOSING_THRESHOLD:
+            flagged.append(f"cierre repetido {similarity(last, before[-1]):.2f}")
+    return flagged
+
+
+def focus_issues(
+    text: str,
+    plan: TurnPlan | None,
+    recent_answers: Sequence[str] = (),
+    checks: Collection[str] = FOCUS_CHECKS,
+) -> list[tuple[str, str]]:
+    """Problemas de enfoque de ``text`` como pares ``(check, fragmento)`` (spec 035, R5).
+
+    Solo aplica cuando el plan exige volver a Manuelita (``plan.redirect``).
+    """
+    if plan is None or not plan.redirect:
+        return []
+    return focus_flags(text, recent_answers, checks)
+
+
+def focus_flags(
+    text: str, recent_answers: Sequence[str] = (), checks: Collection[str] = FOCUS_CHECKS
+) -> list[tuple[str, str]]:
+    """Los checks de enfoque sin mirar el plan (los usa también la evaluación ``--focus``)."""
+    if not text.strip():
+        return []
+    normalized = normalize(text)
+    found: list[tuple[str, str]] = []
+    if "offtopic_question" in checks:
+        found += [("offtopic_question", q) for q in _offtopic_questions(text)]
+    if "chat_invite" in checks:
+        found += [("chat_invite", m.group(0)) for m in CHAT_INVITE.finditer(normalized)]
+    if "rejection" in checks:
+        found += [("rejection", m.group(0)) for m in REJECTION.finditer(normalized)]
+    if "no_redirect" in checks and not mentions_manuelita(text):
+        found.append(("no_redirect", "(sin Manuelita)"))
+    if "closing_repeat" in checks:
+        found += [("closing_repeat", span) for span in _closing_repeats(text, recent_answers)]
+    return found
+
+
+def style_issues(
+    text: str,
+    plan: TurnPlan | None,
+    recent_expressions: Sequence[str] = (),
+    *,
+    spoken: bool = False,
+    checks: Collection[str] = STYLE_CHECKS,
+) -> list[tuple[str, str]]:
+    """Problemas de estilo caleño como pares ``(check, fragmento)`` (spec 036, research R5).
+
+    Las vetadas se revisan siempre; el resto necesita el plan (su nivel ``style``). Los fragmentos
+    son texto de la respuesta, para poder quitar la frase en las respuestas con búsqueda.
+    """
+    if not text.strip():
+        return []
+    found: list[tuple[str, str]] = []
+    if "style_banned" in checks:
+        found += [("style_banned", fragment) for _word, fragment in caleno.banned_hits(text)]
+    if plan is None:
+        return found
+    lexicon = caleno.load_lexicon()
+    by_key = lexicon.by_key()
+    hits = caleno.expression_hits(text, lexicon)
+    level = plan.style or "off"
+    if "style_off" in checks:
+        # Con el estilo apagado se permiten las cortesías de nivel formal («con mucho gusto»,
+        # «a la orden»): son español profesional común, no un modismo.
+        allowed = "formal" if level == "off" else level
+        for name, fragment in hits:
+            expression = by_key.get(normalize(name))
+            if expression is not None and allowed not in expression.levels:
+                found.append(("style_off", fragment))
+    if level == "off":
+        return found
+    limit = lexicon.max_spoken if spoken else lexicon.max_written
+    if "style_excess" in checks and len(hits) > limit:
+        found += [("style_excess", fragment) for _name, fragment in hits[limit:]]
+    if "style_repeat" in checks:
+        recent = {normalize(item) for item in recent_expressions}
+        found += [("style_repeat", f) for name, f in hits if normalize(name) in recent]
+    return found
+
+
 def required_phrases(plan: TurnPlan | None) -> list[tuple[str, ...]]:
     """Frases que el plan exige: cada tupla se cumple con cualquiera de sus opciones."""
     if plan is None or plan.language != "es":
@@ -197,6 +402,7 @@ def review(
     playbook: CarePlaybook | None = None,
     threshold: float = 0.5,
     checks: Collection[str] = ALL_CHECKS,
+    recent_expressions: Sequence[str] = (),
 ) -> ReviewVerdict:
     """Revisa ``text`` según el plan; ``evidence`` reúne la evidencia y el texto del puente."""
     issues: list[str] = []
@@ -243,6 +449,14 @@ def review(
         if plan is not None and plan.act == "about_assistant":
             missing += [p for p in HUMAN_CLAIMS if p in normalized]
         flag("required", missing)
+    focus = [check for check in FOCUS_CHECKS if check in checks]
+    if focus:
+        for issue, span in focus_issues(text, plan, recent_answers, focus):
+            flag(issue, [span])
+    styled = [check for check in STYLE_CHECKS if check in checks]
+    if styled:
+        for issue, span in style_issues(text, plan, recent_expressions, checks=styled):
+            flag(issue, [span])
     return ReviewVerdict(ok=not issues, issues=issues, spans=spans)
 
 
@@ -263,6 +477,35 @@ NOTES = {
     "human_claim": (
         "No escribas «soy una persona» ni «no soy una persona»: di que funcionas con "
         "inteligencia artificial."
+    ),
+    # Spec 035: enfoque en Manuelita.
+    "offtopic_question": (
+        "No hagas preguntas sobre el tema ajeno ni sobre la vida personal; si preguntas, que sea "
+        "sobre Manuelita."
+    ),
+    "chat_invite": (
+        "No invites a charlar de cualquier cosa ni aceptes la charla libre: di en una frase que lo "
+        "tuyo es Manuelita y ofrece dos o tres temas."
+    ),
+    "no_redirect": (
+        "Termina llevando la conversación a Manuelita: el puente, un tema sugerido o dos o tres "
+        "opciones."
+    ),
+    "rejection": (
+        "No rechaces lo que la persona comparte (nada de «mejor no me cuentes»): recíbelo con "
+        "amabilidad en una frase y vuelve a Manuelita."
+    ),
+    "closing_repeat": "No repitas la frase de cierre de una respuesta anterior: usa otro cierre.",
+    # Spec 036: estilo caleño profesional.
+    "style_banned": (
+        "No uses groserías, modismos de otras regiones («parce») ni voseo («vos», «mirá»): tuteo "
+        "cordial."
+    ),
+    "style_excess": "Usa como máximo una expresión caleña en la respuesta.",
+    "style_repeat": "No repitas la expresión caleña de tu respuesta anterior: usa otra o ninguna.",
+    "style_off": (
+        "En este turno responde en español neutro y profesional, sin expresiones caleñas (o solo "
+        "las cortesías del nivel indicado)."
     ),
 }
 
@@ -310,7 +553,10 @@ def evidence_text(evidence: Mapping[str, Mapping[str, Any]] | None, context: str
 # ---------------------------------------------------------------- spec 021: revisión por frase
 
 LOCAL_CHECKS: frozenset[str] = frozenset(
+    # Spec 035: por frase solo los checks de enfoque que no necesitan la respuesta completa.
     {"external_fact", "contact", "promise", "citation", "opinion"}
+    | {"offtopic_question", "chat_invite", "rejection"}
+    | {"style_banned", "style_off"}  # spec 036: el exceso y la repetición, sobre la respuesta
 )
 SHORT_SENTENCE_WORDS = 8
 SHORT_SENTENCE_THRESHOLD = 0.7
@@ -342,7 +588,9 @@ def review_sentence(
         labels=labels,
         names=names,
         playbook=playbook,
-        checks=set(checks) - {"repetition", "required"},
+        checks=set(checks)
+        - {"repetition", "required", "no_redirect", "closing_repeat"}
+        - {"style_excess", "style_repeat"},
     )
     if plan is not None and plan.act == "about_assistant":
         # Las frases exigidas se completan al cierre, pero «(no) soy una persona» no se muestra

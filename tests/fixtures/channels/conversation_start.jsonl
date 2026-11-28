@@ -1,0 +1,22 @@
+{"id": "s01a", "conversation": "c01", "new_conversation": true, "text": "¿Qué produce Manuelita?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "s01b", "conversation": "c01", "new_conversation": false, "text": "¿Y en qué países opera?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "s02a", "conversation": "c02", "new_conversation": true, "text": "Hola", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "s02b", "conversation": "c02", "new_conversation": false, "text": "¿Cuándo inició Ingenio Manuelita?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "s03a", "conversation": "c03", "new_conversation": true, "text": "¿Qué productos genera Manuelita?", "lang": "es", "kind": "audio", "sensitive": false}
+{"id": "s03b", "conversation": "c03", "new_conversation": false, "text": "¿Y qué hace con la caña de azúcar?", "lang": "es", "kind": "audio", "sensitive": false}
+{"id": "s04a", "conversation": "c04", "new_conversation": true, "text": "What does Manuelita produce?", "lang": "en", "kind": "text", "sensitive": false}
+{"id": "s04b", "conversation": "c04", "new_conversation": false, "text": "In which countries does Manuelita operate?", "lang": "en", "kind": "text", "sensitive": false}
+{"id": "s05a", "conversation": "c05", "new_conversation": true, "text": "What products does Manuelita make?", "lang": "en", "kind": "audio", "sensitive": false}
+{"id": "s05b", "conversation": "c05", "new_conversation": false, "text": "When did the company start?", "lang": "en", "kind": "audio", "sensitive": false}
+{"id": "s06a", "conversation": "c06", "new_conversation": true, "text": null, "lang": "es", "kind": "image", "sensitive": false}
+{"id": "s06b", "conversation": "c06", "new_conversation": false, "text": "¿Qué certificaciones tiene Manuelita?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "s07a", "conversation": "c07", "new_conversation": true, "text": "Mi tarjeta es 4111 1111 1111 1111, ¿qué vende Manuelita?", "lang": "es", "kind": "text", "sensitive": true}
+{"id": "s07b", "conversation": "c07", "new_conversation": false, "text": "¿Y en Perú qué hace?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "s08a", "conversation": "c08", "new_conversation": true, "text": "¿Cuál es la historia de Manuelita?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "s08b", "conversation": "c08", "new_conversation": true, "text": "Empecemos de nuevo. ¿Qué certificaciones tiene Manuelita?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "s09a", "conversation": "c09", "new_conversation": true, "text": "Buenas tardes, ¿Manuelita produce uvas?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "s09b", "conversation": "c09", "new_conversation": false, "text": "¿Y camarones?", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "s10a", "conversation": "c10", "new_conversation": true, "text": "Hola", "lang": "es", "kind": "audio", "sensitive": false}
+{"id": "s10b", "conversation": "c10", "new_conversation": false, "text": "¿Qué es Manuelita?", "lang": "es", "kind": "audio", "sensitive": false}
+{"id": "s11a", "conversation": "c11", "new_conversation": true, "text": "Cuéntame de la sostenibilidad de Manuelita", "lang": "es", "kind": "text", "sensitive": false}
+{"id": "s11b", "conversation": "c11", "new_conversation": false, "text": "Gracias", "lang": "es", "kind": "text", "sensitive": false}

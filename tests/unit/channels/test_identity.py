@@ -54,3 +54,49 @@ def test_salt_is_required(monkeypatch: pytest.MonkeyPatch) -> None:
         channel_salt()
     monkeypatch.setenv("VALERIA_CHANNEL_SALT", SALT)
     assert channel_salt() == SALT
+
+
+# --- spec 033: cuentas de WhatsApp identificadas solo por ID (T003) -----------------------------
+
+LID = "10000000000001@lid"  # ficticio
+
+
+def test_lid_senders_are_normalized() -> None:
+    from proyecto_modelos_lenguaje.channels.identity import normalize_sender
+
+    assert normalize_sender(LID) == "lid:10000000000001"
+    assert normalize_sender("10000000000001@hosted.lid") == "lid:10000000000001"
+    assert normalize_sender("10000000000001:12@lid") == "lid:10000000000001"
+
+
+@pytest.mark.parametrize("raw", ["abc@lid", "1234@lid", "1" * 21 + "@lid", "10000000000001@lidx"])
+def test_invalid_lid_senders_are_rejected(raw: str) -> None:
+    from proyecto_modelos_lenguaje.channels.identity import SenderError, normalize_sender
+
+    with pytest.raises(SenderError):
+        normalize_sender(raw)
+
+
+def test_lid_pseudonym_is_stable_and_distinct_from_a_number() -> None:
+    import re
+
+    first = pseudonym(LID, SALT)
+    assert re.fullmatch(r"wa-[0-9a-f]{16}", first) and first == pseudonym(LID, SALT)
+    assert first != pseudonym("+10000000000001", SALT)  # mismos dígitos, otra identidad
+
+
+def test_lid_mask_and_kind() -> None:
+    from proyecto_modelos_lenguaje.channels.identity import sender_kind
+
+    assert mask(LID) == "ID ••••0001"
+    assert sender_kind(LID) == "lid" and sender_kind("+573001234567") == "phone"
+    assert sender_kind("573001234567@s.whatsapp.net") == "phone"
+    assert sender_kind("12345", "telegram") == "telegram"
+    assert mask("+573001234567") == "+57 ••• ••• 4567"  # sin cambios para números
+
+
+def test_lid_normalization_is_idempotent() -> None:
+    from proyecto_modelos_lenguaje.channels.identity import normalize_sender
+
+    once = normalize_sender(LID)
+    assert normalize_sender(once) == once and pseudonym(once, SALT) == pseudonym(LID, SALT)

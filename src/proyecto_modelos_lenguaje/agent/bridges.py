@@ -39,8 +39,13 @@ def eligible(
     config: ConversationConfig,
     *,
     reason: str | None = None,
+    streak: int = 0,
 ) -> bool:
-    """¿Se permite un puente en este turno? (FR-012, FR-013)."""
+    """¿Se permite un puente en este turno? (FR-012, FR-013).
+
+    Spec 035: el primer turno ajeno de una racha (``streak == 1``) puede llevar puente aunque la
+    cadencia ``bridge_every`` no lo permita, para que la desviación reciba un dato concreto.
+    """
     memory = memory or {}
     if act in NO_BRIDGE_ACTS or act not in BRIDGE_ACTS:
         return False
@@ -50,7 +55,7 @@ def eligible(
         return False
     if memory.get("bridge_rejected_at") is not None and not memory.get("interest_after_rejection"):
         return False
-    if memory.get("last_bridge_turn") is None:
+    if memory.get("last_bridge_turn") is None or streak == 1:
         return True
     return int(memory.get("offtopic_since_bridge") or 0) >= config.bridge_every - 1
 

@@ -1,4 +1,4 @@
-<!-- prompt_version: 1.2 -->
+<!-- prompt_version: 1.3 -->
 # Valer-IA Caña — guiones de atención
 
 Guiones de atención de Valer-IA Caña (spec 019, `contracts/care-skills.md`). No pasan por el modelo de lenguaje:
@@ -86,6 +86,19 @@ el oro y `angle` evita repetir el mismo ángulo en un hilo (`agent/bridges.py`).
 
 - Lo que sí puedo hacer es contarte la información pública de Manuelita.
 - Lo que sí está en mis manos es orientarte con la información pública de la empresa.
+
+## offer.topics
+
+Spec 035: temas de Manuelita que el plan sugiere cuando la conversación se desvía y no hay puente. Una línea por tema,
+`- clave | texto`; solo hechos ya presentes en los puentes o en la presentación, sin cifras nuevas.
+
+- historia | la historia de Manuelita, que empezó como un trapiche en 1864
+- productos | sus productos, como el azúcar y sus derivados
+- energia | la energía renovable y el bioetanol que produce con la caña
+- fundacion | la Fundación Manuelita y sus programas con la comunidad
+- paises | los países donde opera
+- sostenibilidad | su trabajo en sostenibilidad
+- diversificacion | sus negocios más allá del azúcar, como las uvas y los camarones
 
 ## bridge.default
 
@@ -285,8 +298,8 @@ cite: unit_04332ad427df77f2 | https://www.manuelita.com/wp-content/uploads/2017/
 
 ## minimal.fallback
 
-- ¡Listo! Aquí sigo si necesitas algo.
-- Perfecto, cuando quieras seguimos.
+- ¡Listo! Si quieres, seguimos con algo de Manuelita.
+- Perfecto, cuando quieras te cuento algo de Manuelita.
 
 ## about.fallback
 

@@ -104,7 +104,14 @@ insignia redonda y borde blanco); no reproduce el personaje de la imagen de esti
   - En el teléfono, con una app de paquetes de stickers: se crea un paquete con los 9 `.webp` y el ícono, y
     se añade a WhatsApp.
   - En WhatsApp Web, como sticker personalizado: se sube cada `.webp`.
-  - El bot puede enviarlos como mensaje de tipo sticker si el canal lo admite.
+  - El bot los envía como mensaje de tipo sticker (specs 034 y 037). El plugin `valeria-bridge` busca la
+    los envía por el adaptador de salida del canal (como las notas de voz). El parche
+    `openclaw/patches/whatsapp-sticker.mjs` (ADR 0040) hace que el componente los envíe como sticker nativo y
+    no como documento; sin él no llega ningún sticker. Lo aplica `scripts/openclaw_env.ps1 -Install`. En el log del gateway
+    queda una línea por sticker («sticker enviado (…) vía …» o «sticker no enviado (…): motivo»), y al
+    arrancar, «stickers listos vía …» o «sin vía de stickers (…)». `uv run pml ops check` muestra
+    `stickers-hoy` (elegidos, entregados y fallidos del día) y se pone en rojo si se eligen y no llega
+    ninguno.
 
 ## Audios de los stickers (`stickers/audios/`)
 
@@ -134,6 +141,29 @@ pulgar no tiene frase, así que no tiene audio.
 - **Atribución y licencia**: voz sintetizada con Phonon (Gradium, `gradium/phonon-40m-es`). El modelo y las voces
   son **CC BY-NC 4.0**: solo uso académico, no comercial. Cada audio lleva su ficha con la licencia y la
   atribución.
+
+### Uso por el bot (spec 034)
+
+Valer-IA envía estos stickers en WhatsApp como mensajes de tipo sticker, con moderación. El mapeo vive en
+`config/stickers.toml`. Los archivos de esta carpeta no cambian.
+
+| Sticker | Cuándo lo usa el bot |
+|---|---|
+| `valeria-bienvenido` | Saludo de una persona que escribe por primera vez (antes del texto) |
+| `valeria-hola` | Saludo al iniciar una conversación nueva (antes del texto) |
+| `valeria-consulta` | Saludo a mitad de conversación, sin pregunta |
+| `valeria-gracias` | La persona agradece |
+| `valeria-lindo-dia` | La persona se despide |
+| `valeria-pulgar` | La persona asiente («ok», «dale»); el único que se usa en inglés |
+| `valeria-gracias-confianza` | La persona aprueba que se recuerden sus datos |
+| `valeria-listo` | Se completó una acción pedida o se entregó un plan |
+| `valeria-pensando` | La respuesta tarda más de 8 s (lo envía el plugin) |
+
+Moderación:
+
+- uno por respuesta y nunca dos respuestas seguidas, salvo la despedida;
+- máximo 4 por conversación, sin repetir, salvo el pulgar;
+- ninguno ante quejas, molestia, datos personales, errores, avisos o respuestas factuales.
 
 ## Reglas comunes
 

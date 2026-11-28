@@ -78,6 +78,8 @@ class RouteDecision(BaseModel):
     kind: UnattainableKind | None = None
     # Spec 020: acto de diálogo (lo proponen las reglas o el LLM del enrutador).
     act: DialogueAct | None = None
+    # Spec 036: nivel del estilo caleño del turno (el canal lo usa para la nota de voz).
+    style: Literal["off", "formal", "neutral", "informal"] | None = None
 
     @field_validator("act", mode="before")
     @classmethod

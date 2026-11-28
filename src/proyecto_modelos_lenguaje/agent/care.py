@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import re
 import tomllib
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import lru_cache
@@ -343,6 +344,10 @@ class ConversationMemory(TypedDict):
     language: str
     thread_name: str | None
     introduced: bool  # ya se presentó como Valer-IA Caña (saludo o pregunta sobre ella)
+    offtopic_streak: int  # spec 035: turnos sociales o ajenos seguidos
+    offered_topics: list[str]  # spec 035: temas de offer.topics ya ofrecidos en el hilo
+    style_opt_out: bool  # spec 036: la persona pidió hablar sin modismos (estilo caleño apagado)
+    last_expressions: list[str]  # spec 036: expresiones caleñas recientes (para no repetirlas)
 
 
 def empty_conversation() -> ConversationMemory:
@@ -359,6 +364,10 @@ def empty_conversation() -> ConversationMemory:
         "language": "es",
         "thread_name": None,
         "introduced": False,
+        "offtopic_streak": 0,
+        "offered_topics": [],
+        "style_opt_out": False,
+        "last_expressions": [],
     }
 
 
@@ -378,8 +387,60 @@ def copy_conversation(memory: dict[str, Any] | None) -> ConversationMemory:
             language=str(memory.get("language") or "es"),
             thread_name=memory.get("thread_name"),
             introduced=bool(memory.get("introduced")),
+            offtopic_streak=int(memory.get("offtopic_streak") or 0),
+            offered_topics=[str(t) for t in memory.get("offered_topics") or []],
+            style_opt_out=bool(memory.get("style_opt_out")),
+            last_expressions=[str(e) for e in memory.get("last_expressions") or []],
         )
     return base
+
+
+MAX_OFFERED_TOPICS = 8
+MAX_RECENT_EXPRESSIONS = 3  # spec 036: igual a ``memory`` de config/caleno.toml
+
+
+def pick_topics(playbook: Any, offered: Sequence[str] | None, k: int = 3) -> tuple[str, ...]:
+    """Spec 035: claves de ``offer.topics`` aún no ofrecidas (rota al agotarlas)."""
+    keys = list(getattr(playbook, "topics", {}) or {})
+    if not keys:
+        return ()
+    seen = set(offered or ())
+    fresh = [key for key in keys if key not in seen]
+    if len(fresh) < k:
+        fresh = fresh + [key for key in keys if key not in fresh]
+    return tuple(fresh[:k])
+
+
+TOPICS_OFFER = (
+    "Lo mío es Manuelita: si quieres, te cuento sobre {topics}.",
+    "Mi tema es Manuelita; puedo contarte sobre {topics}.",
+    "Te acompaño con lo de Manuelita, por ejemplo {topics}.",
+)
+TOPICS_OFFER_EN = (
+    "I focus on Manuelita: I can tell you about its history, its products or its foundation.",
+    "My topic is Manuelita; I can tell you about its renewable energy or its foundation.",
+    "I can help you with Manuelita, for example its history or the countries where it works.",
+)
+
+
+def topics_offer(
+    playbook: Any, keys: Sequence[str], seed: int = 0, language: str = "es", k: int = 2
+) -> str:
+    """Spec 035: frase determinista que lleva la conversación a temas de Manuelita.
+
+    Usa los textos de ``offer.topics`` (sin cifras nuevas) y una plantilla según la semilla.
+    """
+    if language != "es":
+        return TOPICS_OFFER_EN[seed % len(TOPICS_OFFER_EN)]
+    texts_by_key = dict(getattr(playbook, "topics", {}) or {})
+    # Solo la parte antes de la primera coma: una oferta corta y sin cifras.
+    texts = [texts_by_key[key].split(",")[0] for key in keys if key in texts_by_key][:k]
+    if not texts:
+        texts = [text.split(",")[0] for text in texts_by_key.values()][:k]
+    if not texts:
+        return "Lo mío es la información pública de Manuelita, por si algo de eso te sirve."
+    joined = texts[0] if len(texts) == 1 else f"{', '.join(texts[:-1])} o {texts[-1]}"
+    return TOPICS_OFFER[seed % len(TOPICS_OFFER)].format(topics=joined)
 
 
 ACCEPTANCE = re.compile(
@@ -417,8 +478,18 @@ def update_conversation(
     turn: int,
     bridged: dict[str, Any] | None,
     name: str | None = None,
+    streak: int | None = None,
+    offered: Sequence[str] = (),
+    expressions: Sequence[str] = (),
+    plain: bool = False,
 ) -> ConversationMemory:
-    """Transiciones de ``data-model.md`` §2 tras un turno del modo guiado."""
+    """Transiciones de ``data-model.md`` §2 tras un turno del modo guiado.
+
+    Spec 035: ``streak`` es la racha de turnos ajenos que calculó el plan y ``offered`` los temas
+    sugeridos en este turno (se acumulan sin repetir y se reinician al llegar al máximo).
+    Spec 036: ``expressions`` son las expresiones caleñas de la respuesta mostrada; ``plain``, que
+    la persona pidió hablar sin modismos (el estilo no vuelve a activarse en el hilo).
+    """
     text = normalize(message)
     for label in memory_topics(signals, decision):
         if label in memory["topics"]:
@@ -457,6 +528,16 @@ def update_conversation(
         memory["thread_name"] = name[:40]
     if act in {"greeting", "about_assistant"}:
         memory["introduced"] = True
+    if streak is not None:
+        memory["offtopic_streak"] = max(0, int(streak))
+    if offered:
+        known = [t for t in memory["offered_topics"] if t not in offered] + list(offered)
+        memory["offered_topics"] = known if len(known) < MAX_OFFERED_TOPICS else list(offered)
+    if plain:
+        memory["style_opt_out"] = True
+    if expressions:
+        recent = [e for e in memory["last_expressions"] if e not in expressions] + list(expressions)
+        memory["last_expressions"] = recent[-MAX_RECENT_EXPRESSIONS:]
     return memory
 
 

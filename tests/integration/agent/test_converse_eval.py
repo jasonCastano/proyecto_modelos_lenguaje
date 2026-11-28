@@ -92,7 +92,7 @@ def test_demo_report_has_every_block_and_meets_the_hard_targets() -> None:
     assert guided["metrics"]["fallback_on_error"] == 1.0
     assert guided["metrics"]["hard_violations"] == 0
     assert report["meets_hard"]
-    assert report["prompts"]["converse"]["version"] == "1.0"
+    assert report["prompts"]["converse"]["version"] == "1.2"
     assert baseline["guided"] is False and guided["guided"] is True
     dumped = json.dumps(report, ensure_ascii=False, default=str)
     assert "Ana" not in dumped  # el nombre del hilo no entra al informe

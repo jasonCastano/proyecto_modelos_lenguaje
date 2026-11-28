@@ -27,7 +27,7 @@ from collections.abc import Iterator, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from contextvars import copy_context
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, TypedDict
 
 from langchain.agents import create_agent
@@ -63,6 +63,7 @@ from ..tasks import FALLBACK_ANSWER, STRICT_REMINDER, is_model_fallback
 from . import bridges, care
 from . import planning as planning_module
 from . import profiles as profiles_module
+from . import style as caleno
 from .actions import (
     TOOL_DESCRIPTIONS,
     WRITE_TOOLS,
@@ -102,10 +103,12 @@ from .prompts import load_agent_prompt, load_care, load_conduct, load_converse
 from .review import (
     LOCAL_CHECKS,
     RETRIEVAL_CHECKS,
+    SENTENCE_SPLIT,
     ReviewVerdict,
     correction_note,
     drop_flagged_sentences,
     evidence_text,
+    mentions_manuelita,
     missing_required,
     review,
     review_sentence,
@@ -465,6 +468,7 @@ def _route_node(deps: GraphDeps):
             turn_plan = _turn_plan(deps, state, signals, decision, profile_query)
             if signals is not None and turn_plan.act and decision.act is None:
                 decision = decision.model_copy(update={"act": turn_plan.act})
+            decision = decision.model_copy(update={"style": turn_plan.style})  # spec 036
             plan = turn_plan.to_state()
             plan["node"] = (
                 "converse" if _goes_to_converse(decision, profile_query) else decision.route
@@ -692,7 +696,9 @@ def _turn_plan(
         turn=turn,
         has_evidence=decision.route not in NO_RETRIEVAL_ROUTES,
         topic=topic,
+        focus_topics=care.pick_topics(load_care(), memory.get("offered_topics")),  # spec 035
     )
+    turn_plan = _with_style(turn_plan, state, memory, turn)
     if not _goes_to_converse(decision, profile_query):
         return turn_plan
     allowed = bridges.eligible(
@@ -701,6 +707,7 @@ def _turn_plan(
         memory,
         deps.config.conversation,
         reason=decision.scope_reason,
+        streak=turn_plan.streak,
     )
     choice = None
     if allowed:
@@ -709,6 +716,45 @@ def _turn_plan(
         options = bridges.candidates(text, key, playbook, deps.retriever, deps.config.conversation)
         choice = bridges.select(options, memory)
     return turn_plan.with_bridge(choice, allowed and choice is not None)
+
+
+def _with_style(
+    plan: TurnPlan, state: ChatState, memory: care.ConversationMemory, turn: int
+) -> TurnPlan:
+    """Spec 036: nivel del estilo caleño y expresiones sugeridas para el turno."""
+    question = str(state.get("question") or "")
+    level = caleno.level_for(plan, memory, question)
+    seed = zlib.crc32(f"{state.get('user_id') or ''}:{turn}:{question}".encode())
+    hints = caleno.suggest(level, memory.get("last_expressions") or (), seed)
+    return replace(plan, style=level, style_hints=hints)
+
+
+def style_block(state: ChatState, *, spoken: bool = False) -> str:
+    """Spec 036: bloque ``<estilo>`` del turno (vacío si el estilo está apagado).
+
+    Si la persona acaba de pedir hablar normal, el bloque pide confirmarlo. El glosario trae el
+    significado de las expresiones que el mensaje nombra y de las usadas hace poco (FR-010).
+    """
+    plan = TurnPlan.from_state(state.get("plan"))
+    if plan is None:
+        return ""
+    question = str(state.get("question") or "")
+    memory = state.get("conversation") or {}
+    if caleno.wants_plain(question) and not memory.get("style_opt_out"):
+        return caleno.render_block("off", plain_request=True)
+    hints = plan.style_hints
+    if spoken:
+        seed = zlib.crc32(f"voz:{plan.turn}:{question}".encode())
+        hints = caleno.suggest(plan.style, memory.get("last_expressions") or (), seed, spoken=True)
+    names = [*caleno.named_expressions(question), *(memory.get("last_expressions") or [])]
+    return caleno.render_block(
+        plan.style, hints, spoken=spoken, glossary_lines=caleno.glossary(names)
+    )
+
+
+def _with_style_block(system: str, state: ChatState) -> str:
+    block = style_block(state)
+    return f"{system}\n\n{block}" if block else system
 
 
 def _bridge_evidence(plan: TurnPlan | None) -> dict[str, dict[str, Any]]:
@@ -784,13 +830,25 @@ MINIMAL_OPENINGS = (
 def opening_hint(plan: TurnPlan, seed: int) -> str:
     """Apertura sugerida por hilo y turno (spec 020, SC-002): rompe la fórmula repetida."""
     options = list(OPENINGS)
+    if plan.redirect:
+        # Spec 035: en turnos ajenos no se abre con preguntas (sostenían la charla ajena).
+        options = [option for option in options if "pregunta" not in option]
     if plan.sentiment in {"frustrated", "angry", "distressed"}:
         options = [options[3], options[2]]  # con molestia, primero la emoción
     elif plan.act in {"minimal", "thanks"}:
         options = list(MINIMAL_OPENINGS)
+        if plan.redirect:
+            options = [o for o in options if "pregunta" not in o and "sin ofrecer" not in o]
     elif plan.act == "closing":
         options = options[:3]
     return f"<variacion>\napertura sugerida: {options[seed % len(options)]}\n</variacion>"
+
+
+def _topics_evidence(plan: TurnPlan) -> str:
+    """Spec 035: textos de ``offer.topics`` que la respuesta puede usar sin ser dato externo."""
+    if not plan.redirect:
+        return ""
+    return "\n" + "\n".join(load_care().topics.values())
 
 
 def _converse_messages(
@@ -800,7 +858,14 @@ def _converse_messages(
     memory: care.ConversationMemory,
     seed: int = 0,
 ) -> list[BaseMessage]:
-    blocks = [load_converse().render(), plan.render(), opening_hint(plan, seed)]
+    blocks = [
+        load_converse().render(),
+        plan.render(load_care().topics),
+        opening_hint(plan, seed),
+    ]
+    styled = style_block(state)  # spec 036
+    if styled:
+        blocks.append(styled)
     memory_block = care.render_memory(memory)
     if memory_block:
         blocks.append(memory_block)
@@ -921,6 +986,7 @@ def _converse_node(deps: GraphDeps):
         playbook = load_care()
         evidence = _bridge_evidence(plan)
         bridge_text = f"{plan.bridge.text}\n{plan.bridge.title}" if plan.bridge else ""
+        bridge_text += _topics_evidence(plan)  # spec 035: los temas sugeridos no son externos
         names = [memory["thread_name"]] if memory["thread_name"] else []
         stored = _registered_name(get_store(), state.get("user_id"))
         if stored:
@@ -944,6 +1010,7 @@ def _converse_node(deps: GraphDeps):
                         playbook=playbook,
                         seed=_thread_seed(config, plan.turn, attempt),
                         name=memory["thread_name"] or stored,
+                        question=str(state.get("question") or ""),
                     )
                 else:
                     try:
@@ -971,6 +1038,7 @@ def _converse_node(deps: GraphDeps):
                     names=names,
                     playbook=playbook,
                     threshold=settings.repetition_threshold,
+                    recent_expressions=memory.get("last_expressions") or (),  # spec 036
                 )
                 if verdict.ok:
                     break
@@ -996,7 +1064,7 @@ def _converse_node(deps: GraphDeps):
                 "bridged": bridged,
                 "turn_notices": notices,
             }
-        result = _scripted_reply(state, bridge=plan.bridge)
+        result = _focus_fallback(_scripted_reply(state, bridge=plan.bridge), plan)
         bridged = None
         if plan.bridge is not None and any(
             c.get("unit_id") == plan.bridge.unit_id for c in result["citations"]
@@ -1033,6 +1101,7 @@ def _converse_by_sentences(
     care_state = care.copy_care_state(state.get("care"))
     evidence = _bridge_evidence(plan)
     bridge_text = f"{plan.bridge.text}\n{plan.bridge.title}" if plan.bridge else ""
+    bridge_text += _topics_evidence(plan)  # spec 035
     names = [memory["thread_name"]] if memory["thread_name"] else []
     stored = _registered_name(get_store(), state.get("user_id"))
     if stored:
@@ -1080,6 +1149,7 @@ def _converse_by_sentences(
                         playbook=playbook,
                         seed=_thread_seed(config, plan.turn, attempt),
                         name=memory["thread_name"] or stored,
+                        question=str(state.get("question") or ""),
                     )
                 ]
             else:
@@ -1114,7 +1184,7 @@ def _converse_by_sentences(
     citations: list[dict[str, Any]] = []
     if not gate.delivered:
         # Nada del modelo llegó al visitante: respaldo de la spec 019, también por frases.
-        result = _scripted_reply(state, bridge=plan.bridge)
+        result = _focus_fallback(_scripted_reply(state, bridge=plan.bridge), plan)
         for sentence in split_all(
             str(result["answer"]), settings.sentence_max_chars, settings.first_fragment_chars
         ):
@@ -1264,6 +1334,26 @@ LIGHT_FALLBACK = {
     "minimal": "minimal.fallback",
     "about_assistant": "about.fallback",
 }
+
+
+def _focus_fallback(result: dict[str, Any], plan: TurnPlan) -> dict[str, Any]:
+    """Spec 035: en la racha de turnos ajenos el respaldo también cabe en dos frases.
+
+    Se conservan las dos primeras frases si una de ellas vuelve a Manuelita; si no, la primera y
+    la última (donde los guiones de la spec 019 ponen el regreso). Las citas que ya no aparecen
+    se retiran.
+    """
+    if not plan.redirect or plan.length != "short":
+        return result
+    answer = str(result.get("answer") or "")
+    pieces = [p for p in re.split(r"(?<=[.!?…])\s+", answer.strip()) if p]
+    if len(pieces) <= 2:
+        return result
+    kept = pieces[:2] if mentions_manuelita(" ".join(pieces[:2])) else [pieces[0], pieces[-1]]
+    text = " ".join(kept)
+    labels = set(LABEL_PATTERN.findall(text))
+    citations = [c for c in result.get("citations") or [] if c.get("label") in labels]
+    return {**result, "answer": text, "citations": citations}
 
 
 def _scripted_reply(state: ChatState, bridge: Any = care.DEFAULT_BRIDGE) -> dict[str, Any]:
@@ -1616,6 +1706,10 @@ def _finalize_node(deps: GraphDeps):
                 turn=len(turns) + 1,
                 bridged=bridged,
                 name=extract_profile(state["question"]).get("name"),
+                streak=plan.streak,  # spec 035: racha de turnos ajenos
+                offered=plan.topics if plan.redirect and plan.bridge is None else (),
+                expressions=caleno.find_expressions(answer),  # spec 036
+                plain=caleno.wants_plain(state["question"]),
             )
             act_entry = {
                 "act": plan.act,
@@ -1791,6 +1885,17 @@ def _deliver_tail(
         # Frases que el plan exige y el modelo no dijo: se agregan al final (FR-008).
         for section in missing_required(out.text, plan) if spanish else []:
             out.emit(care.pick(playbook, section, care_state))
+    delivered = [piece for piece in SENTENCE_SPLIT.split(out.text.strip()) if piece]
+    room = plan is not None and converse and plan.redirect
+    room = room and (plan.length != "short" or len(delivered) < 2)
+    if room and not mentions_manuelita(out.text):
+        # Spec 035: si lo entregado no volvió a Manuelita, se cierra con temas sugeridos (sin pasar
+        # de dos frases en las respuestas breves).
+        out.emit(
+            care.topics_offer(
+                playbook, plan.topics, seed=plan.turn, language="es" if spanish else "en"
+            )
+        )
     notice = sensitive_notice(state)
     if notice:
         out.next_separator = "\n\n"
@@ -1812,7 +1917,7 @@ def _review_retrieval(
     """
     verdict = review(
         answer,
-        None,
+        TurnPlan.from_state(state.get("plan")),  # spec 036: el nivel de estilo del turno
         evidence=evidence_text(state.get("evidence"), state.get("context") or ""),
         playbook=playbook,
         checks=RETRIEVAL_CHECKS,
@@ -1983,7 +2088,7 @@ def _answer_node(deps: GraphDeps):
             return _answer_by_sentences(deps, state, config, system)
         if not evidence:
             return {"answer": FALLBACK_ANSWER, "citations": [], "fallback": True}
-        personalized = system_with_preferences(system, deps, state)
+        personalized = _with_style_block(system_with_preferences(system, deps, state), state)
         text, citations, fallback = FALLBACK_ANSWER, [], True
         for attempt in range(2):
             instruction = personalized if attempt == 0 else f"{personalized}\n\n{STRICT_REMINDER}"
@@ -2055,7 +2160,7 @@ def _answer_by_sentences(
     discarded = 0
     gate: SentenceGate | None = None
     if evidence:
-        personalized = system_with_preferences(system, deps, state)
+        personalized = _with_style_block(system_with_preferences(system, deps, state), state)
         check = retrieval_checker(state, evidence, state.get("context") or "", system)
         runnable = build_answer_chain(deps, facts_model(deps, state))
         for attempt in range(2):

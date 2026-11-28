@@ -106,3 +106,11 @@ def test_bridge_search_is_cached_per_topic(monkeypatch: pytest.MonkeyPatch) -> N
     thread.join(timeout=30)
     assert bridges.warm_up(playbook, retriever, CONFIG) is None  # una sola vez por buscador
     assert ("Manuelita " + " ".join(playbook.angles["salud"].keywords))[:300] in calls
+
+
+def test_spec035_first_offtopic_turn_may_bridge_despite_the_cadence() -> None:
+    just_bridged = {"last_bridge_turn": 3, "offtopic_since_bridge": 0}
+    assert bridges.eligible("smalltalk", "neutral", just_bridged, CONFIG, streak=1)
+    assert not bridges.eligible("smalltalk", "neutral", just_bridged, CONFIG, streak=2)
+    one_later = {"last_bridge_turn": 3, "offtopic_since_bridge": 1}
+    assert bridges.eligible("off_topic", "neutral", one_later, CONFIG, streak=3)

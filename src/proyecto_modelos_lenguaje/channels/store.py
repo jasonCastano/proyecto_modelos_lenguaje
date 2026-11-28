@@ -3,6 +3,9 @@
 Tablas: ``channel_users`` (seudónimo, canal, máscara e hilo activo), ``channel_threads``,
 ``channel_seen`` (deduplicación de ``message_id``), ``channel_pending`` (confirmaciones SÍ/NO) y,
 desde la spec 031, ``channel_usage`` (límites por seudónimo) y ``channel_blocked`` (bloqueados).
+Spec 038: ``channel_threads.introduced`` marca si el hilo ya recibió la presentación de Valer-IA.
+Spec 034: ``channel_stickers`` guarda qué stickers recibió cada hilo (solo el nombre) y
+``channel_threads.answered_turns`` numera las respuestas atendidas, para moderar su uso.
 Nunca guarda números de teléfono ni el texto de los mensajes: el texto vive en el checkpointer.
 """
 
@@ -16,8 +19,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Literal
 
 from .limits import Usage
+from .stickers import ThreadUsage
+
+ConversationStart = Literal["first_contact", "inactivity"]
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS channel_users (
@@ -35,7 +42,15 @@ CREATE TABLE IF NOT EXISTS channel_threads (
     closed_at TEXT,
     started INTEGER NOT NULL DEFAULT 0,
     reply_format TEXT NOT NULL DEFAULT 'auto',
-    last_route TEXT
+    last_route TEXT,
+    introduced INTEGER NOT NULL DEFAULT 1,
+    answered_turns INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS channel_stickers (
+    thread_id TEXT NOT NULL,
+    sticker TEXT NOT NULL,
+    turn_no INTEGER NOT NULL,
+    sent_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS channel_seen (
     message_hash TEXT PRIMARY KEY,
@@ -71,7 +86,25 @@ REPLY_FORMATS = ("auto", "text", "voice")
 MIGRATIONS = (
     ("channel_threads", "reply_format", "TEXT NOT NULL DEFAULT 'auto'"),
     ("channel_threads", "last_route", "TEXT"),
+    # Spec 038 (research R5): los hilos anteriores quedan presentados; los nuevos se crean en 0.
+    ("channel_threads", "introduced", "INTEGER NOT NULL DEFAULT 1"),
+    ("channel_threads", "answered_turns", "INTEGER NOT NULL DEFAULT 0"),  # spec 034
+    ("channel_threads", "stickers_off", "INTEGER NOT NULL DEFAULT 0"),  # spec 037
+    ("channel_stickers", "situation", "TEXT"),  # spec 037: situación de cada sticker
 )
+
+
+def _older_than(last_seen: str | None, now: datetime, hours: int) -> bool:
+    """``True`` si ``last_seen`` (ISO) es más viejo que ``hours``; sin fecha válida, no."""
+    try:
+        seen = datetime.fromisoformat(str(last_seen))
+    except ValueError:
+        return False
+    if seen.tzinfo is None:
+        seen = seen.replace(tzinfo=UTC)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    return now - seen > timedelta(hours=hours)
 
 
 def message_hash(message_id: str) -> str:
@@ -121,31 +154,57 @@ class ChannelStore:
 
     # -- usuarios e hilos -------------------------------------------------------------------
     def ensure_user(self, user_id: str, channel: str, masked: str) -> str:
-        """Devuelve el hilo activo del usuario; lo crea en el primer mensaje."""
-        now = self.now().isoformat()
+        """Devuelve el hilo activo del usuario; lo crea en el primer mensaje (sin inactividad)."""
+        thread_id, _ = self.open_conversation(user_id, channel, masked, idle_hours=None)
+        return thread_id
+
+    def open_conversation(
+        self, user_id: str, channel: str, masked: str, *, idle_hours: int | None
+    ) -> tuple[str, ConversationStart | None]:
+        """Hilo activo y motivo si la conversación empieza ahora (spec 038, contrato §1).
+
+        ``first_contact``: el seudónimo nunca había escrito. ``inactivity``: el último mensaje es
+        más viejo que ``idle_hours``; el hilo anterior se cierra y se abre otro (el perfil aprobado
+        vive aparte y se conserva). ``last_seen`` se lee antes de actualizarlo.
+        """
+        current = self.now()
+        now = current.isoformat()
         with self._lock:
             row = self._db.execute(
-                "SELECT active_thread_id FROM channel_users WHERE user_id = ?", (user_id,)
+                "SELECT active_thread_id, last_seen FROM channel_users WHERE user_id = ?",
+                (user_id,),
             ).fetchone()
-            if row is not None:
+            if row is None:
+                thread_id = str(uuid.uuid4())
                 self._db.execute(
-                    "UPDATE channel_users SET last_seen = ?, masked = ? WHERE user_id = ?",
-                    (now, masked, user_id),
+                    "INSERT INTO channel_users VALUES (?, ?, ?, ?, ?, ?)",
+                    (user_id, channel, masked, now, now, thread_id),
                 )
+                self._insert_thread(thread_id, user_id, now)
                 self._db.commit()
-                return str(row[0])
-            thread_id = str(uuid.uuid4())
+                return thread_id, "first_contact"
+            thread_id, reason = str(row[0]), None
+            if idle_hours is not None and _older_than(row[1], current, idle_hours):
+                self._db.execute(
+                    "UPDATE channel_threads SET closed_at = ? WHERE thread_id = ?", (now, thread_id)
+                )
+                thread_id, reason = str(uuid.uuid4()), "inactivity"
+                self._insert_thread(thread_id, user_id, now)
             self._db.execute(
-                "INSERT INTO channel_users VALUES (?, ?, ?, ?, ?, ?)",
-                (user_id, channel, masked, now, now, thread_id),
-            )
-            self._db.execute(
-                "INSERT INTO channel_threads (thread_id, user_id, created_at, started) "
-                "VALUES (?, ?, ?, 0)",
-                (thread_id, user_id, now),
+                "UPDATE channel_users SET last_seen = ?, masked = ?, active_thread_id = ? "
+                "WHERE user_id = ?",
+                (now, masked, thread_id, user_id),
             )
             self._db.commit()
-            return thread_id
+            return thread_id, reason
+
+    def _insert_thread(self, thread_id: str, user_id: str, now: str) -> None:
+        """Hilo nuevo sin presentar (``introduced = 0``); se llama con el candado tomado."""
+        self._db.execute(
+            "INSERT INTO channel_threads (thread_id, user_id, created_at, started, introduced) "
+            "VALUES (?, ?, ?, 0, 0)",
+            (thread_id, user_id, now),
+        )
 
     def new_thread(self, user_id: str) -> str:
         """Cierra el hilo activo y abre otro (comando ``/nuevo``); el perfil se conserva."""
@@ -160,11 +219,7 @@ class ChannelStore:
             self._db.execute(
                 "UPDATE channel_threads SET closed_at = ? WHERE thread_id = ?", (now, row[0])
             )
-            self._db.execute(
-                "INSERT INTO channel_threads (thread_id, user_id, created_at, started) "
-                "VALUES (?, ?, ?, 0)",
-                (thread_id, user_id, now),
-            )
+            self._insert_thread(thread_id, user_id, now)
             self._db.execute(
                 "UPDATE channel_users SET active_thread_id = ? WHERE user_id = ?",
                 (thread_id, user_id),
@@ -180,11 +235,84 @@ class ChannelStore:
             ).fetchone()
         return bool(row and row[0])
 
+    def is_introduced(self, thread_id: str) -> bool:
+        """Spec 038: ``True`` si el hilo ya recibió la presentación (o es anterior a la spec)."""
+        with self._lock:
+            row = self._db.execute(
+                "SELECT introduced FROM channel_threads WHERE thread_id = ?", (thread_id,)
+            ).fetchone()
+        return bool(row is None or row[0])
+
+    def mark_introduced(self, thread_id: str) -> None:
+        with self._lock:
+            self._db.execute(
+                "UPDATE channel_threads SET introduced = 1 WHERE thread_id = ?", (thread_id,)
+            )
+            self._db.commit()
+
+    # -- stickers (spec 034) -----------------------------------------------------------------
+    def count_answered(self, thread_id: str) -> int:
+        """Suma una respuesta atendida al hilo y devuelve su número (1, 2, …)."""
+        with self._lock:
+            self._db.execute(
+                "UPDATE channel_threads SET answered_turns = answered_turns + 1 "
+                "WHERE thread_id = ?",
+                (thread_id,),
+            )
+            row = self._db.execute(
+                "SELECT answered_turns FROM channel_threads WHERE thread_id = ?", (thread_id,)
+            ).fetchone()
+            self._db.commit()
+        return int(row[0]) if row else 1
+
+    def sticker_usage(self, thread_id: str, turn_no: int) -> ThreadUsage:
+        """Stickers del hilo, el último y su situación, y si la persona los apagó (spec 037)."""
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT sticker, turn_no, situation FROM channel_stickers WHERE thread_id = ? "
+                "ORDER BY turn_no",
+                (thread_id,),
+            ).fetchall()
+            flag = self._db.execute(
+                "SELECT stickers_off FROM channel_threads WHERE thread_id = ?", (thread_id,)
+            ).fetchone()
+        sent = tuple(str(row[0]) for row in rows)
+        last = rows[-1] if rows else None
+        return ThreadUsage(
+            turn_no=turn_no,
+            last_sticker_turn=int(last[1]) if last else None,
+            sent=sent,
+            last_sticker=str(last[0]) if last else None,
+            last_situation=str(last[2]) if last and last[2] else None,
+            off=bool(flag and flag[0]),
+        )
+
+    def record_sticker(self, thread_id: str, name: str, turn_no: int, situation: str = "") -> None:
+        with self._lock:
+            self._db.execute(
+                "INSERT INTO channel_stickers (thread_id, sticker, turn_no, sent_at, situation) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (thread_id, name, turn_no, self.now().isoformat(), situation or None),
+            )
+            self._db.commit()
+
+    def set_stickers_off(self, thread_id: str) -> None:
+        """Spec 037 (FR-012): la persona pidió no recibir stickers en esta conversación."""
+        with self._lock:
+            self._db.execute(
+                "UPDATE channel_threads SET stickers_off = 1 WHERE thread_id = ?", (thread_id,)
+            )
+            self._db.commit()
+
     def adopt_thread(self, user_id: str, placeholder: str, thread_id: str) -> None:
         """Sustituye el id provisional por el que creó el servicio y lo marca como iniciado."""
         with self._lock:
             self._db.execute(
                 "UPDATE channel_threads SET thread_id = ?, started = 1 WHERE thread_id = ?",
+                (thread_id, placeholder),
+            )
+            self._db.execute(  # spec 034: los stickers siguen al hilo definitivo
+                "UPDATE channel_stickers SET thread_id = ? WHERE thread_id = ?",
                 (thread_id, placeholder),
             )
             self._db.execute(

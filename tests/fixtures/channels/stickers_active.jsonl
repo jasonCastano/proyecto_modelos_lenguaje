@@ -1,0 +1,44 @@
+{"id": "a01a", "conversation": "a01", "title": "Seis mensajes", "text": "Hola", "lang": "es", "kind": "text", "range": [2, 4]}
+{"id": "a01b", "conversation": "a01", "title": "Seis mensajes", "text": "¿Qué produce Manuelita?", "lang": "es", "kind": "text", "info": true}
+{"id": "a01c", "conversation": "a01", "title": "Seis mensajes", "text": "¿Y en qué países opera Manuelita?", "lang": "es", "kind": "text", "info": true}
+{"id": "a01d", "conversation": "a01", "title": "Seis mensajes", "text": "ok", "lang": "es", "kind": "text"}
+{"id": "a01e", "conversation": "a01", "title": "Seis mensajes", "text": "gracias", "lang": "es", "kind": "text"}
+{"id": "a01f", "conversation": "a01", "title": "Seis mensajes", "text": "chao", "lang": "es", "kind": "text"}
+{"id": "a02a", "conversation": "a02", "title": "Tres preguntas seguidas", "text": "Hola", "lang": "es", "kind": "text"}
+{"id": "a02b", "conversation": "a02", "title": "Tres preguntas seguidas", "text": "¿Qué produce Manuelita?", "lang": "es", "kind": "text", "info": true}
+{"id": "a02c", "conversation": "a02", "title": "Tres preguntas seguidas", "text": "¿Cuándo se fundó Manuelita?", "lang": "es", "kind": "text", "info": true}
+{"id": "a02d", "conversation": "a02", "title": "Tres preguntas seguidas", "text": "¿Qué es la Fundación Manuelita?", "lang": "es", "kind": "text", "info": true}
+{"id": "a03a", "conversation": "a03", "title": "Primer contacto con pregunta", "text": "¿Qué produce Manuelita?", "lang": "es", "kind": "text", "info": true, "range": [1, 1]}
+{"id": "a04a", "conversation": "a04", "title": "Queja", "text": "Hola", "lang": "es", "kind": "text"}
+{"id": "a04b", "conversation": "a04", "title": "Queja", "text": "Esto no me sirve, estoy muy molesto", "lang": "es", "kind": "text", "none": true}
+{"id": "a05a", "conversation": "a05", "title": "Angustia", "text": "Hola", "lang": "es", "kind": "text"}
+{"id": "a05b", "conversation": "a05", "title": "Angustia", "text": "tuve un día terrible, me siento muy mal", "lang": "es", "kind": "text", "none": true}
+{"id": "a06a", "conversation": "a06", "title": "Datos sensibles", "text": "Hola", "lang": "es", "kind": "text"}
+{"id": "a06b", "conversation": "a06", "title": "Datos sensibles", "text": "Mi tarjeta es 4111 1111 1111 1111, ¿qué produce Manuelita?", "lang": "es", "kind": "text", "none": true}
+{"id": "a07a", "conversation": "a07", "title": "Crisis", "text": "Hola", "lang": "es", "kind": "text"}
+{"id": "a07b", "conversation": "a07", "title": "Crisis", "text": "ya no quiero vivir", "lang": "es", "kind": "text", "none": true}
+{"id": "a08a", "conversation": "a08", "title": "Inglés", "text": "Hi", "lang": "en", "kind": "text", "english": true}
+{"id": "a08b", "conversation": "a08", "title": "Inglés", "text": "What does Manuelita produce?", "lang": "en", "kind": "text", "english": true}
+{"id": "a08c", "conversation": "a08", "title": "Inglés", "text": "ok", "lang": "en", "kind": "text", "english": true}
+{"id": "a08d", "conversation": "a08", "title": "Inglés", "text": "thanks", "lang": "en", "kind": "text", "english": true}
+{"id": "a09a", "conversation": "a09", "title": "Sin stickers", "text": "Hola", "lang": "es", "kind": "text"}
+{"id": "a09b", "conversation": "a09", "title": "Sin stickers", "text": "sin stickers, por favor", "lang": "es", "kind": "text", "none": true}
+{"id": "a09c", "conversation": "a09", "title": "Sin stickers", "text": "¿Qué produce Manuelita?", "lang": "es", "kind": "text", "none": true}
+{"id": "a09d", "conversation": "a09", "title": "Sin stickers", "text": "gracias", "lang": "es", "kind": "text", "none": true}
+{"id": "a10a", "conversation": "a10", "title": "Doce turnos", "text": "Hola", "lang": "es", "kind": "text"}
+{"id": "a10b", "conversation": "a10", "title": "Doce turnos", "text": "¿Qué produce Manuelita?", "lang": "es", "kind": "text", "info": true}
+{"id": "a10c", "conversation": "a10", "title": "Doce turnos", "text": "ok", "lang": "es", "kind": "text"}
+{"id": "a10d", "conversation": "a10", "title": "Doce turnos", "text": "¿Dónde opera Manuelita?", "lang": "es", "kind": "text", "info": true}
+{"id": "a10e", "conversation": "a10", "title": "Doce turnos", "text": "gracias", "lang": "es", "kind": "text"}
+{"id": "a10f", "conversation": "a10", "title": "Doce turnos", "text": "Hola", "lang": "es", "kind": "text"}
+{"id": "a10g", "conversation": "a10", "title": "Doce turnos", "text": "¿Qué es la Fundación Manuelita?", "lang": "es", "kind": "text", "info": true}
+{"id": "a10h", "conversation": "a10", "title": "Doce turnos", "text": "perfecto", "lang": "es", "kind": "text"}
+{"id": "a10i", "conversation": "a10", "title": "Doce turnos", "text": "¿Produce energía Manuelita?", "lang": "es", "kind": "text", "info": true}
+{"id": "a10j", "conversation": "a10", "title": "Doce turnos", "text": "dale", "lang": "es", "kind": "text"}
+{"id": "a10k", "conversation": "a10", "title": "Doce turnos", "text": "gracias", "lang": "es", "kind": "text"}
+{"id": "a10l", "conversation": "a10", "title": "Doce turnos", "text": "chao", "lang": "es", "kind": "text"}
+{"id": "a11a", "conversation": "a11", "title": "Sin evidencia", "text": "Hola", "lang": "es", "kind": "text"}
+{"id": "a11b", "conversation": "a11", "title": "Sin evidencia", "text": "¿Cuál es el número de serie del tractor 47 de Manuelita en 1953?", "lang": "es", "kind": "text", "none_if_fallback": true}
+{"id": "a12a", "conversation": "a12", "title": "Saludo a mitad", "text": "Hola", "lang": "es", "kind": "text"}
+{"id": "a12b", "conversation": "a12", "title": "Saludo a mitad", "text": "¿Qué produce Manuelita?", "lang": "es", "kind": "text", "info": true}
+{"id": "a12c", "conversation": "a12", "title": "Saludo a mitad", "text": "Hola de nuevo", "lang": "es", "kind": "text"}

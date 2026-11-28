@@ -194,6 +194,8 @@ export interface ChatRoute {
   kind?: "pricing" | "commitment" | "human" | null;
   /** Spec 020: acto de diálogo del turno. */
   act?: DialogueAct | null;
+  /** Spec 036: nivel del estilo caleño del turno. */
+  style?: "off" | "formal" | "neutral" | "informal" | null;
 }
 
 /** Spec 020: acto de diálogo (etiqueta controlada). */

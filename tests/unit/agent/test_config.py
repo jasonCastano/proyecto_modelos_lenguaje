@@ -193,6 +193,9 @@ def test_channel_config_has_voice_and_queue_values() -> None:
     assert channels.voice_dir == "channels/voice"
     assert (channels.rate_window_minutes, channels.rate_max_messages) == (10, 20)  # spec 031
     assert channels.daily_max_messages == 100
+    assert channels.conversation_idle_hours == 12  # spec 038
+    assert channels.stale_minutes == 15  # spec 033
+    assert channels.stickers is True and channels.stickers_per_conversation == 8  # spec 037
 
 
 @pytest.mark.parametrize(
@@ -202,6 +205,13 @@ def test_channel_config_has_voice_and_queue_values() -> None:
         ({"voice_dir": "C:/fuera"}, "relativa"),
         ({"voice_dir": "../repo"}, "salir"),
         ({"voice_max_seconds": 5}, "voice_max_seconds"),
+        ({"conversation_idle_hours": 0}, "conversation_idle_hours"),  # spec 038
+        ({"conversation_idle_hours": 721}, "conversation_idle_hours"),
+        ({"stale_minutes": 0}, "stale_minutes"),  # spec 033
+        ({"stale_minutes": 1441}, "stale_minutes"),
+        ({"stickers_per_conversation": -1}, "stickers_per_conversation"),  # spec 034
+        ({"stickers_per_conversation": 21}, "stickers_per_conversation"),
+        ({"stickers": "sí"}, "stickers"),
     ],
 )
 def test_channel_config_rejects_unsafe_values(section: dict, message: str) -> None:

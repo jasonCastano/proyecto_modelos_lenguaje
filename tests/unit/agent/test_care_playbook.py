@@ -14,7 +14,7 @@ from proyecto_modelos_lenguaje.agent.welcome import gold_units_path
 
 def test_playbook_structure() -> None:
     playbook = load_care()
-    assert playbook.version == "1.2"
+    assert playbook.version == "1.3"
     for key in CARE_REQUIRED:
         assert playbook.variants[key], key
     for spec in care.TOPICS:

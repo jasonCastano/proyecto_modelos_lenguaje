@@ -87,7 +87,9 @@ def test_answers_and_keeps_the_thread(client: TestClient, state: Path) -> None:
     assert first.status_code == 200, first.text
     body = first.json()
     keys = {"status", "messages", "sources_messages", "thread_id", "route", "tools", "latency_ms"}
-    assert set(body) == {*keys, "voice"}
+    assert set(body) == {*keys, "voice", "sticker"}  # spec 034: sticker opcional
+    # Spec 037: la primera respuesta lleva la presentación y, con ella, «¡Bienvenido!».
+    assert body["sticker"] is None or body["sticker"]["name"] == "valeria-bienvenido"
     assert body["voice"] is None  # spec 028: una pregunta escrita se responde solo con texto
     assert body["sources_messages"] == []  # spec 030: sin voz, el texto es la respuesta completa
     assert body["status"] == "answered" and body["messages"]
@@ -215,3 +217,20 @@ def test_no_full_number_is_stored_for_new_senders(client: TestClient, state: Pat
         digits = number.lstrip("+")
         assert digits not in status
         assert all(digits.encode() not in blob for blob in stored), number
+
+
+# --- spec 033: cuentas identificadas solo por ID (T008) ---
+
+
+def test_an_id_only_sender_is_answered_without_storing_the_id(
+    client: TestClient, state: Path
+) -> None:
+    lid = "10000000000001@lid"  # ficticio
+    body = {"channel": "whatsapp", "message_id": "lid-1", "sender": lid,
+            "text": "¿Qué produce Manuelita?"}  # fmt: skip
+    response = client.post("/api/channels/messages", json=body, headers=HEADERS)
+    assert response.status_code == 200 and response.json()["status"] == "answered"
+    status = client.get("/api/channels/status", headers=HEADERS).text
+    stored = [path.read_bytes() for path in state.rglob("*") if path.is_file()]
+    assert "10000000000001" not in status
+    assert all(b"10000000000001" not in blob for blob in stored)

@@ -40,8 +40,9 @@ from .config import AgentConfig, load_agent_config
 from .graph import GraphDeps, message_text
 from .memory import memory_checkpointer, memory_store
 from .prompts import load_care, load_conduct, load_converse, load_plain_prompt
-from .review import RETRIEVAL_CHECKS, review, similarity
+from .review import RETRIEVAL_CHECKS, focus_flags, review, similarity
 from .service import ChatService, build_deps
+from .structured import normalize
 
 Mode = Literal["demo", "real"]
 Variant = Literal["chain", "agent"]
@@ -51,6 +52,35 @@ REPEATS_FILE = FIXTURES / "repeats.jsonl"
 PROFILES_FILE = FIXTURES / "profiles.toml"
 REPORT_MD = PROJECT_ROOT / "docs" / "evaluacion_conversacion.md"
 REPORT_JSON = PROJECT_ROOT / "docs" / "evaluacion_conversacion.json"
+# Spec 035: conjunto de enfoque en Manuelita y su informe.
+FOCUS_FILE = FIXTURES / "focus.jsonl"
+FOCUS_MD = PROJECT_ROOT / "docs" / "evaluacion_enfoque.md"
+FOCUS_JSON = PROJECT_ROOT / "docs" / "evaluacion_enfoque.json"
+# Clave de ``expect`` → check de ``review.focus_flags``.
+FOCUS_KEYS = {
+    "no_offtopic_question": "offtopic_question",
+    "no_chat_invite": "chat_invite",
+    "redirects": "no_redirect",
+    "no_rejection": "rejection",
+    "no_closing_repeat": "closing_repeat",
+}
+FOCUS_RECENT = 3  # respuestas anteriores contra las que se mide el cierre repetido
+# Spec 036: conjunto del estilo caleño y su informe.
+STYLE_FILE = FIXTURES / "caleno.jsonl"
+STYLE_MD = PROJECT_ROOT / "docs" / "evaluacion_caleno.md"
+STYLE_JSON = PROJECT_ROOT / "docs" / "evaluacion_caleno.json"
+STYLE_KEYS = (
+    "no_banned",
+    "max_expressions",
+    "style_off",
+    "formal_only",
+    "no_style_repeat",
+    "citations_kept",
+    "voice_no_banned",
+    "voice_max_expressions",
+)
+STYLE_USAGE_TARGET = 0.6  # SC-001
+COURTESIES = frozenset({"con mucho gusto", "a la orden"})  # cortesías permitidas sin estilo
 DISTINCT_THRESHOLD = 0.8
 REJECTION_WORDS = re.compile(
     r"\b(no tengo (esa )?informaci[oó]n|no puedo (ayudarte|responder)|fuera de lo que|"
@@ -129,6 +159,7 @@ class TurnRecord:
     shown: str = ""
     sentences: int = 0
     discarded: int = 0
+    style: str | None = None  # spec 036: nivel del estilo caleño del turno
 
     @property
     def turn_class(self) -> str:
@@ -274,6 +305,7 @@ def _send_turn_once(
         notices=list(outcome.notices),
         citations=list(outcome.turn.citations),
         sentiment=sentiments[-1] if sentiments else None,
+        style=getattr(outcome.turn.route, "style", None),
         first_word_ms=elapsed * 1000,
         done_ms=finished * 1000,
         shown="".join(shown),
@@ -375,7 +407,15 @@ def check_turn(
     if "language" in expect and expect["language"] == "en":
         english = re.findall(r"\b(the|is|are|i|you|what|here|can|about)\b", record.answer.lower())
         checks["language"] = len(english) >= 2
-    del previous  # la no repetición del puente se mide sobre la memoria del hilo
+    checks.update(style_checks(expect, record, previous))
+    focus = [FOCUS_KEYS[key] for key in FOCUS_KEYS if expect.get(key)]
+    if focus:
+        # Spec 035: los mismos checks del verificador, sobre la respuesta registrada.
+        recent = [r.answer for r in previous[-FOCUS_RECENT:]]
+        flagged = {check for check, _span in focus_flags(record.answer, recent, focus)}
+        for key, check in FOCUS_KEYS.items():
+            if expect.get(key):
+                checks[key] = check not in flagged
     return checks
 
 
@@ -962,6 +1002,476 @@ def run_converse(
         "meets_hard": meets_hard,
         "human": {"raters": [], "average": None},
     }
+
+
+# ---------------------------------------------------------------- spec 036: estilo caleño
+
+
+def style_checks(
+    expect: dict[str, Any], record: TurnRecord, previous: Sequence[TurnRecord]
+) -> dict[str, bool]:
+    """Claves de estilo de ``caleno.jsonl`` sobre la respuesta registrada (research R8)."""
+    from . import style as caleno
+
+    checks: dict[str, bool] = {}
+    answer = record.answer
+    found = caleno.find_expressions(answer)
+    if expect.get("style_used"):
+        checks["style_used"] = bool(found)
+    if expect.get("no_banned"):
+        checks["no_banned"] = not caleno.find_banned(answer)
+    if "max_expressions" in expect and not expect.get("voice_only"):
+        checks["max_expressions"] = len(found) <= 1
+    if expect.get("style_off"):
+        checks["style_off"] = all(name in COURTESIES for name in found)
+    if expect.get("formal_only"):
+        by_key = caleno.load_lexicon().by_key()
+        checks["formal_only"] = all(
+            "formal" in by_key[caleno.normalize(name)].levels for name in found
+        )
+    if expect.get("no_style_repeat") and previous:
+        before = {caleno.normalize(n) for n in caleno.find_expressions(previous[-1].answer)}
+        checks["no_style_repeat"] = not any(caleno.normalize(n) in before for n in found)
+    if expect.get("citations_kept"):
+        labels = set(re.findall(r"\[([UF]\d+)\]", answer))
+        cited = {str(c.get("label")) for c in record.citations}
+        checks["citations_kept"] = labels <= cited
+    return checks
+
+
+def voice_checks(
+    expect: dict[str, Any], record: TurnRecord, model: BaseChatModel | None
+) -> tuple[dict[str, bool], str]:
+    """Spec 036: guion hablado del turno (modelo del modo; en demo, el respaldo determinista)."""
+    from ..channels.voice import build_script
+    from . import style as caleno
+
+    script, _source = build_script(record.message, record.answer, "es", model, style=record.style)
+    limit = int(expect.get("max_expressions") or 2)
+    checks = {
+        "voice_no_banned": not caleno.find_banned(script),
+        "voice_max_expressions": len(caleno.find_expressions(script)) <= limit,
+    }
+    return checks, script
+
+
+def _style_scores_demo(record: TurnRecord) -> dict[str, int]:
+    """Juez heurístico del modo demo: claridad y profesionalismo de 1 a 5."""
+    from . import style as caleno
+
+    professional = 1 if caleno.find_banned(record.answer) else 5
+    if len(caleno.find_expressions(record.answer)) > 1:
+        professional = min(professional, 3)
+    clear = 4 if len(record.answer.split()) > 120 else 5
+    return {"clarity": clear, "professionalism": professional}
+
+
+def judge_style(model: BaseChatModel, records: Sequence[TurnRecord]) -> list[dict[str, int]]:
+    """Juez LLM (``prompts/style_judge.md``) a temperatura 0; JSON por respuesta (SC-006)."""
+    _version, _sha, body = load_plain_prompt("style_judge")
+    transcript = "\n".join(
+        f"Turno {i}. Visitante: {r.message}\nTurno {i}. Asistente: {r.answer}"
+        for i, r in enumerate(records, start=1)
+    )
+    response = model.bind(temperature=0.0).invoke(
+        [
+            SystemMessage(content=body),
+            HumanMessage(content=f"<conversacion>\n{transcript}\n</conversacion>"),
+        ]
+    )
+    match = re.search(r"\{.*\}", message_text(response), flags=re.DOTALL)
+    rows = json.loads(match.group(0)).get("turns", []) if match else []
+    return [
+        {k: max(1, min(5, int(row.get(k, 3)))) for k in ("clarity", "professionalism")}
+        for row in rows[: len(records)]
+    ]
+
+
+def run_style(
+    *,
+    mode: Mode = "demo",
+    variants: Sequence[Variant] = ("chain", "agent"),
+    config: AgentConfig | None = None,
+    deps_factory: Callable[[Mode], GraphDeps] | None = None,
+    path: Path = STYLE_FILE,
+) -> dict[str, Any]:
+    """Corre ``caleno.jsonl`` y mide SC-001 a SC-006 y SC-008 (spec 036).
+
+    El informe no guarda datos personales: los mensajes son los del conjunto y el nombre del hilo,
+    si aparece, se reemplaza por una marca.
+    """
+    from . import style as caleno
+
+    config = config or load_agent_config()
+    guided = replace(config, conversation=replace(config.conversation, mode="guided"))
+    if deps_factory is None:
+        from ..api import _retriever  # importación tardía: evita el ciclo api → agente
+
+        retriever = _retriever(mode)
+
+        def factory(m: Mode) -> GraphDeps:
+            return build_deps(m, guided, retriever)
+
+    else:
+        factory = deps_factory
+    key = secrets.token_hex(32)
+    fixed = fixed_texts()
+    summary: dict[str, Any] = {}
+    for variant in variants:
+        flags = dict.fromkeys(STYLE_KEYS, 0)
+        checked = dict.fromkeys(STYLE_KEYS, 0)
+        used = expected_use = 0
+        usage: dict[str, int] = {}
+        flagged_turns: list[dict[str, Any]] = []
+        rows = []
+        judge_scores: list[dict[str, int]] = []
+        for case in load_conversations(path):
+            service = _service(guided, factory, key)
+            deps = factory(mode)
+            voice_model = deps.model if mode == "real" else None
+            thread = None
+            records: list[TurnRecord] = []
+            turn_rows = []
+            for turn in case.turns:
+                expect = turn.get("expect") or {}
+                thread, record = send_turn(
+                    service,
+                    turn["message"],
+                    thread_id=thread,
+                    user_id=f"anon-{case.id}",
+                    variant=variant,
+                    mode=mode,
+                )
+                checks = check_turn(expect, record, records, fixed)
+                script = None
+                if turn.get("voice"):
+                    spoken, script = voice_checks(expect, record, voice_model)
+                    checks.update(spoken)
+                    checks.pop("max_expressions", None)  # en voz el límite es el del guion
+                if "style_used" in checks:
+                    expected_use += 1
+                    used += int(checks.pop("style_used"))
+                for name in caleno.find_expressions(record.answer):
+                    usage[name] = usage.get(name, 0) + 1
+                for name in STYLE_KEYS:
+                    if name in checks:
+                        checked[name] += 1
+                        flags[name] += int(not checks[name])
+                failed = [name for name, ok in checks.items() if not ok]
+                if failed:
+                    flagged_turns.append(
+                        {
+                            "case": case.id,
+                            "turn": len(records) + 1,
+                            "visitor": record.message,
+                            "assistant": record.answer,
+                            "failed": failed,
+                        }
+                    )
+                records.append(record)
+                turn_rows.append(
+                    record.to_dict()
+                    | {"checks": checks, "style": record.style}
+                    | ({"script": script} if script is not None else {})
+                )
+            memory = _memory(service, variant, mode, thread) if thread else {}
+            scrub_name(records, memory.get("thread_name"))
+            if mode == "real":
+                try:
+                    scores = judge_style(deps.model, records)
+                except Exception:  # el juez no detiene la evaluación
+                    scores = [_style_scores_demo(r) for r in records]
+            else:
+                scores = [_style_scores_demo(r) for r in records]
+            judge_scores.extend(scores)
+            rows.append({"id": case.id, "title": case.title, "turns": turn_rows, "scores": scores})
+        rate = used / expected_use if expected_use else 0.0
+        judge = {
+            k: round(statistics.mean(s[k] for s in judge_scores), 2) if judge_scores else None
+            for k in ("clarity", "professionalism")
+        }
+        summary[variant] = {
+            "usage_rate": round(rate, 3),
+            "usage_turns": expected_use,
+            "flags": flags,
+            "checked": checked,
+            "expressions": dict(sorted(usage.items(), key=lambda item: -item[1])),
+            "judge": judge,
+            "judged_by": "llm" if mode == "real" else "heurística demo",
+            "flagged_turns": flagged_turns,
+            "conversations": rows,
+            "meets": rate >= STYLE_USAGE_TARGET
+            and not any(flags.values())
+            and all((v or 0) >= 4 for v in judge.values()),
+        }
+    converse = load_converse()
+    lexicon = caleno.load_lexicon()
+    return {
+        "mode": mode,
+        "created_at": datetime.now(UTC).isoformat(),
+        "prompts": {
+            "converse": {"version": converse.version, "sha256": converse.sha256},
+            "style_judge": dict(
+                zip(("version", "sha256"), load_plain_prompt("style_judge")[:2], strict=True)
+            ),
+            "caleno": {"sha256": lexicon.sha256},
+        },
+        "summary": summary,
+        "meets": all(v["meets"] for v in summary.values()),
+        "human": {"rater": None, "rated": 0, "sounds_caleno": None, "sounds_professional": None},
+    }
+
+
+STYLE_LABELS = {
+    "no_banned": "Expresiones vetadas o groserías (SC-002)",
+    "max_expressions": "Más de una expresión por respuesta escrita (SC-003)",
+    "style_off": "Expresiones en queja, angustia, crisis, inglés o «habla normal» (SC-004)",
+    "formal_only": "Expresiones no formales con registro formal (FR-005)",
+    "no_style_repeat": "Misma expresión que la respuesta anterior (SC-005)",
+    "citations_kept": "Citas perdidas (SC-008)",
+    "voice_no_banned": "Vetadas en el guion hablado (SC-002)",
+    "voice_max_expressions": "Más de dos expresiones en el guion hablado (SC-003)",
+}
+
+
+def render_style_markdown(report: dict[str, Any]) -> str:
+    """Informe en Markdown de la evaluación del estilo caleño (spec 036)."""
+    prompts = report["prompts"]
+    lines = [
+        "# Evaluación del estilo caleño (spec 036)",
+        "",
+        f"- Modo: `{report['mode']}`; fecha: {report['created_at'][:19]} UTC.",
+        f"- `converse.md` {prompts['converse']['version']} "
+        f"(`{prompts['converse']['sha256'][:12]}`), `style_judge.md` "
+        f"{prompts['style_judge']['version']}, `config/caleno.toml` "
+        f"`{prompts['caleno']['sha256'][:12]}`.",
+        f"- Metas: uso ≥ {STYLE_USAGE_TARGET:.0%} en los turnos informales o neutros, 0 turnos "
+        "marcados y juez ≥ 4.",
+        f"- Resultado: {'cumple' if report['meets'] else 'no cumple'}.",
+        "",
+    ]
+    for variant, row in report["summary"].items():
+        lines += [
+            f"## Variante `{variant}`",
+            "",
+            f"Uso de expresiones caleñas (SC-001): {row['usage_rate']:.0%} de "
+            f"{row['usage_turns']} turnos.",
+            "",
+            "| Check | Turnos revisados | Turnos marcados |",
+            "|---|---|---|",
+        ]
+        for key, label in STYLE_LABELS.items():
+            lines.append(f"| {label} | {row['checked'][key]} | {row['flags'][key]} |")
+        judge = row["judge"]
+        lines += [
+            "",
+            f"Juez ({row['judged_by']}): claridad {judge['clarity']}, profesionalismo "
+            f"{judge['professionalism']} (SC-006).",
+            "",
+            "Expresiones usadas: "
+            + (", ".join(f"«{k}» {v}" for k, v in row["expressions"].items()) or "ninguna")
+            + ".",
+            "",
+        ]
+        if row["flagged_turns"]:
+            lines += ["### Turnos marcados", ""]
+            for item in row["flagged_turns"]:
+                lines.append(
+                    f"- {item['case']}, turno {item['turn']} ({', '.join(item['failed'])}): "
+                    f"«{item['visitor']}» → «{item['assistant']}»"
+                )
+            lines.append("")
+    lines += [
+        "## Prueba humana (SC-007)",
+        "",
+        "Pendiente: una persona de Cali califica 5 respuestas escritas o habladas "
+        "(«suena caleña» y "
+        "«suena profesional»; meta: al menos 4 de 5).",
+    ]
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def write_style_reports(report: dict[str, Any], json_path: Path = STYLE_JSON) -> None:
+    json_path.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8"
+    )
+    json_path.with_suffix(".md").write_text(render_style_markdown(report), encoding="utf-8")
+
+
+# ---------------------------------------------------------------- spec 035: enfoque
+
+
+def _focus_empathy(record: TurnRecord) -> int:
+    """Empatía heurística del modo demo: cortesía al inicio de la respuesta (1 a 5)."""
+    head = normalize(sentences(record.answer)[0] if sentences(record.answer) else "")
+    warm = re.search(
+        r"\b(gracias|que bien|que bueno|me alegra|entiendo|lamento|que pena|hola|con gusto|"
+        r"te leo|uy|thanks|hi|sorry|glad)\b",
+        head,
+    )
+    return 4 if warm else 3
+
+
+def run_focus(
+    *,
+    mode: Mode = "demo",
+    variants: Sequence[Variant] = ("chain", "agent"),
+    config: AgentConfig | None = None,
+    deps_factory: Callable[[Mode], GraphDeps] | None = None,
+    path: Path = FOCUS_FILE,
+) -> dict[str, Any]:
+    """Corre ``focus.jsonl`` y cuenta los turnos marcados por cada check de enfoque.
+
+    El informe no guarda datos personales: los mensajes son los del conjunto (seudonimizados) y el
+    nombre del hilo, si aparece, se reemplaza por una marca.
+    """
+    config = config or load_agent_config()
+    guided = replace(config, conversation=replace(config.conversation, mode="guided"))
+    if deps_factory is None:
+        from ..api import _retriever  # importación tardía: evita el ciclo api → agente
+
+        retriever = _retriever(mode)
+
+        def factory(m: Mode) -> GraphDeps:
+            return build_deps(m, guided, retriever)
+
+    else:
+        factory = deps_factory
+    key = secrets.token_hex(32)
+    fixed = fixed_texts()
+    summary: dict[str, Any] = {}
+    for variant in variants:
+        rows = []
+        totals = {name: 0 for name in [*FOCUS_KEYS, "max_sentences"]}
+        checked = dict.fromkeys(totals, 0)
+        flagged_turns: list[dict[str, Any]] = []
+        for case in load_conversations(path):
+            service = _service(guided, factory, key)
+            thread = None
+            records: list[TurnRecord] = []
+            turn_checks = []
+            for turn in case.turns:
+                thread, record = send_turn(
+                    service,
+                    turn["message"],
+                    thread_id=thread,
+                    user_id=f"anon-{case.id}",
+                    variant=variant,
+                    mode=mode,
+                )
+                checks = check_turn(turn.get("expect") or {}, record, records, fixed)
+                records.append(record)
+                turn_checks.append(checks)
+            memory = _memory(service, variant, mode, thread) if thread else {}
+            scrub_name(records, memory.get("thread_name"))
+            deps = factory(mode)
+            if mode == "real":
+                try:
+                    scores = judge_conversation(deps.model, records)
+                except Exception:  # el juez no detiene la evaluación
+                    scores = [{"empathy": _focus_empathy(r)} for r in records]
+            else:
+                scores = [{"empathy": _focus_empathy(r)} for r in records]
+            for index, (record, checks) in enumerate(zip(records, turn_checks, strict=True)):
+                failed = [name for name, ok in checks.items() if not ok]
+                for name in totals:
+                    if name in checks:
+                        checked[name] += 1
+                        totals[name] += int(not checks[name])
+                if failed:
+                    flagged_turns.append(
+                        {
+                            "case": case.id,
+                            "turn": index + 1,
+                            "visitor": record.message,
+                            "assistant": record.answer,
+                            "act": record.act,
+                            "failed": failed,
+                        }
+                    )
+            empathy = [s.get("empathy") for s in scores if s.get("empathy") is not None]
+            rows.append(
+                {
+                    "id": case.id,
+                    "title": case.title,
+                    "turns": [
+                        r.to_dict() | {"checks": c}
+                        for r, c in zip(records, turn_checks, strict=True)
+                    ],
+                    "empathy": round(statistics.mean(empathy), 2) if empathy else None,
+                    "passed": all(all(c.values()) for c in turn_checks),
+                }
+            )
+        empathy_all = [row["empathy"] for row in rows if row["empathy"] is not None]
+        summary[variant] = {
+            "flags": totals,
+            "checked": checked,
+            "flagged_turns": flagged_turns,
+            "empathy": round(statistics.mean(empathy_all), 2) if empathy_all else None,
+            "judged_by": "llm" if mode == "real" else "heurística demo",
+            "conversations": rows,
+        }
+    converse = load_converse()
+    return {
+        "mode": mode,
+        "created_at": datetime.now(UTC).isoformat(),
+        "prompts": {
+            "converse": {"version": converse.version, "sha256": converse.sha256},
+            "care": {"version": load_care().version, "sha256": load_care().sha256},
+        },
+        "summary": summary,
+        "meets": all(not any(v["flags"].values()) for v in summary.values()),
+    }
+
+
+FOCUS_LABELS = {
+    "no_offtopic_question": "Preguntas sobre el tema ajeno",
+    "no_chat_invite": "Invitaciones a charlar",
+    "redirects": "Respuestas sin regreso a Manuelita",
+    "no_rejection": "Rechazos («mejor no me cuentes»)",
+    "no_closing_repeat": "Cierres repetidos",
+    "max_sentences": "Más de dos frases desde la racha 3",
+}
+
+
+def render_focus_markdown(report: dict[str, Any]) -> str:
+    """Informe en Markdown de la evaluación de enfoque (spec 035)."""
+    lines = [
+        "# Evaluación del enfoque en Manuelita (spec 035)",
+        "",
+        f"- Modo: `{report['mode']}`; fecha: {report['created_at'][:19]} UTC.",
+        f"- `converse.md` {report['prompts']['converse']['version']} "
+        f"(`{report['prompts']['converse']['sha256'][:12]}`), `care.md` "
+        f"{report['prompts']['care']['version']}.",
+        f"- Meta: 0 turnos marcados. Resultado: {'cumple' if report['meets'] else 'no cumple'}.",
+        "",
+    ]
+    for variant, row in report["summary"].items():
+        lines += [
+            f"## Variante `{variant}`",
+            "",
+            "| Check | Turnos revisados | Turnos marcados |",
+            "|---|---|---|",
+        ]
+        for key, label in FOCUS_LABELS.items():
+            lines.append(f"| {label} | {row['checked'][key]} | {row['flags'][key]} |")
+        lines += ["", f"Empatía media ({row['judged_by']}): {row['empathy']}.", ""]
+        if row["flagged_turns"]:
+            lines += ["### Turnos marcados", ""]
+            for item in row["flagged_turns"]:
+                lines.append(
+                    f"- {item['case']}, turno {item['turn']} ({', '.join(item['failed'])}): "
+                    f"«{item['visitor']}» → «{item['assistant']}»"
+                )
+            lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def write_focus_reports(report: dict[str, Any], json_path: Path = FOCUS_JSON) -> None:
+    json_path.write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, default=str) + "\n", encoding="utf-8"
+    )
+    json_path.with_suffix(".md").write_text(render_focus_markdown(report), encoding="utf-8")
 
 
 # ---------------------------------------------------------------- informe

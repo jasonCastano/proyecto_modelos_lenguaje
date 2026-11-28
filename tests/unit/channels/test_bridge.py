@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import itertools
 import json
 import threading
 from dataclasses import dataclass, field
@@ -25,6 +26,7 @@ class Outcome:
     turn: dict[str, Any]
     status: str = "answered"
     pending_action: dict[str, Any] | None = None
+    client: dict[str, Any] | None = None  # spec 038: nombre reconocido
 
 
 @dataclass
@@ -36,8 +38,17 @@ class FakeService:
     fail: bool = False
     gate: threading.Event | None = None
     cite: bool = True
+    answer: str | None = None  # spec 038: respuesta fija del modelo (p. ej. un saludo)
+    client: dict[str, Any] | None = None
+    route_extra: dict[str, Any] = field(default_factory=dict)  # spec 034: act, sentiment…
 
     def send(self, message: str, **kwargs: Any) -> Outcome:
+        outcome = self._answer(message, **kwargs)
+        if self.route_extra:
+            outcome.turn["route"] = {**(outcome.turn.get("route") or {}), **self.route_extra}
+        return outcome
+
+    def _answer(self, message: str, **kwargs: Any) -> Outcome:
         self.calls.append({"message": message, **kwargs})
         if self.gate is not None:
             self.gate.wait(2)
@@ -51,6 +62,10 @@ class FakeService:
                 "pending_approval",
                 {"action_id": "act-1", "tool": self.propose, "args": self.propose_args},
             )
+        if self.answer is not None:  # spec 038: respuesta conversacional fija
+            return Outcome(
+                thread, {"route": {"route": "direct"}, "answer": self.answer}, client=self.client
+            )
         if not self.cite:  # spec 030: respuesta conversacional, sin fuentes
             return Outcome(thread, {"route": {"route": "direct"}, "answer": f"Hola: {message}."})
         turn = {
@@ -60,7 +75,7 @@ class FakeService:
             "tools": [{"name": "search_documents", "ok": True, "duration_ms": 12}],
             "plan_steps": ["buscar en documentos", "responder con cita"],
         }
-        return Outcome(thread, turn)
+        return Outcome(thread, turn, client=self.client)
 
     def resume(self, thread_id: str, **kwargs: Any) -> Outcome:
         self.resumes.append({"thread_id": thread_id, **kwargs})
@@ -89,16 +104,24 @@ class FakeVoice:
     answers: list[tuple[str, str, str]] = field(default_factory=list)
     texts: list[tuple[str, str]] = field(default_factory=list)
     with_sources: list[bool] = field(default_factory=list)
+    openings: list[str | None] = field(default_factory=list)  # spec 038
     fail: bool = False
 
     def for_answer(
-        self, question: str, answer: str, language: str, *, with_sources: bool = False
+        self,
+        question: str,
+        answer: str,
+        language: str,
+        *,
+        with_sources: bool = False,
+        opening: str | None = None,
     ) -> VoiceResult:
         if self.fail:
             raise RuntimeError("motor de voz caído")
         self.answers.append((question, answer, language))
         self.with_sources.append(with_sources)
-        return VoiceResult(language, "guion")
+        self.openings.append(opening)
+        return VoiceResult(language, f"{opening} guion" if opening else "guion")
 
     def for_text(self, text: str, language: str) -> VoiceResult:
         if self.fail:
@@ -183,7 +206,9 @@ def test_duplicate_is_ignored(bridge: ChannelBridge, service: FakeService) -> No
 def test_errors_are_short_and_clean(bridge: ChannelBridge, service: FakeService) -> None:
     service.fail = True
     reply = bridge.handle(msg("hola", "m1"))
-    assert reply.status == "error" and reply.messages[0] == TEXTS["es"]["error"]
+    # Spec 038 (R7): en un hilo sin presentar, el error dice en una frase quién es Valer-IA.
+    assert reply.status == "error" and reply.messages[0].endswith(TEXTS["es"]["error"])
+    assert reply.messages[0].startswith("Soy Valer-IA")
     assert "Traceback" not in " ".join(reply.messages)
 
 
@@ -213,8 +238,11 @@ def test_voice_note_without_speech_asks_to_repeat(
     bridge: ChannelBridge, service: FakeService, voice: FakeVoice
 ) -> None:
     reply = bridge.handle(audio("", "m1"))
-    assert reply.messages[0] == TEXTS["es"]["unheard"] and service.calls == []
-    assert reply.voice is not None and voice.texts == [(TEXTS["es"]["unheard"], "es")]
+    # Spec 038: primer mensaje de un número nuevo, así que va con la presentación.
+    assert TEXTS["es"]["unheard"] in " ".join(reply.messages) and service.calls == []
+    spoken, language = voice.texts[0]
+    assert reply.voice is not None and language == "es"
+    assert spoken.startswith("¡Hola") and spoken.endswith(TEXTS["es"]["unheard"])
 
 
 # --- cola por usuario (T033) ----------------------------------------------------------------
@@ -653,3 +681,339 @@ def test_operator_shortcuts_only_for_operators(
     calls = len(service.calls)
     bridge.handle(msg("/traza", "t3"))
     assert len(service.calls) == calls  # el operador recibe la traza sin pasar por el agente
+
+
+# --- spec 038: saludo y presentación al iniciar una conversación (T009, T010, T013, T015, T018,
+# T020) ---------------------------------------------------------------------------------------
+
+
+def _log(tmp_path: Path) -> list[dict[str, Any]]:
+    lines = (tmp_path / "logs" / "channels.jsonl").read_text(encoding="utf-8").splitlines()
+    return [json.loads(line) for line in lines]
+
+
+def _text(reply: Any) -> str:
+    return " ".join(reply.messages)
+
+
+def test_a_direct_first_question_gets_the_introduction_and_the_answer(
+    bridge: ChannelBridge, tmp_path: Path
+) -> None:
+    first = bridge.handle(msg("¿Qué produce Manuelita?", "g1"))
+    assert first.messages[0].startswith("¡Hola") and "Valer-IA" in first.messages[0]
+    assert "Respuesta a «¿Qué produce Manuelita?»" in _text(first)  # sin pedir que la repita
+    assert first.introduced == "bridge"
+    second = bridge.handle(msg("¿y en Perú?", "g2"))
+    assert "Valer-IA" not in _text(second) and second.introduced is None
+    rows = _log(tmp_path)
+    assert [row["conversation_start"] for row in rows] == ["first_contact", None]
+    assert [row["introduced"] for row in rows] == ["bridge", None]
+
+
+def test_a_greeting_already_introduced_by_the_model_is_not_repeated(
+    bridge: ChannelBridge, service: FakeService
+) -> None:
+    service.answer = "¡Hola! Soy Valer-IA, la asistente de Manuelita. ¿En qué te ayudo?"
+    reply = bridge.handle(msg("Hola", "g1"))
+    assert _text(reply).count("Valer-IA") == 1 and reply.introduced == "agent"
+
+
+def test_a_loose_hola_from_the_model_is_not_doubled(
+    bridge: ChannelBridge, service: FakeService
+) -> None:
+    service.answer = "¡Hola! ¿En qué te puedo ayudar hoy?"
+    reply = bridge.handle(msg("Hola", "g1"))
+    assert _text(reply).count("¡Hola") == 1
+    assert "¿En qué te puedo ayudar hoy?" in _text(reply) and reply.introduced == "bridge"
+
+
+def test_the_introduction_follows_the_language_and_the_name(
+    bridge: ChannelBridge, service: FakeService
+) -> None:
+    english = bridge.handle(msg("What does Manuelita produce for export markets?", "g1"))
+    assert english.messages[0].startswith(("Hi", "Hello")) and "Valer-IA" in english.messages[0]
+
+    service.client = {"name": "Ana"}  # otro número nuevo, con nombre reconocido
+    named = bridge.handle(
+        InboundMessage("whatsapp", "g2", "+570000000202", "text", "¿Qué produce Manuelita?")
+    )
+    assert named.messages[0].startswith("¡Hola, Ana")
+
+
+def test_notices_shortcuts_and_blocked_numbers_get_no_introduction(
+    tmp_path: Path, service: FakeService, clock: Clock, voice: FakeVoice, monkeypatch: Any
+) -> None:
+    bridge = make_bridge(tmp_path, service, clock, voice, rate_max_messages=1)
+    bridge.store.block(_me())
+    assert bridge.handle(msg("¿Qué produce Manuelita?", "b1")).messages == []
+    bridge.store.unblock(_me())
+    monkeypatch.setenv("VALERIA_OPERATORS", "")
+    shortcut = bridge.handle(msg("/traza", "b2"))
+    assert "Valer-IA" not in _text(shortcut) and shortcut.introduced is None
+    clock.now += timedelta(minutes=11)
+    first = bridge.handle(msg("¿Qué produce Manuelita?", "b3"))
+    assert first.introduced == "bridge"  # el atajo no marcó el hilo
+    notice = bridge.handle(msg("¿Y en Perú?", "b4"))
+    assert notice.messages == [TEXTS["es"]["rate_limited"]] and notice.introduced is None
+
+
+def test_an_image_as_first_message_introduces_and_explains(bridge: ChannelBridge) -> None:
+    reply = bridge.handle(msg(None, "g1", "image"))
+    assert reply.status == "unsupported" and _text(reply).startswith("¡Hola")
+    assert "notas de voz" in _text(reply) and reply.introduced == "bridge"
+
+
+def test_an_error_on_the_first_turn_keeps_the_introduction_for_later(
+    bridge: ChannelBridge, service: FakeService
+) -> None:
+    service.fail = True
+    error = bridge.handle(msg("¿Qué produce Manuelita?", "g1"))
+    assert error.messages[0].startswith("Soy Valer-IA") and error.introduced is None
+    service.fail = False
+    later = bridge.handle(msg("¿Qué produce Manuelita?", "g2"))
+    assert later.introduced == "bridge" and later.messages[0].startswith("¡Hola")
+
+
+def test_the_sensitive_notice_stays_at_the_end(bridge: ChannelBridge, service: FakeService) -> None:
+    notice = "Ojo: por aquí no hace falta que compartas datos como tarjetas o contraseñas."
+    service.answer = f"Te cuento lo que sé de Manuelita.\n\n{notice}"
+    reply = bridge.handle(msg("Mi tarjeta es 4111 1111 1111 1111, ¿qué produce Manuelita?", "g1"))
+    text = _text(reply)
+    assert text.startswith("¡Hola") and text.rstrip().endswith(notice)
+
+
+def test_a_long_first_answer_gets_the_introduction_as_its_own_message(
+    tmp_path: Path, service: FakeService, clock: Clock, voice: FakeVoice
+) -> None:
+    bridge = make_bridge(tmp_path, service, clock, voice, reply_max_chars=200)
+    service.answer = (
+        "Manuelita produce azúcar. " * 7
+    )  # ~180 caracteres: no cabe con la presentación
+    reply = bridge.handle(msg("¿Qué produce Manuelita?", "g1"))
+    assert reply.messages[0].startswith("¡Hola") and reply.messages[1].startswith("Manuelita")
+    assert all(len(part) <= 200 for part in reply.messages)
+
+
+# --- US2: voz ---------------------------------------------------------------------------------
+
+
+def test_the_first_voice_answer_opens_with_the_introduction(
+    bridge: ChannelBridge, voice: FakeVoice
+) -> None:
+    first = bridge.handle(audio("¿Qué produce Manuelita?", "v1", "es"))
+    assert first.voice is not None and voice.openings[0] is not None
+    assert voice.openings[0].startswith("¡Hola") and "Valer-IA" in voice.openings[0]
+    assert "Valer-IA" not in voice.answers[0][1]  # el guion se arma sin la presentación
+    assert first.sources_messages and first.sources_messages[0].startswith("Fuentes:")
+    second = bridge.handle(audio("¿Y en Perú?", "v2", "es"))
+    assert second.voice is not None and voice.openings[1] is None
+
+
+def test_a_first_spoken_greeting_is_introduced_once(
+    bridge: ChannelBridge, service: FakeService, voice: FakeVoice
+) -> None:
+    service.answer = "¡Hola! ¿En qué te puedo ayudar?"
+    reply = bridge.handle(audio("Hola", "v1", "es"))
+    assert reply.voice is not None
+    spoken = voice.openings[0] if voice.openings else voice.texts[0][0]
+    assert spoken is not None and spoken.count("¡Hola") == 1
+
+
+def test_an_english_first_voice_note_is_introduced_in_english(
+    bridge: ChannelBridge, voice: FakeVoice
+) -> None:
+    reply = bridge.handle(audio("What does Manuelita produce?", "v1", "en"))
+    assert reply.voice is not None and voice.openings[0] is not None
+    assert voice.openings[0].startswith(("Hi", "Hello"))
+
+
+# --- US3: regreso después de la inactividad ----------------------------------------------------
+
+
+def test_coming_back_after_the_idle_period_starts_a_new_conversation(
+    bridge: ChannelBridge, service: FakeService, clock: Clock, tmp_path: Path
+) -> None:
+    first = bridge.handle(msg("¿Qué produce Manuelita?", "i1"))
+    clock.now += timedelta(hours=11)
+    same = bridge.handle(msg("¿y en Perú?", "i2"))
+    assert same.thread_id == first.thread_id and same.introduced is None
+    clock.now += timedelta(hours=13)
+    service.client = {"name": "Ana"}
+    back = bridge.handle(msg("¿Qué certificaciones tiene?", "i3"))
+    assert back.thread_id != first.thread_id and back.messages[0].startswith("¡Hola, Ana")
+    assert service.calls[-1]["thread_id"] is None  # hilo nuevo: sin el contexto anterior
+    assert service.calls[-1]["user_id"] == service.calls[0]["user_id"]  # el perfil se conserva
+    assert [row["conversation_start"] for row in _log(tmp_path)] == [
+        "first_contact",
+        None,
+        "inactivity",
+    ]
+
+
+# --- US4: empezar de nuevo ---------------------------------------------------------------------
+
+
+def test_starting_over_with_a_question_confirms_introduces_and_answers(
+    bridge: ChannelBridge, tmp_path: Path
+) -> None:
+    bridge.handle(msg("¿Qué produce Manuelita?", "s1"))
+    reply = bridge.handle(msg("Empecemos de nuevo. ¿Qué certificaciones tiene Manuelita?", "s2"))
+    text = _text(reply)
+    assert reply.messages[0] == TEXTS["es"]["restart_notice"]
+    assert text.count("Valer-IA") == 1 and text.index("Valer-IA") < text.index("Respuesta a")
+    assert reply.conversation_start == "restart" and reply.introduced == "bridge"
+
+
+def test_starting_over_alone_leaves_the_introduction_for_the_next_request(
+    bridge: ChannelBridge,
+) -> None:
+    bridge.handle(msg("¿Qué produce Manuelita?", "s1"))
+    only = bridge.handle(msg("empecemos de nuevo", "s2"))
+    assert only.messages == [TEXTS["es"]["restart"]] and only.introduced is None
+    assert only.conversation_start == "restart"
+    nxt = bridge.handle(msg("¿Qué certificaciones tiene Manuelita?", "s3"))
+    assert nxt.introduced == "bridge" and nxt.messages[0].startswith("¡Hola")
+
+
+# --- spec 033: cuentas identificadas solo por ID (T007, T016) ---------------------------------
+
+LID = "10000000000001@lid"  # ficticio
+
+
+def test_an_id_only_account_is_answered_in_one_thread(
+    bridge: ChannelBridge, service: FakeService, tmp_path: Path
+) -> None:
+    first = bridge.handle(InboundMessage("whatsapp", "l1", LID, "text", "¿Qué produce Manuelita?"))
+    assert first.status == "answered" and first.messages[0].startswith("¡Hola")
+    assert service.calls[0]["user_id"].startswith("wa-")
+    second = bridge.handle(InboundMessage("whatsapp", "l2", LID, "text", "¿y en Perú?"))
+    assert second.thread_id == first.thread_id and second.introduced is None
+    rows = _log(tmp_path)
+    assert [row["sender_kind"] for row in rows] == ["lid", "lid"]
+    raw = (tmp_path / "logs" / "channels.jsonl").read_text(encoding="utf-8")
+    assert "10000000000001" not in raw  # nunca el ID
+    assert bridge.handle(msg("hola", "p1")).status == "answered"
+    assert _log(tmp_path)[-1]["sender_kind"] == "phone"
+
+
+def test_late_messages_are_dropped_and_recent_ones_answered_once(
+    bridge: ChannelBridge, service: FakeService, clock: Clock, tmp_path: Path
+) -> None:
+    old = (clock.now - timedelta(minutes=20)).isoformat()
+    late = bridge.handle(msg("¿Qué produce Manuelita?", "s1", received_at=old))
+    assert late.status == "ignored" and late.event == "stale" and service.calls == []
+    assert _log(tmp_path)[-1]["event"] == "stale"
+    recent = (clock.now - timedelta(minutes=5)).isoformat()
+    assert (
+        bridge.handle(msg("¿Qué produce Manuelita?", "s2", received_at=recent)).status == "answered"
+    )
+    assert (
+        bridge.handle(msg("¿Qué produce Manuelita?", "s2", received_at=recent)).status == "ignored"
+    )
+    assert len(service.calls) == 1  # el duplicado no se responde dos veces
+    inconsistent = "1970-01-21T09:00:00+00:00"  # p. ej. segundos leídos como milisegundos
+    for value in (None, "no-es-fecha", "2026-11-28T12:58:00", inconsistent):
+        reply = bridge.handle(msg("¿y en Perú?", f"s-{value}", received_at=value))
+        assert reply.status == "answered", value
+
+
+# --- spec 034: stickers (T009, T015, T018) ------------------------------------------------------
+
+
+def _with_catalog(bridge: ChannelBridge, tmp_path: Path) -> ChannelBridge:
+    from tests.unit.channels.test_stickers import make_catalog
+
+    bridge._stickers = make_catalog(tmp_path / "catalogo")
+    return bridge
+
+
+def _say(bridge: ChannelBridge, service: FakeService, text: str, mid: str, **route: Any):
+    service.route_extra = route
+    return bridge.handle(msg(text, mid))
+
+
+def test_social_moments_get_their_sticker(
+    bridge: ChannelBridge, service: FakeService, tmp_path: Path
+) -> None:
+    _with_catalog(bridge, tmp_path)
+    service.answer = "¡Hola! Soy Valer-IA, la asistente de Manuelita. ¿En qué te ayudo?"
+    hola = _say(bridge, service, "Hola", "k1", act="greeting")
+    assert hola.sticker and hola.sticker.name == "valeria-bienvenido"
+    assert hola.sticker.position == "before" and Path(hola.to_dict()["sticker"]["path"]).is_file()
+    service.answer = None
+    factual = _say(bridge, service, "¿Qué produce Manuelita?", "k2", act="manuelita")
+    # Spec 037: una respuesta útil con fuentes lleva «¡Listo!» (antes no llevaba sticker).
+    assert factual.sticker and factual.sticker.name == "valeria-listo"
+    service.answer = "¡Con gusto!"
+    gracias = _say(bridge, service, "Muchas gracias", "k3", act="thanks")
+    assert gracias.sticker and gracias.sticker.name == "valeria-gracias"
+    service.answer = "¡Hasta pronto!"
+    chao = _say(bridge, service, "Chao", "k4", act="closing")
+    assert chao.sticker and chao.sticker.name == "valeria-lindo-dia"  # despedida: aunque siga
+    assert [row["sticker"] for row in _log(tmp_path)] == [
+        "valeria-bienvenido",
+        "valeria-listo",
+        "valeria-gracias",
+        "valeria-lindo-dia",
+    ]
+
+
+def test_moderation_over_a_ten_turn_conversation(
+    bridge: ChannelBridge, service: FakeService, tmp_path: Path
+) -> None:
+    _with_catalog(bridge, tmp_path)
+    service.answer = "Te cuento."
+    turns = [
+        ("Hola", "greeting", None),
+        ("Gracias", "thanks", None),  # spec 037: seguida, pero con otra situación
+        ("¿Qué produce Manuelita?", "manuelita", None),
+        ("Gracias", "thanks", None),
+        ("Esto no me sirve, estoy molesto", "complaint", "angry"),
+        ("ok", "minimal", None),
+        ("Gracias", "thanks", None),
+        ("Hola", "greeting", None),
+        ("ok", "minimal", None),
+        ("Chao", "closing", None),
+    ]
+    for index, (text, act, sentiment) in enumerate(turns):
+        route = {"act": act, **({"sentiment": sentiment} if sentiment else {})}
+        _say(bridge, service, text, f"m{index}", **route)
+    stickers = [row["sticker"] for row in _log(tmp_path)]
+    sent = [name for name in stickers if name]
+    assert 4 <= len(sent) <= 8  # spec 037: uso activo, con el tope de la configuración
+    assert stickers[1] == "valeria-gracias" and stickers[4] is None  # la queja nunca lleva sticker
+    for before, after in itertools.pairwise(stickers):
+        if before and after and before == after:
+            assert after in {"valeria-pulgar", "valeria-lindo-dia"}  # nunca el mismo seguido
+
+
+def test_approved_actions_get_their_sticker(
+    bridge: ChannelBridge, service: FakeService, tmp_path: Path
+) -> None:
+    _with_catalog(bridge, tmp_path)
+    service.propose = "save_preference"
+    bridge.handle(msg("Recuerda que me llamo Ana", "a1"))
+    service.propose = None
+    saved = bridge.handle(msg("dale", "a2"))
+    assert saved.status == "approval_resolved"
+    assert saved.sticker and saved.sticker.name == "valeria-gracias-confianza"
+    useful = bridge.handle(msg("¿Qué produce Manuelita?", "a3")).sticker
+    assert useful and useful.name == "valeria-listo"  # spec 037: respuesta útil
+    service.propose = "forget_memory"
+    bridge.handle(msg("Olvida lo que sabes de mí", "a4"))
+    service.propose = None
+    forgotten = bridge.handle(msg("sí, dale", "a5"))
+    assert forgotten.sticker is None  # spec 037: «¡Listo!» no va dos respuestas seguidas
+    service.propose = "forget_memory"
+    bridge.handle(msg("Olvida lo que sabes de mí", "a6"))
+    service.propose = None
+    again = bridge.handle(msg("sí, dale", "a7"))
+    assert again.sticker and again.sticker.name == "valeria-listo"  # la acción conserva el suyo
+
+
+def test_rejected_actions_and_disabled_switch_get_no_sticker(
+    tmp_path: Path, service: FakeService, clock: Clock, voice: FakeVoice
+) -> None:
+    bridge = _with_catalog(make_bridge(tmp_path, service, clock, voice, stickers=False), tmp_path)
+    service.answer = "¡Con gusto!"
+    assert _say(bridge, service, "Gracias", "d1", act="thanks").sticker is None

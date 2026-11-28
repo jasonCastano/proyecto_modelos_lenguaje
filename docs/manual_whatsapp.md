@@ -15,6 +15,24 @@ registros. Solo funciona en **chats individuales** (no en grupos).
 
 Háblale como a una persona. **No necesitas comandos**: pide las cosas con tus palabras.
 
+**Al empezar** (spec 038): en la primera respuesta de cada conversación, Valer-IA te saluda y se
+presenta en una o dos frases, y enseguida atiende lo que preguntaste, por texto o en nota de voz: no
+hace falta repetir la pregunta. No vuelve a presentarse mientras sigan conversando. Si vuelves
+después de **12 horas** sin escribir, empieza una conversación nueva: te saluda otra vez (por tu
+nombre, si le pediste recordarlo) y no arrastra el tema anterior. Lo mismo pasa si le dices
+«empecemos de nuevo».
+
+**Siempre vuelve a Manuelita** (spec 035): Valer-IA conversa con calidez, pero su tema es Manuelita. Si le
+cuentas algo de tu día, le propones «charlar de cualquier cosa» o le hablas de fútbol, te responde con una
+frase amable y enseguida te ofrece temas de Manuelita (su historia, sus productos, su energía, su
+fundación…). No te pregunta por otros temas ni rechaza lo que compartes.
+
+**Habla como caleña** (spec 036): Valer-IA es de Cali y se le nota con medida, siempre profesional. A veces
+usa una expresión caleña («¡ve, qué bueno!», «listo pues», «a la orden», «con mucho gusto»), y en las notas de
+voz hasta dos. Te trata de tú, sin groserías. Si te sale una expresión que no conoces, pregúntale qué significa.
+Si prefieres un español neutro, dile «habla normal» y deja de usarlas en esa conversación. En inglés, en una
+queja o si estás pasando un mal momento, responde sin expresiones caleñas.
+
 | Quieres… | Dile, por ejemplo… |
 |---|---|
 | Saber qué hace | «Hola, ¿qué puedes hacer?» |
@@ -25,6 +43,8 @@ Háblale como a una persona. **No necesitas comandos**: pide las cosas con tus p
 | Respuestas por escrito | «Respóndeme por escrito» |
 | Respuestas en audio | «Mándame audio» |
 | Que olvide tus datos | «Olvida lo que sabes de mí» |
+| Saber qué significa una expresión | «¿Qué significa "ve"?» |
+| Que hable sin modismos | «Habla normal, por favor» |
 
 ## 2. Qué puedes preguntar
 
@@ -52,12 +72,34 @@ servicio:
 - hay un máximo de mensajes por día; al llegar a él, te invita a seguir mañana;
 - en grupos no responde.
 
+También responde a las cuentas que WhatsApp entrega **sin el número de teléfono** (solo con su
+identificador interno, por la privacidad del número): no hace falta que el equipo guarde tu contacto
+(spec 033).
+
+### Stickers
+
+Valer-IA usa sus stickers de forma activa (specs 034 y 037):
+
+- «¡Bienvenido!» u «Hola» al presentarse, aunque tu primer mensaje sea una pregunta;
+- «¡Listo!» o el pulgar cuando te da una respuesta útil con fuentes (más o menos una de cada dos);
+- «¿Cuál es tu consulta?» si la saludas a mitad de la conversación;
+- «¡Gracias!» cuando agradeces y «Lindo día» al despedirte;
+- el pulgar cuando dices «ok» o «dale»;
+- «¡Listo!» o «¡Gracias por confiar en nosotros!» cuando termina algo que pediste;
+- «Pensando» si la respuesta tarda.
+
+Nunca reemplazan la respuesta: como máximo uno por mensaje y ocho por conversación, y nunca el mismo dos
+veces seguidas (salvo el pulgar y la despedida). No los usa ante una queja, un mal momento, datos
+personales ni cuando no encontró la información. En inglés solo usa el pulgar, porque los demás tienen texto
+en español. Si no los quieres, dile **«sin stickers»** y deja de enviarlos en esa conversación.
+
 ### Notas de voz
 
 - Si le **hablas**, te responde con una **nota de voz** natural en tu idioma (español o inglés) y, por escrito,
   **solo las fuentes** (la respuesta no se repite). Si la respuesta no tiene fuentes, solo recibes la nota de voz.
   Si la nota de voz no llega, recibes la respuesta escrita completa con sus fuentes.
 - Si le **escribes**, te responde por escrito.
+- La nota de voz suena con sabor caleño: hasta dos expresiones de Cali, con frases cortas y cálidas.
 - Puedes cambiarlo cuando quieras: «respóndeme por escrito» o «mándame audio».
 - Si no te entiende bien el audio, te pedirá que lo repitas o lo escribas.
 

@@ -2,6 +2,34 @@
 
 > **Aplicado** en la spec 029 (guion 1.2.0, 2026-11-26): ver `specs/029-pitch-escenas-sincronizadas/` y el ADR 0033.
 
+## Cambio del 2026-11-27: sepia de 1864 y barrido de época (plano-01a)
+
+- **Pedido por**: Roberto José Guerrero (2026-11-27).
+- **Pedido**: mientras el narrador dice «Manuelita nació en 1864 como un trapiche para producir azúcar», el
+  trapiche en blanco y negro alusivo a 1864, con un efecto de cambio de época que recorra la pantalla de derecha
+  a izquierda justo antes de que salga Valer-IA. El integrante eligió **sepia suave**.
+- **Aplicado** (montaje, sin regenerar planos; costo en Higgsfield: **0 USD**):
+  - `escenas.json`, `plano-01a.look = {style: "sepia-suave", sweep_s: 0.5}`;
+  - `pml pitch assemble` aplica sepia con grano, viñeta y un parpadeo leve, y en los últimos 0,5 s del plano
+    una línea de luz cruza de derecha a izquierda y devuelve el color.
+- **Tiempos en el video**: sepia de 0,0 a 3,9 s (la frase termina en 4,1 s), barrido de 3,9 a 4,4 s y Valer-IA
+  entra en color a los 4,4 s.
+- **Comprobación**: `pml pitch validate` y `pml pitch check` en verde (52,12 s, 1080×1920, 18,75 MB).
+- **Estado**: aprobado por el integrante y publicado en la web con `pml pitch publish` (2026-11-27).
+
+## Cambio del 2026-11-27: sonido con la primera interacción (web)
+
+- **Pedido**: que el audio del video se active al entrar por primera vez a la página.
+- **Límite**: los navegadores no dejan sonar un video antes de que la persona interactúe con la página; si se
+  intenta, detienen el video.
+- **Decisión del integrante (opción A)**: el video sigue arrancando sin sonido y con subtítulos; con el primer
+  clic, toque o tecla en cualquier parte de la página se activa el sonido y el video vuelve al inicio, una sola
+  vez. No cuentan los controles del video, el botón de sonido ni «Saltar el video».
+- **Aplicado** en `web/src/components/home/PitchVideo.tsx`, con sus pruebas en `PitchVideo.test.tsx` y el
+  contrato `specs/028-video-pitch-magi2/contracts/web-ui.md`. Costo: 0 USD.
+
+---
+
 Escribe aquí lo que quieres cambiar del video (`web/public/media/pitch-valeria.mp4`). Cuando termines, avísale
 a Claude con un mensaje como «aplica los cambios de `video/pitch/cambios.md`».
 

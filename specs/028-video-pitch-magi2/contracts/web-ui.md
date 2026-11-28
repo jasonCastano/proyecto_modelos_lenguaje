@@ -20,6 +20,7 @@
 | Situación | Resultado |
 |---|---|
 | Primera visita de la sesión, sin movimiento reducido | Intenta reproducir sin sonido; subtítulos visibles |
+| Primera interacción con la página (clic, toque o tecla) mientras el video arranca solo (2026-11-27) | Activa el sonido y vuelve el video al inicio, una sola vez. No cuentan los controles del video, el botón de sonido ni «Saltar el video»; después de saltar o de usar el botón de sonido ya no se activa |
 | Movimiento reducido | No reproduce solo; muestra la portada, el botón «Reproducir» y la transcripción abierta |
 | Clic en «Saltar el video» | Pausa, guarda `valeria.pitch=saltado`, mueve el foco al héroe (`#hero-title`) y el bloque pasa a compacto |
 | El video termina | Guarda `valeria.pitch=visto` y muestra el enlace «Empezar con Valer-IA» a `/agente` (FR-021) |

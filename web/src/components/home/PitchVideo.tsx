@@ -3,6 +3,10 @@
  * y con subtítulos, se salta en un paso, no se impone dos veces en la misma sesión, respeta el
  * movimiento reducido y, si el video falta, deja la portada y la transcripción. El video se genera
  * fuera de línea con MAGI-2 (`video/pitch/`); la web solo lo sirve.
+ *
+ * Los navegadores no dejan sonar un video antes de que la persona interactúe con la página. Por eso
+ * el sonido se activa con la primera interacción (clic, toque o tecla) en cualquier parte, y el
+ * video vuelve al inicio para que no se pierda la primera frase (decisión del integrante, 2026-11-27).
  */
 import { useEffect, useRef, useState } from "react";
 
@@ -12,6 +16,7 @@ import { Link } from "../../lib/router";
 
 export const PITCH_SESSION_KEY = "valeria.pitch";
 export const PITCH_ERROR = "El video no está disponible; aquí tienes la transcripción.";
+const FIRST_GESTURES = ["pointerdown", "keydown", "touchstart"] as const;
 
 type Seen = "visto" | "saltado" | null;
 
@@ -47,6 +52,8 @@ export function PitchVideo() {
   const [failed, setFailed] = useState(false);
   const [muted, setMuted] = useState(true);
   const autoplay = initial === null && !reduced;
+  // Se desarma con la primera interacción, al saltar o al usar el botón de sonido.
+  const armed = useRef(autoplay);
 
   useEffect(() => {
     const element = video.current;
@@ -61,8 +68,41 @@ export function PitchVideo() {
     return () => element?.pause?.();
   }, []);
 
+  // Primera interacción: activa el sonido y reinicia el video. Los controles del video, el botón
+  // de sonido y «Saltar el video» no cuentan, porque ya expresan otra intención.
+  useEffect(() => {
+    if (!autoplay) return;
+    function onFirstGesture(event: Event) {
+      const target = event.target as Element | null;
+      if (target?.closest?.(".pitch__video, .pitch__actions")) return;
+      stop();
+      if (!armed.current) return;
+      armed.current = false;
+      const element = video.current;
+      if (!element || !element.muted || element.ended) return;
+      element.muted = false;
+      setMuted(false);
+      element.currentTime = 0;
+      const attempt = element.play?.();
+      if (attempt && typeof attempt.catch === "function") attempt.catch(() => undefined);
+    }
+    function stop() {
+      for (const name of FIRST_GESTURES) {
+        document.removeEventListener(name, onFirstGesture, true);
+      }
+    }
+    for (const name of FIRST_GESTURES) {
+      document.addEventListener(name, onFirstGesture, true);
+    }
+    return stop;
+  }, [autoplay]);
+
   function skip() {
-    video.current?.pause?.();
+    armed.current = false;
+    const element = video.current;
+    element?.pause?.();
+    if (element) element.muted = true;
+    setMuted(true);
     writeSeen("saltado");
     setCompact(true);
     document.getElementById("hero-title")?.focus();
@@ -84,6 +124,7 @@ export function PitchVideo() {
   }
 
   function toggleSound() {
+    armed.current = false;
     const element = video.current;
     const next = !muted;
     if (element) element.muted = next;
@@ -118,6 +159,7 @@ export function PitchVideo() {
           muted
           onEnded={finish}
           onError={() => setFailed(true)}
+          onVolumeChange={(event) => setMuted(event.currentTarget.muted)}
           playsInline
           poster={PITCH_VIDEO.poster}
           preload="metadata"

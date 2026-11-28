@@ -6,7 +6,7 @@ import os
 import sys
 import tomllib
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
 from ..config import PROJECT_ROOT
@@ -301,7 +301,7 @@ def channels_config(section: Any) -> ChannelsConfig:
             "channels.queue_wait_seconds debe ser menor que channels.bridge_timeout_seconds."
         )
     voice_dir = section.get("voice_dir", defaults.voice_dir)
-    if not isinstance(voice_dir, str) or not voice_dir.strip() or Path(voice_dir).is_absolute():
+    if not isinstance(voice_dir, str) or not voice_dir.strip() or _is_absolute_anywhere(voice_dir):
         raise AgentConfigError("channels.voice_dir debe ser una ruta relativa al estado.")
     if ".." in Path(voice_dir).parts:
         raise AgentConfigError("channels.voice_dir no puede salir del directorio de estado.")
@@ -457,6 +457,16 @@ def _care_config(section: object) -> CareConfig:
         max_requests=max_requests,
         hostility_levels=_integer(section, "hostility_levels", table="care"),
         complaint_escalation=_integer(section, "complaint_escalation", table="care"),
+    )
+
+
+def _is_absolute_anywhere(value: str) -> bool:
+    """Ruta absoluta en Windows o POSIX (`C:/x` no es absoluta para Linux, pero sí lo es aquí)."""
+    return (
+        Path(value).is_absolute()
+        or PurePosixPath(value).is_absolute()
+        or bool(PureWindowsPath(value).drive)
+        or PureWindowsPath(value).is_absolute()
     )
 
 

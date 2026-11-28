@@ -1,0 +1,236 @@
+# Guion del video pitch de Valer-IA (spec 028; v2 sincronizada: spec 029). Seis bloques de elevator pitch.
+#
+# Reglas (pml pitch validate):
+# - narration: español, como máximo 40 palabras; manda la duración total (narración + pausas ≤ max_seconds);
+# - claims: unit_id del oro que respaldan lo que se afirma de Manuelita; cada cifra debe estar en ellas;
+# - si un bloque menciona la planificación, narration dice «datos sintéticos»;
+# - el bloque uso nombra perfil, pregunta, fuentes y planificación;
+# - on_screen sin pasos numerados (FR-004): los perfiles van como gráficos del montaje.
+#
+# Momentos sincronizados ([[block.cue]], data-model.md): cuando la narración dice `word`, se ve algo.
+# - kind = "plano": el evento ocurre en el plano `shot`; su segundo en el clip se anota en review.anchors;
+# - kind = "grafico": el montaje superpone graficos/<graphic>.png, de `from` a `to` (fracciones del cuadro);
+# - hold_s: cuánto permanece el gráfico (por defecto, hasta el fin de la escena); offset_s: retraso tras la palabra.
+#
+# Al cambiar el texto de un bloque, los planos aprobados de ese bloque quedan desactualizados y se revisan de nuevo.
+
+version = "1.2.0"
+language = "es"
+max_seconds = 60
+pause_s = 0.5
+
+# --------------------------------------------------------------------------- 01 gancho
+[[block]]
+id = "gancho"
+narration = "Manuelita nació en 1864 como un trapiche para producir azúcar. Valer-IA te ayuda a conocerla con un agente que cita fuentes."
+claims = ["unit_05fb8675575bb5a7"]
+
+[[block.cue]]
+id = "gancho.trapiche"
+word = "trapiche"
+kind = "plano"
+shot = "plano-01a"
+
+[[block.cue]]
+id = "gancho.valeria"
+word = "Valer"
+kind = "plano"
+shot = "plano-01b"
+
+# --------------------------------------------------------------------------- 02 problema
+[[block]]
+id = "problema"
+narration = "Su información pública está repartida en informes, noticias y páginas de cuatro plataformas: caña, palma, acuicultura y frutas."
+claims = ["unit_121e7e190f26cf4e"]
+
+[[block.cue]]
+id = "problema.informes"
+word = "informes"
+kind = "grafico"
+graphic = "icono-informes"
+from = [0.18, 0.22]
+to = [0.70, 0.76]
+hold_s = 1.3
+
+[[block.cue]]
+id = "problema.noticias"
+word = "noticias"
+kind = "grafico"
+graphic = "icono-noticias"
+from = [0.82, 0.22]
+to = [0.70, 0.76]
+hold_s = 1.3
+
+[[block.cue]]
+id = "problema.cana"
+word = "caña"
+kind = "grafico"
+graphic = "icono-cana"
+from = [0.15, 0.40]
+to = [0.70, 0.76]
+hold_s = 1.3
+
+[[block.cue]]
+id = "problema.palma"
+word = "palma"
+kind = "grafico"
+graphic = "icono-palma"
+from = [0.85, 0.40]
+to = [0.70, 0.76]
+hold_s = 1.3
+
+[[block.cue]]
+id = "problema.acuicultura"
+word = "acuicultura"
+kind = "grafico"
+graphic = "icono-acuicultura"
+from = [0.20, 0.12]
+to = [0.70, 0.76]
+hold_s = 1.3
+
+[[block.cue]]
+id = "problema.frutas"
+word = "frutas"
+kind = "grafico"
+graphic = "icono-frutas"
+from = [0.80, 0.12]
+to = [0.70, 0.76]
+hold_s = 1.3
+
+# --------------------------------------------------------------------------- 03 solucion
+[[block]]
+id = "solucion"
+narration = "Valer-IA reúne esa información en un solo agente para visitantes, clientes, proveedores, colaboradores y el equipo de planta; así, los aliados ahorran tiempo, toman decisiones con mayor confianza y evitan depender de información desactualizada o sin respaldo."
+claims = []
+
+[[block.cue]]
+id = "solucion.visitantes"
+word = "visitantes"
+kind = "plano"
+shot = "plano-03a"
+
+[[block.cue]]
+id = "solucion.clientes"
+word = "clientes"
+kind = "plano"
+shot = "plano-03a"
+
+[[block.cue]]
+id = "solucion.proveedores"
+word = "proveedores"
+kind = "plano"
+shot = "plano-03a"
+
+[[block.cue]]
+id = "solucion.colaboradores"
+word = "colaboradores"
+kind = "plano"
+shot = "plano-03a"
+
+[[block.cue]]
+id = "solucion.planta"
+word = "equipo de planta"
+kind = "plano"
+shot = "plano-03a"
+
+[[block.cue]]
+id = "solucion.aliados"
+word = "aliados"
+kind = "plano"
+shot = "plano-03b"
+
+# --------------------------------------------------------------------------- 04 diferencia
+[[block]]
+id = "diferencia"
+narration = "Cita cada fuente, calcula las cifras en código y te pide un sí antes de guardar algo."
+claims = []
+
+[[block.cue]]
+id = "diferencia.cita"
+word = "fuente"
+kind = "grafico"
+graphic = "icono-cita"
+from = [0.22, 0.24]
+to = [0.22, 0.20]
+
+[[block.cue]]
+id = "diferencia.calculo"
+word = "cifras"
+kind = "grafico"
+graphic = "icono-calculo"
+from = [0.50, 0.24]
+to = [0.50, 0.20]
+
+[[block.cue]]
+id = "diferencia.confirmar"
+# El reconocedor oye «un siente» en lugar de «un sí antes» (2026-11-26): se ancla en «pide» y se
+# retrasa hasta «sí».
+word = "pide"
+offset_s = 0.36
+kind = "grafico"
+graphic = "icono-confirmar"
+from = [0.78, 0.24]
+to = [0.78, 0.20]
+
+# --------------------------------------------------------------------------- 05 uso
+[[block]]
+id = "uso"
+narration = "Elige tu perfil, haz tu pregunta y revisa las fuentes. Si planificas producción, abre la consola con datos sintéticos."
+claims = []
+synthetic = true
+
+[[block.cue]]
+id = "uso.visitante"
+word = "perfil"
+kind = "grafico"
+graphic = "perfil-visitante"
+from = [0.95, 0.30]
+to = [0.73, 0.30]
+
+[[block.cue]]
+id = "uso.cliente"
+word = "perfil"
+offset_s = 0.35
+kind = "grafico"
+graphic = "perfil-cliente"
+from = [0.95, 0.39]
+to = [0.73, 0.39]
+
+[[block.cue]]
+id = "uso.proveedor"
+word = "perfil"
+offset_s = 0.7
+kind = "grafico"
+graphic = "perfil-proveedor"
+from = [0.95, 0.48]
+to = [0.73, 0.48]
+
+[[block.cue]]
+id = "uso.colaborador"
+word = "perfil"
+offset_s = 1.05
+kind = "grafico"
+graphic = "perfil-colaborador"
+from = [0.95, 0.57]
+to = [0.73, 0.57]
+
+[[block.cue]]
+id = "uso.planificador"
+word = "perfil"
+offset_s = 1.4
+kind = "grafico"
+graphic = "perfil-planificador"
+from = [0.95, 0.66]
+to = [0.73, 0.66]
+
+# --------------------------------------------------------------------------- 06 accion
+[[block]]
+id = "accion"
+narration = "Conocer Manuelita ya no es buscar: es preguntar. Entra a Valer-IA, elige tu perfil y haz tu primera pregunta hoy."
+claims = []
+
+[[block.cue]]
+id = "accion.despedida"
+word = "Entra"
+kind = "plano"
+shot = "plano-06"

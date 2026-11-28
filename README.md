@@ -270,7 +270,7 @@ y 6 de planificación), blindaje, aprobación humana y citas. Si el backend no r
 agente nativo de OpenClaw con el servidor MCP propio `valeria-tools` (15 herramientas de lectura): el **modo
 degradado**. Decisión: [ADR 0028](docs/decisions/0028-openclaw-whatsapp-puente.md).
 
-**Spec 028** ([ADR 0032](docs/decisions/0032-valeria-natural-voz-whatsapp.md)): la conversación es natural y
+**Spec 028** ([ADR 0037](docs/decisions/0037-valeria-natural-voz-whatsapp.md)): la conversación es natural y
 **sin comandos** («empecemos de nuevo», «respóndeme por escrito», «dale»); Valer-IA entiende **notas de voz** en
 español e inglés y, si le hablan, responde con una nota de voz conversacional y el texto con sus fuentes. El
 planificador se activa por contexto para cualquier persona. Usa una **SIM dedicada** con modo cerrado (números de
@@ -280,6 +280,11 @@ sin Docker (Qdrant nativo con `scripts/qdrant_native.ps1`; sandbox apagado con `
 [![Módulo 3: WhatsApp con OpenClaw](docs/capturas/diagramas/whatsapp-openclaw.png)](docs/diagramas/whatsapp-openclaw.html)
 
 *Diagrama interactivo (Archify): [`docs/diagramas/whatsapp-openclaw.html`](docs/diagramas/whatsapp-openclaw.html).*
+
+La foto de perfil y las portadas de Valer-IA para WhatsApp, LinkedIn y Facebook están en
+[`docs/whatsapp/`](docs/whatsapp/README.md), con dónde subir cada una y los textos que las acompañan. Son
+composiciones de la imagen de referencia sintética, sin modelos generativos ni costo (spec 030,
+[ADR 0034](docs/decisions/0034-imagenes-perfil-valeria.md)).
 
 | Pieza | Dónde |
 |---|---|
@@ -421,6 +426,7 @@ E2E se ejecuta con `make e2e` y no se versionan capturas temporales de la audito
 | Plataforma de agentes y planificación (spec 025) | 🟡 | Cinco perfiles y planificador industrial sobre datos sintéticos: optimizador ≥ 99 % del óptimo de referencia en 10/10, 0 violaciones, 2/2 sin solución detectados; con DeepSeek 12/12 con secuencia completa y etiqueta, p95 10,8 s; perfiles 19/20 con DeepSeek; herramientas 90,7 % y 86,0 % en dos corridas (sin regresión clara frente a 88,4 %); `docs/evaluacion_planificacion.md`, `docs/evaluacion_perfiles.md`, ADR 0029. Falta la verificación por WhatsApp y aprobar la enmienda 2.0.0 |
 | Plataforma web en cuatro áreas (spec 026) | 🟡 | Entrada, agente por perfil, consola de planificación y evidencia; API `/api/v1` (desde la spec 027, de libre elección en la web); paridad de cifras consola = herramienta = CLI en 12/12 escenarios; `axe-core` sin violaciones graves y sin desplazamiento horizontal de 360 a 1920 px; ADR 0030. Diagramas Archify de arquitectura y planificación con la consola web. Falta aprobar la constitución 2.1.0 |
 | Perfiles abiertos en la web (spec 027) | 🟡 | Los cinco perfiles, incluido el planificador, se eligen libremente en la web sin configuración; selector con «para quién es» y perfil activo a la vista; WhatsApp conserva la lista de autorizados; ADR 0031. Falta aprobar la constitución 2.2.0 |
+| Video pitch sincronizado (specs 028 y 029) | ✅ | La entrada abre con el pitch de 52 s (sin sonido, con subtítulos, saltable, sin repetirse en la sesión; portada y transcripción si falta el video). Lo que se ve sigue a la narración: 8 planos de Kling 4.0 (MAGI-2 dejó de responder en Higgsfield), iconos y tarjetas de perfil del montaje en el instante de su palabra, guion 1.2.0 con fuentes del oro; ADR 0032 y 0033. Falta aprobar la constitución 2.4.0 y validar con 5 personas |
 | Dictado por voz (spec 023) | ✅ | faster-whisper `base` local: WER 0,048, nombres propios 97 %, p90 1,1 s (clips de hasta 10 s), 0 textos en silencio o ruido; `docs/evaluacion_stt.md`, ADR 0027 |
 | Tag `v0.2.0-modulo2` | ✅ | [Release](https://github.com/jasonCastano/proyecto_modelos_lenguaje/releases/tag/v0.2.0-modulo2) del 2026-11-11 sobre el merge del PR #51 (`c25c809` tras la reescritura) |
 | CI y Pull Requests | 🟡 | 72 PRs fusionados al 2026-11-21 (63 del equipo y 9 de Dependabot, anteriores a la v1.6.0); 13 PRs del equipo tienen aprobación formal y 17 alguna revisión. CI con `test`, `web` y `autoria` |
@@ -939,6 +945,57 @@ uv run pml channels simulate --sender +570000000001 --profile planificador --tex
 
 Requerimientos: [`specs/025-agentes-manuelita-idea7/`](specs/025-agentes-manuelita-idea7/spec.md) · Decisión: [ADR 0029](docs/decisions/0029-plataforma-agentes-idea7.md) · Resultados: [`docs/evaluacion_planificacion.md`](docs/evaluacion_planificacion.md), [`docs/evaluacion_planificacion_directa.md`](docs/evaluacion_planificacion_directa.md) y [`docs/evaluacion_perfiles.md`](docs/evaluacion_perfiles.md).
 
+### Video pitch (specs 028 y 029)
+
+La entrada abre con un video de 52 s, formato elevator pitch, que explica qué es Valer-IA y cómo usarla. Los
+planos salen de un modelo de video por la **API de Higgsfield**:
+
+- **MAGI-2** de Sand.ai, si responde;
+- si no, **Kling 4.0**, con el que se hizo la v2 porque MAGI-2 devuelve `403 model_unavailable` desde el
+  2026-11-26.
+
+**Lo que se ve sigue a la narración** (v2, spec 029):
+
+- el trapiche cuando se nombra;
+- los iconos de informes, noticias y plataformas, que entran a la tablet;
+- las cinco personas de los perfiles, que llegan al nombrarse;
+- las tarjetas de perfil al decir «perfil».
+
+Cada escena dura su narración más 0,5 s. El video se genera **una vez**, fuera de la app, y la web solo lo sirve:
+arranca sin sonido y con subtítulos, se salta en un paso y, sin el archivo, muestra la portada y la transcripción.
+Llega con `git lfs pull`.
+
+```bash
+uv run pml pitch validate --json   # guion con fuentes del oro, momentos, planos y ficha de la imagen
+uv run pml pitch probe --json      # qué modelo responde (MAGI-2 o Kling 4.0), sin costo
+uv run pml pitch narrate           # voz Phonon en español por bloque
+uv run pml pitch align --json      # tiempos de cada palabra y momento (faster-whisper local)
+uv run pml pitch graphics          # iconos y tarjetas de perfil SVG → PNG
+uv run pml pitch generate --dry-run --json   # planos y costo, sin llamar a la API
+uv run pml pitch generate --shot plano-02 --yes   # un plano en Higgsfield (HIGGSFIELD_API_KEY en .env)
+uv run pml pitch assemble --json   # borrador sincronizado en video/pitch/borrador/
+uv run pml pitch check video/pitch/borrador/pitch-valeria.mp4 --json
+uv run pml pitch publish           # reemplaza el video de la web solo si el chequeo pasa
+```
+
+El flujo de producción, de guion a entrada web, con la revisión humana de cada plano:
+
+[![Video pitch sincronizado: producción fuera de línea](docs/capturas/diagramas/video-pitch.png)](docs/diagramas/video-pitch.html)
+
+*Diagrama interactivo (Archify): [`docs/diagramas/video-pitch.html`](docs/diagramas/video-pitch.html).*
+
+La producción completa está en [`video/pitch/RUNBOOK.md`](video/pitch/RUNBOOK.md):
+
+1. Confirmar la ficha de la imagen de referencia.
+2. Narrar, alinear las palabras y rasterizar los gráficos.
+3. Generar los planos con `pml pitch generate` (tope de 20 USD; la v2 costó 11,02 USD).
+4. Revisar cada plano y anotar en qué segundo ocurre cada evento.
+5. Montar el borrador, comprobarlo y publicarlo.
+
+Junto al video, la entrada declara que es generado con IA y que el proyecto es académico, no un canal oficial de
+Manuelita. El video no lleva rótulo grabado ([ADR 0032](docs/decisions/0032-video-pitch-magi2.md),
+[ADR 0033](docs/decisions/0033-pitch-v2-sincronia.md)).
+
 ### Experiencia web y API
 
 La entrada actual es una página React servida por FastAPI:
@@ -956,15 +1013,19 @@ uv run uvicorn proyecto_modelos_lenguaje.api:app --reload --port 8000
 cd web && npm run dev
 ```
 
-La plataforma (spec 026, [ADR 0030](docs/decisions/0030-plataforma-web-v1.md)) tiene cuatro áreas, cada una con
-su propia dirección:
+La plataforma (spec 026, [ADR 0030](docs/decisions/0030-plataforma-web-v1.md); rediseño como sitio de producto en
+la spec 031, [ADR 0035](docs/decisions/0035-frontend-profesional.md)) tiene cuatro áreas con un mismo sistema:
+paleta de marca con los colores del logotipo de Manuelita, tipografía Archivo y fotos sustitutas de licencia libre
+([créditos](web/public/media/fotos/CREDITOS.md)).
+
+![Entrada de la plataforma Valer-IA (spec 031)](docs/capturas/plataforma-entrada.png)
 
 | Ruta | Área | Qué muestra |
 |---|---|---|
-| `/` | Entrada | Qué es Valer-IA, los cinco perfiles como filas de un libro de registro, las garantías y la consola de Consulta, Resumen y FAQ |
+| `/` | Entrada | Una sección por pantalla: el video pitch en el hero, la app en grande con una respuesta citada, los cinco perfiles, los negocios de Manuelita, la planificación con su diagrama, las garantías, las herramientas y las preguntas frecuentes |
 | `/agente` | Agente | Selector de los cinco perfiles con «para quién es» y el perfil activo a la vista, la conversación (citas, voz, dictado, aprobación con «Sí»), fuentes del turno, memoria borrable y sugerencias del perfil |
 | `/planificacion` | Planificación | Abierta a cualquier visitante (spec 027); abrirla activa el perfil planificador: escenario, flujo de caña, libro de compromisos, lo que limita el plan, comparación con el plan base, «Explicar con el agente» y «Guardar propuesta» en dos pasos |
-| `/evidencia` | Evidencia técnica | Estado de servicios, catálogo de 26 herramientas con sus perfiles, traza del turno y evaluaciones publicadas con su cifra honesta |
+| `/evidencia` | Evidencia técnica | Estado de servicios, catálogo de 26 herramientas con sus perfiles, traza del turno, evaluaciones publicadas con su cifra honesta y la consola de Consulta, Resumen y FAQ de los Módulos 1 y 2 |
 
 Los servicios nuevos viven bajo `/api/v1/` y las rutas sin versión no cambian (contratos en
 [`specs/026-plataforma-web-manuelita/contracts/`](specs/026-plataforma-web-manuelita/contracts/)):
@@ -1203,6 +1264,13 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
   [plan](specs/027-perfiles-abiertos-web/plan.md),
   [diseño del selector](specs/027-perfiles-abiertos-web/design.md) y
   [ADR 0031](docs/decisions/0031-perfiles-abiertos-web.md)
+- [Video pitch con MAGI-2 (spec 028)](specs/028-video-pitch-magi2/spec.md),
+  [plan](specs/028-video-pitch-magi2/plan.md),
+  [runbook de producción](video/pitch/RUNBOOK.md) y
+  [ADR 0032](docs/decisions/0032-video-pitch-magi2.md)
+- [Pitch v2 sincronizado (spec 029)](specs/029-pitch-escenas-sincronizadas/spec.md),
+  [plan](specs/029-pitch-escenas-sincronizadas/plan.md) y
+  [ADR 0033](docs/decisions/0033-pitch-v2-sincronia.md)
 - [Ficha de datos del corpus](docs/data_card.md)
 - [Alcance del Q&A y banco de 40 preguntas](docs/alcance.md)
 - [Especificación del bronce](specs/001-bronze-web-scraping/spec.md)
@@ -1345,7 +1413,7 @@ Specs 024 a 028; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/
 - [x] Catálogo único de 26 herramientas tipadas (20 de atención + 6 de planificación), plan visible en la traza y `GET /api/tools`.
 - [x] Puente OpenClaw → backend (`valeria-bridge`, `/api/channels/*`), HITL, seudónimos y bitácora.
 - [x] Conversación natural sin comandos, notas de voz es/en, planificador por contexto, MCP de 15 herramientas,
-  SIM dedicada con modo cerrado/abierto y operación sin Docker (spec 028, ADR 0032).
+  SIM dedicada con modo cerrado/abierto y operación sin Docker (spec 028, ADR 0037).
 - [x] Configuración del gateway, workspace, skill y servidor MCP propio versionados sin secretos.
 - [x] `pml corpus rebuild`, 30 consultas de evaluación y proyección t-SNE (código).
 - [x] Guía de despliegue, manual para invitados, ADR 0028 y guion ES/EN.
@@ -1357,7 +1425,7 @@ Specs 024 a 028; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/
 - [x] Plataforma web en cuatro áreas con consola de planificación y evidencia técnica (spec 026, ADR 0030).
 - [x] Perfiles abiertos en la web, incluido el planificador (spec 027, ADR 0031).
 - [ ] Prueba técnica de voz con la SIM vinculada y verificación de la planificación por WhatsApp; aprobar la
-  constitución 2.4.0 (canal abierto a cualquier número con límites, spec 031).
+  constitución 2.9.0 (canal abierto a cualquier número con límites, spec 031).
 - [ ] Ensayo cronometrado y tag `v3.0.0`.
 
 ## Créditos

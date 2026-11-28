@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.json",
-    "sha256": "554099963e34a7bc74afc61e5921b5d3d3e0d320f3728b6e63215b035aa15ffe",
-    "bytes": 13380
+    "sha256": "ba080166ddf7347d82dc404e5b34dc019a19b57914db8fde5b6f18609be82873",
+    "bytes": 14264
   },
   "artifact": {
     "path": "D:\\proyecto_modelos_lenguaje\\docs\\arquitectura.html",
-    "sha256": "e0f97afb6cb1f74805edfe4e914a75264c2a355fe61bcd4fac654e1fa448db50",
-    "bytes": 868200
+    "sha256": "c38255393ecccbaa49c6069a7cf39eda9230d199c1e35c8b7468b6db4a1b0d69",
+    "bytes": 871973
   },
   "gates": {
     "validate": "pass",
@@ -35,18 +35,18 @@
   "update": {
     "status": "update_available",
     "installedVersion": "3.2.0",
-    "availableVersion": "3.3.1",
-    "releaseNotes": "https://github.com/tt-a1i/archify/releases/tag/v3.3.1",
+    "availableVersion": "3.3.2",
+    "releaseNotes": "https://github.com/tt-a1i/archify/releases/tag/v3.3.2",
     "severity": "normal",
-    "summary": "Polishes automatic Architecture layout, spine labels, crossing reduction, and Classic styling, and deduplicates cited Explainer files.",
-    "checkedAt": "2026-11-24T19:44:14.431Z",
+    "summary": "Includes archify-pr in default installs, adds offline in-page update notices with Agent prompts, speeds slow update checks, and polishes PR diagrams.",
+    "checkedAt": "2026-11-27T03:30:22.586Z",
     "source": "cache",
     "noticeRequired": true,
-    "noticeText": "Archify update: 3.2.0 → 3.3.1. A previous check at 2026-11-24T19:44:14.431Z found a newer release. Release notes: https://github.com/tt-a1i/archify/releases/tag/v3.3.1. Would you like me to update Archify?",
-    "eventKey": "archify@sha256:b92b4d55446966fd74e5338a45d6de9a7a1b194420cd5eb14d2cdc39f1053b80"
+    "noticeText": "Archify update: 3.2.0 → 3.3.2. A previous check at 2026-11-27T03:30:22.586Z found a newer release. Release notes: https://github.com/tt-a1i/archify/releases/tag/v3.3.2. Would you like me to update Archify?",
+    "eventKey": "archify@sha256:932d915f83fdbf44796cc6b20b085455a763491306e1b8dee92047e11dddc0ea"
   },
   "visualReview": "not-requested",
-  "durationMs": 6495,
+  "durationMs": 4104,
   "browserCheck": {
     "requested": true,
     "ran": true
@@ -54,8 +54,9 @@
   "visualReviewRecommendation": {
     "action": "inspect-route-readability",
     "signals": {
-      "resolvedCrossovers": 2,
-      "routesOverSuggestedBends": 3
+      "resolvedCrossovers": 3,
+      "routesOverSuggestedBends": 4,
+      "routesOverSuggestedStretch": 2
     },
     "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
     "affectedRoutes": {
@@ -101,7 +102,29 @@
           },
           "point": [
             856.75,
-            286
+            284
+          ]
+        },
+        {
+          "left": {
+            "id": "thread-state",
+            "from": "agent",
+            "to": "memory",
+            "label": "estado",
+            "collectionIndex": 13,
+            "artifactIndex": 14
+          },
+          "right": {
+            "id": "pitch-video",
+            "from": "pitch",
+            "to": "app",
+            "label": "video de la entrada",
+            "collectionIndex": 17,
+            "artifactIndex": 18
+          },
+          "point": [
+            856.75,
+            309.5
           ]
         }
       ],
@@ -128,7 +151,7 @@
             "artifactIndex": 15
           },
           "bends": 4,
-          "stretch": 1.34
+          "stretch": 1.427
         },
         {
           "relationship": {
@@ -140,7 +163,31 @@
             "artifactIndex": 17
           },
           "bends": 4,
-          "stretch": 1.165
+          "stretch": 1.171
+        },
+        {
+          "relationship": {
+            "id": "pitch-video",
+            "from": "pitch",
+            "to": "app",
+            "label": "video de la entrada",
+            "collectionIndex": 17,
+            "artifactIndex": 18
+          },
+          "bends": 4,
+          "stretch": 2.014,
+          "directCorridorBlockers": [
+            {
+              "id": "memory",
+              "label": "Memoria",
+              "box": [
+                895,
+                470,
+                130,
+                58
+              ]
+            }
+          ]
         }
       ],
       "truncated": false

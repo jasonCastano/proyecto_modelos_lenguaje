@@ -13,6 +13,11 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+def _to_console(page: Page) -> None:
+    """Desde la spec 031 la consola de los Módulos 1 y 2 vive en la evidencia."""
+    page.goto(page.url.rstrip("/") + "/evidencia", wait_until="networkidle")
+
+
 def _enable_demo(page: Page) -> None:
     banner = page.get_by_test_id("demo-banner")
     if banner.count() and "Usar modo demostración" in banner.inner_text():
@@ -21,6 +26,7 @@ def _enable_demo(page: Page) -> None:
 
 
 def test_ask_returns_citation_or_fallback(page: Page) -> None:
+    _to_console(page)
     _enable_demo(page)
     page.get_by_test_id("question-input").fill("¿Qué productos ofrece Manuelita?")
     page.get_by_test_id("ask-button").click()
@@ -42,6 +48,7 @@ def test_ask_returns_citation_or_fallback(page: Page) -> None:
 
 
 def test_switch_to_summary_and_faq(page: Page) -> None:
+    _to_console(page)
     _enable_demo(page)
     page.get_by_role("tab", name="Resumen").click()
     page.get_by_role("button", name="Generar resumen").click()

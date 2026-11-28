@@ -1007,7 +1007,255 @@ def build_parser() -> argparse.ArgumentParser:
     ops_check.add_argument("--json", action="store_true")
     ops_check.set_defaults(func=cmd_ops_check)
 
+    _add_pitch_parser(sub)
+
     return parser
+
+
+# ------------------------------------------------------------------ video pitch (specs 028 y 029)
+
+
+def _pitch_paths(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        "gold_dir": Path(args.gold) if args.gold else None,
+        "reference": Path(args.reference) if args.reference else None,
+    }
+
+
+def cmd_pitch_validate(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    report = pitch.validate(Path(args.root), **_pitch_paths(args))
+    _emit(report.to_dict(), args.json)
+    return 0 if report.ok else 1
+
+
+def _confirm_generation(plan: dict[str, Any]) -> bool:
+    print(
+        f"Se generarán {len(plan['shots'])} planos ({plan['seconds']} s) con {plan['model']}: "
+        f"unos {plan['cost_usd']:.2f} USD. Gastado antes: {plan['spent_before_usd']:.2f} USD; "
+        f"quedarían {plan['remaining_usd']:.2f} USD del tope de {plan['max_usd']:.2f} USD."
+    )
+    return input("¿Continuar? [s/N] ").strip().lower() in {"s", "si", "sí", "y", "yes"}
+
+
+def cmd_pitch_probe(args: argparse.Namespace) -> int:
+    from . import pitch
+    from .pitch_higgsfield import HiggsfieldError
+
+    try:
+        report = pitch.probe(Path(args.root))
+    except (pitch.PitchError, HiggsfieldError) as exc:
+        return _error(str(exc), 1)
+    _emit(report, args.json)
+    return 0 if report["available"] else 3
+
+
+def cmd_pitch_generate(args: argparse.Namespace) -> int:
+    from . import pitch
+    from .pitch_higgsfield import HiggsfieldError
+
+    root = Path(args.root)
+    try:
+        if args.calibrate:
+            if args.dry_run:
+                _emit({"ok": True, "dry_run": True, "calibrate": args.mode}, args.json)
+                return 0
+            if not args.yes:
+                answer = input(
+                    f"Calibración de {pitch.CALIBRATION_SECONDS} s en modo {args.mode} "
+                    "(menos de 1 USD). ¿Continuar? [s/N] "
+                )
+                if answer.strip().lower() not in {"s", "si", "sí", "y", "yes"}:
+                    return _error("Calibración cancelada.", 1)
+            report = pitch.calibrate(root, mode=args.mode, **_pitch_paths(args))
+        else:
+            report = pitch.generate(
+                root,
+                shots=args.shot or None,
+                scene=args.scene,
+                dry_run=args.dry_run,
+                force=args.force,
+                confirm=None if (args.yes or args.dry_run) else _confirm_generation,
+                **_pitch_paths(args),
+            )
+    except (pitch.PitchError, HiggsfieldError) as exc:
+        return _error(str(exc), 1)
+    _emit(report, args.json)
+    return 0 if report.get("ok") else 1
+
+
+def cmd_pitch_samples(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    root = Path(args.root)
+    try:
+        samples = pitch.export_samples(root, args.shot, prefix=args.prefix, **_pitch_paths(args))
+    except pitch.PitchError as exc:
+        return _error(str(exc), 1)
+    Path(args.output).write_text(json.dumps(samples, ensure_ascii=False, indent=2), "utf-8")
+    register = pitch.load_register(root)
+    shots = [s for _, s in pitch.iter_shots(register) if args.shot in (None, s["id"])]
+    _emit(
+        {
+            "output": args.output,
+            "samples": len(samples),
+            "seeds": {s["id"]: s["seed"] for s in shots},
+        },
+        args.json,
+    )
+    return 0
+
+
+def cmd_pitch_narrate(args: argparse.Namespace) -> int:
+    from dotenv import load_dotenv
+
+    from . import pitch
+    from .config import PROJECT_ROOT
+
+    load_dotenv(PROJECT_ROOT / ".env", override=False)  # HF_TOKEN para la voz Phonon
+
+    try:
+        result = pitch.narrate(Path(args.root), block=args.block, voice=args.voice)
+    except pitch.PitchError as exc:
+        return _error(str(exc), 1)
+    _emit({"narration": result}, args.json)
+    return 0
+
+
+def cmd_pitch_align(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    try:
+        result = pitch.align(Path(args.root))
+    except pitch.PitchError as exc:
+        return _error(str(exc), 2)
+    _emit(result, args.json)
+    return 0
+
+
+def cmd_pitch_graphics(args: argparse.Namespace) -> int:
+    from . import pitch_graphics
+
+    _emit(pitch_graphics.render_svgs(Path(args.root)), args.json)
+    return 0
+
+
+def cmd_pitch_assemble(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    try:
+        result = pitch.assemble(
+            Path(args.root),
+            Path(args.output) if args.output else None,
+            preset=args.preset,
+            **_pitch_paths(args),
+        )
+    except pitch.PitchError as exc:
+        return _error(str(exc), 1)
+    _emit(result, args.json)
+    return 0
+
+
+def cmd_pitch_check(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    video = Path(args.video)
+    montage_path = video.with_name(pitch.MONTAGE_NAME)
+    montage = json.loads(montage_path.read_text("utf-8")) if montage_path.is_file() else None
+    try:
+        report = pitch.check(
+            video,
+            Path(args.vtt) if args.vtt else None,
+            montage=montage,
+            script=pitch.load_script(Path(args.root)),
+        )
+    except pitch.PitchError as exc:
+        return _error(str(exc), 1)
+    _emit(report, args.json)
+    return 0 if report["ok"] else 1
+
+
+def cmd_pitch_publish(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    try:
+        result = pitch.publish(Path(args.root), **_pitch_paths(args))
+    except pitch.PitchError as exc:
+        return _error(str(exc), 1)
+    _emit(result, args.json)
+    return 0
+
+
+def cmd_pitch_poster(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    sheet = pitch.load_reference(
+        Path(args.reference) if args.reference else pitch.DEFAULT_REFERENCE
+    )
+    try:
+        output = pitch.poster_from_image(sheet.image, Path(args.output))
+    except pitch.PitchError as exc:
+        return _error(str(exc), 1)
+    _emit({"poster": str(output)}, args.json)
+    return 0
+
+
+def cmd_pitch_webdata(args: argparse.Namespace) -> int:
+    from . import pitch
+
+    _emit({"web_data": str(pitch.write_web_data(Path(args.root)))}, args.json)
+    return 0
+
+
+def _add_pitch_parser(sub: Any) -> None:
+    from . import pitch
+
+    node = sub.add_parser("pitch", help="video pitch de Valer-IA (specs 028 y 029)")
+    pitch_sub = node.add_subparsers(dest="pitch_command", required=True)
+
+    def command(name: str, help_text: str, func: Any) -> argparse.ArgumentParser:
+        parser = pitch_sub.add_parser(name, help=help_text)
+        parser.add_argument("--root", default=str(pitch.PITCH_ROOT))
+        parser.add_argument("--gold", default=None, help="directorio oro (por defecto data/gold)")
+        parser.add_argument("--reference", default=None, help="ficha de la imagen de referencia")
+        parser.add_argument("--json", action="store_true")
+        parser.set_defaults(func=func)
+        return parser
+
+    command("validate", "valida guion, planos y ficha de la imagen", cmd_pitch_validate)
+    command("probe", "qué modelo de la preferencia responde (sin costo)", cmd_pitch_probe)
+    generate = command(
+        "generate", "genera planos por la API de Higgsfield (gasta)", cmd_pitch_generate
+    )
+    generate.add_argument(
+        "--shot", action="append", default=[], help="solo este plano (plano-0Nx); repetible"
+    )
+    generate.add_argument("--scene", default=None, help="todos los planos de escena-0N")
+    generate.add_argument("--calibrate", action="store_true", help="clip de prueba de 4 s")
+    generate.add_argument("--mode", default="image", choices=pitch.MODES, help="para --calibrate")
+    generate.add_argument("--dry-run", action="store_true", help="muestra el plan sin llamar")
+    generate.add_argument("--yes", action="store_true", help="no pide confirmación")
+    generate.add_argument("--force", action="store_true", help="regenera generados o aprobados")
+    samples = command("samples", "exporta SAMPLES para run_demo.sh de MAGI-2", cmd_pitch_samples)
+    samples.add_argument("--shot", default=None, help="solo este plano (plano-0Nx)")
+    samples.add_argument("-o", "--output", default="samples.json")
+    samples.add_argument("--prefix", default="", help="ruta del repo en la máquina de MAGI-2")
+    narrate = command("narrate", "narración en español con la voz Phonon", cmd_pitch_narrate)
+    narrate.add_argument("--block", default=None, choices=pitch.BLOCK_ORDER)
+    narrate.add_argument("--voice", default=None)
+    command("align", "tiempos de palabras y momentos (sincronia.json)", cmd_pitch_align)
+    command("graphics", "rasteriza graficos/*.svg a PNG transparentes", cmd_pitch_graphics)
+    assemble = command("assemble", "monta el borrador con ffmpeg", cmd_pitch_assemble)
+    assemble.add_argument("-o", "--output", default=None, help="por defecto video/pitch/borrador/")
+    assemble.add_argument("--preset", default="medium", help="preset de libx264")
+    check = command("check", "comprueba un video del pitch", cmd_pitch_check)
+    check.add_argument("video")
+    check.add_argument("--vtt", default=None)
+    command("publish", "copia el borrador aprobado a la web", cmd_pitch_publish)
+    poster = command("poster", "portada desde la imagen de referencia", cmd_pitch_poster)
+    poster.add_argument("-o", "--output", default=str(pitch.MEDIA_DIR / pitch.POSTER_NAME))
+    command("webdata", "regenera web/src/data/pitch.ts desde el guion", cmd_pitch_webdata)
 
 
 def cmd_channels(args: argparse.Namespace) -> int:

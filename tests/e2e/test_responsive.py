@@ -13,7 +13,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 ROUTES = {
-    "/": "Un agente para cada persona",
+    "/": "Agentes de IA para consultar a Manuelita",
     "/agente": "Habla con Valer-IA",
     "/planificacion": "Planificación industrial",
     "/evidencia": "Evidencia técnica",

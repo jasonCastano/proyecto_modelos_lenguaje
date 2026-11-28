@@ -1,0 +1,63 @@
+# Generación del video pitch por la API de Higgsfield (specs 028 y 029).
+# La clave NO va aquí: vive solo en .env (HIGGSFIELD_API_KEY=<id>:<secreto>).
+
+[higgsfield]
+base_url = "https://api.higgsfield.ai"
+api_key_env = "HIGGSFIELD_API_KEY"
+poll_s = 10
+timeout_s = 3600            # la cola de Higgsfield tardó unos 15 min por trabajo (spec 028)
+
+[pitch]
+# Orden de preferencia (spec 029, research R1): MAGI-2 si responde; si no, Kling 4.0. El primero
+# disponible queda fijado en escenas.json ("model") para que todos los planos usen el mismo.
+models = ["magi2", "kling4"]
+retime_min = 0.7            # reajuste de velocidad de un tramo (research R5; 0,7 desde el 2026-11-26)
+retime_max = 1.25
+
+[models.magi2]
+title = "MAGI-2 (Sand.ai)"
+usd_per_second = 0.08
+resolution = "1080p"
+aspect_ratio = "9:16"       # sin él, MAGI-2 extiende la imagen a 16:9 (calibración de la 028)
+aspect_modes = ["image", "reference", "text"]
+audio = true
+min_seconds = 4
+max_seconds = 30
+
+[models.magi2.slugs]
+image = "sand/magi-2/image-to-video"
+reference = "sand/magi-2/reference-to-video"
+text = "sand/magi-2/text-to-video"
+
+[models.magi2.fields]       # duration, generate_audio y aspect_ratio confirmados (spec 028, R11)
+duration = "duration"
+audio = "generate_audio"
+seed = "seed"
+aspect_ratio = "aspect_ratio"
+image = "image_url"         # modo image: primer cuadro
+references = "image_urls"   # modo reference: por calibrar (spec 029, R2)
+
+[models.kling4]
+title = "Kling 4.0"
+usd_per_second = 0.19       # 1080p, aproximado (research R1); se confirma con la calibración
+resolution = "1080p"
+aspect_ratio = "9:16"
+aspect_modes = ["reference", "text"]   # image-to-video no tiene aspect_ratio: lo da la imagen 1080x1920
+audio = false               # Kling 4.0 no documenta audio: el montaje usa fondo silencioso
+min_seconds = 3
+max_seconds = 30
+reference_tag = "@image_1"  # reference-to-video nombra la referencia en el prompt
+
+[models.kling4.slugs]
+image = "kling-video/v4.0/image-to-video"
+reference = "kling-video/v4.0/reference-to-video"
+text = "kling-video/v4.0/text-to-video"
+
+[models.kling4.fields]      # referencia de la API, 2026-11-26 (research R1)
+duration = "duration"
+aspect_ratio = "aspect_ratio"
+image = "image_url"
+references = "image_urls"
+
+[budget]
+max_usd = 20                # tope total del pitch (v1 + v2), aclaración Q1 de la spec 029

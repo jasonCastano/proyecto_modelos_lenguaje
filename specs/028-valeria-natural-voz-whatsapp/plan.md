@@ -90,7 +90,7 @@ configuración, 2 prompts, documentación y enmienda constitucional.
 | Reglas 18–19: datos sintéticos declarados, cifras del optimizador | ✅ | Sin cambios; la activación automática conserva la advertencia y la paridad. |
 | Regla 21: evaluaciones publicadas no bajan | ✅ con riesgo | La nueva medición de herramientas (88,4 % publicado) se corre antes de publicar; si baja, se corrige antes del merge (R10). La activación del planificador tiene su propio conjunto fijado antes de medir. |
 | §3.1 Dependencias justificadas | ✅ | Ninguna dependencia Python nueva; el modelo inglés y `ffmpeg` se justifican en research (R3, R4). |
-| Cambios de arquitectura actualizan la constitución en el mismo commit | ✅ | Enmienda MINOR 2.3.0 + ADR 0032 + historial en el mismo commit. |
+| Cambios de arquitectura actualizan la constitución en el mismo commit | ✅ | Enmienda MINOR 2.8.0 + ADR 0037 + historial en el mismo commit. |
 
 **Resultado**: pasa con seis enmiendas (la regla 14 por la falta de virtualización del portátil) pedidas explícitamente por la spec (Complexity Tracking). No hay
 violaciones sin justificar.
@@ -150,8 +150,8 @@ tests/unit/channels/test_intents.py, test_voice.py, test_bridge.py (ampliado), t
 tests/unit/agent/test_planning_activation.py, tests/fixtures/agent/planning_activation.jsonl
 tests/fixtures/channels/natural_conversation.jsonl
 docs/: despliegue.md, manual_whatsapp.md, herramientas.md, evaluacion_herramientas.*,
-       evaluacion_activacion_planificador.md, rubrica_modulo3.md, decisions/0032-*.md, prompt_log.md
-CONSTITUTION.md (2.3.0)
+       evaluacion_activacion_planificador.md, rubrica_modulo3.md, decisions/0037-*.md, prompt_log.md
+CONSTITUTION.md (2.8.0)
 ```
 
 **Structure Decision**: se extiende la estructura de la spec 024 (`channels/` en el backend y el plugin en

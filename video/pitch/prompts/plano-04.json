@@ -1,0 +1,17 @@
+{
+  "shot": "plano-04",
+  "subject": "A Latin American woman in her thirties with long wavy dark hair, a green blazer over a white shirt and beige trousers, holding a silver tablet; the same person as the reference image.",
+  "setting": "A modern, generic executive office with a wooden desk, a laptop, a plant and a large window overlooking green sugarcane fields. No logos, no company name, no signs, no framed documents.",
+  "action": "She sits at the desk writing a report on the laptop, pauses to check a document, then raises her eyes to the camera and gives a short reassuring nod.",
+  "camera": "Medium shot on her hands and the laptop, tilting up to her face.",
+  "style": "Photorealistic, soft window light, calm corporate documentary tone, vertical 9:16 framing.",
+  "audio": "Quiet office ambience and soft typing. No music. No speech.",
+  "constraints": [
+    "No text, letters, numbers or logos anywhere in the frame.",
+    "No brand names, no company signage, no uniforms or ID badges of any company.",
+    "Nobody speaks; lips stay closed or smiling.",
+    "Keep her face, hair and clothing consistent with the reference image.",
+    "The laptop screen faces away from the camera or shows only soft light."
+  ],
+  "duration_s": 6
+}

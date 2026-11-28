@@ -1,10 +1,13 @@
 /**
  * Panel de evidencia técnica del Módulo 3 (spec 026, historia 3): servicios, catálogo, traza del
- * turno y evaluaciones publicadas, sin abrir la terminal. Todo es de solo lectura.
+ * turno y evaluaciones publicadas, sin abrir la terminal. Todo es de solo lectura. Desde la spec 031
+ * también aloja la consulta, el resumen y la FAQ de los Módulos 1 y 2, que salieron de la entrada.
  */
 import { useEffect, useState } from "react";
 
 import { EvaluationsTable } from "../components/evidence/EvaluationsTable";
+import { LimitsNote } from "../components/LimitsNote";
+import { RagConsole } from "../components/RagConsole";
 import { ServiceStatusBar } from "../components/evidence/ServiceStatusBar";
 import { ToolCatalogTable } from "../components/evidence/ToolCatalogTable";
 import { TraceViewer } from "../components/evidence/TraceViewer";
@@ -14,6 +17,7 @@ import {
   type PublishedEvaluation,
   type ServiceStatus,
   type ToolEvidence,
+  type HealthStatus,
   type TurnTrace,
 } from "../lib/types";
 
@@ -30,7 +34,7 @@ export function currentThreadId(): string | null {
   }
 }
 
-export function Evidence() {
+export function Evidence({ health = null }: { health?: HealthStatus | null }) {
   const [services, setServices] = useState<ServiceStatus[]>([]);
   const [tools, setTools] = useState<ToolEvidence[]>([]);
   const [evaluations, setEvaluations] = useState<PublishedEvaluation[]>([]);
@@ -86,6 +90,19 @@ export function Evidence() {
         <TraceViewer message={traceMessage} onTurn={(turn) => loadTrace(turn)} trace={trace} />
       </div>
       <EvaluationsTable evaluations={evaluations} />
+      <section aria-labelledby="modules-heading" className="modules">
+        <h2 className="section-title" id="modules-heading">
+          Consulta, resumen y preguntas frecuentes
+        </h2>
+        <p className="modules__lead">
+          Las funciones de los Módulos 1 y 2 responden solo con el corpus público y citan cada
+          fragmento.
+        </p>
+        <RagConsole health={health} />
+      </section>
+      <div id="limites">
+        <LimitsNote />
+      </div>
     </div>
   );
 }

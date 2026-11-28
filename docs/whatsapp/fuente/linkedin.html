@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · portada de LinkedIn</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="portada.css" />
+    <style>
+      /* LinkedIn, banner personal 1584×396. La foto de perfil tapa la esquina inferior izquierda. */
+      .piece {
+        width: 1584px;
+        height: 396px;
+      }
+      .photo {
+        width: 394px;
+      }
+      img[data-ref] {
+        /* 941×1672 × 0,45 = 423,45×752,4; rostro de la referencia (490, 620) en (197, 144). */
+        width: 423.45px;
+        height: 752.4px;
+        left: -23.5px;
+        top: -135px;
+      }
+      .copy {
+        left: 620px;
+        top: 92px;
+        width: 560px;
+      }
+      .name {
+        font-size: 86px;
+      }
+      .rule {
+        width: 72px;
+        margin: 18px 0 14px;
+      }
+      .tagline {
+        font-size: 24px;
+        max-width: 540px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Portada de Valer-IA para LinkedIn">
+      <img class="leaves" src="hojas.svg" alt="" style="left: 318px; bottom: -6px; width: 262px; height: 262px;" />
+      <div class="photo">
+        <img data-ref src="../../referencias/avatar_ingenio_manuelita.png" alt="" />
+      </div>
+      <section class="copy" data-safe="texto" data-bg="#f5f7f3">
+        <h1 class="name" data-text="nombre">Valer-IA</h1>
+        <span class="rule" aria-hidden="true"></span>
+        <p class="tagline" data-text="lema">
+          Agentes de IA para la agroindustria de la caña: respuestas con fuente y planificación
+          industrial
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

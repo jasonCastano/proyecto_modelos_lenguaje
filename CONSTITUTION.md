@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 2.4.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
+**Versión**: 2.9.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -286,6 +286,11 @@ uv.lock
 
 - La entrada del producto es una página React/Vite servida por FastAPI; Streamlit, Gradio y los notebooks NO DEBEN
   ser la interfaz de ninguna pantalla.
+- **Video pitch** (specs 028 y 029, ADR 0032 y 0033): la entrada abre con un video de 60 s o menos que explica
+  Valer-IA y cómo usarla. Desde la v2, lo que se ve sigue a la narración: cada escena dura su narración más una
+  pausa, y los iconos y perfiles son gráficos del montaje que entran con su palabra. Es el primer elemento; arranca sin sonido y con subtítulos en español; se salta en un paso; no se impone
+  dos veces en la misma sesión; con movimiento reducido no arranca solo. La web DEBE funcionar sin el video
+  (portada y transcripción).
 - **Plataforma en cuatro áreas** (spec 026, ADR 0030): `/` entrada pública, `/agente` espacio de trabajo por perfil,
   `/planificacion` consola del planificador y `/evidencia` panel técnico del Módulo 3, cada una con su dirección.
   - Los servicios nuevos viven bajo `/api/v1/` (`api_planning.py`, `api_evidence.py`); las rutas sin versión que
@@ -300,6 +305,15 @@ uv.lock
     variable, el ancho marca el rol), un color fijo de la paleta de Manuelita por producto (caña, azúcar, etanol,
     energía), pictogramas propios sin piezas de la marca, contraste AA y sin desplazamiento horizontal de 360 a
     1920 px.
+  - Sitio de producto (spec 031, ADR 0035): la entrada es una página de una sección por pantalla con el video
+    pitch como visual del hero, hecha con la skill `design-taste-frontend` sin copiar su kit (no tiene licencia):
+    sus reglas se reimplementan en `web/src/styles/` y sus scripts (gate, copy-lint, fotos) se usan como
+    herramientas externas. Paleta de marca con los colores del logotipo de Manuelita (verde `#497536` para las
+    acciones; rojo anaranjado, naranja y amarillo en filetes y hojas), nunca su logotipo, figura ni tipografía.
+    Las fotos son sustitutas de Wikimedia Commons con licencia libre (CC0, dominio público, CC BY o CC BY-SA),
+    sin marca ni personas reconocibles, nunca presentadas como de Manuelita, con autor y licencia en
+    `web/public/media/fotos/CREDITOS.md` y una línea de créditos en el pie. Un solo momento animado, dentro de
+    su sección y quieto con «reducir movimiento».
 - La app DEBE ejecutarse con `make app` o `uv run python -m proyecto_modelos_lenguaje.webbuild --serve` desde un
   clon limpio. `web/dist` no se versiona: ambos compilan la web si falta o si sus fuentes cambiaron (huella en
   `web/dist/.build-stamp`) y repiten `npm ci` si cambió `package-lock.json`. Arrancar `uvicorn` a mano con una
@@ -702,7 +716,7 @@ canales reales (WhatsApp o Telegram), evaluado y observable.
    nunca un reemplazo. Hay **un solo agente**: el plugin `valeria-bridge` (hook `before_dispatch`) envía cada
    mensaje admitido al mismo `ChatService` de la web por `POST /api/channels/messages` (loopback +
    `X-Channel-Token`).
-9. **Número** (enmiendas 2.3.0 y 2.4.0, specs 028 y 031): una **SIM dedicada** a Valer-IA, vinculada como
+9. **Número** (enmiendas 2.8.0 y 2.9.0, specs 028 y 031): una **SIM dedicada** a Valer-IA, vinculada como
    dispositivo y desactivada después de la sustentación. Solo chats individuales (`groupPolicy: "disabled"`,
    `selfChatMode: false`). `dmPolicy` se lee de una variable: modo cerrado (`"allowlist"` con números de
    prueba E.164 desde variables de entorno) y modo abierto (`"open"` con `allowFrom: ["*"]`; cualquier número,
@@ -727,9 +741,9 @@ canales reales (WhatsApp o Telegram), evaluado y observable.
 13. **Persistencia**: `SqliteSaver`, `SqliteStore` y `channels.sqlite3` (WAL) en `$MANUELITA_STATE_DIR` se
     aceptan como el «equivalente» a PostgresSaver de la regla 0: un proceso, ≤ 20 usuarios simultáneos y
     candado por usuario. Escalar a varios procesos obliga a revisar esta regla.
-14. **Hardening** (enmienda 2.3.0): si el servidor permite virtualización, sandbox Docker sin red; si no (caso
+14. **Hardening** (enmienda 2.8.0): si el servidor permite virtualización, sandbox Docker sin red; si no (caso
     del portátil servidor, spec 028 R12), sandbox apagado con `tools.deny` que retira al agente nativo todas
-    sus herramientas propias salvo el MCP de lectura, como riesgo aceptado (ADR 0032). Siempre `tools.deny`,
+    sus herramientas propias salvo el MCP de lectura, como riesgo aceptado (ADR 0037). Siempre `tools.deny`,
     `fs.workspaceOnly`, `exec` denegado;
     `openclaw security audit` sin hallazgos críticos antes de la sustentación.
 15. **Despliegue**: PC del equipo como servidor (servicios con reinicio automático), reproducible con
@@ -759,7 +773,7 @@ añaden:
     - Si no hay solución factible, se declara el conflicto y no se inventa capacidad.
     - El agente recomienda y el equipo de planta decide.
 20. **Autorización**:
-    - El perfil planificador es libre en la web y en WhatsApp (enmienda 2.3.0, spec 028, ADR 0032). La ruta
+    - El perfil planificador es libre en la web y en WhatsApp (enmienda 2.8.0, spec 028, ADR 0037). La ruta
       `planning` la deciden las reglas por contexto, solo en ese turno y su repregunta, sin cambiar el perfil.
     - Guardar una propuesta exige la confirmación de la persona con vencimiento de 10 minutos.
     - Ninguna herramienta se conecta con sistemas reales de planta.
@@ -769,7 +783,7 @@ añaden:
       (20 consultas) se fijan antes de evaluar.
     - Las evaluaciones vigentes (herramientas, triviales, blindaje y retrieval) no pueden bajar de su último valor
       publicado.
-22. **Conversación y voz** (enmienda 2.3.0, spec 028, ADR 0032):
+22. **Conversación y voz** (enmienda 2.8.0, spec 028, ADR 0037):
     - En WhatsApp nadie necesita comandos y ningún texto los sugiere; las intenciones del canal se reconocen
       por contexto en español e inglés. Los comandos quedan como atajos ocultos del operador.
     - Las notas de voz se transcriben y se sintetizan localmente (dictado de la spec 023, voz de la spec 016);
@@ -956,6 +970,34 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 - **Audio del visitante** (spec 023): el dictado procesa el audio en memoria y lo descarta al terminar; NO DEBE
   guardarse en disco, en `data/`, en registros ni en trazas, ni enviarse a terceros. Solo se conserva el texto
   que el visitante decide enviar. Las grabaciones de evaluación de personas son locales y no se versionan.
+- **Video generado con IA** (specs 028 y 029): el pitch se genera **una vez, fuera de la app**, por la API de
+  Higgsfield (`pml pitch generate`, con tope de gasto), con el modelo de `config/pitch.toml`: MAGI-2 si responde y,
+  si no, Kling 4.0 (`pml pitch probe` lo comprueba sin costo). Todos los planos de una versión usan el mismo
+  modelo. La clave vive solo en `.env`, y a Higgsfield solo se suben la imagen sintética, cuadros de planos ya
+  aprobados y los prompts de plano. El único texto legible del video son los subtítulos y los gráficos propios
+  del montaje, que no llevan la marca de Manuelita. Parte de un guion cuyas afirmaciones de Manuelita citan el oro. La
+  entrada DEBE declarar junto al video, como texto visible, que es IA y proyecto académico, no canal oficial; el
+  video no lleva rótulo grabado y solo se publica en la web. NO DEBE mostrar la marca de Manuelita ni presentar a
+  la presentadora como su vocera. La imagen de referencia tiene ficha de origen y NO DEBE representar a una
+  persona real. Solo se montan planos revisados por una persona, y la versión publicada se reemplaza solo con
+  `pml pitch publish`, tras el chequeo.
+- **Imágenes de perfil de Valer-IA** (spec 030, ADR 0034): la foto de perfil y las portadas para WhatsApp,
+  LinkedIn y Facebook (`docs/whatsapp/`) son **composiciones** de la imagen de referencia sintética con ficha,
+  hechas en HTML/CSS y exportadas en local (`scripts/whatsapp_images.py`). NO DEBEN usar modelos ni servicios
+  de generación de imágenes ni tener costo; la presentadora se usa sin alterar sus rasgos (escala ≤ 1,15×,
+  igual en ambos ejes). NO DEBEN mostrar la marca de Manuelita. La declaración de IA (asistente con IA de un
+  proyecto académico, no canal oficial de Manuelita) DEBE ir en el texto del perfil de cada red donde se
+  publiquen («Info» de WhatsApp, descripción de LinkedIn y Facebook; textos en `docs/whatsapp/README.md`), no
+  en la imagen. Las tarjetas del bot (`docs/whatsapp/tarjetas/`) siguen el mismo sistema y la plantilla de
+  planificación NO DEBE llevar cifras. Los stickers (`docs/whatsapp/stickers/`) son una ilustración
+  vectorial propia de Valer-IA dibujada en código (`fuente/personaje.js`), sin modelos generativos; pueden
+  tomar el estilo de otra obra, pero NO DEBEN reproducir sus personajes. Los audios de los stickers
+  (`docs/whatsapp/stickers/audios/`, spec 030 US6, ADR 0036) DEBEN usar solo la voz oficial del agente (Phonon,
+  spec 016), sintetizada en local y sin costo, sin clonar ni imitar voces reales; son OGG/Opus de 5 s como
+  máximo, con el texto exacto de su sticker, y su ficha DEBE llevar la licencia CC BY-NC 4.0 y la atribución
+  a Phonon (uso académico, no comercial). Cada pieza
+  DEBE tener ficha (referencia, tipografías y licencias, costo 0) y la aprobación de un integrante
+  (`approve --by`); `check` lo verifica.
 - El uso de asistentes de IA se declara y se verifica; el equipo asume la responsabilidad del código y de las
   afirmaciones. Los asistentes no figuran como autores ni coautores en Git ni en GitHub (§4.3).
 - Los prompts y resultados no se inventan ni se editan para simular éxito.
@@ -982,8 +1024,13 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 | 2.1.1 | 2026-11-25 | **PATCH**: la app se abre desde un clon limpio o tras un `git pull` con `make app` o `webbuild --serve`, que compilan la web solo si falta o está desactualizada; el servidor advierte si sirve una compilación vieja (§3.7). |
 | 2.2.0 | 2026-11-25 | **MINOR**: perfiles abiertos en la web (spec 027, ADR 0031): la autorización del planificador depende del canal; en la web los cinco perfiles y la consola `/api/v1/planning` son de libre elección, en WhatsApp sigue la lista de autorizados. Se enmiendan §3.7 y la regla 20; se conservan los dos pasos, el registro por seudónimo, las cifras solo del optimizador y el modo degradado sin planificación. Requiere la aprobación de ambos integrantes. |
 | 2.2.1 | 2026-11-25 | **PATCH**: `make app` detecta un servidor de otra versión en el puerto y no arranca encima; `GET /api/version`, la versión en el pie de la web y las páginas sin caché (§3.7). |
-| 2.3.0 | 2026-11-26 | **MINOR**: Valer-IA natural y con voz por WhatsApp (spec 028, ADR 0032): SIM dedicada con modo cerrado y abierto (regla 9); confirmación de escrituras en lenguaje natural (regla 11); modo degradado a los 90 s y MCP de 15 lecturas sin planificación (regla 12); hardening sin Docker cuando el servidor no permite virtualización, con Qdrant nativo (regla 14); olvido por intención natural (regla 16); planificador libre en WhatsApp y activado por contexto (regla 20); nueva regla 22 (conversación sin comandos y voz local con guion sin citas). Requiere la aprobación de ambos integrantes. |
-| 2.4.0 | 2026-11-27 | **MINOR**: canal de WhatsApp abierto a cualquier número (spec 031): el modo abierto se usa hasta el fin del proyecto, con límites por seudónimo (ventana corta y tope diario con un único aviso natural), bloqueo de seudónimos, atajos ocultos solo para operadores (`VALERIA_OPERATORS`) y el modo visible en `ops check`. Se enmienda la regla 9 (antes: modo abierto sin límite y solo en el ensayo y la jornada). Requiere la aprobación de ambos integrantes. |
+| 2.3.0 | 2026-11-26 | **MINOR**: video pitch de la entrada generado con MAGI-2 (spec 028, ADR 0032): primer elemento, saltable y sin repetirse en la sesión; producción única con MAGI-2 por la API de Higgsfield (clave solo en `.env`, tope de gasto), guion con fuentes, ficha de la imagen, revisión humana y declaración de IA junto al video (§3.7 y §10). Requiere la aprobación de ambos integrantes. |
+| 2.4.0 | 2026-11-26 | **MINOR**: pitch v2 sincronizado (spec 029, ADR 0033): escenas por planos con momentos ligados a palabras (faster-whisper local), gráficos propios del montaje y reajuste acotado de planos; modelo por preferencia (MAGI-2 si responde, si no Kling 4.0, decisión del integrante tras el `403 model_unavailable` de MAGI-2 en Higgsfield); borrador y publicación que conservan la v1 hasta el chequeo (§3.7 y §10). Requiere la aprobación de ambos integrantes. |
+| 2.5.0 | 2026-11-27 | **MINOR**: imágenes de perfil de Valer-IA (spec 030, ADR 0034): foto de perfil y portadas de WhatsApp, LinkedIn y Facebook compuestas a partir de la imagen de referencia sintética, sin modelos generativos y sin costo, con la declaración de IA en el texto del perfil de cada red, ficha y aprobación humana por pieza (§10). Requiere la aprobación de ambos integrantes. |
+| 2.6.0 | 2026-11-27 | **MINOR**: frontend profesional de Valer-IA (spec 031, ADR 0035): entrada como sitio de producto de una sección por pantalla con el video pitch en el hero; cuatro áreas con un mismo sistema (paleta de marca con los colores del logotipo, Archivo, un botón primario verde); fotos sustitutas de Wikimedia Commons con licencia libre citadas; skill `design-taste-frontend` sin copiar su kit; la consulta de los Módulos 1 y 2 pasa a la evidencia (§3.7). Requiere la aprobación de ambos integrantes. |
+| 2.7.0 | 2026-11-27 | **MINOR**: audios de los stickers de Valer-IA (spec 030 US6, ADR 0036): la frase de cada sticker con la voz oficial del agente (Phonon, spec 016), sintetizada en local y sin costo, en OGG/Opus de ≤ 5 s, con licencia CC BY-NC 4.0 y atribución en la ficha, y aprobación de un integrante por audio (§10). Requiere la aprobación de ambos integrantes. |
+| 2.8.0 | 2026-11-27 | **MINOR**: Valer-IA natural y con voz por WhatsApp (spec 028, ADR 0037): SIM dedicada con modo cerrado y abierto (regla 9); confirmación de escrituras en lenguaje natural (regla 11); modo degradado a los 90 s y MCP de 15 lecturas sin planificación (regla 12); hardening sin Docker cuando el servidor no permite virtualización, con Qdrant nativo (regla 14); olvido por intención natural (regla 16); planificador libre en WhatsApp y activado por contexto (regla 20); nueva regla 22 (conversación sin comandos y voz local con guion sin citas). Requiere la aprobación de ambos integrantes. |
+| 2.9.0 | 2026-11-27 | **MINOR**: canal de WhatsApp abierto a cualquier número (spec 031): el modo abierto se usa hasta el fin del proyecto, con límites por seudónimo (ventana corta y tope diario con un único aviso natural), bloqueo de seudónimos, atajos ocultos solo para operadores (`VALERIA_OPERATORS`) y el modo visible en `ops check`. Se enmienda la regla 9 (antes: modo abierto sin límite y solo en el ensayo y la jornada). Requiere la aprobación de ambos integrantes. |
 | 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
@@ -1183,4 +1230,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 2.4.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
+**Versión**: 2.9.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27

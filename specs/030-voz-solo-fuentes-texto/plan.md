@@ -64,7 +64,7 @@ para la voz, spec 029); Phonon/PyAV ya integrados para la voz. Sin dependencias 
 | Regla (CONSTITUTION.md) | Estado | Nota |
 |---|---|---|
 | §IV Citas y trazabilidad | ✅ | Las fuentes siguen llegando por escrito, con los mismos números y URLs. Con la voz no se pierde ninguna cita. |
-| Regla 22 (2.3.0) Conversación y voz | ✅ | Voz ante voz, más natural: sin texto duplicado. |
+| Regla 22 (2.8.0) Conversación y voz | ✅ | Voz ante voz, más natural: sin texto duplicado. |
 | Regla 10 / §3.9 Sin números ni texto en registros | ✅ | `written` es una etiqueta; el log del plugin no lleva contenido. |
 | Regla 21 Evaluaciones publicadas no bajan | ✅ | El agente no cambia. Se corre `make check`; las evaluaciones de herramientas y blindaje no se ven afectadas. |
 | §3.6 Prompts versionados | ✅ | Sin cambio de prompts: la frase de cierre es un texto fijo del canal (research R3), registrado en `channels/voice.py`. |

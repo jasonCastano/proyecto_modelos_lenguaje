@@ -100,7 +100,7 @@ entrega antes las instrucciones paso a paso y no las ejecuta por su cuenta.
 ### Implementation for User Story 3
 
 - [X] T015 [US3] En `src/proyecto_modelos_lenguaje/agent/graph.py` y `service.py`: `SENSITIVE_NOTICES = {"credit_card", "document", "password"}` (sin `phone`); detección de contraseñas por frase en `agent/privacy.py` (`detect_password`, redactada también); bandera `sensitive_notice_given` en el estado del hilo; el aviso se añade **al final** de la respuesta y solo si no se dio antes o hay un dato sensible nuevo
-- [X] T016 [US3] Actualizar `prompts/conduct.md` a 1.3: `sensitive_notice` natural («Ojo: por aquí no hace falta que compartas datos como tarjetas o documentos; para lo que necesites me basta con tu pregunta.») y nueva sección `sensitive_notice_en` («Just so you know, there's no need to share card or ID details here; your question is all I need.»); registrar en `docs/prompt_log.md` §3.25
+- [X] T016 [US3] Actualizar `prompts/conduct.md` a 1.3: `sensitive_notice` natural («Ojo: por aquí no hace falta que compartas datos como tarjetas o documentos; para lo que necesites me basta con tu pregunta.») y nueva sección `sensitive_notice_en` («Just so you know, there's no need to share card or ID details here; your question is all I need.»); registrar en `docs/prompt_log.md` §3.27
 
 **Checkpoint**: 0 avisos sin motivo; 3/3 avisos correctos con datos sensibles
 

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Valer-IA · sin evidencia</title>
+    <link rel="stylesheet" href="base.css" />
+    <link rel="stylesheet" href="tarjeta.css" />
+    <style>
+      /* Sin evidencia 1080×1080: cuando la respuesta es fallback (no se inventa contenido). */
+      .piece {
+        width: 1080px;
+        height: 1080px;
+      }
+      .badge {
+        left: 290px;
+        top: 70px;
+      }
+      .content {
+        left: 110px;
+        top: 520px;
+        width: 860px;
+        align-items: center;
+        text-align: center;
+      }
+      .title {
+        font-size: 72px;
+      }
+      .rule {
+        margin: 28px 0 26px;
+      }
+      .lead {
+        font-size: 36px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="piece" aria-label="Valer-IA no encontró información verificable">
+      <img class="leaves" src="hojas.svg" alt="" style="right: -40px; bottom: -40px; width: 190px; height: 190px" />
+      <div class="badge" id="badge"></div>
+      <section class="content" data-safe="texto">
+        <h1 class="title" data-text="titulo" data-bg="#f5f7f3">No encontré información verificable</h1>
+        <span class="rule" aria-hidden="true"></span>
+        <p class="lead" data-text="texto" data-bg="#f5f7f3">
+          Prueba con otras palabras o pregunta por un tema público de Manuelita: sus productos, su
+          historia o su sostenibilidad.
+        </p>
+      </section>
+    </main>
+    <script src="personaje.js"></script>
+    <script>
+      document.getElementById("badge").innerHTML = ValerIA.badge({ pose: "pensando", eyes: "up", size: 500 });
+    </script>
+  </body>
+</html>

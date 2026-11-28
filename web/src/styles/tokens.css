@@ -74,4 +74,59 @@
   --radius-sm: var(--radius-data);
   --radius-md: var(--radius-panel);
   --shadow-lift: 0 0 0 1px var(--rule);
+
+  /*
+   * Sistema del sitio (spec 031, research R3): paleta de marca con los colores del logotipo de
+   * Manuelita, medida en la spec 030. Reglas reimplementadas de la skill design-taste-frontend (sin
+   * copiar su kit): verde corporativo para acciones, rojo anaranjado, naranja y amarillo en filetes y
+   * hojas, nunca como color de texto sobre claro.
+   */
+  --p-bg: #f5f7f3;
+  --p-surface: #ffffff;
+  --p-ink: #14240f;
+  --p-muted: #4b5747;
+  --p-accent: #497536;
+  --p-accent-ink: #f5f7f3;
+  --p-action: #497536;
+  --p-action-hover: #3c622c;
+  --p-action-ink: #f5f7f3;
+  --p-inv-bg: #14240f;
+  --p-inv-surface: #21301c;
+  --p-inv-ink: #f5f7f3;
+  --p-inv-muted: #b4bdb0;
+  --leaf-red: #d64729;
+  --leaf-orange: #f39200;
+  --leaf-yellow: #ffd100;
+  --leaf-green: #497536;
+  --palm: #7a8a2e;
+  --grape: #8c3a5b;
+  --mussel: #2f4a63;
+
+  /* rejilla y alturas por pantalla (layout de la skill) */
+  --nav-h: 72px;
+  --gutter: 120px;
+  --wrap: 1200px;
+  --padt: 120px;
+  --padb: 72px;
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --display-stretch: 112%;
+  --display-tracking: -0.025em;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --gutter: 48px;
+  }
+}
+
+@media (max-width: 639px) {
+  :root {
+    --gutter: 20px;
+    --nav-h: 64px;
+    --padt: 96px;
+    --padb: 48px;
+  }
 }

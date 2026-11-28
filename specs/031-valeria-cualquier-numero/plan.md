@@ -67,7 +67,7 @@ recuperación ni los prompts).
 |---|---|---|
 | Regla 10 Seudónimos | ✅ | Límites, bloqueo y operadores trabajan con `wa-<16 hex>`. Los comandos calculan el seudónimo y no guardan ni imprimen el número. |
 | §3.9 Seguridad | ✅ | Canal abierto con límites por número, bloqueo, grupos deshabilitados y atajos del operador restringidos. `ops check` advierte cuando está abierto. |
-| Regla 22 (2.3.0) Conversación natural | ✅ | Avisos de límite naturales, en el idioma del mensaje y sin comandos. |
+| Regla 22 (2.8.0) Conversación natural | ✅ | Avisos de límite naturales, en el idioma del mensaje y sin comandos. |
 | Regla 21 Evaluaciones publicadas no bajan | ✅ | El agente no cambia. Blindaje y herramientas no se tocan; `make check` debe pasar. |
 | §3.3 Capas medallion intactas | ✅ | No se toca `data/`. El estado nuevo vive fuera del repo. |
 | §4.3 Autoría y proceso | ✅ | Spec Kit completo; commits y PR solo con autorización de un integrante. |

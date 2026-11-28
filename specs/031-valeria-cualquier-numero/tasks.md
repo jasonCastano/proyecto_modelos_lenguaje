@@ -365,7 +365,7 @@ No aplica: el trabajo es secuencial en un solo equipo (acuerdo del proyecto).
   - `pml channels pseudonym|block|unblock|blocked` no necesitan el token del canal y nunca imprimen el número;
   - `ops check` agrega `modo-canal`, que lee solo `WA_DM_POLICY` y `WA_ALLOW_1..3` del `.env` externo;
   - `GET /api/channels/status` agrega `people_today`, `limited_today` y `blocked_today` por canal.
-- **Constitución 2.4.0** (MINOR, no PATCH como decía la tarea): se enmendó la regla 9, que antes decía «modo
+- **Constitución 2.9.0** (MINOR, no PATCH como decía la tarea): se enmendó la regla 9, que antes decía «modo
   abierto sin límite y solo en el ensayo y la jornada». El repositorio versiona como MINOR los cambios de reglas
   normativas. Requiere la aprobación de ambos integrantes.
 - **Pruebas**:

@@ -1,4 +1,4 @@
-// Plugin puente de Valer-IA Caña para OpenClaw (spec 024, ADR 0028; voz: spec 028, ADR 0032).
+// Plugin puente de Valer-IA Caña para OpenClaw (spec 024, ADR 0028; voz: spec 028, ADR 0037).
 // Cada mensaje entrante ya autenticado se envía al backend FastAPI por loopback; si el backend falla,
 // OpenClaw sigue con su agente nativo (modo degradado). Las notas de voz de respuesta se envían con
 // el adaptador saliente del canal; si falla, con el CLI de OpenClaw (`message send --media`), sin shell.

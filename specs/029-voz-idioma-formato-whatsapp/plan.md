@@ -71,7 +71,7 @@ en las pruebas, en el simulador y sobre las tres respuestas reales como regresi�
 | §3.6 Prompts versionados y registrados | ✅ | `prompts/conduct.md` 1.2 → 1.3 (aviso natural en es/en); entrada en `docs/prompt_log.md`. |
 | §IV Citas y trazabilidad | ✅ | Las fuentes se limpian y deduplican sin perder ninguna URL; el número de cita del texto sigue apuntando a la misma fuente. |
 | Regla 10 / §3.9 Seudónimos, sin números ni texto | ✅ | El encabezado del gateway (con el número) deja de llegar al backend; la captura de depuración enmascara dígitos y no guarda texto completo. |
-| Regla 22 (2.3.0) Conversación y voz | ✅ | La corrección la cumple: voz ante voz, sin comandos, audio temporal. |
+| Regla 22 (2.8.0) Conversación y voz | ✅ | La corrección la cumple: voz ante voz, sin comandos, audio temporal. |
 | Regla 21 Evaluaciones publicadas no bajan | ✅ con verificación | Se repiten `agent evaluate --tools` y `agent shield --channel` en modo real tras los cambios. |
 | §3.3 Capas medallion intactas | ✅ | Los títulos se limpian al presentarse, no en el oro. |
 | §I / §4.3 Autoría | ✅ | Commits a nombre de un integrante, con autorización. |

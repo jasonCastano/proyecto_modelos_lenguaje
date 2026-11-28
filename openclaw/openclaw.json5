@@ -20,7 +20,7 @@
       model: { primary: "deepseek/deepseek-flash", fallbacks: ["deepseek/deepseek-v4-pro"] },
       // Sandbox (ítem 4.2, spec 028 research R12): el portátil servidor no permite virtualización, así
       // que no hay Docker. El agente nativo (solo en modo degradado) queda sin herramientas propias:
-      // `tools.deny` le retira todo salvo el MCP de lectura `valeria-tools` (riesgo aceptado, ADR 0032).
+      // `tools.deny` le retira todo salvo el MCP de lectura `valeria-tools` (riesgo aceptado, ADR 0037).
       sandbox: { mode: "off" },
     },
   },

@@ -29,7 +29,7 @@ describe("App (spec 026, T021)", () => {
     ["/agente", "Agente"],
     ["/planificacion", "Planificación"],
     ["/evidencia", "Evidencia"],
-  ])("la ruta %s muestra su área y el rail la marca", async (path, title) => {
+  ])("la ruta %s muestra su área y la navegación la marca", async (path, title) => {
     window.history.replaceState(null, "", path);
     render(<App />);
     expect(screen.getByRole("heading", { level: 1, name: title })).toBeInTheDocument();

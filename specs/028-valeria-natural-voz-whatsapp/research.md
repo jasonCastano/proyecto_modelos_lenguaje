@@ -164,7 +164,7 @@ Fuentes verificadas el 2026-11-26 en este portátil: tipos del SDK de OpenClaw 2
   el agente nativo solo actúa en modo degradado; `exec` denegado (`security: "deny"`), `elevated` deshabilitado,
   `fs.workspaceOnly`, `tools.deny` con los grupos `runtime`, `fs`, `automation`, navegador, web y mensajería
   (solo queda el MCP de solo lectura `valeria-tools`), grupos de WhatsApp deshabilitados. Se documenta como
-  riesgo aceptado en la ADR 0032 y en la auditoría. La auditoría `openclaw security audit --deep` debe quedar
+  riesgo aceptado en la ADR 0037 y en la auditoría. La auditoría `openclaw security audit --deep` debe quedar
   sin hallazgos críticos; si marca el sandbox apagado como crítico, se ajusta la política de herramientas hasta
   cumplirlo o se documenta la excepción.
 - **Rationale**: no depende de cambiar el firmware de un equipo corporativo; mantiene todo en un solo portátil;

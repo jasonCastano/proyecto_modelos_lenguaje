@@ -58,34 +58,45 @@ h3,
   justify-content: center;
   min-height: 2.75rem;
   padding: 0.65rem 1.15rem;
-  border: 1px solid transparent;
-  border-radius: var(--radius-data);
+  border: 1.5px solid transparent;
+  border-radius: var(--r-sm);
   font: inherit;
-  font-variation-settings: "wdth" 92;
   font-weight: 650;
   line-height: 1.15;
   text-decoration: none;
   cursor: pointer;
+  transition:
+    background-color 0.18s var(--ease),
+    transform 0.18s var(--ease),
+    border-color 0.18s var(--ease);
 }
 
+.action:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Spec 031: el mismo sistema de botones que el sitio (verde de marca y contorno de tinta). */
 .action--primary {
-  background: var(--ethanol);
-  color: var(--ink);
+  background: var(--p-action);
+  border-color: var(--p-action);
+  color: var(--p-action-ink);
 }
 
 .action--primary:hover {
-  background: #d4611a;
+  background: var(--p-action-hover);
+  border-color: var(--p-action-hover);
+  transform: translateY(-1px);
 }
 
 .action--quiet {
-  background: transparent;
-  border-color: var(--rule-strong);
-  color: var(--ink);
+  background: var(--p-bg);
+  border-color: color-mix(in srgb, var(--p-ink) 45%, transparent);
+  color: var(--p-ink);
 }
 
 .action--quiet:hover {
-  border-color: var(--cane);
-  color: var(--cane-deep);
+  border-color: var(--p-ink);
+  background: color-mix(in srgb, var(--p-ink) 6%, var(--p-bg));
 }
 
 .action:disabled {
@@ -119,6 +130,7 @@ h3,
 
 .app-main:focus {
   outline: none;
+  box-shadow: inset 0 3px 0 var(--p-action);
 }
 
 .cane-rail {
@@ -889,6 +901,87 @@ h3,
   min-width: 0;
 }
 
+/* Video pitch (spec 028): vertical a la izquierda en escritorio, arriba en teléfono. */
+.pitch {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-5);
+  padding-top: var(--space-4);
+}
+
+.pitch__frame {
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  background: var(--cane-deep);
+  aspect-ratio: 9 / 16;
+}
+
+.pitch__video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pitch__copy {
+  display: grid;
+  gap: var(--space-3);
+  max-width: var(--measure);
+}
+
+.pitch__title {
+  margin: 0;
+  font-size: var(--step-4);
+  font-variation-settings: "wdth" var(--wdth-display);
+  line-height: 1.05;
+  color: var(--cane-deep);
+}
+
+.pitch__disclaimer {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.pitch__error {
+  margin: 0;
+  color: var(--shortfall);
+  font-weight: 600;
+}
+
+.pitch__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.pitch__transcript summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.pitch__transcript summary:focus-visible {
+  outline: var(--focus);
+  outline-offset: 2px;
+}
+
+.pitch__transcript ol {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 0;
+  padding-left: 1.25rem;
+  color: var(--ink);
+}
+
+.pitch[data-state="compact"] {
+  grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
+  align-items: center;
+}
+
+.pitch[data-state="compact"] .pitch__title {
+  font-size: var(--step-2);
+}
+
 .platform-hero {
   display: grid;
   grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
@@ -1507,6 +1600,20 @@ h3,
 }
 
 @media (max-width: 900px) {
+  .pitch {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pitch__frame {
+    justify-self: center;
+    width: min(100%, calc(70vh * 9 / 16));
+    max-height: 70vh;
+  }
+
+  .pitch[data-state="compact"] .pitch__frame {
+    width: min(100%, 120px);
+  }
+
   .agent__grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1679,14 +1786,14 @@ h3,
 }
 
 .agent__chat .btn-accent {
-  border-radius: var(--radius-data);
-  background: var(--ethanol);
-  color: var(--ink);
+  border-radius: var(--r-sm);
+  background: var(--p-action);
+  color: var(--p-action-ink);
 }
 
 .agent__chat .btn-accent:hover {
-  background: #d4611a;
-  color: var(--ink);
+  background: var(--p-action-hover);
+  color: var(--p-action-ink);
 }
 
 /* Etiquetas de cita sobre claro: naranja oscurecido para llegar a AA (axe, spec 026 T064). */

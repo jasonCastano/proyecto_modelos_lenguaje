@@ -3,7 +3,7 @@
 Tablas: ``channel_users`` (seudónimo, canal, máscara e hilo activo), ``channel_threads``,
 ``channel_seen`` (deduplicación de ``message_id``), ``channel_pending`` (confirmaciones SÍ/NO) y,
 desde la spec 031, ``channel_usage`` (límites por seudónimo) y ``channel_blocked`` (bloqueados).
-Spec 032: ``channel_threads.introduced`` marca si el hilo ya recibió la presentación de Valer-IA.
+Spec 038: ``channel_threads.introduced`` marca si el hilo ya recibió la presentación de Valer-IA.
 Spec 034: ``channel_stickers`` guarda qué stickers recibió cada hilo (solo el nombre) y
 ``channel_threads.answered_turns`` numera las respuestas atendidas, para moderar su uso.
 Nunca guarda números de teléfono ni el texto de los mensajes: el texto vive en el checkpointer.
@@ -86,7 +86,7 @@ REPLY_FORMATS = ("auto", "text", "voice")
 MIGRATIONS = (
     ("channel_threads", "reply_format", "TEXT NOT NULL DEFAULT 'auto'"),
     ("channel_threads", "last_route", "TEXT"),
-    # Spec 032 (research R5): los hilos anteriores quedan presentados; los nuevos se crean en 0.
+    # Spec 038 (research R5): los hilos anteriores quedan presentados; los nuevos se crean en 0.
     ("channel_threads", "introduced", "INTEGER NOT NULL DEFAULT 1"),
     ("channel_threads", "answered_turns", "INTEGER NOT NULL DEFAULT 0"),  # spec 034
     ("channel_threads", "stickers_off", "INTEGER NOT NULL DEFAULT 0"),  # spec 037
@@ -161,7 +161,7 @@ class ChannelStore:
     def open_conversation(
         self, user_id: str, channel: str, masked: str, *, idle_hours: int | None
     ) -> tuple[str, ConversationStart | None]:
-        """Hilo activo y motivo si la conversación empieza ahora (spec 032, contrato §1).
+        """Hilo activo y motivo si la conversación empieza ahora (spec 038, contrato §1).
 
         ``first_contact``: el seudónimo nunca había escrito. ``inactivity``: el último mensaje es
         más viejo que ``idle_hours``; el hilo anterior se cierra y se abre otro (el perfil aprobado
@@ -236,7 +236,7 @@ class ChannelStore:
         return bool(row and row[0])
 
     def is_introduced(self, thread_id: str) -> bool:
-        """Spec 032: ``True`` si el hilo ya recibió la presentación (o es anterior a la spec)."""
+        """Spec 038: ``True`` si el hilo ya recibió la presentación (o es anterior a la spec)."""
         with self._lock:
             row = self._db.execute(
                 "SELECT introduced FROM channel_threads WHERE thread_id = ?", (thread_id,)

@@ -639,7 +639,7 @@ desordenadas. El aviso va ahora al final, una vez por hilo y tipo de dato; el ca
 y al formateador. Simulación real de `language_format.jsonl` con `pml channels simulate --check`: 0 hallazgos en 23
 mensajes y nota de voz en el idioma correcto en las 10 consultas por audio.
 
-### 3.28 Presentación al iniciar una conversación: textos del canal y workspace de OpenClaw (2026-11-27, spec 032)
+### 3.28 Presentación al iniciar una conversación: textos del canal y workspace de OpenClaw (2026-11-27, spec 038)
 
 No cambian `prompts/agent.md` ni `prompts/voice_script.md`: la presentación no depende del modelo.
 

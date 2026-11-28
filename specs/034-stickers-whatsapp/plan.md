@@ -12,7 +12,7 @@ acciones completadas, con moderación. Diseño (research R1–R9):
 
 1. **Decisión en el backend** (`channels/stickers.py`), determinista:
    - señales existentes del turno: `route.act`, `route.sentiment`, avisos, inicio de conversación y presentación
-     (spec 032), aprobaciones, ruta `planning` e idioma;
+     (spec 038), aprobaciones, ruta `planning` e idioma;
    - un catálogo configurable `config/stickers.toml`;
    - moderación por hilo en una tabla aditiva `channel_stickers`.
 
@@ -80,7 +80,7 @@ respuesta (diferido o previo y sin esperar más de 3 s).
 | Regla 8 Canal por OpenClaw, un solo agente | ✅ | El plugin usa una exportación pública del componente; no cambia el agente ni el contrato principal (se agrega un campo opcional). |
 | Regla 22 Conversación natural y voz | ✅ | Los stickers acompañan sin comandos; la voz y las fuentes no cambian. |
 | Regla 10 Seudónimos y registros sin contenido | ✅ | El registro guarda solo el nombre del sticker. |
-| §10 Declaración de IA y canal no oficial | ✅ | Los stickers no la llevan; la presentación (spec 032) ya la cubre por escrito. Las piezas siguen sin marca de Manuelita (spec 030). |
+| §10 Declaración de IA y canal no oficial | ✅ | Los stickers no la llevan; la presentación (spec 038) ya la cubre por escrito. Las piezas siguen sin marca de Manuelita (spec 030). |
 | §3.5 Prompts versionados | ✅ | Sin prompts nuevos; la decisión es determinista. |
 | §3.3 Capas medallion | ✅ | No se toca `data/`. |
 | Cambios de arquitectura o tecnología → CONSTITUTION.md | ✅ sin enmienda | Comportamiento del canal dentro de las reglas 8 y 22; sin tecnología nueva. Si se activa el plan B (ampliar el parche), aplica la regla 8 ya enmendada en 2.10.0, sin otra enmienda. |
@@ -124,7 +124,7 @@ docs/despliegue.md, docs/manual_whatsapp.md, docs/whatsapp/README.md (uso por el
 tests/unit/channels/test_stickers.py, tests/fixtures/channels/stickers.jsonl, …
 ```
 
-**Structure Decision**: la decisión vive en `channels/`, junto a la presentación (spec 032) y los límites (spec
+**Structure Decision**: la decisión vive en `channels/`, junto a la presentación (spec 038) y los límites (spec
 031). El plugin solo entrega y no tiene reglas propias, salvo «Pensando», que depende del tiempo de espera.
 
 ## Complexity Tracking

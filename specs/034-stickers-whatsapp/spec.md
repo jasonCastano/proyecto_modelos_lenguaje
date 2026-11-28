@@ -47,7 +47,7 @@ respuesta, y que la pregunta factual no lleva sticker.
 **Acceptance Scenarios**:
 
 1. **Given** una conversación nueva que empieza con un saludo, **When** Valer-IA responde con su presentación
-   (spec 032), **Then** también envía el sticker «Hola», o «¡Bienvenido!» si es la primera vez que esa persona
+   (spec 038), **Then** también envía el sticker «Hola», o «¡Bienvenido!» si es la primera vez que esa persona
    escribe.
 2. **Given** una conversación en curso, **When** la persona escribe «muchas gracias», **Then** recibe la
    respuesta breve y el sticker «¡Gracias!».
@@ -141,7 +141,7 @@ antes de la respuesta. Una respuesta rápida no lo lleva.
 - **Respuesta con aviso de datos sensibles** (spec 029): sin sticker.
 - **La persona envía un sticker**: hoy recibe la respuesta de «no soportado»; esta spec no cambia la lectura de
   stickers entrantes.
-- **Primer mensaje con una pregunta directa** (spec 032): la presentación va por texto y no lleva sticker de
+- **Primer mensaje con una pregunta directa** (spec 038): la presentación va por texto y no lleva sticker de
   saludo, porque la prioridad es la respuesta. El sticker de saludo solo acompaña saludos.
 - **Varios mensajes seguidos**: un sticker como máximo por respuesta, y las reglas de no repetir se mantienen.
 
@@ -206,11 +206,11 @@ antes de la respuesta. Una respuesta rápida no lo lleva.
 - El canal de WhatsApp puede enviar un archivo como mensaje de tipo sticker. Si una verificación temprana muestra
   que no se puede, la spec se revisa antes de implementar.
 - La decisión de cuándo usar un sticker se basa en señales que el canal ya reconoce: intenciones, saludo y
-  presentación (spec 032), agradecimiento, cierre, acciones aprobadas y sentimiento. No depende de que el modelo
+  presentación (spec 038), agradecimiento, cierre, acciones aprobadas y sentimiento. No depende de que el modelo
   de lenguaje lo pida.
 - El máximo por conversación (4) y el umbral de espera (8 s) son valores razonables, ajustables tras la prueba.
 - Quedan fuera de alcance:
   - las tarjetas (`tarjetas/`), las imágenes de perfil y los audios de los stickers (spec 030 US6);
   - interpretar stickers recibidos;
   - la web.
-- Los stickers no llevan la declaración de IA. La presentación de Valer-IA (spec 032) ya lo hace por escrito.
+- Los stickers no llevan la declaración de IA. La presentación de Valer-IA (spec 038) ya lo hace por escrito.

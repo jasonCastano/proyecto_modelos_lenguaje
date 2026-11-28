@@ -156,7 +156,7 @@ export async function loadWhatsAppListener(): Promise<WhatsAppListenerLike | nul
 const STICKER_PATCH_MARK = "valeria-sticker v2";
 
 /**
- * Spec 037 (ADR 0039): ¿tiene el componente de WhatsApp instalado el parche `valeria-sticker v2`? Con él, el
+ * Spec 037 (ADR 0040): ¿tiene el componente de WhatsApp instalado el parche `valeria-sticker v2`? Con él, el
  * adaptador de salida envía los `valeria-*.webp` como sticker nativo; sin él, los enviaría como documento.
  */
 export function stickerPatchInstalled(): boolean {

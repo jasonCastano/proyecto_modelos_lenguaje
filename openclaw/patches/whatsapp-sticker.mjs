@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Parche «valeria-sticker v2» para @openclaw/whatsapp 2026.11.10 (spec 037, ADR 0039).
+// Parche «valeria-sticker v2» para @openclaw/whatsapp 2026.11.10 (spec 037, ADR 0040).
 //
 // El componente de WhatsApp de OpenClaw no puede enviar stickers nativos desde un plugin:
 //   - su listener activo no expone `sendSticker` (solo texto, medios, encuestas y reacciones), aunque la

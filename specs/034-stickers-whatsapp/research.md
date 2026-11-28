@@ -37,7 +37,7 @@ cada sticker.
   - **acto del turno**: `turn.route.act`, con los valores `greeting`, `thanks`, `closing`, `minimal`,
     `complaint`, `about_assistant`, etc.;
   - **sentimiento**: `turn.route.sentiment`, con los valores `frustrated`, `angry`, `distressed`, etc.;
-  - **inicio de conversación y presentación**: `conversation_start` e `introduced` (spec 032);
+  - **inicio de conversación y presentación**: `conversation_start` e `introduced` (spec 038);
   - **resultado de aprobaciones**: guardar el perfil u olvidar (`_resolve`), y la ruta `planning`;
   - **idioma del turno** (spec 029), estado y evento de la respuesta, y avisos del turno (`sensitive_data`).
 

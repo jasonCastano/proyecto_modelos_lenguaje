@@ -95,7 +95,7 @@ no.
     mitad de conversación → `consulta` (after);
   - `thanks` → `gracias` (after); `closing` → `lindo-dia` (after);
   - pregunta factual (ruta documental con citas) → `None`;
-  - presentación de una pregunta directa (spec 032), con `introduced` y acto distinto de `greeting` → `None`.
+  - presentación de una pregunta directa (spec 038), con `introduced` y acto distinto de `greeting` → `None`.
 - [X] T009 [P] [US1] Pruebas en `tests/unit/channels/test_bridge.py`:
   - `FakeService` puede devolver `route: {"route": "direct", "act": "greeting"}` y otros actos;
   - la secuencia hola → pregunta → gracias → chao produce los stickers esperados en `reply.sticker` y en el
@@ -372,5 +372,5 @@ libre.
 - **Corrección y uso activo**: los implementa la spec 037 (`specs/037-stickers-activos/`). El plugin busca la
   conexión en el runtime de canales compartido, con el parche de símbolo global como respaldo. La vía que
   funcionó queda en las notas de la spec 037.
-- **2026-11-28**: con el parche `valeria-sticker v2` (spec 037, ADR 0039), los stickers llegan como stickers nativos en
+- **2026-11-28**: con el parche `valeria-sticker v2` (spec 037, ADR 0040), los stickers llegan como stickers nativos en
   el teléfono. T001 y T026 de esta spec quedan verificados por la spec 037.

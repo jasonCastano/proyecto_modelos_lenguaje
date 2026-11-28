@@ -217,7 +217,7 @@ def channel_mode(state_dir: Path | None = None) -> CheckResult:
 
 LID_MARK = "valeria-lid v1"
 LID_THROW = 'throw new Error("WhatsApp inbound LID identity unavailable")'
-STICKER_MARK = "valeria-sticker v2"  # spec 037 (ADR 0039)
+STICKER_MARK = "valeria-sticker v2"  # spec 037 (ADR 0040)
 
 
 def _openclaw_state(state_dir: Path | None) -> Path:

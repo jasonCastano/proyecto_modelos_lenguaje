@@ -687,3 +687,15 @@ export interface PublishedEvaluation {
   report: string;
   note: string;
 }
+
+/** Spec 032: enlace al chat de WhatsApp; sin número válido, `available` es `false` y no hay enlaces. */
+export type WhatsAppMode = "open" | "closed" | "unknown";
+
+export interface WhatsAppLink {
+  available: boolean;
+  mode: WhatsAppMode;
+  message: string;
+  web_url: string | null;
+  app_url: string | null;
+  qr_svg: string | null;
+}

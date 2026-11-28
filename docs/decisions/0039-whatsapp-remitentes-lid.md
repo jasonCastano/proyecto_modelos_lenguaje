@@ -1,4 +1,4 @@
-# ADR 0038 — Respuesta a cuentas de WhatsApp identificadas solo por ID: parche versionado del componente
+# ADR 0039 — Respuesta a cuentas de WhatsApp identificadas solo por ID: parche versionado del componente
 
 - **Estado**: propuesta (requiere la aprobación de ambos integrantes, constitución §11)
 - **Fecha**: 2026-11-27
@@ -58,7 +58,7 @@ La beta `2026.12.1-beta.1` (publicada el 2026-11-27) tiene el mismo código. Con
 
 - Las cuentas que WhatsApp entrega solo con su ID reciben el mismo servicio (texto, voz, presentación, límites y
   bloqueo).
-- Una persona que pase de ID a número puede abrir otra conversación, que se presenta según la spec 032. No se
+- Una persona que pase de ID a número puede abrir otra conversación, que se presenta según la spec 038. No se
   guarda la equivalencia ID ↔ número.
 - El modo cerrado no admite cuentas solo con ID, porque no coinciden con los números autorizados.
 - **Riesgo**: una actualización del componente revierte el parche. Mitigación: `ops check` lo detecta e

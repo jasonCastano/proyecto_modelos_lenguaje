@@ -256,7 +256,7 @@ class ChannelVoice:
         opening: str | None = None,
         style: str | None = None,
     ) -> VoiceReply:
-        """Guion hablado de la respuesta; ``opening`` (spec 032) lo abre sin pasar por el modelo."""
+        """Guion hablado de la respuesta; ``opening`` (spec 038) lo abre sin pasar por el modelo."""
         started = time.perf_counter()
         model = self.model_factory() if self.model_factory is not None else None
         script, source = build_script(question, answer, language, model, style=style)

@@ -1,4 +1,4 @@
-"""Guion de inicio de conversación contra la API en modo demo (spec 032, T023, SC-001 a SC-005).
+"""Guion de inicio de conversación contra la API en modo demo (spec 038, T023, SC-001 a SC-005).
 
 Corre ``pml channels simulate --script tests/fixtures/channels/conversation_start.jsonl --check``
 con el backend real de FastAPI (``TestClient``) y el modelo guionado: 0 hallazgos.
@@ -43,7 +43,7 @@ def test_the_conversation_start_script_has_no_findings(
 ) -> None:
     monkeypatch.setattr(cli.httpx, "post", client.post)
     # El modelo guionado mezcla fragmentos en español en las respuestas en inglés: las revisiones de
-    # formato de la spec 029 se miden en modo real; aquí solo cuenta la presentación (spec 032).
+    # formato de la spec 029 se miden en modo real; aquí solo cuenta la presentación (spec 038).
     monkeypatch.setattr(cli, "_check_reply", lambda _item, _payload: 0)
     args = argparse.Namespace(
         script=SCRIPT, sender="+570000000299", channel="whatsapp", timeout=30, check=True

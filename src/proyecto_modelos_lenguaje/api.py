@@ -56,6 +56,7 @@ from .api_models import (
     TtsRequest,
     VoiceStatus,
     WelcomeResponse,
+    WhatsAppLink,
 )
 from .api_models import (
     Citation as CitationModel,
@@ -67,6 +68,7 @@ from .channels.store import ChannelStore
 from .channels.transcription import MAX_BYTES as CHANNEL_AUDIO_MAX_BYTES
 from .channels.transcription import transcribe_bytes
 from .channels.voice import ChannelVoice
+from .channels.whatsapp_link import build_link as build_whatsapp_link
 from .config import PROJECT_ROOT
 from .llm import (
     LLMAuthError,
@@ -1081,6 +1083,13 @@ def channel_status(request: Request) -> dict[str, Any] | JSONResponse:
         "qdrant": {"mode": "server" if qdrant_url else "embedded", "ok": _retriever_ok()},
         "pending_approvals": pending,
     }
+
+
+@app.get("/api/channels/whatsapp", response_model=WhatsAppLink)
+def whatsapp_link(response: Response) -> dict[str, Any]:
+    """Spec 032: enlace público al chat de WhatsApp, sin token; el número sale del ``.env``."""
+    response.headers["Cache-Control"] = "no-store"
+    return build_whatsapp_link().to_dict()
 
 
 def _retriever_ok() -> bool:

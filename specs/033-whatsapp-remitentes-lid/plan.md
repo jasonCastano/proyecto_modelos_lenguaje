@@ -24,7 +24,7 @@ un `…@lid` en un número falso `+<lid>`. Diseño (research R1–R9):
    - descarta como `stale` los mensajes con más de 15 minutos (`stale_minutes`);
    - `pml channels block|unblock --pseudonym`.
 3. **Puente**: el respaldo de voz por CLI acepta destinos `…@lid`. El texto ya vuelve al chat de origen.
-4. **Gobierno**: ADR 0038 y enmienda MINOR 2.10.0. Las reglas 8 y 10 permiten un parche versionado y verificable
+4. **Gobierno**: ADR 0039 y enmienda MINOR 2.10.0. Las reglas 8 y 10 permiten un parche versionado y verificable
    sobre el componente de WhatsApp, y extienden los seudónimos a los ID de WhatsApp.
 5. **Activación prudente**: primero las pruebas automáticas, luego la prueba real con la cuenta que falló. Se
    activa en el equipo principal solo si pasa; si no, se documenta la limitación para la sustentación.
@@ -73,13 +73,13 @@ SQLite del canal. Sin dependencias nuevas.
 
 | Regla (CONSTITUTION.md) | Estado | Nota |
 |---|---|---|
-| Regla 8 Canal por OpenClaw, un solo agente | ✅ con enmienda | Se mantiene OpenClaw. Se agrega que un parche versionado, anclado y verificable (`ops check`) puede corregir un defecto del componente de WhatsApp mientras no exista la corrección oficial (ADR 0038). |
+| Regla 8 Canal por OpenClaw, un solo agente | ✅ con enmienda | Se mantiene OpenClaw. Se agrega que un parche versionado, anclado y verificable (`ops check`) puede corregir un defecto del componente de WhatsApp mientras no exista la corrección oficial (ADR 0039). |
 | Regla 10 Seudónimos | ✅ con enmienda | Los ID de WhatsApp (`…@lid`) se tratan igual que un número: se convierten en `wa-<16 hex>` y nunca se registran. |
 | Regla 9 Modo abierto con protecciones | ✅ | Límites, bloqueo (también por seudónimo) y modo cerrado intactos. |
 | §3.3 Capas medallion | ✅ | No se toca `data/`. |
 | Regla 21 Evaluaciones no bajan | ✅ | El agente no cambia; `make check` en verde. |
 | §4.3 Autoría y proceso | ✅ | Spec Kit completo; commit y PR con autorización. La enmienda requiere a ambos integrantes. |
-| Cambios de tecnología → CONSTITUTION.md en el mismo commit | ✅ con tarea | ADR 0038, enmienda 2.10.0 y fila de historial en el mismo cambio. |
+| Cambios de tecnología → CONSTITUTION.md en el mismo commit | ✅ con tarea | ADR 0039, enmienda 2.10.0 y fila de historial en el mismo cambio. |
 
 **Resultado**: pasa con una enmienda MINOR justificada. Es una corrección acotada a un defecto de un tercero, con
 salida limpia cuando exista la versión nativa.
@@ -116,7 +116,7 @@ src/proyecto_modelos_lenguaje/
 ├── channels/__main__.py                       # block/unblock --pseudonym
 ├── agent/config.py, config/agent.toml         # [channels] stale_minutes = 15
 └── ops.py                                     # check «soporte-lid»
-docs/decisions/0038-whatsapp-remitentes-lid.md
+docs/decisions/0039-whatsapp-remitentes-lid.md
 CONSTITUTION.md (2.10.0), docs/despliegue.md, docs/manual_whatsapp.md, guía de respaldo
 tests/unit/channels/{test_identity,test_bridge,test_cli_operator,test_journal}.py, tests/unit/test_ops.py,
 tests/api/test_channels_api.py, tests/unit/agent/test_config.py

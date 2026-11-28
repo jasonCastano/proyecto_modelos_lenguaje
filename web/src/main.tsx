@@ -8,6 +8,7 @@ import "./styles/global.css";
 import "./styles/platform.css";
 import "./styles/site.css";
 import "./styles/home.css";
+import "./styles/whatsapp.css";
 
 const container = document.getElementById("root");
 

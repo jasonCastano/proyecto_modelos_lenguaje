@@ -15,7 +15,7 @@ Transcripción resumida (sin nombres ni números):
 
 | Turno | Persona | Valer-IA (resumen) | Problema |
 |---|---|---|---|
-| 1 | «Hola» | «¡Hola! ¿Cómo estás?» | Saludo sin decir para qué sirve (lo corrige la spec 032). |
+| 1 | «Hola» | «¡Hola! ¿Cómo estás?» | Saludo sin decir para qué sirve (lo corrige la spec 038). |
 | 2 | «Bien, ¿y tú?» | Responde y pregunta «¿Seguimos con algo de Manuelita o prefieres solo charlar un rato?» | **Ofrece charla libre.** |
 | 3 | «Charlemos un rato» | «Claro que sí, charlar también se vale. Cuéntame, ¿qué has hecho hoy…?» | **Acepta y abre la charla** con una pregunta personal. |
 | 4 | «Hoy fui a un partido de fútbol» | Comenta el plan, dice que el fútbol no es su terreno y pregunta «¿Cómo te fue en el partido…?» | **Pregunta por el tema ajeno.** |
@@ -208,4 +208,4 @@ pregunta de Manuelita.
 - El comportamiento es del agente compartido. Se avisa a Roberto del cambio porque también afecta a la web, como en
   specs anteriores.
 - La transcripción de la prueba se guarda seudonimizada (sin nombres ni números) como caso de prueba.
-- La presentación al iniciar la conversación (spec 032) ya corrige el saludo sin propósito del primer turno.
+- La presentación al iniciar la conversación (spec 038) ya corrige el saludo sin propósito del primer turno.

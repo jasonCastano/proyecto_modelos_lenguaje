@@ -15,7 +15,7 @@ registros. Solo funciona en **chats individuales** (no en grupos).
 
 Háblale como a una persona. **No necesitas comandos**: pide las cosas con tus palabras.
 
-**Al empezar** (spec 032): en la primera respuesta de cada conversación, Valer-IA te saluda y se
+**Al empezar** (spec 038): en la primera respuesta de cada conversación, Valer-IA te saluda y se
 presenta en una o dos frases, y enseguida atiende lo que preguntaste, por texto o en nota de voz: no
 hace falta repetir la pregunta. No vuelve a presentarse mientras sigan conversando. Si vuelves
 después de **12 horas** sin escribir, empieza una conversación nueva: te saluda otra vez (por tu

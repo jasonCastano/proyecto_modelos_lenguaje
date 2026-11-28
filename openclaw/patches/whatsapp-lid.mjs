@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Parche «valeria-lid v1» para @openclaw/whatsapp 2026.11.10 (spec 033, ADR 0038).
+// Parche «valeria-lid v1» para @openclaw/whatsapp 2026.11.10 (spec 033, ADR 0039).
 //
 // WhatsApp puede entregar una cuenta solo con su ID interno («…@lid»), sin número. El componente de
 // WhatsApp de OpenClaw descarta esos mensajes (los deja en reintentos con «LID identity unavailable») y,

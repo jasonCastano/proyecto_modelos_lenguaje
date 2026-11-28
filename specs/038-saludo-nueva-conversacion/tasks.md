@@ -1,6 +1,6 @@
 # Tasks: Saludo y presentación al iniciar una conversación
 
-**Input**: Design documents from `specs/032-saludo-nueva-conversacion/`
+**Input**: Design documents from `specs/038-saludo-nueva-conversacion/`
 **Prerequisites**: plan.md, spec.md, research.md (R1–R7), data-model.md, contracts/conversation-start.md,
 quickstart.md
 
@@ -25,7 +25,7 @@ repositorio.
 
 **Purpose**: configuración del periodo de inactividad.
 
-- [X] T001 Agregar `conversation_idle_hours: int = 12` a `ChannelsConfig` en `src/proyecto_modelos_lenguaje/agent/config.py`, con validación «1 ≤ valor ≤ 720» (`AgentConfigError` con mensaje en español que nombre `channels.conversation_idle_hours`), y la clave `conversation_idle_hours = 12` con comentario en español («horas sin mensajes tras las que el siguiente abre una conversación nueva, spec 032») en `[channels]` de `config/agent.toml`
+- [X] T001 Agregar `conversation_idle_hours: int = 12` a `ChannelsConfig` en `src/proyecto_modelos_lenguaje/agent/config.py`, con validación «1 ≤ valor ≤ 720» (`AgentConfigError` con mensaje en español que nombre `channels.conversation_idle_hours`), y la clave `conversation_idle_hours = 12` con comentario en español («horas sin mensajes tras las que el siguiente abre una conversación nueva, spec 038») en `[channels]` de `config/agent.toml`
 - [X] T002 [P] Pruebas de la clave en `tests/unit/agent/test_config.py`: valor por defecto 12, lectura desde TOML y rechazo de 0 y 721 (agregar los casos a `test_channel_config_rejects_unsafe_values`)
 
 ---
@@ -85,7 +85,7 @@ Todas las historias dependen de esta fase.
   - `already_introduced` con y sin mención;
   - `merge` quita «¡Hola!», «Hola,» y «Hi!» iniciales pero no un «hola» en medio del texto;
   - sin `/` ni números de menú (`1.`, `2.`).
-- [X] T008 [P] Agregar a `ChannelLogRecord` en `src/proyecto_modelos_lenguaje/channels/journal.py` los campos `conversation_start: str | None = None` (valores `first_contact`, `inactivity`, `restart`) e `introduced: str | None = None` (valores `bridge`, `agent`), con comentario «Spec 032: sin texto ni números»; y la prueba en `tests/unit/channels/test_journal.py` de que se serializan y de que su valor por defecto es `None`
+- [X] T008 [P] Agregar a `ChannelLogRecord` en `src/proyecto_modelos_lenguaje/channels/journal.py` los campos `conversation_start: str | None = None` (valores `first_contact`, `inactivity`, `restart`) e `introduced: str | None = None` (valores `bridge`, `agent`), con comentario «Spec 038: sin texto ni números»; y la prueba en `tests/unit/channels/test_journal.py` de que se serializan y de que su valor por defecto es `None`
 
 **Checkpoint**: el almacén sabe cuándo empieza una conversación y existen los textos de presentación.
 

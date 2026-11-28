@@ -1,4 +1,4 @@
-"""Presentación al iniciar una conversación (spec 032, T007)."""
+"""Presentación al iniciar una conversación (spec 038, T007)."""
 
 from __future__ import annotations
 

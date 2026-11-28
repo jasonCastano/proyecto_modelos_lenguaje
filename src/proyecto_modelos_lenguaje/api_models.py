@@ -698,6 +698,19 @@ class ChannelStatus(BaseModel):
     pending_approvals: int = 0
 
 
+class WhatsAppLink(BaseModel):
+    """Spec 032: lo que la pestaña WhatsApp necesita; sin número válido, sin enlaces ni QR."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    available: bool
+    mode: Literal["open", "closed", "unknown"]
+    message: str
+    web_url: str | None = None
+    app_url: str | None = None
+    qr_svg: str | None = None
+
+
 # --- Spec 026: API v1 de planificación y evidencia --------------------------------------------
 
 

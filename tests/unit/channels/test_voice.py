@@ -196,7 +196,7 @@ def test_the_closing_phrase_is_not_duplicated() -> None:
     )
 
 
-# --- spec 032: la presentación abre la nota de voz (T014) --------------------------------------
+# --- spec 038: la presentación abre la nota de voz (T014) --------------------------------------
 
 OPENING = "¡Hola! Soy Valer-IA, la asistente virtual de Manuelita."
 

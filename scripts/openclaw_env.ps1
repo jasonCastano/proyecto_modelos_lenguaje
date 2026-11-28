@@ -143,7 +143,7 @@ function Sync-ValeriaConfig {
     # Plugin propio: se aceptan sus permisos (lee la conversacion para enviarla al backend por loopback).
     openclaw plugins install --link (Join-Path $Repo "openclaw\plugins\valeria-bridge") --force `
         --accept-capabilities
-    # Spec 033 (ADR 0038): parche versionado del componente de WhatsApp para cuentas identificadas solo
+    # Spec 033 (ADR 0039): parche versionado del componente de WhatsApp para cuentas identificadas solo
     # por ID (LID). Es idempotente y no adivina: si no puede aplicarse, avisa y el canal sigue igual
     # para las cuentas con numero.
     $patch = Join-Path $Repo "openclaw\patches\whatsapp-lid.mjs"
@@ -153,7 +153,7 @@ function Sync-ValeriaConfig {
     } else {
         Write-Host ($patchOutput -join " ")
     }
-    # Spec 037 (ADR 0039): parche de stickers nativos (el listener expone sendSticker y los valeria-*.webp
+    # Spec 037 (ADR 0040): parche de stickers nativos (el listener expone sendSticker y los valeria-*.webp
     # salen como sticker por el adaptador de salida). Sin el, no hay stickers; el texto llega igual.
     $stickerPatch = Join-Path $Repo "openclaw\patches\whatsapp-sticker.mjs"
     $stickerOutput = & node $stickerPatch --state-dir $State 2>&1

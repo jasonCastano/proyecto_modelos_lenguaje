@@ -26,7 +26,7 @@ class Outcome:
     turn: dict[str, Any]
     status: str = "answered"
     pending_action: dict[str, Any] | None = None
-    client: dict[str, Any] | None = None  # spec 032: nombre reconocido
+    client: dict[str, Any] | None = None  # spec 038: nombre reconocido
 
 
 @dataclass
@@ -38,7 +38,7 @@ class FakeService:
     fail: bool = False
     gate: threading.Event | None = None
     cite: bool = True
-    answer: str | None = None  # spec 032: respuesta fija del modelo (p. ej. un saludo)
+    answer: str | None = None  # spec 038: respuesta fija del modelo (p. ej. un saludo)
     client: dict[str, Any] | None = None
     route_extra: dict[str, Any] = field(default_factory=dict)  # spec 034: act, sentiment…
 
@@ -62,7 +62,7 @@ class FakeService:
                 "pending_approval",
                 {"action_id": "act-1", "tool": self.propose, "args": self.propose_args},
             )
-        if self.answer is not None:  # spec 032: respuesta conversacional fija
+        if self.answer is not None:  # spec 038: respuesta conversacional fija
             return Outcome(
                 thread, {"route": {"route": "direct"}, "answer": self.answer}, client=self.client
             )
@@ -104,7 +104,7 @@ class FakeVoice:
     answers: list[tuple[str, str, str]] = field(default_factory=list)
     texts: list[tuple[str, str]] = field(default_factory=list)
     with_sources: list[bool] = field(default_factory=list)
-    openings: list[str | None] = field(default_factory=list)  # spec 032
+    openings: list[str | None] = field(default_factory=list)  # spec 038
     fail: bool = False
 
     def for_answer(
@@ -206,7 +206,7 @@ def test_duplicate_is_ignored(bridge: ChannelBridge, service: FakeService) -> No
 def test_errors_are_short_and_clean(bridge: ChannelBridge, service: FakeService) -> None:
     service.fail = True
     reply = bridge.handle(msg("hola", "m1"))
-    # Spec 032 (R7): en un hilo sin presentar, el error dice en una frase quién es Valer-IA.
+    # Spec 038 (R7): en un hilo sin presentar, el error dice en una frase quién es Valer-IA.
     assert reply.status == "error" and reply.messages[0].endswith(TEXTS["es"]["error"])
     assert reply.messages[0].startswith("Soy Valer-IA")
     assert "Traceback" not in " ".join(reply.messages)
@@ -238,7 +238,7 @@ def test_voice_note_without_speech_asks_to_repeat(
     bridge: ChannelBridge, service: FakeService, voice: FakeVoice
 ) -> None:
     reply = bridge.handle(audio("", "m1"))
-    # Spec 032: primer mensaje de un número nuevo, así que va con la presentación.
+    # Spec 038: primer mensaje de un número nuevo, así que va con la presentación.
     assert TEXTS["es"]["unheard"] in " ".join(reply.messages) and service.calls == []
     spoken, language = voice.texts[0]
     assert reply.voice is not None and language == "es"
@@ -683,7 +683,7 @@ def test_operator_shortcuts_only_for_operators(
     assert len(service.calls) == calls  # el operador recibe la traza sin pasar por el agente
 
 
-# --- spec 032: saludo y presentación al iniciar una conversación (T009, T010, T013, T015, T018,
+# --- spec 038: saludo y presentación al iniciar una conversación (T009, T010, T013, T015, T018,
 # T020) ---------------------------------------------------------------------------------------
 
 

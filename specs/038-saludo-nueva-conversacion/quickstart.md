@@ -1,4 +1,4 @@
-# Quickstart: validar el saludo al iniciar una conversación (spec 032)
+# Quickstart: validar el saludo al iniciar una conversación (spec 038)
 
 ## 1. Sin teléfono (cualquier equipo con el repositorio)
 

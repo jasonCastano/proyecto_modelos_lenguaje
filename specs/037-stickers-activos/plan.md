@@ -95,8 +95,8 @@ Sin dependencias nuevas.
 |---|---|---|
 | V. Evaluación empírica antes de afirmar | ✅ con tarea | La spec 034 cerró sin probar la entrega real. Aquí la prueba en vivo (T001) va primero y las metas se miden en el teléfono. |
 | §10 Privacidad | ✅ | Los registros llevan solo el nombre del sticker y el motivo; los dígitos se enmascaran. |
-| VII. Simplicidad | ✅ | Primero la vía sin parche. El parche, con el patrón ya aprobado en la spec 033 (ADR 0038), solo si hace falta. |
-| VI. Trazabilidad | ✅ con tarea | Si se instala el parche, se documenta en el ADR 0038 (anexo) o en uno nuevo, con `ops check`. |
+| VII. Simplicidad | ✅ | Primero la vía sin parche. El parche, con el patrón ya aprobado en la spec 033 (ADR 0039), solo si hace falta. |
+| VI. Trazabilidad | ✅ con tarea | Si se instala el parche, se documenta en el ADR 0039 (anexo) o en uno nuevo, con `ops check`. |
 | §4.3 Proceso | ✅ | Spec Kit completo. Los pasos manuales (reinicios y teléfono) llevan instrucciones previas. |
 | Cambios de arquitectura → CONSTITUTION.md | ✅ condicional | Sin parche no hay cambio de arquitectura. Con parche, se agrega una línea en la sección del canal de la constitución, junto a `whatsapp-lid`. |
 

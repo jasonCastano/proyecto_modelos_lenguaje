@@ -1,4 +1,4 @@
-# Contract: inicio de conversación en el canal (spec 032)
+# Contract: inicio de conversación en el canal (spec 038)
 
 Interfaces internas del backend. El contrato HTTP `POST /api/channels/messages` y el plugin no cambian. La
 presentación llega dentro de `messages`, de `sources_messages` y de la nota de voz que ya existen.

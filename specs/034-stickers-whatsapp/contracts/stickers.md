@@ -30,7 +30,7 @@ Orden de reglas: research R4. La función es pura y no tiene red.
 
 ## 2. `ChannelBridge`
 
-- Después de armar la respuesta atendida (y de la presentación de la spec 032), llama a `choose`.
+- Después de armar la respuesta atendida (y de la presentación de la spec 038), llama a `choose`.
 - Si hay elección, la guarda en `channel_stickers` y fija `reply.sticker`.
 - Incrementa `answered_turns` del hilo con cada respuesta atendida.
 - `_resolve`, cuando una aprobación se ejecuta, deja en la respuesta el `approved_action` para la decisión.

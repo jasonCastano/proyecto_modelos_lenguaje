@@ -70,6 +70,13 @@ REVIEW_CHECKS = ("likeness", "no_text", "no_brand", "matches_script", "cue_shown
 CUE_TOLERANCE_S = 0.5
 CUE_SHARE = 0.9
 BED_GAIN_DB = -18
+# Aspecto de época por plano (cambio del 2026-11-27): sepia suave con grano, viñeta y parpadeo, y un
+# barrido de luz de derecha a izquierda que devuelve el color al final del tramo.
+LOOKS = ("sepia-suave",)
+SWEEP_RANGE = (0.2, 2.0)
+SWEEP_FEATHER_PX = 60
+SWEEP_GLOW = 110
+SWEEP_GLOW_PX = 28
 # 3 Mbps × 60 s ≈ 22 MB con el audio: el video cabe en 25 MB sea cual sea el contenido.
 VIDEO_MAXRATE = "3M"
 VIDEO_BUFSIZE = "6M"
@@ -456,6 +463,17 @@ def _validate_shot(
         )
     if not isinstance(shot.get("seed"), int):
         report.errors.append(f"{sid}: seed debe ser un entero.")
+    look = shot.get("look")
+    if look is not None:
+        if not isinstance(look, Mapping) or look.get("style") not in LOOKS:
+            report.errors.append(f"{sid}: look.style debe ser {', '.join(LOOKS)}.")
+        else:
+            sweep = look.get("sweep_s")
+            low, high = SWEEP_RANGE
+            if sweep is not None and (
+                not isinstance(sweep, int | float) or not low <= sweep <= high
+            ):
+                report.errors.append(f"{sid}: look.sweep_s debe estar entre {low} y {high} s.")
     status = shot.get("status")
     if status not in STATUSES:
         report.errors.append(f"{sid}: estado {status!r} inválido ({', '.join(STATUSES)}).")
@@ -1267,8 +1285,42 @@ def _retime_limits() -> tuple[float, float]:
         return 0.7, 1.25
 
 
-def _segment_filters(index: int, seg: pitch_sync.Segment, has_audio: bool) -> list[str]:
-    """Video y fondo de un tramo de plano: recorte, reajuste por piezas y tamaño final."""
+def _look_filters(
+    src: str, out: str, index: int, look: Mapping[str, Any], length: float
+) -> list[str]:
+    """Sepia suave de época y, si hay ``sweep_s``, el barrido que devuelve el color.
+
+    El barrido es una línea de luz que cruza la pantalla de derecha a izquierda en los últimos
+    ``sweep_s`` segundos del tramo; a su paso la imagen pasa de sepia al color original.
+    """
+    sepia = (
+        "colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131,"
+        "eq=contrast=0.92:saturation=0.8:brightness='0.012*sin(2*PI*6*t)':eval=frame,"
+        "noise=alls=9:allf=t+u,vignette=angle=PI/5"
+    )
+    sweep = look.get("sweep_s")
+    if not sweep:
+        return [f"[{src}]{sepia},format=yuv420p[{out}]"]
+    start = max(0.0, length - float(sweep))
+    edge = f"(W*(1-(T-{start:.4f})/{float(sweep):.4f}))"
+    alpha = f"clip((X-{edge})/{SWEEP_FEATHER_PX}+0.5,0,1)"
+    glow = f"{SWEEP_GLOW}*max(0,1-abs(X-{edge})/{SWEEP_GLOW_PX})"
+    expr = f"min(255,A*(1-{alpha})+B*{alpha}+{glow})"
+    return [
+        f"[{src}]split=2[lc{index}][ls{index}]",
+        f"[ls{index}]{sepia},format=gbrp[lsp{index}]",
+        f"[lc{index}]format=gbrp[lcp{index}]",
+        f"[lsp{index}][lcp{index}]blend=all_expr='{expr}',format=yuv420p[{out}]",
+    ]
+
+
+def _segment_filters(
+    index: int,
+    seg: pitch_sync.Segment,
+    has_audio: bool,
+    look: Mapping[str, Any] | None = None,
+) -> list[str]:
+    """Video y fondo de un tramo de plano: recorte, reajuste por piezas, tamaño y aspecto."""
     parts: list[str] = []
     norm = (
         f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase,"
@@ -1292,8 +1344,10 @@ def _segment_filters(index: int, seg: pitch_sync.Segment, has_audio: bool) -> li
     concat = f"concat=n={len(chunks)}:v=1:a=0," if len(chunks) > 1 else ""
     parts.append(
         f"{joined}{concat}tpad=stop_mode=clone:stop_duration=1,"
-        f"trim=duration={seg.length:.4f},setpts=PTS-STARTPTS[v{index}]"
+        f"trim=duration={seg.length:.4f},setpts=PTS-STARTPTS[{'w' if look else 'v'}{index}]"
     )
+    if look:
+        parts += _look_filters(f"w{index}", f"v{index}", index, look, seg.length)
     start = pieces[0].clip_start if pieces else 0.0
     bed = (
         f"[{index}:a]atrim=start={start:.4f}:duration={seg.length:.4f},asetpts=PTS-STARTPTS,"
@@ -1369,8 +1423,10 @@ def assemble(
         command += ["-i", str(seg.clip)]
     for voice in voices:
         command += ["-i", str(voice.resolve())]
+    shots = _shot_lookup(register)
     for index, seg in enumerate(segments):
-        parts += _segment_filters(index, seg, _has_audio(seg.clip))
+        look = shots.get(seg.shot, {}).get("look")
+        parts += _segment_filters(index, seg, _has_audio(seg.clip), look)
     joined = "".join(f"[v{i}][b{i}]" for i in range(len(segments)))
     parts.append(f"{joined}concat=n={len(segments)}:v=1:a=1[vbase][abed]")
     mix = ["[abed]"]

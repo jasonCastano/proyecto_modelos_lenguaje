@@ -281,7 +281,7 @@ class ChannelReply:
     # Spec 030: con nota de voz, el texto que la acompaña es solo el bloque de fuentes.
     sources_messages: list[str] = field(default_factory=list)
     citations: list[dict[str, Any]] = field(default_factory=list)  # citas del turno (no salen)
-    # Spec 032: inicio de conversación y presentación (no salen del backend, salvo en el texto).
+    # Spec 038: inicio de conversación y presentación (no salen del backend, salvo en el texto).
     conversation_start: str | None = None  # first_contact | inactivity | restart
     introduced: str | None = None  # bridge | agent: quién puso la presentación
     opening: str | None = None  # presentación hablada que abre la nota de voz
@@ -629,7 +629,7 @@ class ChannelBridge:
         start: str | None = None
         if intent == "restart":
             thread_id = self.store.new_thread(user_id)
-            start = "restart"  # spec 032: la presentación va con la siguiente solicitud
+            start = "restart"  # spec 038: la presentación va con la siguiente solicitud
             rest = remainder(text, intent)
             if not rest:
                 reply = self._say("answered", "restart", language, thread_id)
@@ -653,7 +653,7 @@ class ChannelBridge:
         reply.question = text
         reply.conversation_start = start
         if reply.status == "answered":
-            # Spec 032: la presentación va antes de la respuesta y después de los avisos.
+            # Spec 038: la presentación va antes de la respuesta y después de los avisos.
             self._introduce(reply, language)
         return self._with_notices(reply, notices, language)
 
@@ -721,7 +721,7 @@ class ChannelBridge:
             self.store.record_sticker(thread_id, choice.name, turn_no, choice.situation)
             reply.sticker = choice
 
-    # -- presentación (spec 032) -----------------------------------------------------------
+    # -- presentación (spec 038) -----------------------------------------------------------
     def _introduce(self, reply: ChannelReply, language: Language) -> ChannelReply:
         """Antepone la presentación en la primera respuesta atendida del hilo (contrato §3)."""
         thread_id = reply.thread_id
@@ -898,7 +898,7 @@ class ChannelBridge:
         reply.notices = [str(n) for n in (getattr(outcome, "notices", None) or [])]
         client = getattr(outcome, "client", None)
         if isinstance(client, Mapping) and client.get("name"):
-            reply.client_name = str(client["name"])  # spec 032: saludo con el nombre
+            reply.client_name = str(client["name"])  # spec 038: saludo con el nombre
         reply.citations = list(turn.get("citations") or [])
         return reply
 
@@ -963,7 +963,7 @@ class ChannelBridge:
             if reply.status == "answered" and reply.question and reply.route:
                 extra: dict[str, Any] = {}
                 body = reply.spoken
-                if reply.opening:  # spec 032: el guion se arma sin la presentación y luego la lleva
+                if reply.opening:  # spec 038: el guion se arma sin la presentación y luego la lleva
                     extra["opening"] = reply.opening
                     body = reply.spoken_body or ""
                 if reply.style:

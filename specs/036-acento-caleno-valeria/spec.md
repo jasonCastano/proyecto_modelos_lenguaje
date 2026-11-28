@@ -170,7 +170,7 @@ en una frase y sigue con Manuelita (spec 035).
   - atención y cuidado (spec 019);
   - variedad y naturalidad (spec 020);
   - enfoque en Manuelita (spec 035);
-  - presentación al iniciar (spec 032).
+  - presentación al iniciar (spec 038).
 - **FR-014**: MUST existir un conjunto de verificación con conversaciones de distintos registros (informal, formal,
   queja, angustia, inglés, pregunta por una expresión, petición de hablar «normal»). Debe medir la presencia, el
   límite, la variedad y la ausencia de expresiones vetadas.

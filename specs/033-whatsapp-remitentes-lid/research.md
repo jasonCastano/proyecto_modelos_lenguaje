@@ -105,7 +105,7 @@ scratchpad, solo lectura), el registro del gateway del 2026-11-27 y la carpeta `
 
 - **Decision**: no se unifican identidades en el backend.
   - Cuando OpenClaw conoce la equivalencia, ya entrega el número, y la persona queda con su seudónimo por número.
-  - Si una persona pasa de ID a número, puede abrir una conversación nueva con presentación (spec 032).
+  - Si una persona pasa de ID a número, puede abrir una conversación nueva con presentación (spec 038).
 - **Rationale**: FR-015 es SHOULD. Unificar exigiría guardar la relación ID ↔ número, un dato personal adicional.
 - **Alternatives considered**: tabla de equivalencias seudonimizadas (posible después de la sustentación).
 

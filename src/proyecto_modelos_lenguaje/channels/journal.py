@@ -45,7 +45,7 @@ class ChannelLogRecord:
     voice_sent: bool = False
     # Spec 030: qué va por escrito con la voz: «full», «sources» o «none» (solo la etiqueta).
     written: str | None = None
-    # Spec 032: sin texto ni números. Motivo de inicio («first_contact», «inactivity», «restart»)
+    # Spec 038: sin texto ni números. Motivo de inicio («first_contact», «inactivity», «restart»)
     # y origen de la presentación («bridge» o «agent») en el turno que abre la conversación.
     conversation_start: str | None = None
     introduced: str | None = None

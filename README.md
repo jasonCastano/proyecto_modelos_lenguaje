@@ -1026,6 +1026,7 @@ paleta de marca con los colores del logotipo de Manuelita, tipografía Archivo y
 | `/agente` | Agente | Selector de los cinco perfiles con «para quién es» y el perfil activo a la vista, la conversación (citas, voz, dictado, aprobación con «Sí»), fuentes del turno, memoria borrable y sugerencias del perfil |
 | `/planificacion` | Planificación | Abierta a cualquier visitante (spec 027); abrirla activa el perfil planificador: escenario, flujo de caña, libro de compromisos, lo que limita el plan, comparación con el plan base, «Explicar con el agente» y «Guardar propuesta» en dos pasos |
 | `/evidencia` | Evidencia técnica | Estado de servicios, catálogo de 26 herramientas con sus perfiles, traza del turno, evaluaciones publicadas con su cifra honesta y la consola de Consulta, Resumen y FAQ de los Módulos 1 y 2 |
+| `/whatsapp` | WhatsApp | Enlace al chat de Valer-IA (WhatsApp Web en computador, la aplicación en teléfono) y un QR para pasar al teléfono; el número sale de `VALERIA_WHATSAPP_NUMBER` en el `.env` (spec 032, [ADR 0038](docs/decisions/0038-pestana-whatsapp-web.md)) |
 
 Los servicios nuevos viven bajo `/api/v1/` y las rutas sin versión no cambian (contratos en
 [`specs/026-plataforma-web-manuelita/contracts/`](specs/026-plataforma-web-manuelita/contracts/)):
@@ -1426,7 +1427,7 @@ Specs 024 a 028; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/
 - [x] Perfiles abiertos en la web, incluido el planificador (spec 027, ADR 0031).
 - [ ] Prueba técnica de voz con la SIM vinculada y verificación de la planificación por WhatsApp; aprobar la
   constitución 2.10.0 (canal abierto a cualquier número con límites, spec 031; cuentas de WhatsApp
-  identificadas solo por ID, spec 033 y ADR 0038).
+  identificadas solo por ID, spec 033 y ADR 0039).
 - [ ] Ensayo cronometrado y tag `v3.0.0`.
 
 ## Créditos

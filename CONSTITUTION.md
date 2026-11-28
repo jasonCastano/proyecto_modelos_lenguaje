@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 2.10.1 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-28
+**Versión**: 2.11.1 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-28
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -314,6 +314,12 @@ uv.lock
     sin marca ni personas reconocibles, nunca presentadas como de Manuelita, con autor y licencia en
     `web/public/media/fotos/CREDITOS.md` y una línea de créditos en el pie. Un solo momento animado, dentro de
     su sección y quieto con «reducir movimiento».
+  - Pestaña WhatsApp (spec 032, ADR 0038): quinta área `/whatsapp` con el enlace al chat de Valer-IA (WhatsApp
+    Web en computador, la aplicación en teléfono, siempre en una pestaña nueva) y un QR generado en el servidor
+    con `segno`, sin servicios externos. El número sale solo de `VALERIA_WHATSAPP_NUMBER` en el `.env` del
+    proyecto (E.164 con indicativo, fuera de Git) y lo expone `GET /api/channels/whatsapp`, público y de solo
+    lectura, únicamente dentro del enlace y el QR. Sin número válido no hay enlace ni QR: la pestaña lo dice y
+    lleva al Agente. El número no se registra (regla 10).
 - La app DEBE ejecutarse con `make app` o `uv run python -m proyecto_modelos_lenguaje.webbuild --serve` desde un
   clon limpio. `web/dist` no se versiona: ambos compilan la web si falta o si sus fuentes cambiaron (huella en
   `web/dist/.build-stamp`) y repiten `npm ci` si cambió `package-lock.json`. Arrancar `uvicorn` a mano con una
@@ -716,11 +722,11 @@ canales reales (WhatsApp o Telegram), evaluado y observable.
    nunca un reemplazo. Hay **un solo agente**: el plugin `valeria-bridge` (hook `before_dispatch`) envía cada
    mensaje admitido al mismo `ChatService` de la web por `POST /api/channels/messages` (loopback +
    `X-Channel-Token`). Mientras no exista la corrección oficial, un **parche versionado** puede corregir un
-   defecto del componente de WhatsApp (enmienda 2.10.0, spec 033, ADR 0038): anclado en texto exacto y
+   defecto del componente de WhatsApp (enmienda 2.11.0, spec 033, ADR 0039): anclado en texto exacto y
    limitado a una versión, idempotente, aplicado solo por `scripts/openclaw_env.ps1 -Install` (nunca a mano) y
    verificado por `ops check` (`soporte-lid`, `soporte-sticker`). Hoy existen dos:
    `openclaw/patches/whatsapp-lid.mjs`, para las cuentas que WhatsApp entrega solo con su ID (`…@lid`), y
-   `openclaw/patches/whatsapp-sticker.mjs` (enmienda 2.10.1, spec 037, ADR 0039), que expone `sendSticker` en
+   `openclaw/patches/whatsapp-sticker.mjs` (enmienda 2.11.1, spec 037, ADR 0040), que expone `sendSticker` en
    el listener activo y envía como sticker nativo los archivos `valeria-*.webp`, con la misma sesión.
 9. **Número** (enmiendas 2.8.0 y 2.9.0, specs 028 y 031): una **SIM dedicada** a Valer-IA, vinculada como
    dispositivo y desactivada después de la sustentación. Solo chats individuales (`groupPolicy: "disabled"`,
@@ -733,7 +739,7 @@ canales reales (WhatsApp o Telegram), evaluado y observable.
    aviso natural y luego silencio), permite bloquear seudónimos (`pml channels block`) y reserva los atajos
    ocultos a los operadores de `VALERIA_OPERATORS` (seudónimos, sin límites).
 10. **Seudónimos**: el número NO DEBE guardarse ni registrarse. Se convierte en `wa-<16 hex>` con HMAC-SHA256
-    y `VALERIA_CHANNEL_SALT`. El ID interno de WhatsApp (`…@lid`) se trata igual (enmienda 2.10.0): se
+    y `VALERIA_CHANNEL_SALT`. El ID interno de WhatsApp (`…@lid`) se trata igual (enmienda 2.11.0): se
     normaliza a `lid:<dígitos>`, se seudonimiza con la misma sal y nunca se registra; el registro solo guarda el
     tipo de remitente. Los registros (`channels.jsonl`, `mcp.jsonl`, bitácora `memory/YYYY-MM-DD.md`)
     no llevan texto de mensajes ni números, y los archivos versionados del workspace no llevan datos de
@@ -1039,8 +1045,9 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 | 2.7.0 | 2026-11-27 | **MINOR**: audios de los stickers de Valer-IA (spec 030 US6, ADR 0036): la frase de cada sticker con la voz oficial del agente (Phonon, spec 016), sintetizada en local y sin costo, en OGG/Opus de ≤ 5 s, con licencia CC BY-NC 4.0 y atribución en la ficha, y aprobación de un integrante por audio (§10). Requiere la aprobación de ambos integrantes. |
 | 2.8.0 | 2026-11-27 | **MINOR**: Valer-IA natural y con voz por WhatsApp (spec 028, ADR 0037): SIM dedicada con modo cerrado y abierto (regla 9); confirmación de escrituras en lenguaje natural (regla 11); modo degradado a los 90 s y MCP de 15 lecturas sin planificación (regla 12); hardening sin Docker cuando el servidor no permite virtualización, con Qdrant nativo (regla 14); olvido por intención natural (regla 16); planificador libre en WhatsApp y activado por contexto (regla 20); nueva regla 22 (conversación sin comandos y voz local con guion sin citas). Requiere la aprobación de ambos integrantes. |
 | 2.9.0 | 2026-11-27 | **MINOR**: canal de WhatsApp abierto a cualquier número (spec 031): el modo abierto se usa hasta el fin del proyecto, con límites por seudónimo (ventana corta y tope diario con un único aviso natural), bloqueo de seudónimos, atajos ocultos solo para operadores (`VALERIA_OPERATORS`) y el modo visible en `ops check`. Se enmienda la regla 9 (antes: modo abierto sin límite y solo en el ensayo y la jornada). Requiere la aprobación de ambos integrantes. |
-| 2.10.0 | 2026-11-27 | **MINOR**: respuesta a cuentas de WhatsApp identificadas solo por ID (spec 033, ADR 0038): un parche versionado, anclado y verificado por `ops check` corrige el componente de WhatsApp mientras no exista la corrección oficial (regla 8); los ID `…@lid` se seudonimizan como los números (regla 10); las entregas tardías (más de 15 minutos) se descartan sin responder. Requiere la aprobación de ambos integrantes. |
-| 2.10.1 | 2026-11-28 | **PATCH**: segundo parche versionado del componente de WhatsApp bajo la regla 8 (spec 037, ADR 0039): `whatsapp-sticker.mjs` expone `sendSticker` en el listener activo y envía los `valeria-*.webp` como sticker nativo por el adaptador de salida (OpenClaw aísla el runtime por plugin); se verifica con `ops check` (`soporte-sticker`, `stickers-hoy`). Sin cambio de principios. |
+| 2.10.0 | 2026-11-27 | **MINOR**: pestaña WhatsApp en la web (spec 032, ADR 0038): quinta área `/whatsapp` con el enlace al chat (WhatsApp Web en computador, aplicación en teléfono) y un QR generado con `segno`; el número sale de `VALERIA_WHATSAPP_NUMBER` en el `.env` externo y lo expone `GET /api/channels/whatsapp`, público y de solo lectura (§3.7). Requiere la aprobación de ambos integrantes. |
+| 2.11.0 | 2026-11-28 | **MINOR**: respuesta a cuentas de WhatsApp identificadas solo por ID (spec 033, ADR 0039): un parche versionado, anclado y verificado por `ops check` corrige el componente de WhatsApp mientras no exista la corrección oficial (regla 8); los ID `…@lid` se seudonimizan como los números (regla 10); las entregas tardías (más de 15 minutos) se descartan sin responder. Requiere la aprobación de ambos integrantes. |
+| 2.11.1 | 2026-11-28 | **PATCH**: segundo parche versionado del componente de WhatsApp bajo la regla 8 (spec 037, ADR 0040): `whatsapp-sticker.mjs` expone `sendSticker` en el listener activo y envía los `valeria-*.webp` como sticker nativo por el adaptador de salida (OpenClaw aísla el runtime por plugin); se verifica con `ops check` (`soporte-sticker`, `stickers-hoy`). Sin cambio de principios. |
 | 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
@@ -1240,4 +1247,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 2.10.1 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-28
+**Versión**: 2.11.1 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-28

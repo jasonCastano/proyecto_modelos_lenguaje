@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from proyecto_modelos_lenguaje import pitch
+from proyecto_modelos_lenguaje import pitch, pitch_sync
 
 BLOCKS = {
     "gancho": "Manuelita nació en 1864 como un trapiche de caña. Valer-IA te ayuda a conocerla.",
@@ -686,3 +686,59 @@ def test_check_tolerates_only_accepted_early_cues(tmp_path: Path, monkeypatch) -
     assert report["checks"]["cues"]["outside"] == ["tarde", "temprano"]
     montage["cues"][-1]["accepted"] = False
     assert pitch.check(video, vtt, montage=montage)["checks"]["cues"]["ok"] is False
+
+
+# --------------------------------------------------------------------------- aspecto de época
+
+
+def test_look_filters_sepia_without_sweep_is_one_chain() -> None:
+    parts = pitch._look_filters("w0", "v0", 0, {"style": "sepia-suave"}, 4.4)
+    assert len(parts) == 1
+    assert parts[0].startswith("[w0]colorchannelmixer=") and parts[0].endswith("[v0]")
+    assert "noise=" in parts[0] and "vignette=" in parts[0]
+
+
+def test_look_filters_sweep_runs_right_to_left_at_the_end_of_the_segment() -> None:
+    parts = pitch._look_filters("w0", "v0", 0, {"style": "sepia-suave", "sweep_s": 0.5}, 4.4)
+    blend = parts[-1]
+    assert blend.startswith("[lsp0][lcp0]blend=all_expr=") and blend.endswith("[v0]")
+    # El borde parte de W en 3,9 s y llega a 0 en 4,4 s: de derecha a izquierda.
+    assert "(W*(1-(T-3.9000)/0.5000))" in blend
+
+
+def test_segment_filters_apply_look_only_when_given() -> None:
+    piece = pitch_sync.Piece(clip_start=0.0, clip_end=4.4, length=4.4)
+    seg = pitch_sync.Segment(
+        shot="plano-01a", clip=Path("a.mp4"), start=0.0, length=4.4, pieces=[piece]
+    )
+    plain_parts = pitch._segment_filters(0, seg, False)
+    assert any(p.endswith("[v0]") for p in plain_parts)
+    assert not any("colorchannelmixer" in p for p in plain_parts)
+    look_parts = pitch._segment_filters(0, seg, False, {"style": "sepia-suave", "sweep_s": 0.5})
+    assert any(p.endswith("[w0]") for p in look_parts)
+    assert any("colorchannelmixer" in p for p in look_parts)
+
+
+@pytest.mark.parametrize(
+    ("look", "message"),
+    [
+        ({"style": "neon"}, "look.style"),
+        ({"style": "sepia-suave", "sweep_s": 5}, "look.sweep_s"),
+    ],
+)
+def test_validate_shot_rejects_invalid_look(tmp_path: Path, look: dict, message: str) -> None:
+    prompt = tmp_path / "p.json"
+    prompt.write_text("{}", encoding="utf-8")
+    shot = {
+        "id": "plano-01a",
+        "mode": "text",
+        "source": None,
+        "prompt_file": str(prompt),
+        "request_seconds": 5,
+        "seed": 1,
+        "status": "pendiente",
+        "look": look,
+    }
+    report = pitch.ValidationReport()
+    pitch._validate_shot(tmp_path, 1, shot, None, set(), report)
+    assert any(message in e for e in report.errors)

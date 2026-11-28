@@ -177,7 +177,7 @@ def test_an_older_database_gains_the_new_tables(tmp_path: Path) -> None:
     assert store.block("wa-0123456789abcdef") is True
 
 
-# --- spec 032: inicio de conversación y presentación (T005) ---
+# --- spec 038: inicio de conversación y presentación (T005) ---
 
 USER = "wa-0123456789abcdef"
 

@@ -1,4 +1,4 @@
-"""Presentación de Valer-IA al iniciar una conversación del canal (spec 032, contrato §2).
+"""Presentación de Valer-IA al iniciar una conversación del canal (spec 038, contrato §2).
 
 El bridge antepone la presentación en la primera respuesta atendida de cada hilo (research R1): no
 depende del modelo. Hay tres variantes por idioma, elegidas de forma estable por el hilo (R2); cada

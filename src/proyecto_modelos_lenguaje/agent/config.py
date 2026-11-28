@@ -137,7 +137,7 @@ class ChannelsConfig:
     rate_window_minutes: int = 10
     rate_max_messages: int = 20
     daily_max_messages: int = 100
-    # Spec 032: horas sin mensajes tras las que el siguiente abre una conversación nueva.
+    # Spec 038: horas sin mensajes tras las que el siguiente abre una conversación nueva.
     conversation_idle_hours: int = 12
     # Spec 033: minutos tras los que un mensaje recibido tarde se descarta sin responder.
     stale_minutes: int = 15

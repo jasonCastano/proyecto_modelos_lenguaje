@@ -1,4 +1,4 @@
-# Research: Saludo y presentación al iniciar una conversación (spec 032)
+# Research: Saludo y presentación al iniciar una conversación (spec 038)
 
 ## R1. ¿Quién escribe la presentación?
 

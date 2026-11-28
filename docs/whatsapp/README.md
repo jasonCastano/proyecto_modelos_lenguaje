@@ -106,7 +106,7 @@ insignia redonda y borde blanco); no reproduce el personaje de la imagen de esti
   - En WhatsApp Web, como sticker personalizado: se sube cada `.webp`.
   - El bot los envía como mensaje de tipo sticker (specs 034 y 037). El plugin `valeria-bridge` busca la
     los envía por el adaptador de salida del canal (como las notas de voz). El parche
-    `openclaw/patches/whatsapp-sticker.mjs` (ADR 0039) hace que el componente los envíe como sticker nativo y
+    `openclaw/patches/whatsapp-sticker.mjs` (ADR 0040) hace que el componente los envíe como sticker nativo y
     no como documento; sin él no llega ningún sticker. Lo aplica `scripts/openclaw_env.ps1 -Install`. En el log del gateway
     queda una línea por sticker («sticker enviado (…) vía …» o «sticker no enviado (…): motivo»), y al
     arrancar, «stickers listos vía …» o «sin vía de stickers (…)». `uv run pml ops check` muestra

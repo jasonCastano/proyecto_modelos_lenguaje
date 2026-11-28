@@ -1,11 +1,11 @@
-# ADR 0039 — Stickers nativos por WhatsApp: parche versionado del componente
+# ADR 0040 — Stickers nativos por WhatsApp: parche versionado del componente
 
 - **Estado**: propuesta (requiere la aprobación de ambos integrantes, constitución §11)
 - **Fecha**: 2026-11-28
 - **Autor**: Jason Alejandro Castaño
 - **Relacionadas**:
   - ADR 0028 (OpenClaw con un solo agente y plugin puente);
-  - ADR 0038 (parche versionado del componente de WhatsApp para cuentas por ID);
+  - ADR 0039 (parche versionado del componente de WhatsApp para cuentas por ID);
   - `specs/034-stickers-whatsapp/` (stickers);
   - `specs/037-stickers-activos/` (spec, plan, research R1–R6, contrato y tareas).
 

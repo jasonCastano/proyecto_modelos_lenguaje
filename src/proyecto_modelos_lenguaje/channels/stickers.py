@@ -2,7 +2,7 @@
 
 El backend decide de forma determinista si una respuesta lleva sticker, con señales que el canal
 ya tiene: acto y sentimiento del turno (enrutador), avisos, inicio de conversación y presentación
-(spec 032), aprobaciones resueltas, ruta e idioma. El plugin ``valeria-bridge`` solo lo entrega. Las
+(spec 038), aprobaciones resueltas, ruta e idioma. El plugin ``valeria-bridge`` solo lo entrega. Las
 reglas, en orden (research R4): interruptor, exclusiones, situación, idioma y moderación del hilo.
 Un sticker por respuesta como máximo y nunca en lugar de la respuesta.
 """

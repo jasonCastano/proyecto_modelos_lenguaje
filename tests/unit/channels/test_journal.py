@@ -34,7 +34,7 @@ def test_people_limited_and_blocked_today(tmp_path: Path) -> None:
 
 
 def test_conversation_start_fields_default_to_none_and_are_logged(tmp_path: Path) -> None:
-    """Spec 032 (T008): motivo de inicio y origen de la presentación, sin texto ni números."""
+    """Spec 038 (T008): motivo de inicio y origen de la presentación, sin texto ni números."""
     from proyecto_modelos_lenguaje.channels.journal import ChannelLogRecord, log_channel
 
     plain = ChannelLogRecord(channel="whatsapp", user_id="wa-aaaaaaaaaaaaaaaa", status="answered")

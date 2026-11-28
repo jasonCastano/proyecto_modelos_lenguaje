@@ -112,7 +112,7 @@ ninguna respuesta lleva sticker. Escribir en inglés y verificar que solo puede 
   se registra.
 - La respuesta se divide en varios mensajes, o va como nota de voz más fuentes: el sticker va una sola vez, antes
   del primer mensaje o después del último.
-- La respuesta lleva presentación (spec 032) y además es informativa: como máximo un sticker. Gana el de
+- La respuesta lleva presentación (spec 038) y además es informativa: como máximo un sticker. Gana el de
   presentación.
 - La persona pide hablar «normal» (spec 036): los stickers siguen; solo se apagan si pide no recibirlos.
 - Conversaciones de prueba o mensajes del propio número: mismo comportamiento que hoy (spec 031).

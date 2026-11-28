@@ -1,4 +1,4 @@
-# Data Model: Saludo y presentación al iniciar una conversación (spec 032)
+# Data Model: Saludo y presentación al iniciar una conversación (spec 038)
 
 Todo vive en `<estado>/channels.sqlite3` (fuera del repositorio) y en el registro `logs/channels.jsonl`. No hay
 números ni texto de mensajes.

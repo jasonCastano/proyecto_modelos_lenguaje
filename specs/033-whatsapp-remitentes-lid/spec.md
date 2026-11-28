@@ -21,7 +21,7 @@ Guardar a mano cada número en el teléfono de la SIM no es viable: la solución
 ### User Story 1 - Una cuenta identificada solo por ID recibe respuesta por texto (Priority: P1)
 
 Una persona que nunca ha escrito a Valer-IA, y cuya cuenta WhatsApp entrega solo con su ID, escribe una pregunta.
-Valer-IA responde igual que a cualquier otra persona: saludo y presentación (spec 032) y la respuesta con
+Valer-IA responde igual que a cualquier otra persona: saludo y presentación (spec 038) y la respuesta con
 fuentes, sin que nadie del equipo intervenga.
 
 **Why this priority**: es el fallo observado. Sin esto, parte del público del canal abierto no recibe respuesta.
@@ -110,7 +110,7 @@ componente de WhatsApp y comprobar que la verificación lo detecta y la instalac
 
 - **La equivalencia ID ↔ número llega después**: la persona escribió primero solo con ID y luego WhatsApp
   entrega su número. Si el sistema conoce la equivalencia, la trata como la misma persona; si no, puede abrir una
-  conversación nueva, que se presenta según la spec 032.
+  conversación nueva, que se presenta según la spec 038.
 - **Modo cerrado**: una cuenta identificada solo por ID no coincide con los números de prueba autorizados. En modo
   cerrado sigue sin ser admitida, como hoy, salvo que su equivalencia con un número autorizado sea conocida.
 - **Operadores**: un operador cuya cuenta llegue solo con ID no se reconoce por su número. Se reconoce si su
@@ -121,7 +121,7 @@ componente de WhatsApp y comprobar que la verificación lo detecta y la instalac
   romper esa versión. La verificación debe reconocer que el soporte existe de forma nativa.
 - **Varias cuentas solo con ID escriben a la vez**: cada una tiene su propio hilo y su propio seudónimo.
 - **Una cuenta solo con ID envía una imagen, un sticker o una ubicación**: recibe la respuesta de «no soportado»
-  con la presentación (spec 032).
+  con la presentación (spec 038).
 
 ## Requirements *(mandatory)*
 
@@ -130,7 +130,7 @@ componente de WhatsApp y comprobar que la verificación lo detecta y la instalac
 - **FR-001**: El canal MUST atender los mensajes individuales de cuentas que WhatsApp entrega solo con su ID, sin
   intervención manual (ni guardar contactos ni aprobar mensajes).
 - **FR-002**: Estas cuentas MUST recibir el mismo servicio que las identificadas por número: texto, notas de voz,
-  presentación al iniciar (spec 032), idioma del turno, fuentes y avisos.
+  presentación al iniciar (spec 038), idioma del turno, fuentes y avisos.
 - **FR-003**: Cada cuenta identificada por ID MUST tener una identidad estable en el canal, de modo que sus
   mensajes sucesivos continúen la misma conversación.
 - **FR-004**: El identificador de la cuenta MUST tratarse con la misma privacidad que un número de teléfono: se
@@ -200,7 +200,7 @@ componente de WhatsApp y comprobar que la verificación lo detecta y la instalac
 - El modo abierto es el modo de operación hasta el fin del proyecto (spec 031); el modo cerrado conserva su
   comportamiento.
 - 15 minutos es el límite razonable para atender un mensaje retenido sin que la respuesta pierda sentido.
-- Aplican la presentación (spec 032), el idioma (spec 029), la voz con solo fuentes (spec 030) y los límites
+- Aplican la presentación (spec 038), el idioma (spec 029), la voz con solo fuentes (spec 030) y los límites
   (spec 031).
 - La sustentación es inminente: la corrección solo se activa en el equipo principal después de probarla con una
   cuenta real identificada solo por ID; si no se logra a tiempo, se documenta la limitación para ese día.

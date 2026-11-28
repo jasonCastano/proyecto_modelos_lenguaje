@@ -318,7 +318,7 @@ def needs_redirect(act: str, turn: int, assent_to_offer: bool = False) -> bool:
     if act not in FOCUS_ACTS:
         return False
     if act == "greeting":
-        return turn > 1  # el primer saludo lo resuelve la presentación (spec 032)
+        return turn > 1  # el primer saludo lo resuelve la presentación (spec 038)
     if act == "minimal":
         return not assent_to_offer
     return True

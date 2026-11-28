@@ -1,9 +1,9 @@
 # Implementation Plan: Saludo y presentación al iniciar una conversación
 
 **Branch**: `028-valeria-natural-voz-whatsapp` (mismo PR que las specs 028–031; `setup-plan` reporta
-`032-saludo-nueva-conversacion` por `.specify/feature.json`) | **Date**: 2026-11-27 | **Spec**: [spec.md](spec.md)
+`038-saludo-nueva-conversacion` por `.specify/feature.json`) | **Date**: 2026-11-27 | **Spec**: [spec.md](spec.md)
 
-**Input**: Feature specification from `specs/032-saludo-nueva-conversacion/spec.md`
+**Input**: Feature specification from `specs/038-saludo-nueva-conversacion/spec.md`
 
 ## Summary
 
@@ -110,7 +110,7 @@ web no cambian.
 ### Documentation (this feature)
 
 ```text
-specs/032-saludo-nueva-conversacion/
+specs/038-saludo-nueva-conversacion/
 ├── plan.md              # este archivo
 ├── research.md          # R1–R7
 ├── data-model.md        # hilo, presentación, registro

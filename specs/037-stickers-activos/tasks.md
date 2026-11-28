@@ -144,8 +144,8 @@ check`.
   - en `src/proyecto_modelos_lenguaje/ops.py`, verificación `soporte-sticker`, como `soporte-lid`;
   - en `scripts/openclaw_env.ps1`, aplicar el parche al instalar o actualizar, junto a `whatsapp-lid`.
 - [X] T013 [US1] **Solo con T011**:
-  - documentar el parche en `docs/decisions/0038-whatsapp-remitentes-lid.md` (anexo) o en un ADR nuevo
-    `docs/decisions/0039-whatsapp-stickers-runtime.md`;
+  - documentar el parche en `docs/decisions/0039-whatsapp-remitentes-lid.md` (anexo) o en un ADR nuevo
+    `docs/decisions/0040-whatsapp-stickers-runtime.md`;
   - agregar la línea en `CONSTITUTION.md` (sección del canal, junto a `whatsapp-lid`) con la versión siguiente de
     la constitución.
 
@@ -392,7 +392,7 @@ libre.
   - `make openclaw-test` lo incluye;
   - `ops check` muestra `soporte-sticker`;
   - `scripts/openclaw_env.ps1 -Install` lo aplica después de `whatsapp-lid`;
-  - ADR 0039 y constitución 2.10.1 (PATCH: segundo parche bajo la regla 8).
+  - ADR 0040 y constitución 2.10.1 (PATCH: segundo parche bajo la regla 8).
 
   Verificado sin escribir: el anclaje aparece exactamente una vez en el componente instalado (2026.11.10).
 - **Verificación final**: `make check` verde (2594 pytest, 216 vitest y build); `make openclaw-test` verde (8 + 5 +

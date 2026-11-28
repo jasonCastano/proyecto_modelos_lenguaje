@@ -86,7 +86,7 @@ registra `sender_kind: "lid"`.
   - sin anclajes sale con código 1 sin escribir;
   - sin plugin dice `sin-plugin` y sale con código 1.
 - [X] T007 [P] [US1] Pruebas en `tests/unit/channels/test_bridge.py`:
-  - un mensaje con `sender="10000000000001@lid"` se responde (presentación de la spec 032 incluida);
+  - un mensaje con `sender="10000000000001@lid"` se responde (presentación de la spec 038 incluida);
   - `user_id` empieza con `wa-`;
   - el registro tiene `sender_kind == "lid"` y no contiene `10000000000001`;
   - un segundo mensaje continúa el mismo hilo;
@@ -210,9 +210,9 @@ al servicio; uno de hace 5 min se responde; el mismo `message_id` dos veces se r
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [X] T022 [P] Escribir `docs/decisions/0038-whatsapp-remitentes-lid.md` (contexto, decisión de parche versionado con anclajes, alternativas, consecuencias, salida cuando OpenClaw lo corrija) y enmendar `CONSTITUTION.md` a **2.10.0** (MINOR):
+- [X] T022 [P] Escribir `docs/decisions/0039-whatsapp-remitentes-lid.md` (contexto, decisión de parche versionado con anclajes, alternativas, consecuencias, salida cuando OpenClaw lo corrija) y enmendar `CONSTITUTION.md` a **2.10.0** (MINOR):
   - regla 8: un parche versionado, anclado y verificado por `ops check` puede corregir un defecto del componente
-    de WhatsApp mientras no exista la corrección oficial (ADR 0038);
+    de WhatsApp mientras no exista la corrección oficial (ADR 0039);
   - regla 10: los ID de WhatsApp (`…@lid`) se seudonimizan igual que los números y nunca se registran;
   - fila del historial y las dos líneas de versión;
   - el README menciona la constitución 2.10.0.
@@ -331,7 +331,7 @@ libre.
     unidad de tiempo) se atiende, para que un error de marca nunca deje el canal en silencio;
   - `voiceCommandArgs` exige en WhatsApp un E.164, un JID de número o un ID `…@lid` (antes aceptaba cualquier
     texto con `@`).
-- **Gobierno**: ADR 0038 y constitución 2.10.0 (reglas 8 y 10 e historial). Requieren la aprobación de ambos
+- **Gobierno**: ADR 0039 y constitución 2.10.0 (reglas 8 y 10 e historial). Requieren la aprobación de ambos
   integrantes.
 - **Fuera de alcance**:
   - reportar el defecto al proyecto OpenClaw (requiere autorización);

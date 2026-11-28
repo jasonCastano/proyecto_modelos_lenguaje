@@ -55,6 +55,7 @@ Hay dos archivos `.env`, los dos **fuera de Git**: el del proyecto (lo lee el ba
 | `DEEPSEEK_API_KEY` | ✅ | ✅ | Clave del modelo en la nube (misma cuenta, cuota y facturación). |
 | `VALERIA_CHANNEL_TOKEN` | ✅ | ✅ | Secreto compartido del puente; **el mismo valor** en los dos archivos. |
 | `VALERIA_CHANNEL_SALT` | ✅ | | Sal del HMAC que convierte el número en el seudónimo `wa-<16 hex>`. No cambiarla después. |
+| `VALERIA_WHATSAPP_NUMBER` | ✅ | | Número de la SIM de Valer-IA en E.164 (`+57` y los 10 dígitos, sin espacios). Lo usa la pestaña WhatsApp de la web (spec 032) para el enlace y el QR; sin él, la pestaña muestra «no disponible». |
 | `OPENCLAW_GATEWAY_TOKEN` | | ✅ | Token del gateway (≥ 32 bytes aleatorios). |
 | `WA_ALLOW_1`…`WA_ALLOW_3` | | ✅ | Números autorizados en E.164 (`+57XXXXXXXXXX`). |
 | `VALERIA_REPO` | | ✅ | Ruta del clon (la fija `openclaw_env.ps1`). |
@@ -216,7 +217,7 @@ La sesión queda en `%USERPROFILE%\.openclaw-valeria` (fuera de Git). **Nunca** 
   enviado» o el error, sin números. Si los archivos son punteros de Git LFS, `ops check` los lista
   como faltantes: hay que ejecutar `git lfs pull`.
 
-#### 3.7.1 Cuentas identificadas solo por ID (spec 033, ADR 0038)
+#### 3.7.1 Cuentas identificadas solo por ID (spec 033, ADR 0039)
 
 WhatsApp puede entregar una cuenta solo con su ID interno (`…@lid`), sin número. El componente
 `@openclaw/whatsapp` 2026.11.10 descarta esos mensajes (`LID identity unavailable` en el registro del
@@ -265,7 +266,8 @@ edita el `.env` externo y reinicia el gateway; nunca toca archivos versionados:
 - **Operadores**:
   - `uv run pml channels pseudonym --sender <número>` imprime el seudónimo `wa-…` (no guarda el número);
   - se copian a `VALERIA_OPERATORS=` del `.env` del repositorio;
-  - se reinicia el backend (`.\scripts\serve_backend.ps1 -Restart`).
+  - se reinicia el backend: `Stop-ScheduledTask ValerIA-Backend`, se cierra el `python` que quede en el puerto
+    8000 y `Start-ScheduledTask ValerIA-Backend` (`serve_backend.ps1` no tiene opción `-Restart`).
 - **Grupos**: siempre desactivados (`groupPolicy: "disabled"`); `selfChatMode: false`.
 - `openclaw config validate` acepta ambos modos con `dmPolicy` por variable (verificado el 2026-11-26).
 
@@ -370,7 +372,7 @@ Registros útiles: `openclaw logs --follow` (gateway y puente), `$MANUELITA_STAT
 (un registro por turno, sin texto ni números), `$MANUELITA_STATE_DIR/logs/mcp.jsonl` (llamadas MCP) y la
 bitácora `memory/YYYY-MM-DD.md` del workspace.
 
-**Inicio de conversación (spec 032).**
+**Inicio de conversación (spec 038).**
 
 - La primera respuesta de cada conversación lleva un saludo y una presentación de dos frases como
   máximo, antepuestos por el backend (`channels/greeting.py`), y luego la respuesta. En voz, la

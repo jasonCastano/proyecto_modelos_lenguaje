@@ -35,6 +35,7 @@ dependencies = [
     "scikit-learn>=1.7",  # spec 024: t-SNE de los embeddings (R16)
     "scipy>=1.14",  # spec 025: programación lineal del planificador (R5)
     "scrapling[fetchers]>=0.5",
+    "segno>=1.6.6",
     "trafilatura>=2.3",
     "uvicorn[standard]>=0.54.0",
     "yt-dlp>=2026.10.26",

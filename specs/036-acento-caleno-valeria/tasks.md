@@ -446,7 +446,7 @@ libre.
     y el JSON Schema `specs/014-rag-agent-memory-router/contracts/route-decision.schema.json`);
   - el canal lo pasa a `ChannelVoice.for_answer(style=…)`;
   - en la evaluación demo el guion es el respaldo determinista; en real, DeepSeek.
-- **Presentación**: para conservar las 3 variantes por idioma (prueba de la spec 032), la segunda variante en
+- **Presentación**: para conservar las 3 variantes por idioma (prueba de la spec 038), la segunda variante en
   español cambió a «¡Hola{name}, ve, qué gusto saludarte!» en lugar de agregar una cuarta.
 - **Demo**: tres de cada cuatro respuestas con estilo llevan una expresión, integrada en la primera frase.
   `--style --mode demo` da 0 turnos marcados y un uso del 60 % al 90 % según la corrida; `--focus --mode demo` sigue

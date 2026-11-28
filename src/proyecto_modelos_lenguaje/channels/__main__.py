@@ -11,7 +11,7 @@
     uv run python -m proyecto_modelos_lenguaje.channels simulate --sender +570000000001 \\
         --script tests/fixtures/channels/language_format.jsonl --check       # spec 029
     uv run python -m proyecto_modelos_lenguaje.channels simulate \
-        --script tests/fixtures/channels/conversation_start.jsonl --check    # spec 032
+        --script tests/fixtures/channels/conversation_start.jsonl --check    # spec 038
     uv run python -m proyecto_modelos_lenguaje.channels simulate \
         --script tests/fixtures/channels/stickers.jsonl --check              # spec 034
     uv run python -m proyecto_modelos_lenguaje.channels pseudonym --sender <número>   # spec 031
@@ -173,7 +173,7 @@ def run_script(args: argparse.Namespace, url: str, token: str) -> int:
     mentions = 0
     findings = 0
     check = bool(getattr(args, "check", False))
-    senders: dict[str, str] = {}  # spec 032: cada «conversation» es un número ficticio nuevo
+    senders: dict[str, str] = {}  # spec 038: cada «conversation» es un número ficticio nuevo
     stickers: dict[str, list[str]] = {}  # spec 034: stickers por conversación
     for raw in lines:
         if not raw.strip():
@@ -228,7 +228,7 @@ def fresh_sender() -> str:
 
 
 def check_introduction(item: dict, payload: dict) -> int:
-    """Spec 032 (contrato §6): presentación en la primera respuesta y nunca repetida.
+    """Spec 038 (contrato §6): presentación en la primera respuesta y nunca repetida.
 
     El guion marca cada mensaje con ``new_conversation`` (``true`` si abre la conversación). La
     longitud de la presentación (≤ 2 frases) la garantizan las variantes de ``channels.greeting``.

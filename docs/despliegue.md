@@ -193,6 +193,53 @@ openclaw channels status --probe               # whatsapp: linked, ok
 
 La sesión queda en `%USERPROFILE%\.openclaw-valeria` (fuera de Git). **Nunca** copiarla al repositorio.
 
+#### 3.7.0 Stickers (spec 034)
+
+- **Decisión**: el backend decide el sticker de cada respuesta (`channels/stickers.py`) con el acto y el
+  sentimiento del turno, el inicio de la conversación, las acciones aprobadas y el idioma. El mapeo
+  situación → sticker está en `config/stickers.toml`; los archivos son los aprobados de la spec 030
+  (`docs/whatsapp/stickers/`, Git LFS: `git lfs pull`).
+- **Ajustes** en `[channels]` de `config/agent.toml`:
+  - `stickers = true|false` es el interruptor;
+  - `stickers_per_conversation = 4` es el máximo por conversación (0 los apaga).
+
+  Reiniciar el backend después de cambiarlos.
+- **Entrega**: la hace el plugin con `sendSticker` del listener activo de WhatsApp, la API pública del
+  componente. Su configuración está en `plugins.entries.valeria-bridge.config`:
+  - `stickersDir` es la carpeta de los stickers;
+  - `stickerThinkingMs` es la espera antes de «Pensando», 8000 ms por defecto (0 lo apaga).
+
+  Después de cambiarlos: `.\scripts\openclaw_env.ps1 -Install` y esperar ~2 min.
+- **Verificación**: `uv run pml ops check` muestra `stickers` (por ejemplo «9/9 disponibles», o
+  «apagados»). El registro `channels.jsonl` guarda en `sticker` el nombre del que se decidió.
+- **Si un sticker no llega**: la respuesta llega igual. `openclaw logs --limit 50` muestra «sticker no
+  enviado» o el error, sin números. Si los archivos son punteros de Git LFS, `ops check` los lista
+  como faltantes: hay que ejecutar `git lfs pull`.
+
+#### 3.7.1 Cuentas identificadas solo por ID (spec 033, ADR 0038)
+
+WhatsApp puede entregar una cuenta solo con su ID interno (`…@lid`), sin número. El componente
+`@openclaw/whatsapp` 2026.11.10 descarta esos mensajes (`LID identity unavailable` en el registro del
+gateway) y, al enviar, convierte el ID en un número falso. El parche versionado
+`openclaw/patches/whatsapp-lid.mjs` corrige las dos cosas.
+
+- **Lo aplica `.\scripts\openclaw_env.ps1 -Install`**: después de enlazar el plugin y antes de arrancar
+  el gateway. Nunca se edita a mano la instalación.
+- **Diagnóstico sin escribir**: `node openclaw\patches\whatsapp-lid.mjs --check` devuelve `parcheado`,
+  `nativo`, `ausente` o `sin-plugin`.
+- **`uv run pml ops check`** muestra `soporte-lid`. En rojo (por ejemplo, después de reinstalar o
+  actualizar `@openclaw/whatsapp`) se corrige con `-Install`, y luego hay que esperar ~2 min.
+- **Si el componente cambia de versión** y todavía tiene el defecto, el parche no toca nada y lo explica.
+  Si la nueva versión ya lo corrige, `ops check` dice «nativo del componente».
+- **Revertir**: `openclaw plugins install @openclaw/whatsapp --force` y
+  `.\scripts\openclaw_env.ps1 -Restart`. No usar `-Install`, que vuelve a aplicar el parche.
+- **Privacidad**: el backend seudonimiza el ID como un número (`wa-…`, máscara `ID ••••1234`).
+  `channels.jsonl` solo registra `sender_kind` (`phone` o `lid`).
+- **Bloquear una cuenta sin número**: `uv run pml channels block --pseudonym wa-<16 hex>`, con el
+  seudónimo que muestran los registros.
+- **Entregas tardías**: un mensaje con más de `stale_minutes` (15, `[channels]` de
+  `config/agent.toml`) se descarta sin responder y se registra como `stale`.
+
 ### 3.8 Modo cerrado y modo abierto (SIM dedicada, spec 028)
 
 Valer-IA usa una **SIM dedicada** (no el número de un integrante). El acceso se cambia con un comando que solo
@@ -213,7 +260,7 @@ edita el `.env` externo y reinicia el gateway; nunca toca archivos versionados:
   - los números de prueba se declaran como operadores en `VALERIA_OPERATORS` (seudónimos, ver abajo): no tienen
     límites y son los únicos con atajos ocultos;
   - un número se bloquea con `uv run pml channels block --sender <número>` (y `unblock`, `blocked`).
-- **Verificar el modo**: `uv run python -m proyecto_modelos_lenguaje.ops check` muestra `modo-canal: ABIERTO al
+- **Verificar el modo**: `uv run pml ops check` muestra `modo-canal: ABIERTO al
   público` o `cerrado (N números de prueba)`, sin mostrar números.
 - **Operadores**:
   - `uv run pml channels pseudonym --sender <número>` imprime el seudónimo `wa-…` (no guarda el número);
@@ -322,6 +369,19 @@ Si algo falla, se arregla el viernes, no a las 8:05 del sábado.
 Registros útiles: `openclaw logs --follow` (gateway y puente), `$MANUELITA_STATE_DIR/logs/channels.jsonl`
 (un registro por turno, sin texto ni números), `$MANUELITA_STATE_DIR/logs/mcp.jsonl` (llamadas MCP) y la
 bitácora `memory/YYYY-MM-DD.md` del workspace.
+
+**Inicio de conversación (spec 032).**
+
+- La primera respuesta de cada conversación lleva un saludo y una presentación de dos frases como
+  máximo, antepuestos por el backend (`channels/greeting.py`), y luego la respuesta. En voz, la
+  presentación abre la nota.
+- Una conversación empieza en tres casos: el primer mensaje de un número, un mensaje después de
+  `conversation_idle_hours` sin actividad (`[channels]` en `config/agent.toml`, 12 h por defecto,
+  entre 1 y 720) y el pedido de empezar de nuevo.
+- `channels.jsonl` registra el motivo en `conversation_start` (`first_contact`, `inactivity` o
+  `restart`) y quién puso la presentación en `introduced` (`bridge` o `agent`), sin texto ni números.
+- Verificación sin teléfono:
+  `uv run python -m proyecto_modelos_lenguaje.channels simulate --script tests/fixtures/channels/conversation_start.jsonl --check`.
 
 ## 6. Contingencia
 

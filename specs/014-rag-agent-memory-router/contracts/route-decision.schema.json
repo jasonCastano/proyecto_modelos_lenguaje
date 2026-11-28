@@ -36,6 +36,10 @@
     "act": {
       "description": "Spec 020: acto de diálogo del turno (etiqueta controlada).",
       "enum": ["greeting", "smalltalk", "off_topic", "manuelita", "complaint", "correction", "minimal", "about_assistant", "closing", "thanks", "clarify", null]
+    },
+    "style": {
+      "description": "Spec 036: nivel del estilo caleño del turno (lo usa el canal para la nota de voz).",
+      "enum": ["off", "formal", "neutral", "informal", null]
     }
   }
 }

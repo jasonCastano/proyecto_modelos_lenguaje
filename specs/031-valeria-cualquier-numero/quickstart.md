@@ -28,7 +28,7 @@ uv run pml channels pseudonym --sender +57XXXXXXXXXX   # por cada número de pru
 ## 3. Abrir el canal y probar con un número nuevo
 
 1. Abrir el canal: `.\scripts\openclaw_env.ps1 -Mode open`. Esperar ~2 min a que el gateway escuche WhatsApp.
-2. Revisar el estado: `uv run python -m proyecto_modelos_lenguaje.ops check` debe mostrar
+2. Revisar el estado: `uv run pml ops check` debe mostrar
    `modo-canal: ABIERTO al público`.
 3. Desde un número que nunca le ha escrito:
    - «Hola»;

@@ -1425,7 +1425,8 @@ Specs 024 a 028; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/
 - [x] Plataforma web en cuatro áreas con consola de planificación y evidencia técnica (spec 026, ADR 0030).
 - [x] Perfiles abiertos en la web, incluido el planificador (spec 027, ADR 0031).
 - [ ] Prueba técnica de voz con la SIM vinculada y verificación de la planificación por WhatsApp; aprobar la
-  constitución 2.9.0 (canal abierto a cualquier número con límites, spec 031).
+  constitución 2.10.0 (canal abierto a cualquier número con límites, spec 031; cuentas de WhatsApp
+  identificadas solo por ID, spec 033 y ADR 0038).
 - [ ] Ensayo cronometrado y tag `v3.0.0`.
 
 ## Créditos

@@ -639,6 +639,94 @@ desordenadas. El aviso va ahora al final, una vez por hilo y tipo de dato; el ca
 y al formateador. Simulación real de `language_format.jsonl` con `pml channels simulate --check`: 0 hallazgos en 23
 mensajes y nota de voz en el idioma correcto en las 10 consultas por audio.
 
+### 3.28 Presentación al iniciar una conversación: textos del canal y workspace de OpenClaw (2026-11-27, spec 032)
+
+No cambian `prompts/agent.md` ni `prompts/voice_script.md`: la presentación no depende del modelo.
+
+| Texto | Dónde | Cambio |
+| --- | --- | --- |
+| Presentación (3 variantes es y 3 en, con el nombre opcional) | `src/proyecto_modelos_lenguaje/channels/greeting.py` | Nuevo. Dos frases como máximo: «¡Hola! Soy Valer-IA, la asistente virtual de Manuelita: …». El canal la antepone a la primera respuesta atendida de cada conversación, y la nota de voz la lleva al inicio del guion. |
+| Frase de identidad en errores | `channels/greeting.py` | Nuevo. «Soy Valer-IA, la asistente virtual de Manuelita.» antes del mensaje de error de un hilo aún sin presentar. |
+| Modo degradado | `openclaw/workspace/AGENTS.md` | Regla de mejor esfuerzo: al inicio de una conversación, el agente nativo saluda y se presenta en una o dos frases y atiende enseguida la solicitud. |
+
+Motivo: en las pruebas por WhatsApp, Valer-IA solo se presentaba si el primer mensaje era un saludo (regla de
+`agent.md`). Con una pregunta directa o una nota de voz respondía sin decir quién es. Medición sin red:
+`tests/api/test_channels_conversation_start.py` corre `conversation_start.jsonl` (11 conversaciones, 22
+mensajes, texto y voz, es y en) con 0 hallazgos de presentación faltante o repetida.
+
+### 3.29 Conversación enfocada en Manuelita: `converse.md` 1.1 y `care.md` 1.3 (2026-11-27, spec 035)
+
+| Prompt | Versión | SHA-256 (12) | Cambio |
+| --- | --- | --- | --- |
+| `prompts/converse.md` | 1.0 → 1.1 | `4e68aeda5f1f` | Nivel social: una frase de cortesía o empatía y regreso obligatorio a Manuelita (se retira «acompaña con naturalidad»). Preguntas solo sobre Manuelita. Reglas para la propuesta de charla, las historias personales (recibir sin rechazar ni opinar) y la insistencia (máximo dos frases desde el tercer turno ajeno, temas distintos, sin repetir el cierre). Ejemplos nuevos para «bien, ¿y tú?», «charlemos un rato», «fui a un partido», «mi equipo no ganó» y «let's just chat»; se retira el que cerraba con «¡Espero que haya ganado tu equipo!». |
+| `prompts/care.md` | 1.2 → 1.3 | `a37aacf02655` | Sección nueva `offer.topics` (7 temas `clave \| texto` sin cifras nuevas fuera de las ya publicadas en los puentes) y `minimal.fallback` que vuelve a Manuelita. |
+
+**Código** (sin cambios de modelo ni de parámetros):
+
+- `agent/plan.py`: `needs_redirect`, y en el plan `redirect`, `streak` y `topics`. El bloque `<plan>` exige el
+  regreso, limita las preguntas, cuenta los turnos ajenos seguidos, pide máximo dos frases desde la racha 3 y trae
+  los temas sugeridos cuando no hay puente.
+- `agent/care.py`: `offtopic_streak` y `offered_topics` en la memoria del hilo, `pick_topics` (rota sin repetir)
+  y `topics_offer`, una frase determinista de temas.
+- `agent/review.py`: los checks `offtopic_question`, `chat_invite`, `no_redirect`, `rejection` y
+  `closing_repeat`, solo con `plan.redirect`, con su nota de corrección. Usan el reintento y el respaldo
+  existentes; por frase (entrega en streaming) se aplican los tres primeros. Si lo entregado no volvió a
+  Manuelita, el cierre añade la frase de temas.
+- `agent/graph.py`: las aperturas en forma de pregunta (y «sin ofrecer temas») no se sugieren en turnos ajenos.
+  El respaldo de la racha cabe en dos frases.
+- `agent/bridges.py`: el primer turno ajeno de una racha puede llevar puente aunque la cadencia no lo permita.
+
+Motivo: en la prueba por WhatsApp del 2026-11-27 (transcripción seudonimizada en
+`tests/fixtures/converse/focus.jsonl`, conversación f01), Valer-IA ofreció «solo charlar», aceptó la charla libre
+(«charlar también se vale»), preguntó por el partido y por el equipo, rechazó lo que la persona quería compartir
+(«mejor no me cuentes») y repitió la misma frase de cierre. Fue empática, pero no volvió a Manuelita.
+
+Medición sin red: `agent converse --focus --mode demo` sobre las 16 conversaciones de `focus.jsonl` da 0 turnos
+marcados en `chain` y `agent` (preguntas ajenas, invitaciones, sin regreso, rechazos, cierres repetidos y más de
+dos frases desde la racha 3). La medición con DeepSeek (`--mode real`) queda en `docs/evaluacion_enfoque.md`
+cuando se ejecute.
+
+### 3.30 Estilo caleño profesional: `converse.md` 1.2, `agent.md` 1.11, `voice_script.md` 1.1 y `style_judge.md` 1.0 (2026-11-28, spec 036)
+
+| Archivo | Versión | SHA-256 (12) | Cambio |
+| --- | --- | --- | --- |
+| `prompts/converse.md` | 1.1 → 1.2 | `1478702ef5f1` | Regla «Estilo caleño» que obedece el bloque `<estilo>`: como máximo una expresión sugerida, solo si encaja, al inicio o al cierre; tuteo sin voseo; sin groserías ni modismos de otras regiones; con nivel formal, solo cortesías suaves. Reglas para explicar una expresión con el glosario y para confirmar «habla normal». Ejemplos de saludo, despedida, significado de «ve» y «habla normal». |
+| `prompts/agent.md` | 1.10 → 1.11 | `7a3f9c6d08cd` | Regla 17 con el mismo estilo en las respuestas con búsqueda: la expresión nunca va dentro de una cifra, una cita ni un nombre, y la respuesta dice lo mismo sin ella. |
+| `prompts/voice_script.md` | 1.0 → 1.1 | `951cd8c2f04d` | Placeholder `{{style}}` y regla 10: hasta dos expresiones habladas, frases cortas y cálidas, como se habla en Cali. |
+| `prompts/style_judge.md` | nuevo 1.0 | `5b285f57b7f3` | Juez de `agent converse --style` en modo real: `clarity` y `professionalism` de 1 a 5 (SC-006). |
+| `config/caleno.toml` | nuevo | `475679395fca` | Léxico: 12 expresiones aprobadas (significado, niveles, uso hablado y ejemplo) y 19 vetadas (groserías, modismos paisas o costeños, voseo y estereotipos), con los límites (1 escrita y 2 habladas) y las frases de «habla normal». |
+
+`prompts/conduct.md` (textos fijos), `prompts/care.md` y `prompts/qa.md` (tareas de la Fase 1) no cambian.
+
+**Código** (sin cambiar el modelo ni el motor de voz):
+
+- `agent/style.py`:
+  - carga y valida el léxico;
+  - fija el nivel del turno: `off` en inglés, con molestia, angustia o crisis, en quejas o si la persona pidió
+    hablar normal; `formal` con marcas de cortesía formal; `informal` con registro coloquial; `neutral` en los
+    demás casos;
+  - sugiere expresiones sin repetir las recientes y arma el bloque `<estilo>`.
+- `agent/review.py`: checks `style_banned`, `style_excess`, `style_repeat` y `style_off`. En las respuestas con
+  búsqueda se quita la frase; en la conversación se usan el reintento y el respaldo.
+- `agent/graph.py`: el plan lleva `style` y `style_hints`, y el bloque `<estilo>` entra a la conversación y a la
+  respuesta con búsqueda. La memoria del hilo guarda las expresiones recientes y la petición de hablar normal.
+- `agent/router.py`: «¿qué significa "ve"?» y «habla normal» se conversan, sin búsqueda en el corpus.
+- `channels/voice.py`: el guion hablado recibe el bloque `<estilo>` del nivel del turno (expuesto como
+  `route.style`). Con expresiones vetadas o de más, se regenera una vez y luego se quitan esas frases.
+- `channels/greeting.py`: una de las tres presentaciones en español abre con «¡Hola, ve, qué gusto saludarte!».
+- `voice --audition`: la frase caleña con las voces femeninas de español no castellanas y cada expresión hablada,
+  en WAV fuera del repositorio, para elegir la voz por audición.
+
+Motivo: el equipo pidió que Valer-IA suene caleña en lo escrito y en lo hablado, con perfil siempre profesional.
+Decisiones: acento por palabras y ritmo con la voz más cercana del catálogo (no hay voces colombianas), tuteo sin
+voseo, y estilo en la web y en WhatsApp.
+
+Medición sin red: `agent converse --style --mode demo` sobre las 14 conversaciones de `caleno.jsonl` da 0 turnos
+marcados en `chain` y `agent` y un uso de expresiones del 60 % al 90 % en los turnos informales o neutros (meta
+≥ 60 %). `--focus --mode demo` (spec 035) sigue en 0. La evaluación general de conversación en demo no cambia: su
+única falla, SC-005 por «Te atiendo como Cliente B2B», es anterior a esta spec. La medición con DeepSeek, la voz
+elegida en la audición y la prueba humana (SC-007) quedan en `docs/evaluacion_caleno.md` cuando se ejecuten.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

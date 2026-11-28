@@ -80,6 +80,16 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate.add_argument(
         "--fake", action="store_true", help="Equivale a --mode demo (sin red ni clave)."
     )
+    evaluate.add_argument(
+        "--planning-activation",
+        action="store_true",
+        help="Spec 028: activación del planificador por contexto (SC-007, sin red).",
+    )
+    evaluate.add_argument(
+        "--markdown",
+        action="store_true",
+        help="Con --planning-activation: escribe docs/evaluacion_activacion_planificador.md.",
+    )
 
     tools_cmd = sub.add_parser(
         "tools", help="Catálogo de herramientas (20 de la spec 024 + 6 de la 025)."
@@ -631,6 +641,10 @@ def main(argv: Sequence[str] | None = None, *, project_root: Path | None = None)
         from . import cli_m3
 
         return cli_m3.run_planning(args, root)
+    if getattr(args, "planning_activation", False):
+        from . import cli_m3
+
+        return cli_m3.run_planning_activation(args, root)
     if args.command in {"tools", "memory"} or getattr(args, "tools", False):
         from . import cli_m3
 

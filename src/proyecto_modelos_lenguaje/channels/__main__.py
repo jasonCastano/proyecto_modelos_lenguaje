@@ -4,6 +4,16 @@
     uv run python -m proyecto_modelos_lenguaje.channels simulate --sender +570000000001 --kind image
     uv run python -m proyecto_modelos_lenguaje.channels simulate --sender +570000000001 \\
         --profile planificador --text "Tenemos 15 % menos caña esta semana"   # spec 025
+    uv run python -m proyecto_modelos_lenguaje.channels simulate --sender +570000000001 \\
+        --kind audio --language en --text "What does Manuelita produce?"      # spec 028 (voz)
+    uv run python -m proyecto_modelos_lenguaje.channels simulate --sender +570000000001 \\
+        --script tests/fixtures/channels/natural_conversation.jsonl          # spec 028
+    uv run python -m proyecto_modelos_lenguaje.channels simulate --sender +570000000001 \\
+        --script tests/fixtures/channels/language_format.jsonl --check       # spec 029
+    uv run python -m proyecto_modelos_lenguaje.channels pseudonym --sender <número>   # spec 031
+    uv run python -m proyecto_modelos_lenguaje.channels block --sender <número>
+    uv run python -m proyecto_modelos_lenguaje.channels unblock --sender <número>
+    uv run python -m proyecto_modelos_lenguaje.channels blocked
 
 Usa ``VALERIA_CHANNEL_TOKEN`` del ``.env`` y llama ``POST /api/channels/messages`` como lo haría el
 plugin ``valeria-bridge``: sirve para ensayar sin teléfono y para la prueba de carga
@@ -15,11 +25,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
@@ -27,11 +39,23 @@ from dotenv import load_dotenv
 from ..config import PROJECT_ROOT
 
 EXIT_OK, EXIT_ERROR, EXIT_UNAVAILABLE = 0, 1, 2
+COMMAND_MENTION = re.compile(r"(?<![\w/])/[a-záéíóúñ]+", re.IGNORECASE)
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m proyecto_modelos_lenguaje.channels")
     commands = parser.add_subparsers(dest="command", required=True)
+    # Spec 031: comandos del operador (en el servidor). Calculan el seudónimo; nunca guardan ni
+    # imprimen el número.
+    for name, text in (
+        ("pseudonym", "imprime el seudónimo wa-… de un número (para VALERIA_OPERATORS)"),
+        ("block", "bloquea un número (no recibe respuesta)"),
+        ("unblock", "desbloquea un número"),
+    ):
+        operator = commands.add_parser(name, help=text)
+        operator.add_argument("--sender", required=True, help="número E.164")
+        operator.add_argument("--channel", default="whatsapp", choices=("whatsapp", "telegram"))
+    commands.add_parser("blocked", help="lista los seudónimos bloqueados")
     simulate = commands.add_parser("simulate", help="envía un mensaje como el puente de OpenClaw")
     simulate.add_argument("--sender", required=True, help="número E.164 (de prueba)")
     simulate.add_argument("--text", default=None)
@@ -45,7 +69,24 @@ def build_parser() -> argparse.ArgumentParser:
         default=1,
         help="N remitentes distintos a la vez (prueba de carga, SC-002)",
     )
-    simulate.add_argument("--timeout", type=float, default=60.0)
+    simulate.add_argument("--timeout", type=float, default=120.0)
+    simulate.add_argument(
+        "--language",
+        default=None,
+        choices=("es", "en"),
+        help="spec 028: pista de idioma de una nota de voz simulada (--kind audio)",
+    )
+    simulate.add_argument(
+        "--script",
+        type=Path,
+        default=None,
+        help="spec 028: JSONL con mensajes (text, kind, lang) que envía un mismo remitente",
+    )
+    simulate.add_argument(
+        "--check",
+        action="store_true",
+        help="spec 029: revisa idioma, fuentes y aviso de cada respuesta (y voz si fue audio)",
+    )
     simulate.add_argument(
         "--profile",
         default=None,
@@ -74,17 +115,32 @@ def _post_profile(args: argparse.Namespace, url: str, token: str, index: int) ->
     httpx.post(url, json=body, headers={"X-Channel-Token": token}, timeout=args.timeout)
 
 
+def _message(
+    args: argparse.Namespace, sender: str, text: str | None, kind: str, language: str | None
+) -> dict:
+    body = {
+        "channel": args.channel,
+        "message_id": uuid.uuid4().hex,
+        "sender": sender,
+        "kind": kind,
+        "text": text,
+        "received_at": datetime.now(UTC).isoformat(),
+    }
+    if kind == "audio":  # spec 028: así llega una nota de voz ya transcrita por el gateway
+        body["input_mode"] = "voice"
+        if language:
+            body["language_hint"] = language
+    return body
+
+
 def _send(args: argparse.Namespace, url: str, token: str, index: int) -> dict:
     if getattr(args, "profile", None):
         _post_profile(args, url, token, index)
-    body = {
-        "channel": args.channel,
-        "message_id": args.message_id if index == 0 and args.message_id else uuid.uuid4().hex,
-        "sender": _sender(args.sender, index),
-        "kind": args.kind,
-        "text": args.text,
-        "received_at": datetime.now(UTC).isoformat(),
-    }
+    body = _message(
+        args, _sender(args.sender, index), args.text, args.kind, getattr(args, "language", None)
+    )
+    if index == 0 and args.message_id:
+        body["message_id"] = args.message_id
     started = time.perf_counter()
     response = httpx.post(url, json=body, headers={"X-Channel-Token": token}, timeout=args.timeout)
     elapsed = round((time.perf_counter() - started) * 1000)
@@ -92,15 +148,126 @@ def _send(args: argparse.Namespace, url: str, token: str, index: int) -> dict:
     return {"http": response.status_code, "elapsed_ms": elapsed, **payload}
 
 
+def run_script(args: argparse.Namespace, url: str, token: str) -> int:
+    """Spec 028 (T034): conversación completa de un mismo remitente, mensaje por mensaje."""
+    lines = args.script.read_text(encoding="utf-8").splitlines()
+    mentions = 0
+    findings = 0
+    check = bool(getattr(args, "check", False))
+    for raw in lines:
+        if not raw.strip():
+            continue
+        item = json.loads(raw)
+        kind = item.get("kind", "text")
+        body = _message(args, args.sender, item.get("text"), kind, item.get("lang"))
+        response = httpx.post(
+            url, json=body, headers={"X-Channel-Token": token}, timeout=args.timeout
+        )
+        payload = response.json() if response.content else {}
+        delivered = delivered_text(payload)
+        text = "\n".join(delivered)
+        found = COMMAND_MENTION.findall("\n".join(payload.get("messages") or []))
+        mentions += len(found)
+        voice = payload.get("voice") or {}
+        print(f"> {item.get('id', '')} {item.get('text', '')}")
+        if voice:
+            print(f"  (nota de voz {voice.get('language')}, {voice.get('duration_ms')} ms)")
+            label = "solo fuentes" if delivered else "sin texto"
+            print(f"  [{payload.get('status')}] (texto: {label}) {text}")
+        else:
+            print(f"  [{payload.get('status')}] (texto: completo) {text}")
+        if found:
+            print(f"  ⚠ menciona comandos: {', '.join(found)}")
+        if check:
+            findings += _check_reply(item, payload)
+    print(f"Mensajes con comandos mencionados: {mentions}")
+    if check:
+        print(f"Hallazgos de formato (spec 029): {findings}")
+    return EXIT_OK if mentions == 0 and findings == 0 else EXIT_ERROR
+
+
+def delivered_text(payload: dict) -> list[str]:
+    """Spec 030: el texto que entregaría el plugin si la nota de voz llega (solo fuentes)."""
+    if payload.get("voice") and isinstance(payload.get("sources_messages"), list):
+        return [m for m in payload["sources_messages"] if m.strip()]
+    return list(payload.get("messages") or [])
+
+
+def _check_reply(item: dict, payload: dict) -> int:
+    """Specs 029 y 030: un idioma, fuentes ordenadas, aviso oportuno, voz y sin texto repetido."""
+    from .quality import review_reply
+
+    language = item.get("lang") or "es"
+    issues = review_reply(
+        delivered_text(payload),
+        language,
+        sensitive_input=bool(item.get("sensitive")),
+        voice=bool(payload.get("voice")),
+    )
+    for issue in issues:
+        print(f"  ✗ {issue.code} (mensaje {issue.message_index + 1}): {issue.detail}")
+    missing_voice = item.get("kind") == "audio" and not payload.get("voice")
+    if missing_voice:
+        print("  ✗ voice_missing: la nota de voz no recibió respuesta en audio")
+    return len(issues) + int(missing_voice)
+
+
+def _operator_store():
+    from ..agent.config import load_agent_config, resolve_state_dir
+    from .store import ChannelStore
+
+    config = load_agent_config()
+    return ChannelStore(resolve_state_dir(config.state_env_var) / "channels.sqlite3")
+
+
+def run_operator(args: argparse.Namespace) -> int:
+    """Spec 031: seudónimo y bloqueo por número, sin guardar ni imprimir el número."""
+    from .identity import SenderError, channel_salt, pseudonym
+
+    if args.command == "blocked":
+        store = _operator_store()
+        rows = store.blocked()
+        store.close()
+        for user_id, blocked_at in rows:
+            print(f"{user_id}  {blocked_at}")
+        print(f"Bloqueados: {len(rows)}")
+        return EXIT_OK
+    try:
+        user_id = pseudonym(args.sender, channel_salt(), args.channel)
+    except SenderError as exc:
+        print(str(exc), file=sys.stderr)
+        return EXIT_ERROR
+    if args.command == "pseudonym":
+        print(user_id)
+        return EXIT_OK
+    store = _operator_store()
+    if args.command == "block":
+        changed = store.block(user_id)
+        print(f"bloqueado {user_id}" if changed else f"ya estaba bloqueado {user_id}")
+    else:
+        changed = store.unblock(user_id)
+        print(f"desbloqueado {user_id}" if changed else f"no estaba bloqueado {user_id}")
+    store.close()
+    return EXIT_OK
+
+
 def main(argv: list[str] | None = None) -> int:
     load_dotenv(PROJECT_ROOT / ".env", override=False)
     args = build_parser().parse_args(argv)
+    if args.command in {"pseudonym", "block", "unblock", "blocked"}:
+        return run_operator(args)
     token = os.environ.get("VALERIA_CHANNEL_TOKEN", "")
     if not token:
         print("Falta VALERIA_CHANNEL_TOKEN en el entorno o en .env.", file=sys.stderr)
         return EXIT_ERROR
     backend = (args.backend or "http://127.0.0.1:8000").rstrip("/")
     url = f"{backend}/api/channels/messages"
+    if args.script is not None:
+        try:
+            return run_script(args, url, token)
+        except httpx.HTTPError as exc:
+            print(f"Backend no disponible en {backend}: {exc}", file=sys.stderr)
+            return EXIT_UNAVAILABLE
     try:
         with ThreadPoolExecutor(max_workers=max(1, args.concurrency)) as pool:
             results = list(

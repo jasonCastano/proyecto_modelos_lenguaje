@@ -622,11 +622,16 @@ class ChannelMessageRequest(RequestModel):
     kind: ChannelKind = "text"
     text: str | None = Field(default=None, max_length=4000)
     received_at: str | None = Field(default=None, max_length=40)
+    # Spec 028 (channel-api-v2 §1): nota de voz transcrita por el gateway e idioma detectado.
+    input_mode: Literal["text", "voice"] | None = None
+    language_hint: Literal["es", "en"] | None = None
 
     @model_validator(mode="after")
     def text_when_needed(self) -> ChannelMessageRequest:
         if self.kind == "text" and not (self.text or "").strip():
             raise ValueError("text es obligatorio cuando kind = text")
+        if self.input_mode is None:
+            self.input_mode = "voice" if self.kind == "audio" else "text"
         return self
 
 
@@ -635,10 +640,40 @@ class ChannelReplyModel(BaseModel):
 
     status: ChannelReplyStatus
     messages: list[str] = Field(default_factory=list)
+    sources_messages: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Spec 030: solo el bloque de fuentes; el plugin lo entrega cuando la nota de voz "
+            "se envió (si no, entrega `messages`)."
+        ),
+    )
     thread_id: str | None = None
     route: str | None = None
     tools: list[str] = Field(default_factory=list)
     latency_ms: int = 0
+    voice: ChannelVoiceModel | None = None
+
+
+class ChannelVoiceModel(BaseModel):
+    """Nota de voz de respuesta (spec 028, channel-api-v2 §1): audio temporal fuera del repo."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    audio_path: str
+    language: Literal["es", "en"]
+    duration_ms: int = Field(ge=0)
+    mime: str
+
+
+class ChannelTranscriptionModel(BaseModel):
+    """``POST /api/channels/transcriptions`` (spec 028, channel-api-v2 §2)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    text: str
+    language: Literal["es", "en"]
+    audio_ms: int = Field(ge=0)
+    latency_ms: int = Field(ge=0)
 
 
 class ChannelStatus(BaseModel):

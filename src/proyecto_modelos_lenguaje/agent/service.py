@@ -405,10 +405,12 @@ class ChatService:
         input_meta: dict[str, Any] | None = None,
         profile: str | None = None,
         channel: str = "web",
+        language: str | None = None,
     ) -> ChatOutcome:
         thread_id, state = self._prepare(
-            message, thread_id, user_id, variant, input_meta, profile=profile, channel=channel
-        )
+            message, thread_id, user_id, variant, input_meta, profile=profile, channel=channel,
+            language=language,
+        )  # fmt: skip
         state["mode"] = mode
         result = self._invoke(variant, mode, state, thread_id)
         return self._log(self._outcome(thread_id, result), variant, mode)
@@ -424,6 +426,7 @@ class ChatService:
         input_meta: dict[str, Any] | None = None,
         profile: str | None = None,
         channel: str = "web",
+        language: str | None = None,
     ) -> tuple[str, Iterator[dict[str, Any]]]:
         """Valida antes de abrir el flujo (los errores salen como HTTP) y devuelve los eventos.
 
@@ -432,8 +435,9 @@ class ChatService:
         respuesta validada de ``POST /api/chat``). Un fallo a mitad del flujo emite ``error``.
         """
         thread_id, state = self._prepare(
-            message, thread_id, user_id, variant, input_meta, profile=profile, channel=channel
-        )
+            message, thread_id, user_id, variant, input_meta, profile=profile, channel=channel,
+            language=language,
+        )  # fmt: skip
         state["mode"] = mode
         return thread_id, self._events(variant, mode, state, thread_id)
 
@@ -504,6 +508,7 @@ class ChatService:
         *,
         profile: str | None = None,
         channel: str = "web",
+        language: str | None = None,
     ) -> tuple[str, dict[str, Any]]:
         original = validate_message(message)
         validate_user_id(user_id)
@@ -521,6 +526,8 @@ class ChatService:
             # Spec 023: metadatos del dictado; siempre se reescribe para no heredar el turno previo.
             "input_meta": dict(input_meta) if input_meta else None,
             "channel": channel,  # spec 025: la autorización del planificador depende del canal
+            # Spec 029: idioma del turno que indica el canal (None = se detecta del mensaje).
+            "turn_language": language if language in ("es", "en") else None,
         }
         if chosen is not None:
             state["profile"] = chosen  # spec 025: /perfil o selector de la web (hilo)

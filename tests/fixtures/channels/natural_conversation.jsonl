@@ -1,0 +1,17 @@
+{"id": "n01", "text": "hola", "lang": "es", "expect": "intro"}
+{"id": "n02", "text": "¿qué puedes hacer?", "lang": "es", "expect": "intro"}
+{"id": "n03", "text": "¿Qué produce Manuelita?", "lang": "es", "expect": "answer"}
+{"id": "n04", "text": "¿Y qué certificaciones tiene?", "lang": "es", "expect": "answer"}
+{"id": "n05", "text": "empecemos de nuevo", "lang": "es", "expect": "restart"}
+{"id": "n06", "text": "olvida lo que sabes de mí", "lang": "es", "expect": "pending"}
+{"id": "n07", "text": "mmm", "lang": "es", "expect": "ambiguous"}
+{"id": "n08", "text": "dale", "lang": "es", "expect": "approve"}
+{"id": "n09", "text": "guarda que prefiero respuestas cortas", "lang": "es", "expect": "pending"}
+{"id": "n10", "text": "mejor no", "lang": "es", "expect": "reject"}
+{"id": "n11", "text": "guarda que me interesa la sostenibilidad", "lang": "es", "expect": "pending"}
+{"id": "n12", "text": "¿cuáles son los canales oficiales de Manuelita para trabajar con ellos?", "lang": "es", "expect": "superseded"}
+{"id": "n13", "text": "respóndeme por escrito", "lang": "es", "expect": "format_text"}
+{"id": "n14", "text": "mándame audio", "lang": "es", "expect": "format_voice"}
+{"id": "n15", "text": "hi, what can you do?", "lang": "en", "expect": "intro"}
+{"id": "n16", "text": "What does Manuelita produce?", "lang": "en", "expect": "answer"}
+{"id": "n17", "text": "let's start over", "lang": "en", "expect": "restart"}

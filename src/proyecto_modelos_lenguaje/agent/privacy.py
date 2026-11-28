@@ -24,6 +24,12 @@ from langchain.agents.middleware.pii import (
 PHONE_PATTERN = re.compile(
     r"(?<![\w.])(?:\+?57[\s.-]?)?(?:3\d{2}[\s.-]?\d{3}[\s.-]?\d{4}|60\d[\s.-]?\d{3}[\s.-]?\d{4})(?![\w.])"
 )
+# Spec 029 (R3): «mi contraseña es…», «my password is…», «clave: …» (con conector explícito para
+# no confundir «la clave del éxito»).
+PASSWORD_PATTERN = re.compile(
+    r"(?i)\b(?:contraseña|contrasena|clave|password|passcode|pin)"
+    r"(?:\s+(?:es|era|is|was)\s+|\s*[:=]\s*)[«\"']?\S{3,}"
+)
 DOCUMENT_PATTERN = re.compile(
     r"(?i)\b(?:c\.?\s?c\.?|cedula|cédula|documento|nit|pasaporte|t\.?\s?i\.?)"
     r"(?:\s+(?:es|de\s+ciudadan[ií]a|de\s+identidad|n(?:o|ú|u)?\.?|n[uú]mero))*"
@@ -43,12 +49,14 @@ def _regex_detector(kind: str, pattern: re.Pattern[str]) -> Callable[[str], list
 
 detect_phone = _regex_detector("phone", PHONE_PATTERN)
 detect_document = _regex_detector("document", DOCUMENT_PATTERN)
+detect_password = _regex_detector("password", PASSWORD_PATTERN)
 
 DETECTORS: dict[str, Callable[[str], list[PIIMatch]]] = {
     "email": detect_email,
     "credit_card": detect_credit_card,
     "document": detect_document,
     "phone": detect_phone,
+    "password": detect_password,
 }
 
 
@@ -73,7 +81,7 @@ def redact_pii(text: str) -> str:
 
 def build_pii_middleware() -> list[PIIMiddleware]:
     """``PIIMiddleware`` en modo ``redact`` para la entrada del agente (correo, tarjeta, documento,
-    teléfono)."""
+    teléfono, contraseña)."""
     return [
         PIIMiddleware(kind, strategy="redact", detector=detector, apply_to_input=True)
         for kind, detector in DETECTORS.items()

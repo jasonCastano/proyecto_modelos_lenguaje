@@ -99,4 +99,4 @@ def test_redaction_keeps_business_figures() -> None:
     assert redact_pii("Manuelita produjo 1.864 toneladas en 2023") == (
         "Manuelita produjo 1.864 toneladas en 2023"
     )
-    assert len(build_pii_middleware()) == 4
+    assert len(build_pii_middleware()) == 5  # spec 029: + contraseña

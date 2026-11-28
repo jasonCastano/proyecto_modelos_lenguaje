@@ -121,13 +121,22 @@ def guided_answer(answer: str, guide: str) -> str:
     """
     if answer == FALLBACK_ANSWER or "Atención:" not in guide:
         return answer
+    english = "- Idioma: en" in guide
     lead = ""
     if "- Sentimiento:" in guide:
-        lead = "Entiendo cómo te sientes y quiero ayudarte. "
-    if "- Idioma: en" in guide:
+        lead = (
+            "I understand how you feel and I want to help. "
+            if english
+            else "Entiendo cómo te sientes y quiero ayudarte. "
+        )
+    if english:
+        # Spec 029: en inglés no queda ninguna frase fija en español (la evidencia es del corpus).
         lead += "Here is what the public documents of Manuelita say about it. "
+        answer = answer.replace("Según los documentos públicos de Manuelita:", "").strip()
     tail = [
-        f"Sobre {label} no tengo información, porque lo mío es Manuelita."
+        f"I don't have information about {label}; my focus is Manuelita."
+        if english
+        else f"Sobre {label} no tengo información, porque lo mío es Manuelita."
         for label in EXTERNAL_LINE.findall(guide)
     ]
     return " ".join([f"{lead}{answer}", *tail]).strip()

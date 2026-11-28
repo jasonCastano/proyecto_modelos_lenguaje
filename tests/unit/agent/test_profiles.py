@@ -40,7 +40,8 @@ SPEC_024_READ = {
 def test_five_profiles_loaded() -> None:
     loaded = load_profiles()
     assert tuple(loaded) == PROFILE_KEYS
-    assert [p.key for p in loaded.values() if p.requires_authorization] == ["planificador"]
+    # Spec 028 (D3): el planificador es libre en la web y en WhatsApp; ningún perfil exige permiso.
+    assert [p.key for p in loaded.values() if p.requires_authorization] == []
     for profile in loaded.values():
         assert 3 <= len(profile.label) <= 40
 
@@ -145,15 +146,23 @@ def test_whatsapp_keeps_allowlist(no_planner_env: pytest.MonkeyPatch) -> None:
 
 
 def test_effective_profile_by_channel(no_planner_env: pytest.MonkeyPatch) -> None:
+    """Spec 028: el planificador rige igual en la web y en WhatsApp, sin lista de autorizados."""
     assert profiles.effective_profile("planificador", "anon", "web") == "planificador"
-    assert profiles.effective_profile("planificador", "wa-ffff", "whatsapp") == "visitante"
+    assert profiles.effective_profile("planificador", "wa-ffff", "whatsapp") == "planificador"
 
 
 def test_describe_by_channel(no_planner_env: pytest.MonkeyPatch) -> None:
-    web = profiles.describe("anon", "web")
-    assert len(web) == 5
-    assert all(item["authorized"] and not item["requires_authorization"] for item in web)
-    whatsapp = {item["key"]: item for item in profiles.describe("wa-ffff", "whatsapp")}
-    assert whatsapp["planificador"]["requires_authorization"] is True
-    assert whatsapp["planificador"]["authorized"] is False
-    assert whatsapp["visitante"]["authorized"] is True
+    for channel in ("web", "whatsapp"):
+        described = profiles.describe("wa-ffff", channel)
+        assert len(described) == 5
+        assert all(item["authorized"] and not item["requires_authorization"] for item in described)
+
+
+def test_dormant_authorization_still_guards_whatsapp_if_closed_again() -> None:
+    """El código de autorización queda inactivo, pero sigue funcionando si se vuelve a cerrar."""
+    closed = profiles.Profile.__new__(profiles.Profile)
+    for field_name in profiles.Profile.__dataclass_fields__:
+        object.__setattr__(closed, field_name, getattr(load_profiles()["planificador"], field_name))
+    object.__setattr__(closed, "requires_authorization", True)
+    assert closed.requires_authorization_in("whatsapp") is True
+    assert closed.requires_authorization_in("web") is False

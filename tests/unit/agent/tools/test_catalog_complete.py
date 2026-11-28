@@ -53,10 +53,9 @@ def test_catalog_has_exactly_the_26_contract_tools_in_order() -> None:
     assert sum(spec.kind == "read" for spec in specs) == 20
     assert all(spec.impl is not None for spec in specs if 4 <= spec.number <= 15)
     assert all(spec.impl is not None for spec in specs if 21 <= spec.number <= 25)
-    assert [s.name for s in specs if s.kind == "read" and not s.mcp] == [
-        "simulate_production_scenario",
-        "optimize_production_plan",
-    ]
+    # Spec 028 (D1): ninguna lectura de planificación va al MCP; quedan las 15 de atención.
+    assert [s.name for s in specs if s.kind == "read" and not s.mcp] == PLANNING[:5]
+    assert sum(spec.kind == "read" and spec.mcp for spec in specs) == 15
     assert all(spec.requires_approval == (spec.kind == "write") for spec in specs)
 
 

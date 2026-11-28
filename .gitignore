@@ -72,6 +72,10 @@ openclaw/**/.env
 openclaw/plugins/*/node_modules/
 openclaw/plugins/*/dist/
 **/.openclaw*/
+# Spec 028: respaldos que OpenClaw escribe junto a la configuración cuando la edita
+openclaw/*.bak*
+openclaw/*.last-good
+openclaw/*.rejected.*
 
 # Video pitch (spec 028): clip de calibración de Higgsfield, no va al montaje.
 video/pitch/calibracion/

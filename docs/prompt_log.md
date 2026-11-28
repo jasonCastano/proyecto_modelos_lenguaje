@@ -610,6 +610,35 @@ Prompts **de generación de video**, no del agente. Pedido del integrante en `vi
 - **Revisión**: `plano-01b` entra por la izquierda entre la caña, no por la derecha; el integrante lo aceptó.
 - **Estado**: ver `video/pitch/escenas.json` (`job`, `review` y `anchors` por plano).
 
+### 3.26 Conversación natural y voz por WhatsApp: `voice_script.md` 1.0 y `agent.md` 1.9 (2026-11-26, spec 028)
+
+| Prompt | Versión | SHA-256 (12) | Cambio |
+| --- | --- | --- | --- |
+| `prompts/voice_script.md` | 1.0 | `c371510c1c2e` | Nuevo. Convierte la respuesta escrita y citada en el guion de una nota de voz: 40–110 palabras, conversacional, en el idioma de la pregunta (es/en), sin citas, URLs, listas ni «Fuentes», cifras dichas como se hablan y sin hechos nuevos. |
+| `prompts/agent.md` | 1.9 | `169f0995d210` | Presentación en una o dos frases ante un saludo o «¿qué puedes hacer?» (incluye que acepta notas de voz); nunca pedir ni sugerir comandos ni «responde SÍ o NO»; la regla 16 aplica a cualquier persona que plantee un problema de producción. |
+
+El guion no es la única garantía (research R3): `channels/voice.py` limpia citas, URLs y el bloque de fuentes, exige
+que toda cifra del guion esté en la respuesta escrita y, si no, usa un respaldo determinista (las primeras oraciones
+limpias). En modo demo siempre se usa el respaldo. La conversación sin comandos la garantizan los textos del canal
+(`channels/bridge.py`) y la prueba `tests/unit/channels/test_no_commands.py`, que recorre esos textos y el guion
+natural de 17 mensajes (`tests/fixtures/channels/natural_conversation.jsonl`) sin encontrar comandos. Medición de herramientas con la 1.9 (2026-11-26): 83,7 % en la primera corrida por un falso positivo del
+planificador en el enrutador (corregido) y **90,7 % (39/43)** con 0 búsquedas en triviales después de la
+corrección (`docs/evaluacion_herramientas.md`).
+
+### 3.27 Idioma del turno, aviso natural y fuentes ordenadas: `conduct.md` 1.3 y `agent.md` 1.10 (2026-11-27, spec 029)
+
+| Prompt | Versión | SHA-256 (12) | Cambio |
+| --- | --- | --- | --- |
+| `prompts/conduct.md` | 1.3 | `54cbdb810460` | `sensitive_notice` natural («Ojo: por aquí no hace falta que compartas datos como tarjetas, documentos o contraseñas; …») y variantes `_en` (`sensitive_notice_en`, `remember_offer_en`). Una sección `<clave>_en` es la variante en inglés; si no existe, el texto se omite en un turno en inglés (nunca se mezcla idioma). |
+| `prompts/agent.md` | 1.10 | `b2c9f105a446` | Regla 8: ante marcas `[REDACTED_...]` el modelo no comenta ni advierte; el sistema añade el aviso al final. Evita el doble aviso visto en la simulación real. |
+
+Motivo: las pruebas por WhatsApp del 2026-11-27 (`tests/fixtures/channels/regression_2026-11-27.jsonl`) mostraron
+el aviso robótico al inicio de las tres respuestas (lo disparaba el número del remitente en el encabezado del canal:
+el teléfono ya no amerita aviso; la contraseña sí), una respuesta en inglés con textos fijos en español y fuentes
+desordenadas. El aviso va ahora al final, una vez por hilo y tipo de dato; el canal pasa el idioma del turno al agente
+y al formateador. Simulación real de `language_format.jsonl` con `pml channels simulate --check`: 0 hallazgos en 23
+mensajes y nota de voz en el idioma correcto en las 10 consultas por audio.
+
 ## 4. Pendiente
 
 - Ejecutar el quickstart con la clave real de DeepSeek y registrar latencia, tokens y citas (T045).

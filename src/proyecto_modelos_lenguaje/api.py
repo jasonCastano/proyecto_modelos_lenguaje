@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import contextlib
 import hmac
 import json
 import logging
 import os
 import uuid
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Literal
 
 from dotenv import load_dotenv
@@ -33,6 +35,7 @@ from .api_models import (
     ChannelMessageRequest,
     ChannelReplyModel,
     ChannelStatus,
+    ChannelTranscriptionModel,
     ChatRequest,
     ChatResponse,
     CitedAnswer,
@@ -61,6 +64,9 @@ from .channels.bridge import ChannelBridge, InboundMessage
 from .channels.identity import channel_salt, normalize_sender
 from .channels.journal import recent_stats, workspace_dir
 from .channels.store import ChannelStore
+from .channels.transcription import MAX_BYTES as CHANNEL_AUDIO_MAX_BYTES
+from .channels.transcription import transcribe_bytes
+from .channels.voice import ChannelVoice
 from .config import PROJECT_ROOT
 from .llm import (
     LLMAuthError,
@@ -141,6 +147,20 @@ def _stt_warmup() -> None:
         if service.config.warmup and service.config.engine != "fake":
             service.warmup_async()
     except Exception:  # el dictado es opcional
+        pass
+
+
+@app.on_event("startup")
+def _channel_voice_warmup() -> None:
+    """Spec 028: con el canal y las notas de voz activos, precarga también la voz en inglés."""
+    try:
+        if not (os.environ.get(CHANNEL_TOKEN_ENV) and load_agent_config().channels.voice_notes):
+            return
+        for language in get_voice_service().config.supported_languages[1:]:
+            service = get_voice_service(language)
+            if service.config.warmup and service.config.engine != "fake":
+                service.warmup_async()
+    except Exception:  # la voz es opcional
         pass
 
 
@@ -909,14 +929,32 @@ def _channel_bridge() -> ChannelBridge:
     config = load_agent_config()
     state_dir = resolve_state_dir(config.state_env_var)
     mode = os.environ.get(CHANNEL_MODE_ENV, "real").strip() or "real"
+    channel_mode = "demo" if mode == "demo" else "real"
     return ChannelBridge(
         _chat_service(),
         ChannelStore(state_dir / "channels.sqlite3"),
         config.channels,
         salt=channel_salt(),
-        mode="demo" if mode == "demo" else "real",
+        mode=channel_mode,
         log_dir=state_dir / "logs",
         workspace=workspace_dir(),
+        voice=_channel_voice(state_dir, config.channels, channel_mode),
+    )
+
+
+def _channel_voice(state_dir: Path, channels: Any, mode: str) -> ChannelVoice | None:
+    """Spec 028: notas de voz de respuesta (guion con el modelo en modo real; respaldo en demo)."""
+    if not channels.voice_notes:
+        return None
+
+    def model() -> Any:
+        return None if mode == "demo" else build_chat_model(load_llm_config())
+
+    return ChannelVoice(
+        state_dir / channels.voice_dir,
+        model_factory=model,
+        max_seconds=channels.voice_max_seconds,
+        retention_minutes=channels.voice_retention_minutes,
     )
 
 
@@ -963,7 +1001,13 @@ async def channel_message(request: Request) -> dict[str, Any] | JSONResponse:
             status_code=400,
         )
     message = InboundMessage(
-        payload.channel, payload.message_id, sender, payload.kind, payload.text
+        payload.channel,
+        payload.message_id,
+        sender,
+        payload.kind,
+        payload.text,
+        input_mode=payload.input_mode or "text",
+        language_hint=payload.language_hint,
     )
     try:
         reply = await run_in_threadpool(_channel_bridge().handle, message)
@@ -976,6 +1020,39 @@ async def channel_message(request: Request) -> dict[str, Any] | JSONResponse:
             status_code=500,
         )
     return reply.to_dict()
+
+
+@app.post("/api/channels/transcriptions", response_model=ChannelTranscriptionModel)
+async def channel_transcription(request: Request) -> dict[str, Any] | JSONResponse:
+    """Transcribe una nota de voz del canal (spec 028, channel-api-v2 §2).
+
+    Lo llama el CLI que ejecuta OpenClaw (``tools.media.audio``). El audio llega crudo en el cuerpo,
+    se procesa en memoria con el dictado ya cargado y nunca se guarda ni se registra su texto.
+    """
+    denied = _channel_guard(request)
+    if denied is not None:
+        return denied
+    data = await _read_capped(request, CHANNEL_AUDIO_MAX_BYTES)
+
+    def error(code: str, message: str, status_code: int, retryable: bool) -> JSONResponse:
+        action = "reintentar" if retryable else "revisar"
+        return _api_error(
+            code, message, retryable=retryable, action=action, status_code=status_code
+        )
+
+    try:
+        result = await run_in_threadpool(transcribe_bytes, data)
+    except AudioTooLargeError:
+        return error("audio_too_long", "La nota de voz es demasiado larga.", 413, False)
+    except EmptyAudioError, UnsupportedAudioError:
+        return error("audio_invalid", "No se pudo leer la nota de voz.", 400, False)
+    except SttUnavailableError, SttBusyError:
+        return error("stt_unavailable", "La transcripción no está disponible.", 503, True)
+    # Spec 029: el puente reconocerá este texto como nota de voz cuando llegue (si falla, se
+    # entrega igual la transcripción).
+    with contextlib.suppress(Exception):
+        _channel_bridge().transcriptions.note(result.text, result.language)
+    return result.to_dict()
 
 
 @app.get("/api/channels/status", response_model=ChannelStatus)

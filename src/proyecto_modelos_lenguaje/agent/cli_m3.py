@@ -40,11 +40,14 @@ def render_tools_doc() -> str:
         "docs/herramientas.md` desde `src/proyecto_modelos_lenguaje/agent/catalog.py` "
         "(spec 024, ítem 1.1). No editar a mano.",
         "",
-        "Regla de oro: **lectura automática, escritura con aprobación**. Las de lectura marcadas "
-        "«MCP» también se exponen por el servidor MCP `valeria-tools`; simular y optimizar la "
-        "producción (spec 025) solo existen en el backend. Las de escritura piden «SÍ/NO» en la "
-        "web y en WhatsApp. Las herramientas 21–26 usan datos **sintéticos** de demostración y "
-        "solo las ve el perfil planificador.",
+        "**26 herramientas: 20 de atención (1–20) + 6 de planificación (21–26).** Regla de oro: "
+        "**lectura automática, escritura con aprobación**. Las 15 de lectura marcadas «MCP» "
+        "también se exponen por el servidor MCP `valeria-tools` (modo degradado); la "
+        "planificación solo existe en el backend (spec 028). Las de escritura piden la "
+        "confirmación de la persona, "
+        "dicha con sus palabras, en la web y en WhatsApp. Las herramientas 21–26 usan datos "
+        "**sintéticos** de demostración y se activan cuando la conversación plantea un problema "
+        "de producción (ruta `planning`, para cualquier persona).",
         "",
         "| # | Herramienta | Tipo | Rutas | Fuente | Descripción |",
         "|---:|---|---|---|---|---|",
@@ -147,9 +150,31 @@ def run_evaluate_tools(args: argparse.Namespace, root: Path) -> int:
     if mode == "real" or args.json_out:
         default = root / "docs" / "evaluacion_herramientas.json"
         json_out = Path(args.json_out) if args.json_out else default
-        json_out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        json_out.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
         json_out.with_suffix(".md").write_text(render_tools_markdown(report), encoding="utf-8")
         print(f"Escribí {json_out} y {json_out.with_suffix('.md')}")
+    return 0 if summary["meets_target"] else 1
+
+
+# --- spec 028: activación del planificador por contexto -------------------------------------------
+
+
+def run_planning_activation(args: argparse.Namespace, root: Path) -> int:
+    """0 cumple SC-007 (≥ 14/15 en cada lado), 1 no cumple."""
+    from .planning_activation import evaluate, render_markdown, summarize
+
+    results = evaluate()
+    summary = summarize(results)
+    for result in results:
+        mark = "ok  " if result.hit else "FALLA"
+        print(f"{mark} {result.case_id} esperado={result.expected} activó={result.activated}")
+    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    if getattr(args, "markdown", False):
+        target = root / "docs" / "evaluacion_activacion_planificador.md"
+        target.write_text(render_markdown(results, summary), encoding="utf-8")
+        print(f"Escribí {target}")
     return 0 if summary["meets_target"] else 1
 
 
@@ -242,17 +267,26 @@ def run_shield_channel(args: argparse.Namespace, root: Path) -> int:
     phone = "+570000000999"
     previous = os.environ.get(ADVERSARIAL_ENV)
 
-    def run(adversarial: bool, attacks: Any, kind: str) -> list[Any]:
+    def run(adversarial: bool, attacks: Any, kind: str, *, voice: bool = False) -> list[Any]:
         os.environ[ADVERSARIAL_ENV] = ADVERSARIAL_VALUE if adversarial else ""
         bridge = build_channel_bridge(args.mode)
 
         def handle(message_id: str, text: str) -> Any:
+            if voice:  # spec 028: el ataque llega como nota de voz ya transcrita por el gateway
+                message = InboundMessage(
+                    "whatsapp", message_id, phone, "audio", text, input_mode="voice"
+                )
+                return bridge.handle(message)
             return bridge.handle(InboundMessage("whatsapp", message_id, phone, "text", text))
 
         return run_channel_attacks(handle, attacks, kind=kind)
 
     try:
-        results = run(False, DIRECT_ATTACKS, "direct") + run(True, indirect_attacks(), "indirect")
+        results = (
+            run(False, DIRECT_ATTACKS, "direct")
+            + run(False, DIRECT_ATTACKS, "direct-voice", voice=True)
+            + run(True, indirect_attacks(), "indirect")
+        )
     finally:
         if previous is None:
             os.environ.pop(ADVERSARIAL_ENV, None)
@@ -267,7 +301,9 @@ def run_shield_channel(args: argparse.Namespace, root: Path) -> int:
     if args.mode == "real" or args.json_out:
         default = root / "docs" / "evaluacion_blindaje_canal.json"
         json_out = Path(args.json_out) if args.json_out else default
-        json_out.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        json_out.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
         markdown = Path(args.report) if args.report else json_out.with_suffix(".md")
         markdown.write_text(render_shield_markdown(report), encoding="utf-8")
         print(f"Escribí {json_out} y {markdown}")

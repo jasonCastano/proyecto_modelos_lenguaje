@@ -145,9 +145,76 @@ def http_json(url: str, headers: dict[str, str] | None = None) -> tuple[int, Any
         return response.status_code, response.text
 
 
+ANSI = re.compile(r"\x1b\[[0-9;]*m")
+# Solo la prueba de conexión: «Runtime: stopped» describe el servicio propio de OpenClaw, que no
+# usamos (el gateway de Valer-IA corre como tarea «ValerIA-Gateway»).
+GATEWAY_DOWN = re.compile(r"connectivity check:\s*failed|econnrefused", re.I)
+WHATSAPP_LINKED = re.compile(r"\blinked\b|\bconnected\b", re.I)
+WHATSAPP_DOWN = re.compile(r"not linked|unlinked|logged out|disconnected|failed|econnrefused", re.I)
+AUDIT_CRITICAL = re.compile(r"\b([1-9]\d*)\s+critical\b|critical:\s*([1-9]\d*)", re.I)
+
+
 def _last_line(text: str) -> str:
-    lines = [line for line in text.splitlines() if line.strip()]
+    lines = [line for line in ANSI.sub("", text).splitlines() if line.strip()]
     return lines[-1][:200] if lines else ""
+
+
+def judge_openclaw(name: str, code: int, output: str) -> CheckResult:
+    """Lee el estado real en la salida del CLI (spec 028): el código 0 no basta.
+
+    ``openclaw gateway status`` termina con 0 aunque el gateway esté detenido, y los demás comandos
+    imprimen consejos genéricos al final; por eso se buscan las señales de cada estado.
+    """
+    text = ANSI.sub("", output)
+    if code != 0:
+        return CheckResult(name, False, _last_line(text) or f"código {code}")
+    if name == "gateway":
+        down = GATEWAY_DOWN.search(text)
+        return CheckResult(name, not down, "detenido" if down else "escuchando")
+    if name == "whatsapp":
+        linked = WHATSAPP_LINKED.search(text) and not WHATSAPP_DOWN.search(text)
+        return CheckResult(name, bool(linked), "vinculado" if linked else "sin vincular o caído")
+    if name == "mcp":
+        configured = "valeria-tools" in text
+        return CheckResult(name, configured, "valeria-tools" if configured else "sin valeria-tools")
+    if name == "auditoria":
+        critical = AUDIT_CRITICAL.search(text)
+        detail = (
+            f"{critical.group(1) or critical.group(2)} críticos" if critical else "sin críticos"
+        )
+        return CheckResult(name, not critical, detail)
+    return CheckResult(name, True, _last_line(text))
+
+
+OPENCLAW_DIR = ".openclaw-valeria"
+
+
+def _openclaw_env_values(path: Path, keys: Sequence[str]) -> dict[str, str]:
+    """Solo las claves pedidas del ``.env`` de OpenClaw (nunca se lee ni se muestra nada más)."""
+    values: dict[str, str] = {}
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        key, sep, value = line.partition("=")
+        if sep and key.strip() in keys:
+            values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
+
+
+def channel_mode(state_dir: Path | None = None) -> CheckResult:
+    """Spec 031: modo del canal de WhatsApp (abierto o cerrado), sin mostrar números."""
+    configured = os.environ.get("OPENCLAW_STATE_DIR", "").strip()
+    base = state_dir or (Path(configured) if configured else Path.home() / OPENCLAW_DIR)
+    env_file = base / ".env"
+    if not env_file.is_file():
+        return CheckResult("modo-canal", False, "sin .env de OpenClaw")
+    keys = ("WA_DM_POLICY", "WA_ALLOW_1", "WA_ALLOW_2", "WA_ALLOW_3")
+    values = _openclaw_env_values(env_file, keys)
+    policy = values.get("WA_DM_POLICY", "").lower()
+    if policy == "open":
+        return CheckResult(
+            "modo-canal", True, "ABIERTO al público (recuerda cerrarlo al terminar el proyecto)"
+        )
+    allowed = sum(1 for key in keys[1:] if values.get(key) and values[key] != "*")
+    return CheckResult("modo-canal", True, f"cerrado ({allowed} números de prueba)")
 
 
 def ops_check(
@@ -171,6 +238,7 @@ def ops_check(
         results.append(CheckResult("canal-backend", True, json.dumps(body.get("channels", {}))))
     else:
         results.append(CheckResult("canal-backend", False, f"HTTP {status}"))
+    results.append(channel_mode())
     for name, command in (
         ("gateway", ["openclaw", "gateway", "status"]),
         ("whatsapp", ["openclaw", "channels", "status", "--probe"]),
@@ -178,7 +246,7 @@ def ops_check(
         ("auditoria", ["openclaw", "security", "audit"]),
     ):
         code, output = run(command)
-        results.append(CheckResult(name, code == 0, _last_line(output)))
+        results.append(judge_openclaw(name, code, output))
     code, output = run(["git", "status", "--short"])
     dirty = [line for line in output.splitlines() if line.strip()]
     results.append(

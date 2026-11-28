@@ -19,10 +19,17 @@ def test_only_read_tools_are_exposed() -> None:
     writes = {spec.name for spec in catalog() if spec.kind == "write"}
     assert exposed == reads and not exposed & writes
     assert {"save_profile", "forget_memory"} <= writes
-    # Spec 025 (R16): el modo degradado no planifica.
-    assert {"get_plant_state", "get_commitments", "search_operating_procedures"} <= exposed
-    assert not {"simulate_production_scenario", "optimize_production_plan"} & exposed
-    assert "save_production_proposal" not in exposed
+    # Spec 028 (D1, FR-026): el modo degradado no planifica ni consulta la planta sintética.
+    planning = {
+        "get_plant_state",
+        "get_commitments",
+        "search_operating_procedures",
+        "simulate_production_scenario",
+        "optimize_production_plan",
+        "save_production_proposal",
+    }
+    assert not planning & exposed
+    assert len(exposed) == 15  # SC-008
 
 
 def test_schemas_and_call() -> None:

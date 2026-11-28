@@ -25,6 +25,9 @@ PUBLIC = [
     "Hola",
     "¿Qué programas sociales tiene la fundación?",
     "¿Cuál es la producción de azúcar de Manuelita?",
+    # Spec 028: preguntas informativas sobre plantas reales (t04 de la batería de herramientas).
+    "¿Cuál es la capacidad de la planta de biodiésel de Manuelita Aceites y Energía?",
+    "¿Cuál es la capacidad de la planta de etanol de Manuelita?",
 ]
 
 
@@ -54,13 +57,20 @@ def test_public_questions_are_not_planning(question: str) -> None:
     assert not is_planning_request(question)
 
 
-def test_only_authorized_planner_gets_the_route() -> None:
+def test_planning_is_decided_by_context_for_anyone() -> None:
+    """Spec 028 (R9): sin perfil ni autorización; solo reglas, por turno."""
     question = "Tenemos 15 % menos caña esta semana, ¿cómo cumplimos los contratos?"
-    decision = planning_decision(question, "planificador", authorized=True)
+    decision = planning_decision(question)
     assert decision is not None and decision.route == "planning" and decision.decided_by == "rules"
-    assert planning_decision(question, "planificador", authorized=False) is None
-    assert planning_decision(question, "visitante", authorized=True) is None
-    assert planning_decision("¿Qué produce Manuelita?", "planificador", authorized=True) is None
+    assert planning_decision("¿Qué produce Manuelita?") is None
+
+
+def test_follow_up_continues_only_after_a_planning_turn() -> None:
+    assert planning_decision("¿Y si baja 20 %?") is None
+    follow = planning_decision("¿Y si baja 20 %?", previous_route="planning")
+    assert follow is not None and "repregunta" in follow.reason
+    assert planning_decision("¿Qué produce Manuelita?", previous_route="planning") is None
+    assert planning_decision("¿Y en 2022?", previous_route="planning") is None
 
 
 def test_llm_classifier_never_returns_planning() -> None:

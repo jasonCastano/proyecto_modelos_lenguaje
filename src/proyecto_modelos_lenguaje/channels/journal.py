@@ -36,6 +36,15 @@ class ChannelLogRecord:
     model_calls: int = 0
     error_code: str | None = None
     event: str | None = None  # spec 025: p. ej. «planner_denied» (sin número ni texto)
+    # Spec 028: modo de entrada, idioma, formato y tiempos de voz (nunca texto ni audio).
+    input_mode: str = "text"
+    language: str | None = None
+    reply_format: str | None = None
+    script_ms: int | None = None
+    voice_ms: int | None = None
+    voice_sent: bool = False
+    # Spec 030: qué va por escrito con la voz: «full», «sources» o «none» (solo la etiqueta).
+    written: str | None = None
     ts: str = field(default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds"))
 
     @classmethod
@@ -85,12 +94,19 @@ def append_daily(record: ChannelLogRecord, root: Path | None = None) -> Path | N
 
 
 def recent_stats(log_dir: Path | None, *, now: datetime | None = None) -> dict[str, Any]:
-    """Resumen de la última hora para ``GET /api/channels/status``."""
+    """Resumen para ``GET /api/channels/status``: última hora y, desde la spec 031, el día local.
+
+    ``people_today`` cuenta seudónimos distintos atendidos hoy; ``limited_today`` los mensajes
+    frenados por límite (ventana o tope diario) y ``blocked_today`` los de números bloqueados. Sin
+    números ni texto.
+    """
     stats: dict[str, dict[str, Any]] = {}
     if log_dir is None or not (log_dir / "channels.jsonl").is_file():
         return stats
     current = now or datetime.now(UTC)
     latencies: dict[str, list[int]] = {}
+    today = current.astimezone().date()
+    people: dict[str, set[str]] = {}
     for line in (log_dir / "channels.jsonl").read_text(encoding="utf-8").splitlines():
         try:
             row = json.loads(line)
@@ -100,15 +116,33 @@ def recent_stats(log_dir: Path | None, *, now: datetime | None = None) -> dict[s
         channel = str(row.get("channel", "?"))
         entry = stats.setdefault(
             channel,
-            {"last_message_at": None, "messages_1h": 0, "errors_1h": 0, "p90_latency_ms": 0},
+            {
+                "last_message_at": None,
+                "messages_1h": 0,
+                "errors_1h": 0,
+                "p90_latency_ms": 0,
+                "people_today": 0,
+                "limited_today": 0,
+                "blocked_today": 0,
+            },
         )
         entry["last_message_at"] = row["ts"]
+        if ts.astimezone().date() == today:
+            event = row.get("event")
+            if event in ("rate_limited", "daily_capped"):
+                entry["limited_today"] += 1
+            elif event == "blocked":
+                entry["blocked_today"] += 1
+            elif row.get("status") != "ignored" and row.get("user_id"):
+                people.setdefault(channel, set()).add(str(row["user_id"]))
         if (current - ts).total_seconds() <= 3600:
             entry["messages_1h"] += 1
             if row.get("status") == "error":
                 entry["errors_1h"] += 1
             if row.get("status") in ("answered", "approval_resolved"):
                 latencies.setdefault(channel, []).append(int(row.get("latency_ms") or 0))
+    for channel, users in people.items():
+        stats[channel]["people_today"] = len(users)
     for channel, values in latencies.items():
         ordered = sorted(values)
         stats[channel]["p90_latency_ms"] = ordered[min(len(ordered) - 1, int(0.9 * len(ordered)))]

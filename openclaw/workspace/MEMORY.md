@@ -15,13 +15,14 @@
 
 ## Operación
 
-- Valer-IA responde por el puente `valeria-bridge` → backend FastAPI (router, memoria, 20 herramientas,
-  citas). Si el backend no responde en 45 s, responde el agente nativo de OpenClaw con `valeria-tools`
+- Valer-IA responde por el puente `valeria-bridge` → backend FastAPI (router, memoria, 20 herramientas
+  de atención y 6 de planificación, citas, notas de voz en español e inglés). Si el backend no responde
+  en 90 s, responde el agente nativo de OpenClaw con `valeria-tools`
   (solo lectura) en **modo degradado**: debe avisarlo y no prometer acciones de escritura.
-- Toda escritura (perfil, preferencias, olvido, exportación, solicitud de contacto) se confirma con
-  «SÍ/NO» y vence a los 10 minutos.
-- Canal: número de un integrante; nunca grupos (`groupPolicy: disabled`). Invitados por allowlist o
-  emparejamiento aprobado por el equipo.
+- Toda escritura (perfil, preferencias, olvido, exportación, solicitud de contacto) se confirma con las
+  palabras de la persona («dale», «mejor no») y vence a los 10 minutos. Nadie necesita comandos.
+- Canal: SIM dedicada a Valer-IA (spec 028); nunca grupos (`groupPolicy: disabled`). Modo cerrado
+  (números de prueba) y modo abierto a cualquier número solo en el ensayo y la sustentación.
 
 ## Aprendizajes
 

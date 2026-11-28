@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 2.7.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
+**Versión**: 2.9.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -716,9 +716,16 @@ canales reales (WhatsApp o Telegram), evaluado y observable.
    nunca un reemplazo. Hay **un solo agente**: el plugin `valeria-bridge` (hook `before_dispatch`) envía cada
    mensaje admitido al mismo `ChatService` de la web por `POST /api/channels/messages` (loopback +
    `X-Channel-Token`).
-9. **Número**: el de un integrante, vinculado como dispositivo. Solo chats individuales (`groupPolicy:
-   "disabled"`, `selfChatMode: false`); `dmPolicy: "allowlist"` con E.164 desde variables de entorno y
-   `"pairing"` solo durante la jornada de sustentación.
+9. **Número** (enmiendas 2.8.0 y 2.9.0, specs 028 y 031): una **SIM dedicada** a Valer-IA, vinculada como
+   dispositivo y desactivada después de la sustentación. Solo chats individuales (`groupPolicy: "disabled"`,
+   `selfChatMode: false`). `dmPolicy` se lee de una variable: modo cerrado (`"allowlist"` con números de
+   prueba E.164 desde variables de entorno) y modo abierto (`"open"` con `allowFrom: ["*"]`; cualquier número,
+   sin códigos de emparejamiento), que se usa hasta el fin del proyecto. Se cambia con
+   `scripts/openclaw_env.ps1 -Mode`, que edita solo el `.env` externo; ningún número entra al repositorio, y
+   `ops check` muestra el modo y advierte cuando está abierto. Con el canal abierto, el backend aplica por
+   seudónimo un límite por ventana corta y un tope diario (`[channels]` de `config/agent.toml`; un único
+   aviso natural y luego silencio), permite bloquear seudónimos (`pml channels block`) y reserva los atajos
+   ocultos a los operadores de `VALERIA_OPERATORS` (seudónimos, sin límites).
 10. **Seudónimos**: el número NO DEBE guardarse ni registrarse. Se convierte en `wa-<16 hex>` con HMAC-SHA256
     y `VALERIA_CHANNEL_SALT`. Los registros (`channels.jsonl`, `mcp.jsonl`, bitácora `memory/YYYY-MM-DD.md`)
     no llevan texto de mensajes ni números, y los archivos versionados del workspace no llevan datos de
@@ -726,13 +733,18 @@ canales reales (WhatsApp o Telegram), evaluado y observable.
 11. **Catálogo único**: las herramientas del agente se declaran en `agent/catalog.py` (mínimo 20, esquema
     Pydantic con `extra="forbid"`, `requires_approval ⇔ write`). De ahí salen el agente, el servidor MCP,
     `GET /api/tools` y `docs/herramientas.md`; no se declaran herramientas en otro lugar. Toda escritura pide
-    «SÍ/NO» también en WhatsApp y vence a los 10 minutos.
+    la confirmación de la persona también en WhatsApp, dicha con sus palabras («dale», «mejor no»;
+    una respuesta ambigua se vuelve a preguntar y nunca se ejecuta), y vence a los 10 minutos.
 12. **MCP de solo lectura**: el servidor propio `valeria-tools` expone únicamente las herramientas de lectura.
-    Lo usa el agente nativo de OpenClaw en el **modo degradado** (backend caído o > 45 s), sin escrituras.
+    Lo usa el agente nativo de OpenClaw en el **modo degradado** (backend caído o > 90 s, para cubrir la cola
+    por persona y la voz), sin escrituras ni planificación: expone 15 herramientas de lectura de atención.
 13. **Persistencia**: `SqliteSaver`, `SqliteStore` y `channels.sqlite3` (WAL) en `$MANUELITA_STATE_DIR` se
     aceptan como el «equivalente» a PostgresSaver de la regla 0: un proceso, ≤ 20 usuarios simultáneos y
     candado por usuario. Escalar a varios procesos obliga a revisar esta regla.
-14. **Hardening**: sandbox Docker sin red, `tools.deny`, `fs.workspaceOnly`, `exec` denegado;
+14. **Hardening** (enmienda 2.8.0): si el servidor permite virtualización, sandbox Docker sin red; si no (caso
+    del portátil servidor, spec 028 R12), sandbox apagado con `tools.deny` que retira al agente nativo todas
+    sus herramientas propias salvo el MCP de lectura, como riesgo aceptado (ADR 0037). Siempre `tools.deny`,
+    `fs.workspaceOnly`, `exec` denegado;
     `openclaw security audit` sin hallazgos críticos antes de la sustentación.
 15. **Despliegue**: PC del equipo como servidor (servicios con reinicio automático), reproducible con
     `docs/despliegue.md`. WhatsApp no usa túnel (conexión saliente); el túnel, si existe, solo publica la web.
@@ -744,7 +756,8 @@ añaden:
     - Los perfiles (visitante, cliente B2B, proveedor, colaborador, planificador) se declaran en un solo lugar,
       con su foco y su subconjunto del catálogo.
     - El router combina ruta y perfil, y la traza muestra el perfil activo.
-    - El perfil se guarda en la memoria de largo plazo solo con aprobación y se borra con `/olvidar`.
+    - El perfil se guarda en la memoria de largo plazo solo con aprobación y se borra cuando la persona lo
+      pide con sus palabras («olvida lo que sabes de mí»; `/olvidar` queda como atajo del operador).
 17. **Información pública**: los perfiles cliente, proveedor y colaborador responden solo con la capa oro y sus
     citas. NO DEBEN dar precios, condiciones comerciales, datos internos ni datos de personas. Las cotizaciones van
     a un humano con «SÍ».
@@ -760,9 +773,9 @@ añaden:
     - Si no hay solución factible, se declara el conflicto y no se inventa capacidad.
     - El agente recomienda y el equipo de planta decide.
 20. **Autorización**:
-    - El perfil planificador es de libre elección en la web y solo para usuarios autorizados en WhatsApp (lista
-      fuera del repositorio; spec 027, ADR 0031).
-    - Guardar una propuesta exige «SÍ/NO» con vencimiento de 10 minutos.
+    - El perfil planificador es libre en la web y en WhatsApp (enmienda 2.8.0, spec 028, ADR 0037). La ruta
+      `planning` la deciden las reglas por contexto, solo en ese turno y su repregunta, sin cambiar el perfil.
+    - Guardar una propuesta exige la confirmación de la persona con vencimiento de 10 minutos.
     - Ninguna herramienta se conecta con sistemas reales de planta.
     - El modo degradado no simula, no optimiza ni guarda.
 21. **Evaluación**:
@@ -770,6 +783,15 @@ añaden:
       (20 consultas) se fijan antes de evaluar.
     - Las evaluaciones vigentes (herramientas, triviales, blindaje y retrieval) no pueden bajar de su último valor
       publicado.
+22. **Conversación y voz** (enmienda 2.8.0, spec 028, ADR 0037):
+    - En WhatsApp nadie necesita comandos y ningún texto los sugiere; las intenciones del canal se reconocen
+      por contexto en español e inglés. Los comandos quedan como atajos ocultos del operador.
+    - Las notas de voz se transcriben y se sintetizan localmente (dictado de la spec 023, voz de la spec 016);
+      la regla 8 se refiere al modelo de lenguaje, que sigue en la nube.
+    - La respuesta escrita conserva citas y fuentes; la nota de voz es un guion conversacional sin citas, URLs
+      ni cifras que no estén en la respuesta escrita, en el idioma de la pregunta.
+    - Los audios no se registran ni se versionan: los entrantes se procesan en memoria y los generados se
+      borran a los 10 minutos.
 
 ---
 
@@ -1007,6 +1029,8 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 | 2.5.0 | 2026-11-27 | **MINOR**: imágenes de perfil de Valer-IA (spec 030, ADR 0034): foto de perfil y portadas de WhatsApp, LinkedIn y Facebook compuestas a partir de la imagen de referencia sintética, sin modelos generativos y sin costo, con la declaración de IA en el texto del perfil de cada red, ficha y aprobación humana por pieza (§10). Requiere la aprobación de ambos integrantes. |
 | 2.6.0 | 2026-11-27 | **MINOR**: frontend profesional de Valer-IA (spec 031, ADR 0035): entrada como sitio de producto de una sección por pantalla con el video pitch en el hero; cuatro áreas con un mismo sistema (paleta de marca con los colores del logotipo, Archivo, un botón primario verde); fotos sustitutas de Wikimedia Commons con licencia libre citadas; skill `design-taste-frontend` sin copiar su kit; la consulta de los Módulos 1 y 2 pasa a la evidencia (§3.7). Requiere la aprobación de ambos integrantes. |
 | 2.7.0 | 2026-11-27 | **MINOR**: audios de los stickers de Valer-IA (spec 030 US6, ADR 0036): la frase de cada sticker con la voz oficial del agente (Phonon, spec 016), sintetizada en local y sin costo, en OGG/Opus de ≤ 5 s, con licencia CC BY-NC 4.0 y atribución en la ficha, y aprobación de un integrante por audio (§10). Requiere la aprobación de ambos integrantes. |
+| 2.8.0 | 2026-11-27 | **MINOR**: Valer-IA natural y con voz por WhatsApp (spec 028, ADR 0037): SIM dedicada con modo cerrado y abierto (regla 9); confirmación de escrituras en lenguaje natural (regla 11); modo degradado a los 90 s y MCP de 15 lecturas sin planificación (regla 12); hardening sin Docker cuando el servidor no permite virtualización, con Qdrant nativo (regla 14); olvido por intención natural (regla 16); planificador libre en WhatsApp y activado por contexto (regla 20); nueva regla 22 (conversación sin comandos y voz local con guion sin citas). Requiere la aprobación de ambos integrantes. |
+| 2.9.0 | 2026-11-27 | **MINOR**: canal de WhatsApp abierto a cualquier número (spec 031): el modo abierto se usa hasta el fin del proyecto, con límites por seudónimo (ventana corta y tope diario con un único aviso natural), bloqueo de seudónimos, atajos ocultos solo para operadores (`VALERIA_OPERATORS`) y el modo visible en `ops check`. Se enmienda la regla 9 (antes: modo abierto sin límite y solo en el ensayo y la jornada). Requiere la aprobación de ambos integrantes. |
 | 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
@@ -1206,4 +1230,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 2.7.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
+**Versión**: 2.9.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27

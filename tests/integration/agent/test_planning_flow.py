@@ -17,10 +17,8 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 
-from proyecto_modelos_lenguaje.agent.graph import PLANNER_ONLY_NOTE
 from proyecto_modelos_lenguaje.agent.memory import memory_store
 from proyecto_modelos_lenguaje.agent.planning import DECISION_PHRASE, SYNTHETIC_LABEL
-from proyecto_modelos_lenguaje.agent.service import ChatError
 from tests.agent_helpers import make_service
 
 QUESTION = "Tenemos 15 % menos caña esta semana. ¿Cómo cumplimos azúcar, etanol y energía?"
@@ -159,7 +157,7 @@ def test_any_web_user_plans_without_authorization(planner_env: Path) -> None:
     names = {tool["name"] for tool in outcome.turn.tools}
     assert outcome.turn.profile == "planificador" and outcome.turn.route.route == "planning"
     assert "optimize_production_plan" in names
-    assert PLANNER_ONLY_NOTE not in outcome.turn.answer
+    assert "autorizad" not in outcome.turn.answer
 
 
 def test_self_introduced_planner_plans_on_the_web(planner_env: Path) -> None:
@@ -170,19 +168,37 @@ def test_self_introduced_planner_plans_on_the_web(planner_env: Path) -> None:
     assert outcome.turn.profile == "planificador" and outcome.turn.route.route == "planning"
 
 
-def test_whatsapp_still_refuses_unlisted_planner(planner_env: Path) -> None:
-    """Spec 027 (FR-014): fuera de la web sigue la lista de autorizados."""
+def test_whatsapp_planner_is_open(planner_env: Path) -> None:
+    """Spec 028 (D3, FR-021): en WhatsApp el planificador es libre, como en la web."""
     service = make_service(model=PlannerModel(), store=memory_store())
-    with pytest.raises(ChatError) as info:
-        service.send(
-            QUESTION, user_id=USER, variant="agent", profile="planificador", channel="whatsapp"
-        )
-    assert info.value.code == "planner_not_authorized" and info.value.status_code == 403
+    outcome = service.send(
+        QUESTION, user_id=USER, variant="agent", profile="planificador", channel="whatsapp"
+    )
+    assert outcome.turn.route.route == "planning"
 
 
-def test_visitor_asking_to_plan_gets_no_optimizer(planner_env: Path) -> None:
+def test_visitor_planning_question_activates_the_planner_for_that_turn(
+    planner_env: Path,
+) -> None:
+    """Spec 028 (FR-022, FR-023): por contexto, sin cambiar de perfil; sigue en la repregunta."""
+    service = make_service(model=PlannerModel(), store=memory_store())
+    first = service.send(QUESTION, user_id="visitor", variant="agent", channel="whatsapp")
+    names = {tool["name"] for tool in first.turn.tools}
+    assert first.turn.route.route == "planning" and "optimize_production_plan" in names
+    assert first.turn.profile == "planificador"  # perfil activo del turno
+    assert SYNTHETIC_LABEL in first.turn.answer
+    follow = service.send(
+        "¿Y si baja 20 %?", thread_id=first.thread_id, user_id="visitor", variant="agent"
+    )
+    assert follow.turn.route.route == "planning"
+    assert "repregunta" in follow.turn.route.reason
+
+
+def test_informative_question_does_not_activate_the_planner(planner_env: Path) -> None:
     service = make_service(store=memory_store())
-    outcome = service.send(QUESTION, user_id="visitor", variant="agent")
-    names = {tool["name"] for tool in outcome.turn.tools}
+    outcome = service.send(
+        "¿Qué programas sociales tiene Manuelita con los cultivadores de caña?",
+        user_id="visitor",
+        variant="agent",
+    )
     assert outcome.turn.route.route != "planning" and outcome.turn.profile == "visitante"
-    assert not names & {"optimize_production_plan", "simulate_production_scenario"}

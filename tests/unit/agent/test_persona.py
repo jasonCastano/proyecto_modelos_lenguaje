@@ -78,7 +78,7 @@ def test_sensitive_data_notice(variant: str) -> None:
         variant=variant,
     )
     assert outcome.notices == ["sensitive_data"]
-    assert outcome.turn.answer.startswith(load_conduct()["sensitive_notice"])
+    assert outcome.turn.answer.endswith(load_conduct()["sensitive_notice"])  # spec 029: al final
     assert "4111" not in outcome.turn.question
     thread = service.thread(outcome.thread_id)
     assert "4111" not in str(thread)

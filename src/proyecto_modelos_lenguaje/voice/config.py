@@ -26,6 +26,16 @@ class VoiceConfigError(ValueError):
 
 
 @dataclass(frozen=True)
+class LanguageVoice:
+    """Spec 028 (research R4): modelo y voz de Phonon para un idioma adicional."""
+
+    model: str
+    voice: str
+    quant: str = "q8_0"
+    voice_gender: str = "female"
+
+
+@dataclass(frozen=True)
 class VoiceConfig:
     enabled: bool = True
     engine: str = "phonon"
@@ -36,6 +46,29 @@ class VoiceConfig:
     voice_gender: str = "female"
     max_chars: int = 600
     warmup: bool = True
+    # Spec 028: idiomas adicionales (p. ej. «en»); el idioma principal es ``language``.
+    languages: tuple[tuple[str, LanguageVoice], ...] = ()
+
+    @property
+    def supported_languages(self) -> tuple[str, ...]:
+        return (self.language, *(code for code, _ in self.languages))
+
+    def for_language(self, language: str) -> VoiceConfig:
+        """La misma configuración con el modelo y la voz de ``language``."""
+        if language == self.language:
+            return self
+        for code, extra in self.languages:
+            if code == language:
+                return replace(
+                    self,
+                    model=extra.model,
+                    language=code,
+                    voice=extra.voice,
+                    quant=extra.quant,
+                    voice_gender=extra.voice_gender,
+                    languages=(),
+                )
+        raise VoiceConfigError(f"No hay voz configurada para el idioma {language!r}.")
 
     def validate(self) -> VoiceConfig:
         if self.engine not in ENGINES:
@@ -49,6 +82,11 @@ class VoiceConfig:
             raise VoiceConfigError("max_chars debe estar entre 1 y 1000.")
         if not str(self.voice).strip():
             raise VoiceConfigError("La voz configurada no puede estar vacía.")
+        for code, extra in self.languages:
+            if len(code) != 2 or not code.isalpha() or code == self.language:
+                raise VoiceConfigError(f"Idioma de voz inválido o repetido: {code!r}.")
+            if extra.quant not in QUANTS or not extra.model.strip() or not extra.voice.strip():
+                raise VoiceConfigError(f"Voz del idioma {code!r} incompleta o inválida.")
         return self
 
 
@@ -61,6 +99,19 @@ def _flag(name: str, current: bool) -> bool:
     return current
 
 
+def _languages(raw: object) -> tuple[tuple[str, LanguageVoice], ...]:
+    if not isinstance(raw, dict):
+        raise VoiceConfigError("[voice.languages] debe ser una tabla por idioma.")
+    fields = set(LanguageVoice.__dataclass_fields__)
+    result: list[tuple[str, LanguageVoice]] = []
+    for code, entry in raw.items():
+        if not isinstance(entry, dict) or not {"model", "voice"} <= set(entry):
+            raise VoiceConfigError(f"[voice.languages.{code}] necesita model y voice.")
+        values = {key: str(value) for key, value in entry.items() if key in fields}
+        result.append((str(code).lower(), LanguageVoice(**values)))
+    return tuple(result)
+
+
 def load_voice_config(path: Path | None = None) -> VoiceConfig:
     """Lee el TOML (si existe), aplica las variables de entorno y valida."""
     source = Path(path) if path is not None else CONFIG_PATH
@@ -68,8 +119,11 @@ def load_voice_config(path: Path | None = None) -> VoiceConfig:
     if source.exists():
         with source.open("rb") as handle:
             data = dict(tomllib.load(handle).get("voice", {}))
-    allowed = set(VoiceConfig.__dataclass_fields__)
-    config = VoiceConfig(**{key: value for key, value in data.items() if key in allowed})
+    allowed = set(VoiceConfig.__dataclass_fields__) - {"languages"}
+    languages = _languages(data.get("languages") or {})
+    config = VoiceConfig(
+        **{key: value for key, value in data.items() if key in allowed}, languages=languages
+    )
     engine = os.environ.get("MANUELITA_VOICE_ENGINE", "").strip().lower()
     voice = os.environ.get("MANUELITA_VOICE", "").strip()
     config = replace(

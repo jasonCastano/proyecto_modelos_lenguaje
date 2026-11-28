@@ -4,9 +4,9 @@ Contrato: ``specs/025-agentes-manuelita-idea7/contracts/planning-tools.md``. Rut
 perfil ``planificador``. Toda salida empieza con la etiqueta de datos sintéticos y las cifras salen
 de ``planning.py`` (simulador y programación lineal), nunca del modelo de lenguaje.
 
-``simulate_production_scenario`` y ``optimize_production_plan`` no van al MCP
-(``mcp_allowed=False``):
-en el modo degradado no se planifica (constitución, regla 20; research R16).
+Ninguna herramienta de planificación va al MCP (``mcp_allowed=False``): en el modo degradado no se
+planifica (constitución, regla 20; research R16) y, desde la spec 028 (D1), tampoco se consultan los
+datos sintéticos de la planta; el MCP queda con las 15 lecturas de atención.
 """
 
 from __future__ import annotations
@@ -210,6 +210,7 @@ SPECS: tuple[ToolSpec, ...] = (
         PLANNING,
         "data/synthetic/planificacion/<v>/state.json + plant_cana.json",
         get_plant_state_impl,
+        mcp_allowed=False,  # spec 028 (D1)
     ),
     ToolSpec(
         22,
@@ -221,6 +222,7 @@ SPECS: tuple[ToolSpec, ...] = (
         PLANNING,
         "data/synthetic/planificacion/<v>/commitments.json",
         get_commitments_impl,
+        mcp_allowed=False,  # spec 028 (D1)
     ),
     ToolSpec(
         23,
@@ -232,6 +234,7 @@ SPECS: tuple[ToolSpec, ...] = (
         PLANNING,
         "data/synthetic/planificacion/<v>/procedures/*.md (BM25 en memoria)",
         search_procedures_impl,
+        mcp_allowed=False,  # spec 028 (D1)
     ),
     ToolSpec(
         24,

@@ -86,7 +86,8 @@ def test_planner_profile_holds_on_the_web() -> None:
     assert second.turn.profile == "planificador" and second.turn.route.route == "planning"
 
 
-def test_planner_profile_without_authorization_falls_back_on_whatsapp() -> None:
+def test_planner_profile_is_open_on_whatsapp() -> None:
+    """Spec 028 (D3): sin lista de autorizados; la planificación rige igual que en la web."""
     service = make_service(store=memory_store())
     thread_id = _thread_with_planner(service, "whatsapp")
     second = service.send(
@@ -96,11 +97,11 @@ def test_planner_profile_without_authorization_falls_back_on_whatsapp() -> None:
         variant="agent",
         channel="whatsapp",
     )
-    assert second.turn.profile == "visitante" and second.turn.route.route != "planning"
-    assert "Por WhatsApp" in second.turn.answer
+    assert second.turn.profile == "planificador" and second.turn.route.route == "planning"
+    assert "autorizad" not in second.turn.answer
 
 
-def test_self_introduced_planner_on_whatsapp_is_not_announced() -> None:
+def test_self_introduced_planner_on_whatsapp_gets_the_profile() -> None:
     service = make_service(store=memory_store())
     outcome = service.send(
         "Soy planificador de planta, ¿qué produce Manuelita?",
@@ -108,5 +109,5 @@ def test_self_introduced_planner_on_whatsapp_is_not_announced() -> None:
         variant="agent",
         channel="whatsapp",
     )
-    assert outcome.turn.profile == "visitante"
-    assert "Te atiendo como Planificador" not in outcome.turn.answer
+    assert outcome.turn.profile == "planificador"
+    assert "autorizad" not in outcome.turn.answer

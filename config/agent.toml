@@ -67,5 +67,13 @@ reply_max_chars = 1500    # caracteres por mensaje de WhatsApp (el canal admite 
 max_messages = 4          # mensajes por respuesta; el resto se abrevia
 approval_ttl_minutes = 10 # vencimiento de una confirmación SÍ/NO pendiente
 dedupe_hours = 48         # retención de ids de mensaje ya atendidos
-voice_notes = false       # true: transcribe notas de voz con el dictado (spec 023)
-bridge_timeout_seconds = 45  # el plugin espera esto antes del modo degradado
+voice_notes = true        # spec 028: notas de voz (transcripción local + respuesta con voz)
+bridge_timeout_seconds = 90  # el plugin espera esto antes del modo degradado (cola + voz)
+queue_wait_seconds = 60   # espera por el mensaje anterior de la misma persona (nunca se pierde)
+voice_max_seconds = 60    # duración máxima de una nota de voz de respuesta
+voice_retention_minutes = 10  # los audios generados se borran después de este tiempo
+voice_dir = "channels/voice"  # relativo a MANUELITA_STATE_DIR (fuera del repositorio)
+# Spec 031: con el canal abierto, límites por número (los operadores de VALERIA_OPERATORS no cuentan)
+rate_window_minutes = 10  # ventana corta
+rate_max_messages = 20    # mensajes por número en la ventana; luego un aviso amable y silencio
+daily_max_messages = 100  # tope diario por número (día local)

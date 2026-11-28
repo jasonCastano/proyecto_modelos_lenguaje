@@ -265,10 +265,17 @@ el bloque `jev` con estado, confianza, latencia y costo del gatekeeper).
 
 Valer-IA Caña responde por **WhatsApp** desde un número real, a través del gateway **OpenClaw** que corre como
 servicio en un PC del equipo. Es **un solo agente**: el plugin propio `valeria-bridge` lleva cada mensaje
-admitido (allowlist E.164 o emparejamiento) al mismo `ChatService` de la web, con su router, perfiles, memoria,
-26 herramientas, blindaje, aprobación humana y citas. Si el backend no responde en 45 s, contesta el agente
-nativo de OpenClaw con el servidor MCP propio `valeria-tools` (solo lectura): el **modo degradado**.
-Decisión: [ADR 0028](docs/decisions/0028-openclaw-whatsapp-puente.md).
+admitido al mismo `ChatService` de la web, con su router, perfiles, memoria, 26 herramientas (20 de atención
+y 6 de planificación), blindaje, aprobación humana y citas. Si el backend no responde en 90 s, contesta el
+agente nativo de OpenClaw con el servidor MCP propio `valeria-tools` (15 herramientas de lectura): el **modo
+degradado**. Decisión: [ADR 0028](docs/decisions/0028-openclaw-whatsapp-puente.md).
+
+**Spec 028** ([ADR 0037](docs/decisions/0037-valeria-natural-voz-whatsapp.md)): la conversación es natural y
+**sin comandos** («empecemos de nuevo», «respóndeme por escrito», «dale»); Valer-IA entiende **notas de voz** en
+español e inglés y, si le hablan, responde con una nota de voz conversacional y el texto con sus fuentes. El
+planificador se activa por contexto para cualquier persona. Usa una **SIM dedicada** con modo cerrado (números de
+prueba) y abierto a cualquier número en el ensayo y la sustentación (`scripts/openclaw_env.ps1 -Mode`), y opera
+sin Docker (Qdrant nativo con `scripts/qdrant_native.ps1`; sandbox apagado con `tools.deny` restrictivo).
 
 [![Módulo 3: WhatsApp con OpenClaw](docs/capturas/diagramas/whatsapp-openclaw.png)](docs/diagramas/whatsapp-openclaw.html)
 
@@ -284,13 +291,15 @@ composiciones de la imagen de referencia sintética, sin modelos generativos ni 
 | Configuración del gateway (sin secretos) | [`openclaw/openclaw.json5`](openclaw/openclaw.json5), [`openclaw/.env.example`](openclaw/.env.example) |
 | Workspace (`SOUL`, `IDENTITY`, `AGENTS`, `USER`, `MEMORY`, skill) | [`openclaw/workspace/`](openclaw/workspace/) |
 | Plugin puente | [`openclaw/plugins/valeria-bridge/`](openclaw/plugins/valeria-bridge/) |
-| Canal en el backend | `src/proyecto_modelos_lenguaje/channels/`, `POST /api/channels/messages`, `GET /api/channels/status` |
+| Canal en el backend | `src/proyecto_modelos_lenguaje/channels/` (`bridge.py`, `intents.py`, `voice.py`), `POST /api/channels/messages`, `POST /api/channels/transcriptions`, `GET /api/channels/status` |
 | Catálogo de herramientas | `agent/catalog.py`, `GET /api/tools`, [`docs/herramientas.md`](docs/herramientas.md) |
 | Servidor MCP | `src/proyecto_modelos_lenguaje/mcp_server.py` (`make mcp`) |
 
 ```bash
 uv run python -m proyecto_modelos_lenguaje.agent tools            # catálogo de 26 con esquemas
 uv run pml channels simulate --sender +570000000001 --text "hola" # canal sin teléfono (backend local)
+uv run pml channels simulate --sender +570000000001 --kind audio --language en --text "What does Manuelita produce?"
+uv run python -m proyecto_modelos_lenguaje.agent evaluate --planning-activation   # planificador por contexto
 uv run pml corpus rebuild --from bronze --json                    # corpus de punta a punta, sin tocar data/
 uv run pml ops check                                              # prueba de 3 minutos del Anuncio 007
 ```
@@ -544,6 +553,7 @@ make app       # web compilada al día + tabla estructurada (si falta) + API loc
 make web-status # ¿web/dist falta o está desactualizada?
 make demo-prep # índice, colección Qdrant y tabla estructurada listos para la demo
 make qdrant-up # Qdrant servidor con HNSW real (docker compose); luego QDRANT_URL=http://localhost:6333
+make qdrant-native # el mismo Qdrant como binario nativo de Windows, sin Docker (spec 028)
 make e2e       # Playwright: flujo, responsive y demo
 make build     # web + sdist + wheel
 ```
@@ -921,8 +931,8 @@ a costa de 1,6 veces más llamadas y 2,6 veces más tokens.
 
 Valer-IA atiende con un **perfil** por público (idea 7 de [`docs/alucinaciones/ideas_negocio_ia_manuelita.md`](docs/alucinaciones/ideas_negocio_ia_manuelita.md)): visitante, cliente B2B, proveedor, colaborador y planificador industrial. Cada perfil es una lista blanca de herramientas (`config/profiles.toml`) y un foco en el prompt (`prompts/profiles.md`); el agente, el enrutador, la memoria y el blindaje son los mismos.
 
-- **Elegir el perfil**: en WhatsApp, `/perfil` lista los perfiles y `/perfil proveedor` (o `b2b`, `colaborador`…) lo activa en el hilo; en la vista técnica de la web, el selector «Perfil». Si la persona se presenta («soy proveedor de caña…»), el agente la atiende con ese perfil y ofrece recordarlo: «recuerda mi perfil» lo guarda con «SÍ» (preferencia `audience`) y `/olvidar` lo borra.
-- **Planificador industrial** (en la web, de libre elección desde la spec 027; en WhatsApp, solo autorizados: `VALERIA_PLANNERS` con seudónimos o `MANUELITA_PLANNER_OPEN=1` solo en la jornada). Ante «Tenemos 15 % menos caña esta semana. ¿Cómo cumplimos azúcar, etanol y energía?», el agente consulta el estado de la planta y los compromisos, optimiza con programación lineal (`scipy`, HiGHS) y responde con el plan, la restricción que lo limita, una alternativa y los supuestos. Las cifras salen de las herramientas; si el modelo escribe un número que no está en ellas, se muestra el plan calculado. «guarda esta propuesta» la guarda con «SÍ» en `$MANUELITA_STATE_DIR/planning/proposals.jsonl`. **Los datos son sintéticos** (`data/synthetic/planificacion/v1/`, ficha propia): demuestran la capacidad, no la operación real de Manuelita.
+- **Elegir el perfil**: en la vista técnica de la web, el selector «Perfil»; en WhatsApp, por contexto: si la persona se presenta («soy proveedor de caña…»), el agente la atiende con ese perfil y ofrece recordarlo; «recuerda mi perfil» lo guarda con su confirmación (preferencia `audience`) y «olvida lo que sabes de mí» lo borra. `/perfil` queda como atajo oculto del operador (spec 028).
+- **Planificador industrial** (libre en la web y en WhatsApp desde la spec 028; se activa por contexto ante un problema de producción, solo en ese turno y su repregunta, sin cambiar el perfil). Ante «Tenemos 15 % menos caña esta semana. ¿Cómo cumplimos azúcar, etanol y energía?», el agente consulta el estado de la planta y los compromisos, optimiza con programación lineal (`scipy`, HiGHS) y responde con el plan, la restricción que lo limita, una alternativa y los supuestos. Las cifras salen de las herramientas; si el modelo escribe un número que no está en ellas, se muestra el plan calculado. «guarda esta propuesta» la guarda, con la confirmación de la persona, en `$MANUELITA_STATE_DIR/planning/proposals.jsonl`. **Los datos son sintéticos** (`data/synthetic/planificacion/v1/`, ficha propia): demuestran la capacidad, no la operación real de Manuelita.
 
 ```bash
 uv run python scripts/generate_planning_data.py --seed 2026 --version v1 --check   # datos sintéticos
@@ -1398,10 +1408,12 @@ uv run python scripts/verify_bronze.py --campaign 2026-10-baseline --sample 50 -
 
 ### Fase 3 — Módulo 3: productización y despliegue (40 %)
 
-Specs 024 y 025; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/rubrica_modulo3.md)).
+Specs 024 a 028; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/rubrica_modulo3.md)).
 
-- [x] Catálogo único de 20 herramientas tipadas, plan visible en la traza y `GET /api/tools`.
-- [x] Puente OpenClaw → backend (`valeria-bridge`, `/api/channels/*`), HITL por «SÍ/NO», seudónimos y bitácora.
+- [x] Catálogo único de 26 herramientas tipadas (20 de atención + 6 de planificación), plan visible en la traza y `GET /api/tools`.
+- [x] Puente OpenClaw → backend (`valeria-bridge`, `/api/channels/*`), HITL, seudónimos y bitácora.
+- [x] Conversación natural sin comandos, notas de voz es/en, planificador por contexto, MCP de 15 herramientas,
+  SIM dedicada con modo cerrado/abierto y operación sin Docker (spec 028, ADR 0037).
 - [x] Configuración del gateway, workspace, skill y servidor MCP propio versionados sin secretos.
 - [x] `pml corpus rebuild`, 30 consultas de evaluación y proyección t-SNE (código).
 - [x] Guía de despliegue, manual para invitados, ADR 0028 y guion ES/EN.
@@ -1412,7 +1424,8 @@ Specs 024 y 025; sustentación el sábado 28 de noviembre de 2026 ([guion](docs/
   con diagramas Archify actualizados.
 - [x] Plataforma web en cuatro áreas con consola de planificación y evidencia técnica (spec 026, ADR 0030).
 - [x] Perfiles abiertos en la web, incluido el planificador (spec 027, ADR 0031).
-- [ ] Verificar `/perfil` y la planificación por WhatsApp, y aprobar la constitución 2.0.0 y 2.1.0.
+- [ ] Prueba técnica de voz con la SIM vinculada y verificación de la planificación por WhatsApp; aprobar la
+  constitución 2.9.0 (canal abierto a cualquier número con límites, spec 031).
 - [ ] Ensayo cronometrado y tag `v3.0.0`.
 
 ## Créditos

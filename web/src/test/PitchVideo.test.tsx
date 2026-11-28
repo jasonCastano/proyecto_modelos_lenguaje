@@ -149,3 +149,55 @@ describe("PitchVideo (spec 028, US2)", () => {
     expect(pause).toHaveBeenCalled();
   });
 });
+
+describe("PitchVideo: sonido con la primera interacción (2026-11-27)", () => {
+  it("el primer clic en cualquier parte activa el sonido y reinicia el video", () => {
+    const { container } = render(
+      <div>
+        <p>Otro contenido</p>
+        <PitchVideo />
+      </div>,
+    );
+    const video = videoOf(container);
+    video.currentTime = 3;
+    fireEvent.pointerDown(screen.getByText("Otro contenido"));
+    expect(video.muted).toBe(false);
+    expect(video.currentTime).toBe(0);
+    expect(play).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole("button", { name: "Silenciar" })).toBeInTheDocument();
+  });
+
+  it("solo la primera interacción cuenta: después respeta el silencio elegido", async () => {
+    const { container } = render(<PitchVideo />);
+    fireEvent.keyDown(document.body, { key: "Tab" });
+    expect(videoOf(container).muted).toBe(false);
+    await userEvent.click(screen.getByRole("button", { name: "Silenciar" }));
+    fireEvent.pointerDown(document.body);
+    expect(videoOf(container).muted).toBe(true);
+  });
+
+  it("«Saltar el video» como primera interacción no activa el sonido", async () => {
+    const { container } = render(<PitchVideo />);
+    await userEvent.click(screen.getByTestId("pitch-skip"));
+    expect(videoOf(container).muted).toBe(true);
+  });
+
+  it("si el video no arranca solo, la primera interacción no lo hace sonar", () => {
+    window.sessionStorage.setItem(PITCH_SESSION_KEY, "visto");
+    const { container } = render(<PitchVideo />);
+    fireEvent.pointerDown(document.body);
+    expect(videoOf(container).muted).toBe(true);
+    expect(play).not.toHaveBeenCalled();
+  });
+});
+
+describe("PitchVideo: lo que desarma la primera interacción", () => {
+  it("después de saltar, un clic en la página no reanuda ni hace sonar el video", async () => {
+    const { container } = render(<PitchVideo />);
+    await userEvent.click(screen.getByTestId("pitch-skip"));
+    play.mockClear();
+    fireEvent.pointerDown(document.body);
+    expect(videoOf(container).muted).toBe(true);
+    expect(play).not.toHaveBeenCalled();
+  });
+});

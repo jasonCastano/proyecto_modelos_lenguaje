@@ -16,6 +16,11 @@
           "prompt_file": "video/pitch/prompts/plano-01a.json",
           "seed": 3001,
           "request_seconds": 5,
+          "look": {
+            "style": "sepia-suave",
+            "sweep_s": 0.5,
+            "note": "Época de 1864 mientras se narra la fundación; el barrido de derecha a izquierda devuelve el color justo antes de que salga Valer-IA (2026-11-27)."
+          },
           "model": "kling4",
           "job": {
             "request_id": "01a21a1f-d2bf-74c2-807f-b95ee1112a47",

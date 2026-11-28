@@ -1,6 +1,6 @@
 # Constitución del Proyecto — RAG Ingenio Manuelita
 
-**Versión**: 2.9.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
+**Versión**: 2.10.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
 
 **Equipo**: Jason Alejandro Castaño · Roberto José Guerrero
 
@@ -314,6 +314,12 @@ uv.lock
     sin marca ni personas reconocibles, nunca presentadas como de Manuelita, con autor y licencia en
     `web/public/media/fotos/CREDITOS.md` y una línea de créditos en el pie. Un solo momento animado, dentro de
     su sección y quieto con «reducir movimiento».
+  - Pestaña WhatsApp (spec 032, ADR 0038): quinta área `/whatsapp` con el enlace al chat de Valer-IA (WhatsApp
+    Web en computador, la aplicación en teléfono, siempre en una pestaña nueva) y un QR generado en el servidor
+    con `segno`, sin servicios externos. El número sale solo de `VALERIA_WHATSAPP_NUMBER` en el `.env` del
+    proyecto (E.164 con indicativo, fuera de Git) y lo expone `GET /api/channels/whatsapp`, público y de solo
+    lectura, únicamente dentro del enlace y el QR. Sin número válido no hay enlace ni QR: la pestaña lo dice y
+    lleva al Agente. El número no se registra (regla 10).
 - La app DEBE ejecutarse con `make app` o `uv run python -m proyecto_modelos_lenguaje.webbuild --serve` desde un
   clon limpio. `web/dist` no se versiona: ambos compilan la web si falta o si sus fuentes cambiaron (huella en
   `web/dist/.build-stamp`) y repiten `npm ci` si cambió `package-lock.json`. Arrancar `uvicorn` a mano con una
@@ -1031,6 +1037,7 @@ La tabla ítem por ítem está en `specs/025-agentes-manuelita-idea7/spec.md`.
 | 2.7.0 | 2026-11-27 | **MINOR**: audios de los stickers de Valer-IA (spec 030 US6, ADR 0036): la frase de cada sticker con la voz oficial del agente (Phonon, spec 016), sintetizada en local y sin costo, en OGG/Opus de ≤ 5 s, con licencia CC BY-NC 4.0 y atribución en la ficha, y aprobación de un integrante por audio (§10). Requiere la aprobación de ambos integrantes. |
 | 2.8.0 | 2026-11-27 | **MINOR**: Valer-IA natural y con voz por WhatsApp (spec 028, ADR 0037): SIM dedicada con modo cerrado y abierto (regla 9); confirmación de escrituras en lenguaje natural (regla 11); modo degradado a los 90 s y MCP de 15 lecturas sin planificación (regla 12); hardening sin Docker cuando el servidor no permite virtualización, con Qdrant nativo (regla 14); olvido por intención natural (regla 16); planificador libre en WhatsApp y activado por contexto (regla 20); nueva regla 22 (conversación sin comandos y voz local con guion sin citas). Requiere la aprobación de ambos integrantes. |
 | 2.9.0 | 2026-11-27 | **MINOR**: canal de WhatsApp abierto a cualquier número (spec 031): el modo abierto se usa hasta el fin del proyecto, con límites por seudónimo (ventana corta y tope diario con un único aviso natural), bloqueo de seudónimos, atajos ocultos solo para operadores (`VALERIA_OPERATORS`) y el modo visible en `ops check`. Se enmienda la regla 9 (antes: modo abierto sin límite y solo en el ensayo y la jornada). Requiere la aprobación de ambos integrantes. |
+| 2.10.0 | 2026-11-27 | **MINOR**: pestaña WhatsApp en la web (spec 032, ADR 0038): quinta área `/whatsapp` con el enlace al chat (WhatsApp Web en computador, aplicación en teléfono) y un QR generado con `segno`; el número sale de `VALERIA_WHATSAPP_NUMBER` en el `.env` externo y lo expone `GET /api/channels/whatsapp`, público y de solo lectura (§3.7). Requiere la aprobación de ambos integrantes. |
 | 2.0.0 | 2026-11-24 | **MAJOR**: el producto final se reenfoca en la idea 7 (spec 025, ADR 0029). Valer-IA pasa a ser una plataforma de agentes por perfil (visitante, cliente B2B, proveedor, colaborador y planificador) con un agente de planificación industrial (simulador y optimizador lineal sobre datos sintéticos declarados). §1 producto final; Fase 3 reglas 16–21; §8.4 reenfoque. Las reglas 8–15 siguen vigentes. |
 | 1.16.0 | 2026-11-23 | Fase 3 concretada para el Anuncio 007 (spec 024, ADR 0028): WhatsApp por OpenClaw con un solo agente y plugin puente; número de un integrante con allowlist y emparejamiento solo en la jornada; seudónimos HMAC; catálogo único de 20 herramientas; MCP de solo lectura y modo degradado; SQLite como equivalente de PostgresSaver; Node/TypeScript solo para el plugin; dependencias `mcp`, `scikit-learn` y `matplotlib`; §8.4 rúbrica del Módulo 3; documentos de despliegue, manual y rúbrica. |
 | 1.15.0 | 2026-11-23 | Dictado por voz local con faster-whisper y privacidad del audio (spec 023, ADR 0027). |
@@ -1230,4 +1237,4 @@ Fecha: 2026-10-29
 
 ---
 
-**Versión**: 2.9.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27
+**Versión**: 2.10.0 | **Ratificada**: 2026-10-29 | **Última enmienda**: 2026-11-27

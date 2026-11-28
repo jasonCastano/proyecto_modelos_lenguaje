@@ -1,7 +1,10 @@
 /**
- * Preguntas frecuentes de la entrada (spec 031, copy.md): cinco preguntas, respuestas planas.
+ * Preguntas frecuentes de la entrada (spec 031, copy.md): cinco preguntas, respuestas planas. La de
+ * WhatsApp enlaza a su pestaña (spec 032).
  */
-const QUESTIONS = [
+import { Link, type Route } from "../../lib/router";
+
+const QUESTIONS: { q: string; a: string; link?: { to: Route; label: string } }[] = [
   {
     q: "¿Es un canal oficial de Manuelita?",
     a: "No. Es un proyecto académico de la Maestría en IA y Ciencia de Datos de la UAO y responde solo con información pública.",
@@ -13,6 +16,7 @@ const QUESTIONS = [
   {
     q: "¿Puedo usarla por WhatsApp?",
     a: "Sí. El mismo agente responde en el número de WhatsApp del proyecto, con los mismos perfiles.",
+    link: { to: "/whatsapp", label: "Ve a la pestaña WhatsApp" },
   },
   {
     q: "¿Las cifras de planificación son reales?",
@@ -35,7 +39,17 @@ export function Faq() {
           {QUESTIONS.map((item) => (
             <details className="faq__item" key={item.q} open>
               <summary>{item.q}</summary>
-              <p>{item.a}</p>
+              <p>
+                {item.a}
+                {item.link ? (
+                  <>
+                    {" "}
+                    <Link className="text-link" to={item.link.to}>
+                      {item.link.label}
+                    </Link>
+                  </>
+                ) : null}
+              </p>
             </details>
           ))}
         </div>

@@ -1026,6 +1026,7 @@ paleta de marca con los colores del logotipo de Manuelita, tipografía Archivo y
 | `/agente` | Agente | Selector de los cinco perfiles con «para quién es» y el perfil activo a la vista, la conversación (citas, voz, dictado, aprobación con «Sí»), fuentes del turno, memoria borrable y sugerencias del perfil |
 | `/planificacion` | Planificación | Abierta a cualquier visitante (spec 027); abrirla activa el perfil planificador: escenario, flujo de caña, libro de compromisos, lo que limita el plan, comparación con el plan base, «Explicar con el agente» y «Guardar propuesta» en dos pasos |
 | `/evidencia` | Evidencia técnica | Estado de servicios, catálogo de 26 herramientas con sus perfiles, traza del turno, evaluaciones publicadas con su cifra honesta y la consola de Consulta, Resumen y FAQ de los Módulos 1 y 2 |
+| `/whatsapp` | WhatsApp | Enlace al chat de Valer-IA (WhatsApp Web en computador, la aplicación en teléfono) y un QR para pasar al teléfono; el número sale de `VALERIA_WHATSAPP_NUMBER` en el `.env` (spec 032, [ADR 0038](docs/decisions/0038-pestana-whatsapp-web.md)) |
 
 Los servicios nuevos viven bajo `/api/v1/` y las rutas sin versión no cambian (contratos en
 [`specs/026-plataforma-web-manuelita/contracts/`](specs/026-plataforma-web-manuelita/contracts/)):

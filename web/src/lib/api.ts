@@ -11,6 +11,7 @@ import {
   type SttResult,
   type SttStatus,
   type WelcomeResponse,
+  type WhatsAppLink,
 } from "./types";
 
 const API_BASE = "/api";
@@ -145,6 +146,34 @@ export function getVersion(): Promise<AppVersion> {
 
 export function health(probe = false): Promise<HealthStatus> {
   return request<HealthStatus>(`/health${probe ? "?probe=true" : ""}`);
+}
+
+/**
+ * Spec 032: enlace público al chat de WhatsApp (el número sale del `.env` del servidor). Si la respuesta no
+ * tiene la forma esperada (por ejemplo, un backend viejo que devuelve la página en vez de los datos), es un
+ * error: la pestaña muestra el aviso y «Reintentar», nunca un botón sin enlace.
+ */
+export async function fetchWhatsAppLink(): Promise<WhatsAppLink> {
+  const payload = await request<unknown>("/channels/whatsapp");
+  const data = payload as Partial<WhatsAppLink> | null;
+  if (!data || typeof data !== "object" || typeof data.available !== "boolean") {
+    throw new ApiClientError({
+      code: "invalid_response",
+      message: "El servicio no devolvió el enlace de WhatsApp.",
+      retryable: true,
+      action: "reintentar",
+    });
+  }
+  const available =
+    data.available && typeof data.web_url === "string" && typeof data.app_url === "string";
+  return {
+    available,
+    mode: data.mode === "open" || data.mode === "closed" ? data.mode : "unknown",
+    message: typeof data.message === "string" ? data.message : "Hola, Valer-IA",
+    web_url: available ? (data.web_url as string) : null,
+    app_url: available ? (data.app_url as string) : null,
+    qr_svg: available && typeof data.qr_svg === "string" ? data.qr_svg : null,
+  };
 }
 
 /** Spec 018: bienvenida de Valer-IA Caña (sin modelo de lenguaje). */

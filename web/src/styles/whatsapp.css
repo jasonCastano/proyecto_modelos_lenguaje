@@ -1,0 +1,301 @@
+/* Pestaña WhatsApp (spec 032): dos secciones con los tokens de la spec 031. La primera explica el chat
+   (hero «split» con la foto de caña, stand-in con licencia); la segunda pone lado a lado el enlace a WhatsApp
+   Web y el QR. */
+
+.site-shell[data-route="/whatsapp"] {
+  padding-top: 0;
+}
+
+.site-shell[data-route="/whatsapp"] .app-main {
+  max-width: none;
+  padding: 0;
+}
+
+/* ------------------------------------------------------------------ 1. Información */
+
+.wa {
+  padding-top: calc(var(--nav-h) + 48px);
+  padding-bottom: 64px;
+}
+
+.wa__grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+  align-items: center;
+  height: 100%;
+}
+
+.wa__text {
+  grid-column: 1 / span 5;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.wa__notice {
+  margin: 0 0 16px;
+  color: var(--p-muted);
+  font-size: 0.875rem;
+  font-weight: 560;
+}
+
+.wa__title {
+  margin: 0;
+  max-width: 12ch;
+  color: var(--p-ink);
+  font-size: clamp(2.5rem, 5vw, 4.25rem);
+  font-weight: 600;
+  font-variation-settings: "wdth" 112;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+}
+
+.wa__title:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.wa__lead {
+  margin: 24px 0 0;
+  max-width: 44ch;
+  color: var(--p-ink);
+  font-size: 1.1875rem;
+  line-height: 1.55;
+}
+
+.wa__points {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 32px;
+  padding: 0;
+  list-style: none;
+}
+
+.wa__points li {
+  position: relative;
+  max-width: 46ch;
+  padding-left: 22px;
+  color: var(--p-ink);
+  line-height: 1.5;
+}
+
+.wa__points li::before {
+  content: "";
+  position: absolute;
+  top: 0.55em;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--p-action);
+}
+
+.wa__visual {
+  grid-column: 7 / span 6;
+  height: min(680px, calc(100svh - var(--nav-h) - 48px - 64px));
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--p-surface);
+}
+
+.wa__photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ------------------------------------------------------------------ 2. Opciones */
+
+/* Centrado vertical sin tocar el ancho de `.wrap` (sus bordes iguales a los de la primera sección). */
+.wa-connect {
+  display: grid;
+  align-content: center;
+}
+
+.wa-connect__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.wa__mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--p-ink);
+  font-size: 0.9375rem;
+  font-weight: 560;
+}
+
+.wa__mode::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--p-action);
+}
+
+.wa__mode[data-mode="closed"]::before {
+  background: var(--leaf-orange);
+}
+
+.wa-connect__options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.wa-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 40px;
+  border: 1px solid color-mix(in srgb, var(--p-ink) 12%, transparent);
+  border-top: 4px solid var(--p-action);
+  border-radius: var(--r-md);
+  background: var(--p-bg);
+}
+
+.wa-option--qr {
+  align-items: center;
+  border-top-color: var(--leaf-yellow);
+  text-align: center;
+}
+
+.wa-option__title {
+  margin: 0;
+  color: var(--p-ink);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.wa-option__text {
+  margin: 0;
+  max-width: 40ch;
+  color: var(--p-ink);
+  line-height: 1.55;
+}
+
+.wa-option__needs {
+  margin: 0;
+  color: var(--p-muted);
+  font-size: 0.9375rem;
+}
+
+.wa__open {
+  min-height: 56px;
+  margin-top: 8px;
+  padding: 0 28px;
+  font-size: 1.0625rem;
+}
+
+.wa__icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+}
+
+.wa__qr {
+  width: 240px;
+  height: 240px;
+  padding: 8px;
+  border-radius: var(--r-sm);
+  background: #ffffff;
+}
+
+.wa__qr svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.wa-connect__loading {
+  margin: 0;
+  color: var(--p-muted);
+}
+
+.wa__unavailable {
+  max-width: 640px;
+  padding: 20px 24px;
+  border-left: 4px solid var(--leaf-orange);
+  border-radius: var(--r-sm);
+  background: var(--p-bg);
+}
+
+.wa__unavailable-text {
+  margin: 0 0 16px;
+  color: var(--p-ink);
+  font-weight: 560;
+}
+
+.wa__unavailable-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* ------------------------------------------------------------------ Responsive y movimiento */
+
+@media (max-width: 1023px) {
+  .wa,
+  .wa-connect {
+    height: auto;
+    min-height: 100svh;
+  }
+
+  .wa__grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 40px;
+  }
+
+  .wa__text,
+  .wa__visual {
+    grid-column: 1 / -1;
+  }
+
+  .wa__visual {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .wa-connect__options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 639px) {
+  .wa {
+    padding-top: calc(var(--nav-h) + 32px);
+  }
+
+  .wa-option {
+    padding: 28px 20px;
+  }
+
+  .wa__open,
+  .wa__to-options {
+    width: 100%;
+  }
+
+  .wa__qr {
+    width: 200px;
+    height: 200px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wa [data-enter-step] {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

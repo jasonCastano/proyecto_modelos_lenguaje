@@ -25,6 +25,10 @@ def _free_port() -> int:
         return int(sock.getsockname()[1])
 
 
+# Ficticio: indicativo de Colombia y un celular inventado; nunca un número real.
+E2E_WHATSAPP_NUMBER = "+57" + "3" + "1" * 9
+
+
 @pytest.fixture(scope="session")
 def base_url() -> Iterator[str]:
     if not DIST.is_file():
@@ -42,6 +46,10 @@ def base_url() -> Iterator[str]:
         "MANUELITA_PLANNER_WEB": "",
         "MANUELITA_PLANNER_OPEN": "",
         "VALERIA_PLANNERS": "",
+        # Spec 032: número ficticio para la pestaña WhatsApp y un gateway vacío (modo desconocido),
+        # para no depender del .env real del equipo.
+        "VALERIA_WHATSAPP_NUMBER": E2E_WHATSAPP_NUMBER,
+        "OPENCLAW_STATE_DIR": tempfile.mkdtemp(prefix="openclaw-e2e-"),
     }
     process = subprocess.Popen(
         [

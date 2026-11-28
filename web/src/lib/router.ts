@@ -1,12 +1,12 @@
 /**
- * Enrutador mínimo de la plataforma (spec 026, research R2): cuatro rutas fijas sobre la History
+ * Enrutador mínimo de la plataforma (spec 026, research R2; spec 032): cinco rutas fijas sobre la History
  * API. El backend ya sirve `index.html` en cualquier ruta, así que los enlaces directos funcionan.
  */
 import { createElement, useSyncExternalStore, type AnchorHTMLAttributes, type MouseEvent } from "react";
 
-export type Route = "/" | "/agente" | "/planificacion" | "/evidencia";
+export type Route = "/" | "/agente" | "/planificacion" | "/evidencia" | "/whatsapp";
 
-export const ROUTES: readonly Route[] = ["/", "/agente", "/planificacion", "/evidencia"];
+export const ROUTES: readonly Route[] = ["/", "/agente", "/planificacion", "/evidencia", "/whatsapp"];
 
 export interface Location {
   route: Route;

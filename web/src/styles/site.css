@@ -301,13 +301,23 @@ a:hover .photo img,
   display: none;
 }
 
-@media (max-width: 1023px) {
+.site-nav__end .btn {
+  white-space: nowrap;
+}
+
+/* Spec 032: con cinco áreas la barra completa cabe desde 1280 px; por debajo, el menú. */
+@media (max-width: 1279px) {
   .site-nav__bar {
     grid-template-columns: 1fr auto;
   }
 
+  /* El <nav> no ocupa columna cuando sus enlaces se ocultan: el bloque final queda en la misma fila. */
+  .site-nav__bar > nav {
+    display: contents;
+  }
+
   .site-nav__links,
-  .site-nav__end .btn {
+  .site-nav__end .btn:not(.site-nav__menu) {
     display: none;
   }
 

@@ -20,6 +20,7 @@ export const AREAS: { route: Route; label: string }[] = [
   { route: "/agente", label: "Agente" },
   { route: "/planificacion", label: "Planificación" },
   { route: "/evidencia", label: "Evidencia" },
+  { route: "/whatsapp", label: "WhatsApp" },
 ];
 
 function SiteNav({ route, demo }: { route: Route; demo: boolean }) {
@@ -169,13 +170,15 @@ interface AppShellProps {
 
 export function AppShell({ route, demo, notice, version, children }: AppShellProps) {
   const home = route === "/";
+  // La entrada y la pestaña WhatsApp (spec 032) no usan la barra del perfil activo.
+  const bare = home || route === "/whatsapp";
   return (
     <div className="site-shell" data-route={route}>
       <a className="skip-link" href="#contenido">
         Saltar al contenido
       </a>
       <SiteNav demo={demo} route={route} />
-      {home ? null : <TopBar />}
+      {bare ? null : <TopBar />}
       {notice ? (
         <p className="route-notice" role="status">
           {notice}

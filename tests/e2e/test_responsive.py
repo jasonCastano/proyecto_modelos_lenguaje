@@ -17,6 +17,7 @@ ROUTES = {
     "/agente": "Habla con Valer-IA",
     "/planificacion": "Planificación industrial",
     "/evidencia": "Evidencia técnica",
+    "/whatsapp": "Habla con Valer-IA por WhatsApp",
 }
 
 

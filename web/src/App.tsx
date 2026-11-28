@@ -1,6 +1,7 @@
 /**
- * Valer-IA, plataforma de agentes de Manuelita (spec 026): cuatro áreas con su propia dirección.
- * `/` entrada · `/agente` espacio de trabajo · `/planificacion` consola · `/evidencia` panel.
+ * Valer-IA, plataforma de agentes de Manuelita (spec 026): cinco áreas con su propia dirección.
+ * `/` entrada · `/agente` espacio de trabajo · `/planificacion` consola · `/evidencia` panel ·
+ * `/whatsapp` enlace al chat de WhatsApp (spec 032).
  */
 import { useEffect, useState } from "react";
 
@@ -12,6 +13,7 @@ import { Agent } from "./pages/Agent";
 import { Evidence } from "./pages/Evidence";
 import { Home } from "./pages/Home";
 import { Planning } from "./pages/Planning";
+import { WhatsApp } from "./pages/WhatsApp";
 
 const NOT_FOUND = "Esa página no existe; te llevamos a la entrada.";
 
@@ -53,6 +55,7 @@ export default function App() {
       "/agente": "Agente · Valer-IA",
       "/planificacion": "Planificación industrial · Valer-IA",
       "/evidencia": "Evidencia técnica · Valer-IA",
+      "/whatsapp": "WhatsApp · Valer-IA",
     };
     document.title = titles[route];
   }, [route]);
@@ -70,6 +73,7 @@ export default function App() {
       {route === "/agente" ? <Agent mode={mode} /> : null}
       {route === "/planificacion" ? <Planning /> : null}
       {route === "/evidencia" ? <Evidence health={health} /> : null}
+      {route === "/whatsapp" ? <WhatsApp /> : null}
     </AppShell>
   );
 }

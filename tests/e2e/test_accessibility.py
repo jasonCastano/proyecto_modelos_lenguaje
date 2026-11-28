@@ -16,7 +16,7 @@ pytestmark = pytest.mark.skipif(
 AXE = Path(__file__).resolve().parents[2] / "web" / "node_modules" / "axe-core" / "axe.min.js"
 
 
-@pytest.mark.parametrize("route", ["/", "/agente", "/planificacion", "/evidencia"])
+@pytest.mark.parametrize("route", ["/", "/agente", "/planificacion", "/evidencia", "/whatsapp"])
 def test_no_serious_or_critical_violations(browser: Browser, base_url: str, route: str) -> None:
     if not AXE.is_file():
         pytest.skip("Instala las dependencias web: cd web && npm ci")

@@ -55,6 +55,7 @@ Hay dos archivos `.env`, los dos **fuera de Git**: el del proyecto (lo lee el ba
 | `DEEPSEEK_API_KEY` | ✅ | ✅ | Clave del modelo en la nube (misma cuenta, cuota y facturación). |
 | `VALERIA_CHANNEL_TOKEN` | ✅ | ✅ | Secreto compartido del puente; **el mismo valor** en los dos archivos. |
 | `VALERIA_CHANNEL_SALT` | ✅ | | Sal del HMAC que convierte el número en el seudónimo `wa-<16 hex>`. No cambiarla después. |
+| `VALERIA_WHATSAPP_NUMBER` | ✅ | | Número de la SIM de Valer-IA en E.164 (`+57` y los 10 dígitos, sin espacios). Lo usa la pestaña WhatsApp de la web (spec 032) para el enlace y el QR; sin él, la pestaña muestra «no disponible». |
 | `OPENCLAW_GATEWAY_TOKEN` | | ✅ | Token del gateway (≥ 32 bytes aleatorios). |
 | `WA_ALLOW_1`…`WA_ALLOW_3` | | ✅ | Números autorizados en E.164 (`+57XXXXXXXXXX`). |
 | `VALERIA_REPO` | | ✅ | Ruta del clon (la fija `openclaw_env.ps1`). |
@@ -218,7 +219,8 @@ edita el `.env` externo y reinicia el gateway; nunca toca archivos versionados:
 - **Operadores**:
   - `uv run pml channels pseudonym --sender <número>` imprime el seudónimo `wa-…` (no guarda el número);
   - se copian a `VALERIA_OPERATORS=` del `.env` del repositorio;
-  - se reinicia el backend (`.\scripts\serve_backend.ps1 -Restart`).
+  - se reinicia el backend: `Stop-ScheduledTask ValerIA-Backend`, se cierra el `python` que quede en el puerto
+    8000 y `Start-ScheduledTask ValerIA-Backend` (`serve_backend.ps1` no tiene opción `-Restart`).
 - **Grupos**: siempre desactivados (`groupPolicy: "disabled"`); `selfChatMode: false`.
 - `openclaw config validate` acepta ambos modos con `dmPolicy` por variable (verificado el 2026-11-26).
 
